@@ -97,6 +97,20 @@ every program fails. The three cores sit in three SLRs: a path that crosses
 between them is the hardest to close, and the base machine already fills most
 of SLR0; the second load/store unit it gave up costs about 36k LUTs.
 
+**A flow takes hours, and you do not choose the machine.** R41's links have
+taken from 4 h 40 min to more than 8 h on one build machine (31 GB of memory;
+a large design swaps there) and about 6 h on the other. A flow is cut at its
+cap. A flow you submit later than about 4 hours into your time will most likely
+come back after your time is up: it still runs to its end, unseen by you, and
+its image can serve the certification after the run. A flow that wrote no image
+but got through routing still tells you whether the routed design met timing.
+
+**What the quick tier cannot see.** `fpga-quick` synthesises the top level
+out of context and passes it only the profile's parameters that top declares:
+it does not see `MTX_VRF_REG` or the uncore's `SETS` (nor anything else only
+the cores, the tiles or the device description set). Two machines that differ
+only there get the same quick result; only a flow sees the difference.
+
 ## Measuring your own work
 
 **The simulation is cycle-accurate**, and it is the image's own top level,
@@ -142,3 +156,39 @@ simulator from the description as it is when the test starts.
 each launch (its `device_cycles` is the count the device reports, which the
 evaluator checks against its own), and `python/tnca/inductor.py` how Inductor
 is pointed at TNCA.
+
+## The performance models
+
+Performance models of this machine are in `tools/performance_harness/systemc/`,
+built as one program, `tnca-chip`; a configuration picks the model. They are
+not the score: the score is the simulation above and, for hardware, the card.
+They are fast, a few seconds for a case the simulator takes minutes over, so
+use them to decide what is worth a simulation, a scoring request or a flow.
+Your changes to `systemc/` stay in your working directory and never enter a
+submission. Build the program once (SystemC is installed at `/opt/systemc`):
+
+    cmake -S tools/performance_harness/systemc -B /tmp/tnca-model -DCMAKE_BUILD_TYPE=Release
+    cmake --build /tmp/tnca-model --target tnca-chip -j 8
+
+Any test of yours runs on a model instead of the simulator when it is started
+with the model's hook first on `PYTHONPATH` and the model as the backend:
+
+    PYTHONPATH=$TNCA_MODEL_HOOK TNCA_BACKEND=systemc-tlm-grid TNCA_ACTIVE_CORES=3 \
+    TNCA_TLM_BINARY=/tmp/tnca-model/tnca-chip TNCA_TLM_CONFIG=<the model's configuration> ...
+
+- **Event Model** (`configs/r41-sim.cfg`): a transaction-level timeline of the
+  machine. Its structure is read from the RTL; the few quantities the RTL does
+  not fix (host time, the memory stand-ins' latency) were fitted on cases like
+  your own. After a change to the profile or the device description, generate
+  its configuration from them again:
+
+      python3 tools/performance_harness/systemc/r41cal/make_config.py \
+          --device spec/devices/u280-3core-r41.json --profiles spec/r1_profiles.json \
+          --base tools/performance_harness/systemc/configs/r41-hbm8-device-service.cfg --out /tmp/event.cfg
+
+  Its error card, `configs/r41-sim.error_card.md`, says how far to trust it:
+  against the simulation on cases held back from its calibration, a median
+  error of 4.5 %, 15.3 % at the 95th percentile and about 17 % at worst; it
+  follows `LSU_INFLIGHT` and the cache's `SETS` in direction and size; it is
+  blind to the compiler's register-bank allocation, so a change of that kind
+  needs the simulator. A difference smaller than its error is not evidence.

@@ -12,7 +12,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE.parent))
 
-from tritonchip_agent_harness.workspace import WorkspaceError, apply_candidate, export, gate, git  # noqa: E402
+from tritonchip_agent_harness.workspace import (WorkspaceError, apply_candidate, export, gate, git,  # noqa: E402
+                                                 hidden, visible_tree)
 
 FILES = {
     "compiler/a.py": "a = 1\n", "compiler/c.py": "c = 3\n", "tb/t.v": "module t; endmodule\n",
@@ -113,6 +114,37 @@ class WorkspaceTest(unittest.TestCase):
 
 
 REPO = HERE.parents[1]
+
+
+class ShowAgainTest(unittest.TestCase):
+    """A "!" hide entry shows a directory inside a hidden one (2026-11-08: the performance models)."""
+
+    def test_the_longest_entry_decides_and_new_files_stay_hidden(self):
+        hide = ("tools/ph/", "!tools/ph/systemc/", "tools/ph/systemc/test_points.py")
+        self.assertFalse(hidden("tools/ph/systemc/src/chip.cpp", hide))
+        self.assertTrue(hidden("tools/ph/systemc/test_points.py", hide))
+        self.assertTrue(hidden("tools/ph/fp8_cases.py", hide))
+        # Added later beside the shown directory: hidden, as everything under tools/ph/ is.
+        self.assertTrue(hidden("tools/ph/align/tracediff.py", hide))
+        self.assertFalse(hidden("rtl/top.v", hide))
+        # Nothing shows what is always hidden.
+        self.assertTrue(hidden("evidence/x.json", ("!evidence/",)))
+
+    def test_a_show_entry_needs_a_shorter_hide_entry_and_a_match(self):
+        root = Path(tempfile.mkdtemp())
+        for path in ("tools/ph/systemc/a.cpp", "tools/ph/systemc/test_points.py", "tools/ph/b.py", "rtl/top.v"):
+            (root / path).parent.mkdir(parents=True, exist_ok=True)
+            (root / path).write_text(path)
+        git("init", "-q", str(root))
+        git("-C", str(root), "add", "-A")
+        git("-C", str(root), "-c", "commit.gpgsign=false", "commit", "-q", "-m", "base")
+        base = git("-C", str(root), "rev-parse", "HEAD").decode().strip()
+        tree = visible_tree(root, base, ("tools/ph/", "!tools/ph/systemc/", "tools/ph/systemc/test_points.py"))
+        self.assertEqual(sorted(tree), ["rtl/top.v", "tools/ph/systemc/a.cpp"])
+        with self.assertRaisesRegex(WorkspaceError, "shows what no shorter hide entry hides"):
+            visible_tree(root, base, ("!tools/ph/systemc/",))
+        with self.assertRaisesRegex(WorkspaceError, "matches nothing"):
+            visible_tree(root, base, ("tools/ph/", "!tools/ph/nothing/"))
 
 
 def staged_sources(makefile: str) -> list:

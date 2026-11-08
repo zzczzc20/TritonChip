@@ -100,7 +100,7 @@ of SLR0; the second load/store unit it gave up costs about 36k LUTs.
 **A flow takes hours, and you do not choose the machine.** R41's links have
 taken from 4 h 40 min to more than 8 h on one build machine (31 GB of memory;
 a large design swaps there) and about 6 h on the other. A flow is cut at its
-cap. A flow you submit later than about 4 hours into your time will most likely
+cap. A flow you submit later than about 16 hours into your time will most likely
 come back after your time is up: it still runs to its end, unseen by you, and
 its image can serve the certification after the run. A flow that wrote no image
 but got through routing still tells you whether the routed design met timing.

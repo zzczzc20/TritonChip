@@ -123,6 +123,13 @@ struct Config {
         {auto n=get_or("tl_lsu_units",2);
          require(n==2 || n==4 || n==8 || n==16 || n==32 || n==64,"exploratory LSU units must be 2|4|8|16|32|64");
          require(n==2 || (get("memory_model")==1 && get("core_pipeline")==1),"LSU unit hypothesis needs timeline core pipeline");}
+        if(get_or("tl_hybrid_lsu",0)){
+            require(get("memory_model")==1 && get("core_pipeline")==1 && get_or("tl_core_beat_bytes",8)==64,
+                    "tl_hybrid_lsu needs timeline memory, the core pipeline and a 64-byte core beat");
+            auto w=get_or("tl_word_units",1),s=get_or("tl_line_slots",64);
+            require(w==1 || w==2,"tl_word_units is LSU_INFLIGHT's word-path unit count: 1|2");
+            require(s>=1 && s<=1024 && get_or("tl_mem_issue_gap",3)>=1,"tl_line_slots 1..1024, tl_mem_issue_gap >= 1");
+        }
         {auto n=get_or("tl_memory_lanes",1);
          require(n==1 || n==2 || n==4 || n==8,"exploratory NoC/home lanes must be 1|2|4|8");
          require(n==1 || get("memory_model")==1,"parallel memory lanes require timeline memory");}
@@ -188,7 +195,23 @@ struct Config {
             "uncore_axi_slots","uncore_axi_data_w","uncore_axi_pipelined_issue","uncore_dispatch_admission",
             // the R41 runtime's HBM DMA: host transfers from LOCAL_LIMIT up hand the range off (write back,
             // invalidate) instead of passing through the homes (UNCORE_TIMING 10.3)
-            "uncore_host_dma"};return k;}
+            "uncore_host_dma",
+            // The event model (core_model=0) on R41 (author-model-r41, configs/r41-sim.cfg):
+            // R41 HYBRID_LSU as built (default off): line path + LSU_INFLIGHT word units, a core-wide
+            // memory issue gap and a drain on every path switch (tnca_lsu_hybrid.v, tnca_core.v).
+            "tl_hybrid_lsu","tl_word_units","tl_line_slots","tl_mem_issue_gap","tl_word_setup_cycles",
+            // R41 launch boundaries (default off): grid admission cycles before the first program
+            // (tnca_grid_dispatch.v) and done waiting for every outlet write response (memory_drained).
+            "tl_grid_admission_cycles","tl_launch_drain",
+            // R41 line engine as built (default off): eligibility, setup after the previous issue, snapshot cost.
+            "dma_line_rtl",
+            // R41 RTL simulation's testbench HBM (default off): per-outlet latency and slot jitter.
+            "tl_tb_hbm","tl_tb_latency_base","tl_tb_latency_step","tl_tb_read_wait","tl_tb_write_wait",
+            // R41 FP-reduction fold occupancy (default off).
+            "tl_fp_fold","tl_fp_fold_fp_wait","tl_fp_fold_next",
+            // R41 stall_front (default off): a structural stall in R holds every context, including
+            // slots other contexts reserved before the stall began (tnca_core.v stall_front, rp_go).
+            "tl_stall_front"};return k;}
     u64 get_or(const std::string& k,u64 fallback)const{auto i=v.find(k);return i==v.end()?fallback:i->second;}
     // Hot-path copies of fixed geometry (set once by cache_hot()).
     u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;

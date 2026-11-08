@@ -13,7 +13,7 @@ struct Chip : sc_module {
     struct Command {bool grid=false;Launch launch;u64 stride=0,core_mask=1,deadline=0;unsigned gx=1,gy=1,gz=1,group=1;};
     std::unique_ptr<Command> pending;bool command_done=false,flush_request=false,shutdown=false;
     Outcome result;u64 start_cycle=0,end_cycle=0,launches=0;sc_event wake;
-    u64 *c_grid_launches,*c_single_launches,*c_host_cycles;
+    u64 *c_grid_launches,*c_single_launches,*c_host_cycles,*c_drain_cycles;
     Chip(sc_module_name n,Context& ctx,HBM& mem,Network& net,std::vector<std::unique_ptr<Slice>>& s):
         sc_module(n),x(ctx),hbm(mem),caches(s){
         code.read_word=[this](u64 pc){u64 v=0;unsigned char bytes[8];host_read(pc,bytes,8);for(unsigned b=0;b<8;++b)v|=u64(bytes[b])<<(8*b);return v;};
@@ -22,6 +22,8 @@ struct Chip : sc_module {
             cores.back()->memory.bind(net.target);cores.back()->tensor.memory.bind(net.target);
         }
         c_grid_launches=&x.counts["chip_grid_launches"];c_single_launches=&x.counts["chip_single_launches"];
+        // Bound only when the R41 launch drain is on, so default counters are unchanged.
+        c_drain_cycles=x.c.get_or("tl_launch_drain",0)?&x.counts["chip_launch_drain_cycles"]:nullptr;
         c_host_cycles=&x.counts["chip_host_gap_cycles"];
         SC_THREAD(run);
     }
@@ -154,10 +156,19 @@ struct Chip : sc_module {
         else if(serving){u64 d=host_debt+x.c.get("host_launch_cycles");host_debt=0;if(d)wait(x.cycles(d));*c_host_cycles+=d;}
         for(auto& core:cores)core->deadline=cmd.deadline?sc_time_stamp()+x.cycles(cmd.deadline):SC_ZERO_TIME;
         start_cycle=x.now();Outcome out;
-        if(cmd.grid){++*c_grid_launches;out=dispatch(cmd);}
+        if(cmd.grid){++*c_grid_launches;
+            // R41 tnca_grid_dispatch.v: registered admission cycles before the first program (the event
+            // model's tl_grid_admission_cycles; the cycle uncore counts them in dispatch(), uncore_dispatch_admission).
+            if(!x.functional){u64 adm=x.c.get_or("tl_grid_admission_cycles",0);if(adm)wait(x.cycles(adm));}
+            out=dispatch(cmd);}
         else{
             ++*c_single_launches;if(!x.functional)wait(x.cycles(cores[0]->t_launch));
             Launch l=cmd.launch;out=cores[0]->program(l);
+        }
+        // R41: done waits for memory_drained, every outlet transaction complete
+        // (write responses of the launch's stores and evictions included).
+        if(tm && !x.functional && x.c.get_or("tl_launch_drain",0)){
+            u64 d=tm->outlets_idle(),n=x.now();if(d>n){*c_drain_cycles+=d-n;wait(x.cycles(d-n));}
         }
         end_cycle=x.now();++launches;
         // Post-hoc check as well: a launch that finished past its deadline is

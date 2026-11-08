@@ -249,6 +249,7 @@ struct Frame {
     bool sliced=false;unsigned slice_id=0,slice_k=2;
     sc_time fetch_ready=SC_ZERO_TIME; // core_pipeline: refetch after a taken branch
     sc_time ahead=SC_ZERO_TIME;       // time_quantum: this context's local time - simulation time
+    sc_time r_slot=SC_ZERO_TIME;bool has_r_slot=false; // tl_stall_front: the X slot a stall in R ended on
     Frame(std::shared_ptr<PhysicalRegisters> bank,unsigned base):physical(std::move(bank)),vbase(base){require(base<=192,"vector mapping overflow");p[0]=65535;}
 };
 // One program's launch on one core: the role mask's context bits, RPAIR
@@ -302,6 +303,10 @@ struct Core : sc_module {
         *c_fence_wait,*c_programs_issued,*c_programs_completed;
     std::array<u64,unsigned(K::Count)> class_counts{};
     std::array<u64*,4> c_role_issued{},c_role_completed{};
+    // Debugging only: TNCA_MODEL_ITRACE=<file> writes core 0's launches and
+    // the cycle each instruction leaves execute, in the align trace's L/I/E
+    // records (tools/performance_harness/align/README.md sec 2).
+    static std::FILE* itrace(){static std::FILE* f=[](){const char* p=std::getenv("TNCA_MODEL_ITRACE");return p?std::fopen(p,"w"):nullptr;}();return f;}
     bool tracing=false;sc_time issue_time;std::string lsu_key;u64 t_lsu_slots=2,t_beat_slots=8;
     // core_pipeline=1: the RTL's single in-order pipeline (tnca_core.v).
     bool pipe=false;u64 t_branch,t_park,n_banks,t_bank,t_lsu_setup,t_vload_extra,t_lsu_complete,t_lsu_wb,t_fcmp,t_shuf_s,t_red_vec,t_fred_vec;
@@ -320,6 +325,24 @@ struct Core : sc_module {
     u64 *c_line_acc=nullptr,*c_word_acc=nullptr,*c_mode_wait=nullptr,*c_slot_wait=nullptr,*c_gap_wait=nullptr;
     std::vector<u64> steals; // LSU completions taking the one writeback port
     unsigned holds=0;sc_event unhold; // a fence/arrive held in R freezes every context
+    // tl_stall_front=1 (tnca_core.v stall_front): a stall in R other than a
+    // register hazard (LSU or SFU busy, bank rounds, fold) holds the whole
+    // front end, so no other context issues until it ends -- also not one
+    // whose slot was reserved before the stall began. The latest freeze
+    // interval [frz_from, frz_until) is kept; issue_slot retakes a slot that
+    // falls inside it. Contexts then reach R again in the order they asked.
+    bool stall_front=false;sc_time frz_from=SC_ZERO_TIME,frz_until=SC_ZERO_TIME;u64* c_front=nullptr;
+    unsigned away=0; // contexts parked on a register or asleep on a barrier: none of them is in D
+    // Slots reserved and not yet reached, per context: a stall in R displaces
+    // those inside it, and they take the first slots after it in the order
+    // they held (they were ahead of any context that asks during the stall).
+    std::array<sc_time,4> pend_slot{};std::array<bool,4> pend{};sc_time displaced_next=SC_ZERO_TIME;
+    void front_hold(const Frame& f,sc_time from,sc_time until){
+        if(from<frz_until){frz_until=std::max(frz_until,until);}else {frz_from=from;frz_until=until;displaced_next=until;}
+        unsigned n=0;for(unsigned r=0;r<4;++r)if(r!=f.role && pend[r] && pend_slot[r]>=frz_from && pend_slot[r]<frz_until)++n;
+        displaced_next=std::max(displaced_next,frz_until);
+        issue.available=std::max(issue.available,displaced_next+issue_time*double(n));
+    }
     // time_quantum > 0: conservative lookahead. A context whose next wait
     // ends before any other pending activity of the simulation (and within
     // the quantum) skips it and runs on at a local time ahead of the
@@ -362,6 +385,7 @@ struct Core : sc_module {
         t_lsu_complete=g("lsu_complete_cycles");t_lsu_wb=g("lsu_writeback_cycles");t_fcmp=g("fp_compare_latency");
         t_shuf_s=g("shuffle_scalar_latency");t_red_vec=g("reduction_vector_extra");t_fred_vec=g("fp_reduction_vector_extra");
         vrf_pf=g("vrf_prefetch")!=0;quantum=g("time_quantum");quantum_t=x.cycles(quantum);
+        stall_front=x.c.get_or("tl_stall_front",0)!=0;if(stall_front)c_front=&x.counts[key("stall_front_wait_cycles")];
         fold=x.c.get_or("tl_fp_fold",0)!=0;t_fold_fp=x.c.get_or("tl_fp_fold_fp_wait",14);t_fold_next=x.c.get_or("tl_fp_fold_next",16);
         c_freeze=&x.counts[key("pipeline_freeze_cycles")];c_park=&x.counts[key("context_park_cycles")];
         c_bank=&x.counts[key("vrf_bank_conflict_cycles")];c_branch=&x.counts[key("branch_refetch_cycles")];
@@ -408,6 +432,17 @@ struct Core : sc_module {
     // park_refetch_cycles after the wake (tnca_core.v rp_go/rctx_wake).
     void hazard(Frame& f,sc_time t){
         auto now=lt(f);if(t<=now)return;
+        if(stall_front && pipe && role_remaining>1){
+            // rp_go needs another context's instruction in D. With every other
+            // context parked or asleep D stays empty while R is held, so this
+            // one does not give way: it holds R (a freeze), and contexts woken
+            // meanwhile wait behind it.
+            if(away+1>=role_remaining){freeze(f,t);return;}
+            *c_park+=t_park;t+=x.cycles(t_park);*c_dep_wait+=cycles_of(t-now);
+            ++away;go(f,t);--away;
+            if(lt(f)>=frz_from && lt(f)<frz_until)go(f,frz_until);
+            return;
+        }
         if(pipe && role_remaining>1){*c_park+=t_park;t+=x.cycles(t_park);}
         *c_dep_wait+=cycles_of(t-now);go(f,t);
     }
@@ -415,15 +450,41 @@ struct Core : sc_module {
     void freeze(Frame& f,sc_time t){
         auto now=lt(f);if(t<=now)return;
         if(x.functional)return;
-        if(pipe){issue.available=std::max(issue.available,t);*c_freeze+=cycles_of(t-now);}
+        if(pipe){issue.available=std::max(issue.available,t);*c_freeze+=cycles_of(t-now);
+            if(stall_front)front_hold(f,now,t);}
         go(f,t);
+    }
+    // tl_stall_front: the SFU this instruction needs is busy (tnca_core.v
+    // stall_fpu, r_is_sfu && red_busy_next), so it waits in R, every context
+    // behind it, and enters X the cycle the unit admits it. Asked before the
+    // issue slot, as R asks. (The LSU's waits stay in its own code: there the
+    // model reserves the access when it issues, see the hybrid LSU below.)
+    void r_stage(Frame& f,const Inst& in){
+        if(x.functional || in.kind!=K::Sfu)return;
+        u64 r=x.to_cycles(fold?std::max(sfu_available,std::max(fold_next_free,fp_busy_until)):sfu_available);
+        u64 now=lnow(f);if(r<=now)return;
+        sc_time t=x.cycles(r),until=t+issue_time;
+        front_hold(f,lt(f),until);*c_freeze+=r-now;
+        go(f,t);f.has_r_slot=true;f.r_slot=t;
     }
     void issue_slot(Frame& f){
         if(x.functional){if(++untimed_burst>=4096){untimed_burst=0;wait(SC_ZERO_TIME);}return;} // let spinning peers run
+        if(f.has_r_slot){f.has_r_slot=false;*issue.service+=t_issue;issue.available=std::max(issue.available,f.r_slot+issue_time);go(f,f.r_slot+issue_time);return;}
         if(!quantum){issue.use(x,issue_time,t_issue);return;}
         sc_time t=lt(f),begin=std::max(issue.available,t);
         *issue.service+=t_issue;*issue.queue+=cycles_of(begin-t);
-        issue.available=begin+issue_time;go(f,issue.available);
+        issue.available=begin+issue_time;
+        if(stall_front){pend[f.role]=true;pend_slot[f.role]=begin;}
+        go(f,begin+issue_time);
+        while(stall_front && begin>=frz_from && begin<frz_until){
+            // Reserved before another context's stall began, inside it: R was
+            // held. Take the next of the slots kept for the displaced.
+            sc_time again=std::max(displaced_next,frz_until);displaced_next=again+issue_time;
+            issue.available=std::max(issue.available,displaced_next);
+            *c_front+=cycles_of(again-begin);*issue.queue+=cycles_of(again-begin);
+            begin=again;pend_slot[f.role]=begin;go(f,begin+issue_time);
+        }
+        pend[f.role]=false;
     }
     // A stall of unknown length that does not switch (fence, arrive): the
     // other contexts cannot issue until it ends.
@@ -609,12 +670,15 @@ struct Core : sc_module {
                         else ++it;
                     }}
             }
+            if(pipe && stall_front)r_stage(f,in);
             // No cycle polling: issue and dependencies reserve their next event.
             issue_slot(f);
             if(pipe)last_issue=lnow(f);
             ++class_counts[unsigned(in.kind)];
             switch(in.kind){
-            case K::Exit:drain_own(f);sync(f);++f.retired;++*c_instr;return;
+            case K::Exit:drain_own(f);sync(f);++f.retired;++*c_instr;
+                if(id==0 && itrace())std::fprintf(itrace(),"I %llu %u %016llx\n",(unsigned long long)lnow(f),f.role,(unsigned long long)f.pc);
+                return;
             case K::Nop:case K::Yield:case K::Prefetch:break; // t.prefetch: a hint, dropped (ISA sec 9E.3)
             case K::Trap:throw ArchFault(trapcode::user,"TRAP_USER: code "+std::to_string((a<<16)|(b<<8)|c));
             case K::Special:ws(d,special(mod,f),t_scalar);break;
@@ -951,7 +1015,7 @@ struct Core : sc_module {
                 }else if(func==3 || func==4){
                     u64 token=token_of(f,rs(a));unsigned index=unsigned(token&65535);sync(f);
                     if(func==3)ws(d,barriers[index].test(token),t_bar);
-                    else {auto sleep=sc_time_stamp();barriers[index].sleep(token);*c_sleep+=cycles_of(sc_time_stamp()-sleep);}
+                    else {auto sleep=sc_time_stamp();++away;barriers[index].sleep(token);--away;*c_sleep+=cycles_of(sc_time_stamp()-sleep);}
                 }else if(func==5)barriers[sliced(f,a,5)].invalidate();
                 else throw std::runtime_error("reserved barrier function");
                 break;}
@@ -979,6 +1043,7 @@ struct Core : sc_module {
             }
             ++f.retired;++*c_instr;
             if(tracing)x.span("native instruction",id,begin,f.retired);
+            if(id==0 && itrace())std::fprintf(itrace(),"I %llu %u %016llx %s.%u\n",(unsigned long long)lnow(f),f.role,(unsigned long long)f.pc,kind_name(in.kind),func);
             f.pc=next;
         }
     }
@@ -1011,9 +1076,10 @@ struct Core : sc_module {
         require(role_remaining==0,"program started on a core with contexts still running");
         tensor.reset();
         for(auto& barrier:barriers)barrier.reset();
-        aborting=false;fault=Outcome{};
+        aborting=false;fault=Outcome{};away=0;
         current=&l;role_active=unsigned(__builtin_popcount(l.roles));role_remaining=role_active;role_retired=0;
         ++*c_programs_issued;
+        if(id==0 && itrace())std::fprintf(itrace(),"L %llu %016llx %u\n",(unsigned long long)x.now(),(unsigned long long)l.pc,l.roles);
         for(unsigned role=0;role<4;++role)if(l.roles&(1<<role))role_start[role].notify();
         while(role_remaining)wait(role_done);
         u64 retired=role_retired;
@@ -1022,6 +1088,7 @@ struct Core : sc_module {
         tensor.drain();engine_wait();
         while(!completions.empty())wait(completions_drained);
         if(!aborting)++*c_programs_completed;
+        if(id==0 && itrace()){std::fprintf(itrace(),"E %llu\n",(unsigned long long)x.now());std::fflush(itrace());}
         Outcome out=aborting?fault:Outcome{};out.retired=retired;
         return out;
     }

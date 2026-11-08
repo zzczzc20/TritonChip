@@ -116,8 +116,9 @@ def config(desc, prof):
         ("predicate_latency", 1, "single-cycle VALU op"),
         ("reduction_latency", 3, "integer reductions are in the late class, no X_PROD"),
         ("fp_reduction_latency", 16, "4 levels x (FP_LAT+1), then done -> red_pend -> W"),
-        ("sfu_occupancy", 27, "SFU pass VLEN+LAT plus the core's done -> red_pend -> writeback (author's reading 22; open)"),
-        ("sfu_latency", 28, "as sfu_occupancy (author's reading 23; open)"),
+        ("sfu_occupancy", 27, "SFU pass VLEN+LAT plus the core's done -> red_pend -> writeback; RTL trace op.rmsnorm tiny "
+                              "(rtl2, single core): four SFU issues exactly 27 cycles apart (author's reading 22)"),
+        ("sfu_latency", 28, "as sfu_occupancy; the consumer issues 29-31 cycles after the SFU in the same trace (author's 23)"),
         ("barrier_latency", 1, "mb.arm / mb.test write in X"),
         ("reduction_vector_extra", 1, "integer reduction broadcast in the late class"),
         ("dispatch_cycles", 6, "per-program dispatch (R40 derivation, path unchanged), DISPATCH_STAGES 2"),
@@ -125,6 +126,9 @@ def config(desc, prof):
         ("tl_fp_fold", 1, "red_busy_next: a reduction or SFU pass waits for FP ops in flight; FP ops wait behind a reduction"),
         ("tl_fp_fold_fp_wait", 14, "after a reduction in X, an ordinary FP op waits about 14 cycles (sub-read, inferred count)"),
         ("tl_fp_fold_next", 16, "after a reduction in X, the next reduction or SFU pass waits 16 (4 levels x (FP_LAT+1))"),
+        ("tl_stall_front", 1, "stall_front = stall_raw && !rp_go: a stall in R other than a register hazard holds every "
+                              "context; rp_go needs another context's instruction in D (d_valid), so with all others "
+                              "parked the hazarded one holds R; fetch is round robin from rr_ptr (tnca_core.v)"),
     ]:
         put(k, v, "derived", src)
 
@@ -157,6 +161,12 @@ def config(desc, prof):
 NOT_EXPRESSIBLE = {
     "home same-line spacing": "two requests to one line at least 2 cycles apart; RQ_N 16 request buffer",
     "VALU late class, writeback-slot reservation": "core datapath details",
+    "hybrid LSU command landing register": "a memory instruction leaves X when the one-entry register is empty "
+        "(tnca_core.v g_lsu_hybrid pending) and the word unit takes it later. The model's contexts reserve issue "
+        "slots ahead, so an access reserved at landing reorders the word path; tried 2026-11-08, worse on the "
+        "visible set (median 3.4 -> 4.5 %, max 12.7 -> 22.7 %). The model waits for the unit instead",
+    "VRF bank ports beyond one instruction's sources": "the compiler's bank allocation (TNCA_BANK_ALLOC) moves "
+        "op.linear small by 3.8 % in RTL; the model sees no same-instruction conflict either way",
 }
 
 

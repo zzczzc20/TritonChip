@@ -5,7 +5,9 @@
  "_profile": "core-vrf-sync-v5-x8-g2c4-dp-board",
  "_not_expressible": {
   "home same-line spacing": "two requests to one line at least 2 cycles apart; RQ_N 16 request buffer",
-  "VALU late class, writeback-slot reservation": "core datapath details"
+  "VALU late class, writeback-slot reservation": "core datapath details",
+  "hybrid LSU command landing register": "a memory instruction leaves X when the one-entry register is empty (tnca_core.v g_lsu_hybrid pending) and the word unit takes it later. The model's contexts reserve issue slots ahead, so an access reserved at landing reorders the word path; tried 2026-11-08, worse on the visible set (median 3.4 -> 4.5 %, max 12.7 -> 22.7 %). The model waits for the unit instead",
+  "VRF bank ports beyond one instruction's sources": "the compiler's bank allocation (TNCA_BANK_ALLOC) moves op.linear small by 3.8 % in RTL; the model sees no same-instruction conflict either way"
  },
  "nx": {
   "value": 3,
@@ -255,12 +257,12 @@
  "sfu_occupancy": {
   "value": 27,
   "class": "derived",
-  "source": "SFU pass VLEN+LAT plus the core's done -> red_pend -> writeback (author's reading 22; open)"
+  "source": "SFU pass VLEN+LAT plus the core's done -> red_pend -> writeback; RTL trace op.rmsnorm tiny (rtl2, single core): four SFU issues exactly 27 cycles apart (author's reading 22)"
  },
  "sfu_latency": {
   "value": 28,
   "class": "derived",
-  "source": "as sfu_occupancy (author's reading 23; open)"
+  "source": "as sfu_occupancy; the consumer issues 29-31 cycles after the SFU in the same trace (author's 23)"
  },
  "barrier_latency": {
   "value": 1,
@@ -296,6 +298,11 @@
   "value": 16,
   "class": "derived",
   "source": "after a reduction in X, the next reduction or SFU pass waits 16 (4 levels x (FP_LAT+1))"
+ },
+ "tl_stall_front": {
+  "value": 1,
+  "class": "derived",
+  "source": "stall_front = stall_raw && !rp_go: a stall in R other than a register hazard holds every context; rp_go needs another context's instruction in D (d_valid), so with all others parked the hazarded one holds R; fetch is round robin from rr_ptr (tnca_core.v)"
  },
  "hbm_latency_cycles": {
   "value": 61,

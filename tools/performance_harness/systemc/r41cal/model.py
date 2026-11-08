@@ -74,7 +74,7 @@ def main():
              '  echo "$1 $(( $(date +%s) - t0 ))" >> /out/times.txt', "}",
              "run_case() {", "  t0=$(date +%s)",
              f'  {env} TNCA_ROOT=/work /opt/torchenv/bin/python /opt/tnca-skills/testcase-design/scripts/tnca_case.py '
-             f'"/cases/$2" --profile {a.profile} --json /out/case-$1.jsonl > /out/run-$1.log 2>&1 || true',
+             f'"/out/cases/$2" --profile {a.profile} --json /out/case-$1.jsonl > /out/run-$1.log 2>&1 || true',
              '  echo "$1 $(( $(date +%s) - t0 ))" >> /out/times.txt', "}"]
     for n in range(0, len(items), a.jobs):
         for i in range(n, min(n + a.jobs, len(items))):

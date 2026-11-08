@@ -11,12 +11,15 @@ any model's run is believed.
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 import hashlib
 import json
 import secrets
+import signal
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 from typing import Optional
@@ -31,10 +34,75 @@ from .workspace import export, gate
 PSEUDO = ("noop", "reference")
 
 
+class OperatorStop(KeyboardInterrupt):
+    """SIGINT or SIGTERM during a run: the operator's stop. `how` names the signal."""
+
+    def __init__(self, how: str):
+        super().__init__(how)
+        self.how = how
+
+
+@contextlib.contextmanager
+def operator_signals():
+    """While a run runs, SIGINT and SIGTERM both raise OperatorStop, so a run stopped either way still
+    writes its record (run 6180 was stopped and left none). Only the main thread can take signals."""
+    if threading.current_thread() is not threading.main_thread():
+        yield
+        return
+
+    def stop(signum, frame):
+        raise OperatorStop(signal.Signals(signum).name)
+
+    old = {s: signal.signal(s, stop) for s in (signal.SIGINT, signal.SIGTERM)}
+    try:
+        yield
+    finally:
+        for s, handler in old.items():
+            signal.signal(s, handler)
+
+
+def _write(run_dir: Path, record: dict) -> None:
+    (run_dir / "run.json").write_text(json.dumps(record, indent=2, sort_keys=True, default=str) + "\n",
+                                      encoding="utf-8")
+
+
+def _stopped(site: Site, task: Task, record: dict, run_dir: Path, rows: Optional[list], stage: str,
+             exc: BaseException) -> None:
+    """The operator stopped the run: its record as far as it got, validity "stopped", with no final evaluation
+    and no certification. `rows` are the islands' (None for a run without islands). The slow requests still
+    running on their build machines are listed: nothing waits for them, and nothing stops them either."""
+    services_ = [((r.get("agent_result") or {}).get("services") or {}, r.get("island")) for r in rows or ()]
+    if rows is None:
+        services_ = [((record.get("agent_result") or {}).get("services") or {}, None)]
+    left = [{"island": island, "id": j.get("id"), "remote_id": j.get("remote_id"), "build_host": j.get("build_host")}
+            for s, island in services_ for j in s.get("requests") or ()
+            if j.get("service") == "fpga-slow" and j.get("state") == "running"]
+    record["stopped"] = {"how": getattr(exc, "how", None) or "SIGINT", "stage": stage, "at": time.time(),
+                         "slow_requests_left_running": left}
+    record["validity"] = "stopped"
+    try:
+        if rows is None:
+            record["occupancy"] = occupancy.of_run(site, task, record.get("agent_result") or {}, None)
+        else:
+            record["occupancy"] = [{**e, "island": row["island"]} for row in rows
+                                   for e in occupancy.of_run(site, task, row["agent_result"], None)]
+    except Exception as err:  # noqa: BLE001 -- the record is written whatever the accounting says
+        record["occupancy_error"] = f"{type(err).__name__}: {err}"
+    record["finished"] = time.time()
+    _write(run_dir, record)
+
+
 def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: Optional[str] = None,
              skills: Optional[list] = None) -> dict:
     """`skills`: the names of the skills this run provides; None takes the task's own set (`task.json`
-    `skills`), a list overrides it -- [] runs without any, a pilot's control arm. The record says which."""
+    `skills`), a list overrides it -- [] runs without any, a pilot's control arm. The record says which.
+    A run the operator stops (SIGINT or SIGTERM) writes its record before it ends (validity "stopped")."""
+    with operator_signals():
+        return _run_task(site, task, agent, mode, model, skills)
+
+
+def _run_task(site: Site, task: Task, agent: str, mode: str, model: Optional[str],
+              skills: Optional[list]) -> dict:
     if site.repository is None:
         raise SiteError("site.json has no `repository`: the clone workspaces are exported from")
     repo = site.repository
@@ -100,9 +168,15 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
         if task.resume:
             from .islands import Turns
             turns = Turns(None, task, broker, None, prompt, cfg=task.resume)
-        record["agent_result"] = runner.run_agent(site, account, prompt, mode, run_dir, workspace,
-                                                  timeout=float(task.wall_seconds), services=broker,
-                                                  skills=names, **({"turns": turns} if turns else {}))
+        try:
+            record["agent_result"] = runner.run_agent(site, account, prompt, mode, run_dir, workspace,
+                                                      timeout=float(task.wall_seconds), services=broker,
+                                                      skills=names, **({"turns": turns} if turns else {}))
+        except KeyboardInterrupt as exc:
+            record["agent_result"] = {"stop_reason": "operator",
+                                      **({"services": broker.record()} if broker is not None else {})}
+            _stopped(site, task, record, run_dir, None, "agent", exc)
+            raise
         if turns is not None:
             record["agent_result"].update(stop_reason=turns.stop_reason or record["agent_result"].get("stop_reason"),
                                           idle=turns.idle, restarts=turns.restarts, resume_mode=turns.mode,
@@ -156,9 +230,23 @@ def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: O
     record["occupancy"] = occupancy.of_run(site, task, record["agent_result"], evaluated)
     record["occupancy"] += occupancy.certification(site, record.get("certification"))
     record["finished"] = time.time()
-    (run_dir / "run.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    _write(run_dir, record)
     record["run_dir"] = str(run_dir)
     return record
+
+
+def _island_rows(results) -> list:
+    """The islands' rows for the record: each island's own, with every request its broker kept."""
+    rows = []
+    for r in results or ():
+        if not r:
+            continue
+        agent_result = dict(r.get("agent_result") or {})
+        if r.get("broker") is not None:
+            agent_result["services"] = r["broker"].record()
+        rows.append({**{k: v for k, v in r.items() if k not in ("broker", "agent_result")},
+                     "agent_result": agent_result})
+    return rows
 
 
 def _islands(site: Site, task: Task, account, mode: str, names: list, record: dict, run_dir: Path,
@@ -170,27 +258,34 @@ def _islands(site: Site, task: Task, account, mode: str, names: list, record: di
     from . import islands as islands_, services
     evaluator.baseline(site, repo, task)
     shared = services.Shared(site, task)
-    got = islands_.run(site, task, account, mode, run_dir, repo, names, Broker, shared)
-    archive, brokers = got["archive"], [r["broker"] for r in got["islands"] if r]
-    for b in brokers:
-        b.wait_outlived()
-        # Every commit has finished (or was cancelled) before the archive is ranked.
-        for j in list(b.jobs.values()):
-            if j["service"] != "fpga-slow" and j.get("thread"):
-                j["thread"].join()
-    rows = []
-    for r in got["islands"]:
-        if not r:
-            continue
-        agent_result = dict(r["agent_result"])
-        agent_result["services"] = r["broker"].record()
-        rows.append({**{k: v for k, v in r.items() if k not in ("broker", "agent_result")},
-                     "agent_result": agent_result})
-    record["islands"] = {"config": task.islands, "islands": rows}
-    record["archive"] = archive.record()
-    view = types.SimpleNamespace(images=shared.images,
-                                 jobs={f"{b.island}:{k}": j for b in brokers for k, j in b.jobs.items()})
-    record["champions"] = _champions(site, repo, task, archive, view, run_dir)
+    got, rows, stage = None, None, "islands"
+    try:
+        got = islands_.run(site, task, account, mode, run_dir, repo, names, Broker, shared)
+        archive, brokers = got["archive"], [r["broker"] for r in got["islands"] if r]
+        stage = "waiting for the slow requests"
+        for b in brokers:
+            b.wait_outlived()
+            # Every commit has finished (or was cancelled) before the archive is ranked.
+            for j in list(b.jobs.values()):
+                if j["service"] != "fpga-slow" and j.get("thread"):
+                    j["thread"].join()
+        rows = _island_rows(got["islands"])
+        record["islands"] = {"config": task.islands, "islands": rows}
+        record["archive"] = archive.record()
+        view = types.SimpleNamespace(images=shared.images,
+                                     jobs={f"{b.island}:{k}": j for b in brokers for k, j in b.jobs.items()})
+        stage = "final evaluation"
+        record["champions"] = _champions(site, repo, task, archive, view, run_dir)
+    except KeyboardInterrupt as exc:
+        if rows is None:
+            # Stopped while the islands ran (islands.Stopped carries what they had) or while the run waited.
+            have = getattr(exc, "partial", None) or got or {}
+            rows = _island_rows(have.get("islands"))
+            record["islands"] = {"config": task.islands, "islands": rows}
+            if have.get("archive") is not None:
+                record["archive"] = have["archive"].record()
+        _stopped(site, task, record, run_dir, rows, stage, exc)
+        raise
     record["occupancy"] = []
     for row in rows:
         for e in occupancy.of_run(site, task, row["agent_result"], None):
@@ -204,8 +299,7 @@ def _islands(site: Site, task: Task, account, mode: str, names: list, record: di
     valid = [c for c in record["champions"] if (c.get("evaluation") or {}).get("valid")]
     record["validity"] = "valid" if valid else ("no-commit" if not archive.ranked() else "infra-invalid")
     record["finished"] = time.time()
-    (run_dir / "run.json").write_text(json.dumps(record, indent=2, sort_keys=True, default=str) + "\n",
-                                      encoding="utf-8")
+    _write(run_dir, record)
     record["run_dir"] = str(run_dir)
     return record
 
@@ -251,4 +345,4 @@ def _champions(site: Site, repo: Path, task: Task, archive, view, run_dir: Path)
     return out
 
 
-__all__ = ["PSEUDO", "run_task"]
+__all__ = ["OperatorStop", "PSEUDO", "operator_signals", "run_task"]

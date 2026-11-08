@@ -362,6 +362,16 @@ class Turns:
         return "Continue improving. " + status
 
 
+class Stopped(KeyboardInterrupt):
+    """The operator stopped the run (Ctrl-C, or SIGTERM through loop.operator_signals) while its islands ran:
+    `partial` is what they had by then ({"islands": rows so far, "archive": the archive}), so the run still
+    writes its record. A KeyboardInterrupt, so a caller that knows nothing of it stops as before."""
+
+    def __init__(self, partial: dict, how: str):
+        super().__init__(how)
+        self.partial, self.how = partial, how
+
+
 def _stop_agents(run_dir: Path, count: int, cli: str) -> None:
     """Every island's CLI asked to end its turn (target reached, or the operator stopped the run)."""
     from . import provider
@@ -422,16 +432,18 @@ def run(site, task: Task, account, mode: str, run_dir: Path, repo: Path, names: 
         for t in threads:
             while t.is_alive():
                 t.join(5)
-    except KeyboardInterrupt:
-        # The operator: every island ends its turn and cleans up its sandbox in its own `finally`.
+    except KeyboardInterrupt as exc:
+        # The operator: every island ends its turn and cleans up its sandbox in its own `finally`; what the
+        # islands had goes up with the stop, for the run's record.
         archive.halt.set()
         _stop_agents(run_dir, cfg["count"], account.cli)
         for t in threads:
             t.join(120)
-        raise
+        out["islands"], out["archive"] = results, archive
+        raise Stopped(out, getattr(exc, "how", None) or "SIGINT") from exc
     out["islands"] = results
     out["archive"] = archive
     return out
 
 
-__all__ = ["Archive", "CELLS", "Turns", "fitness", "layer_cell", "layer_labels", "overlay_patch", "run", "visible"]
+__all__ = ["Archive", "CELLS", "Stopped", "Turns", "fitness", "layer_cell", "layer_labels", "overlay_patch", "run", "visible"]

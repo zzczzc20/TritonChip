@@ -39,7 +39,7 @@ from typing import Optional
 from . import provider
 from .provider import AgentContainer, Mount
 from .siteconfig import Site
-from .task import Task
+from .task import POINT_SETS, Task
 from .workspace import apply_candidate, export, git
 
 SCRIPT = """set -e
@@ -614,7 +614,7 @@ def failure_counts(scored: dict) -> dict:
 
 def scrubbed(lines: list, task: Task, keep: int = 20) -> list:
     """A log's last lines as the agent may see them: no point's name, no line past 300 characters."""
-    names = sorted(set(task.evaluation["validation"]) | set(task.evaluation["final"]), key=len, reverse=True)
+    names = sorted({p for s in POINT_SETS for p in task.evaluation.get(s) or ()}, key=len, reverse=True)
     out = []
     for line in [l for l in lines if l.strip()][-keep:]:
         for p in names:

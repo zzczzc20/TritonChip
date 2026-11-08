@@ -42,9 +42,9 @@ from typing import Optional
 
 from . import board, certify, evaluator, provider
 from .siteconfig import Site
-from .task import Task
+from .task import Task, board_points
 
-RETRIES = 2                # an infrastructure failure is tried again this many times
+RETRIES = 2               # an infrastructure failure is tried again this many times
 REPORT_BYTES = 4 << 20     # the most of one Vivado report fetched from the build host
 PATHS = 8                  # worst paths returned
 DRC_ROWS = 10
@@ -93,7 +93,7 @@ def snapshot_digest(candidate: Optional[Path]) -> str:
 def manifest(task: Task, label: str, commit: str, *, board: bool) -> dict:
     value = certify.manifest(task, label, commit)
     if board:
-        value["board"]["archbench"]["points"] = list(task.evaluation["validation"])
+        value["board"]["archbench"]["points"] = board_points(task)
     else:
         value.pop("board")
     return value
@@ -605,9 +605,9 @@ def _cycles_view(points: list, got: dict, sim_rows: dict) -> dict:
 
 def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image: dict, sim: dict,
             job_dir: Path, job: dict, seconds: int, base_xclbin: Optional[str] = None) -> dict:
-    """The validation points (and the task's board checks) on `image`, tried again on an infrastructure
+    """The board's validation points (and the task's board checks) on `image`, tried again on an infrastructure
     failure; the agent's view against the base on the card. outcome: ok, candidate (charged) or infra."""
-    points = list(task.evaluation["validation"])
+    points = board_points(task)
     rec, attempts = None, []
     for attempt in range(RETRIES + 1):
         try:
@@ -645,7 +645,9 @@ def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image
         visible["validation"] = {"n": len(points), "passed": passed, "note": "no base measured on the card to compare with"}
         job["baseline_error"] = f"{type(exc).__name__}: {exc}"
     sim_rows = {r["point"]: r for r in (((sim or {}).get("full") or {}).get("points") or [])}
-    if certify.board_cycles(task) == "equal":
+    if not any(p in sim_rows for p in points):
+        pass   # the card's own set (board_validation): simulation never ran these points, nothing to compare
+    elif certify.board_cycles(task) == "equal":
         agree = sum(1 for p in points if (got.get(p) or {}).get("status") == "pass" and sim_rows.get(p, {}).get(
             "failure") is None and ((got[p].get("observer") or {}).get("done_cycles") == sim_rows[p].get("done_cycles")))
         visible["counted_as_in_simulation"] = agree

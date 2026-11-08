@@ -9,6 +9,13 @@ so an agent never sees its definition, its points or its reference. Every
 point is hidden: `evaluation.validation` is the set an in-run scoring service
 may report on (in aggregate only), `evaluation.final` is measured only after
 the agent has stopped, and nothing about it ever reaches the agent.
+
+A task with the card may split the card's points from simulation's (decided
+2026-11-08): `evaluation.board_validation` is what an in-run board request
+measures (points too slow for simulation; aggregate only, as `validation`),
+`evaluation.board_final` the card's held-out set, measured on the result's
+image only after the run. Without `board_validation` a board request measures
+`validation`, as before.
 """
 
 from __future__ import annotations
@@ -75,6 +82,7 @@ def load_task(path: Path) -> Task:
     for k in ("profile", "validation", "final", "jobs", "timeout_seconds"):
         if k not in ev:
             raise TaskError(f"{path}: evaluation.{k} is missing")
+    _check_point_sets(path, ev, v.get("services") or {})
     device = ev.get("device")
     if device is not None:
         # A multicore task: the machine is spec/devices/<device>.json, run in the
@@ -110,6 +118,35 @@ def load_task(path: Path) -> Task:
                 reference=ref, wall_seconds=int(v["budget"]["wall_seconds"]), evaluation=dict(ev),
                 services=services,
                 path=path.resolve(), sha256=hashlib.sha256(raw).hexdigest(), skills=tuple(skills), islands=islands, resume=resume)
+
+
+POINT_SETS = ("validation", "final", "board_validation", "board_final")
+
+
+def _check_point_sets(path: Path, ev: dict, services: dict) -> None:
+    """Every point set is a list of distinct point ids, and no point is in two sets: a point is scored in one
+    place or held out, never both. `board_validation` needs the card (services.fpga_slow in board mode)."""
+    seen: dict = {}
+    for name in POINT_SETS:
+        if name not in ev:
+            continue
+        ids = ev[name]
+        if not isinstance(ids, list) or not all(isinstance(p, str) and p for p in ids) or len(set(ids)) != len(ids):
+            raise TaskError(f"{path}: evaluation.{name} must be a list of distinct point ids")
+        if name.startswith("board_") and not ids:
+            raise TaskError(f"{path}: evaluation.{name} is empty; leave it out instead")
+        for p in ids:
+            if p in seen:
+                raise TaskError(f"{path}: {p} is in both evaluation.{seen[p]} and evaluation.{name}")
+            seen[p] = name
+    if "board_validation" in ev and ((services.get("fpga_slow") or {}).get("mode") != "board"):
+        raise TaskError(f"{path}: evaluation.board_validation needs services.fpga_slow in board mode")
+
+
+def board_points(task: Task) -> list:
+    """The points an in-run board request measures: the task's board validation set, else its validation set."""
+    ev = task.evaluation
+    return list(ev.get("board_validation") or ev["validation"])
 
 
 # The descriptors an island grid may use (islands.py); the first version has the change's layer only.
@@ -228,7 +265,8 @@ def render(task: Task, mode: str, skills: Iterable[str] = (), island: Optional[i
     skill_text = catalog_.prompt_lines(selected)
     services = _services_text(task.services, islands=island is not None and bool(task.islands),
                               resumed=bool(task.resume),
-                              board_cycles=((task.evaluation or {}).get("certify") or {}).get("board_cycles", "equal"))
+                              board_cycles=((task.evaluation or {}).get("certify") or {}).get("board_cycles", "equal"),
+                              board_set=bool((task.evaluation or {}).get("board_validation")))
     return instruction.rstrip() + services + f"""
 
 ## The rules of this run
@@ -276,7 +314,8 @@ def _ending(task: Task, island: Optional[int]) -> str:
             f"{cfg['max_idle_turns']} idle turns in a row end your island.\n")
 
 
-def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, board_cycles: str = "equal") -> str:
+def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, board_cycles: str = "equal",
+                   board_set: bool = False) -> str:
     """How the agent may ask the evaluator for a measurement, and how much it may ask."""
     if not cfg:
         return ""
@@ -333,12 +372,16 @@ def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, boar
             f"on your design (timing or place-and-route does not converge, it does not fit, DRC) counts; one "
             f"that fails on the infrastructure does not, and is retried for you. {concurrency} "
             f"The card is shared: a request waits until the card has "
-            f"been idle for a while, and that wait is part of its time. On the card you get the hidden "
-            f"validation set's aggregate against the base on the card (as the score service gives it), "
-            + ("how many points counted the cycles simulation counted"
-               if board_cycles == "equal" else
-               "the card's cycle counts against simulation's in aggregate (the geometric mean and range of "
-               "board over simulation)")
+            f"been idle for a while, and that wait is part of its time. On the card you get "
+            + ("the hidden board validation set's aggregate against the base on the card (as the score service "
+               "gives it; the card's own points, larger than the simulated ones and too slow to simulate)"
+               if board_set else
+               "the hidden validation set's aggregate against the base on the card (as the score service gives "
+               "it), "
+               + ("how many points counted the cycles simulation counted"
+                  if board_cycles == "equal" else
+                  "the card's cycle counts against simulation's in aggregate (the geometric mean and range of "
+                  "board over simulation)"))
             + f", and any board check (such as FP8 bit "
             f"alignment) that did not pass; for a flow that failed, why: the failing stage, slack, the worst "
             f"paths and whether they cross an SLR, utilisation per SLR, the DRC rules that failed. A board "
@@ -348,4 +391,4 @@ def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, boar
     return "\n".join(lines)
 
 
-__all__ = ["Task", "TaskError", "WITHOUT_SKILL", "load_task", "render"]
+__all__ = ["POINT_SETS", "Task", "TaskError", "WITHOUT_SKILL", "board_points", "load_task", "render"]

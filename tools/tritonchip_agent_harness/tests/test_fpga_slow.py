@@ -64,6 +64,71 @@ class SlowService(unittest.TestCase):
         build = fpga_slow.manifest(task(), "l1", "c" * 40, board=False)
         self.assertNotIn("board", build)
 
+    def test_a_board_validation_set_is_what_the_card_measures(self):
+        split = task()
+        split.evaluation.update(board_validation=["secret.board"], board_final=["secret.board_final"])
+        value = fpga_slow.manifest(split, "l1", "c" * 40, board=True)
+        self.assertEqual(value["board"]["archbench"]["points"], ["secret.board"])
+        for hidden in ("secret.validation", "secret.final", "secret.board_final"):
+            self.assertNotIn(hidden, json.dumps(value["board"]))
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            site = types.SimpleNamespace(fpga_pipeline={"hosts": root / "hosts.json", "build_host": "build",
+                                                        "board_host": "card", "card": {"bdf": "0000:04:00.1"}})
+            job = {"id": "l1", "remote_id": "agent-slow-1", "containers": "tnca-test", "kind": "software"}
+            sim = {"aggregate": {"n": 1, "passed": 1},
+                   "full": {"points": [{"point": "secret.validation", "failure": None, "done_cycles": 42}]}}
+            card = {"session": {"status": "ok"}, "measured": {},
+                    "points": {"secret.board": {"status": "pass", "cycles": 25, "record_cycles": 25,
+                                                "fallbacks": [], "observer": {"done_cycles": 25}}}}
+            base = {"points": {"secret.board": {"status": "pass", "cycles": 100}}}
+            with (mock.patch.object(fpga_slow.evaluator, "measure_validation", return_value=sim),
+                  mock.patch.object(fpga_slow.board, "measure", return_value=card) as measure,
+                  mock.patch.object(fpga_slow.board, "baseline", return_value=base)):
+                visible, _ = fpga_slow.run(site, root, split, None, root / "job", job, with_board=True,
+                                           image={"path": "/x", "sha256": "c" * 64}, flow_seconds=60,
+                                           board_seconds=60)
+            self.assertEqual(measure.call_args.args[5], ["secret.board"])
+            self.assertEqual(visible["board"]["validation"]["speedup_geomean"], 4.0)
+            # Simulation never ran the card's own points: nothing to compare the card's cycles with.
+            self.assertNotIn("counted_as_in_simulation", visible["board"])
+            self.assertNotIn("cycles_on_card", visible["board"])
+            self.assertNotIn("secret.", json.dumps(visible))
+
+    def test_point_sets_are_disjoint_lists_and_the_board_set_needs_the_card(self):
+        source = HERE / "tasks" / "r39-v5-main-pilot"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "instruction.md").write_text("Improve the design.\n")
+            value = json.loads((source / "task.json").read_text())
+            value["evaluation"]["platform"] = {"commit": "b" * 40, "paths": []}
+            path = root / "task.json"
+
+            def load(**ev):
+                v = json.loads(json.dumps(value))
+                v["evaluation"].update(ev)
+                path.write_text(json.dumps(v))
+                return load_task(path)
+
+            v0 = value["evaluation"]["validation"][0]
+            with self.assertRaisesRegex(TaskError, "board_validation needs services.fpga_slow in board mode"):
+                load(board_validation=["op.x/large/fp16-a"])
+            value["services"]["fpga_slow"] = {"mode": "board", "flows": 1, "board_runs": 2,
+                                                "flow_minutes": 480, "board_minutes": 120}
+            with self.assertRaisesRegex(TaskError, "in both evaluation.validation and evaluation.board_validation"):
+                load(board_validation=[v0])
+            with self.assertRaisesRegex(TaskError, "in both evaluation.board_validation and evaluation.board_final"):
+                load(board_validation=["op.x/large/fp16-a"], board_final=["op.x/large/fp16-a"])
+            with self.assertRaisesRegex(TaskError, "board_final must be a list of distinct point ids"):
+                load(board_final=["op.x/large/fp16-a", "op.x/large/fp16-a"])
+            with self.assertRaisesRegex(TaskError, "board_validation is empty"):
+                load(board_validation=[])
+            t = load(board_validation=["op.x/large/fp16-a"], board_final=["op.x/hbm/fp16-b"])
+            self.assertEqual(fpga_slow.board_points(t), ["op.x/large/fp16-a"])
+            self.assertIn("the hidden board validation set's aggregate", render(t, "offline"))
+            self.assertNotIn("op.x/", render(t, "offline"))
+            self.assertEqual(fpga_slow.board_points(load()), value["evaluation"]["validation"])
+
     def test_board_result_returns_only_an_aggregate_to_the_agent(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

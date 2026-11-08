@@ -36,7 +36,7 @@ sys.path.insert(0, str(ROOT))
 
 from tritonchip_agent_harness import adapters, runner, skills  # noqa: E402
 from tritonchip_agent_harness.siteconfig import Account  # noqa: E402
-from tritonchip_agent_harness.task import load_task, render  # noqa: E402
+from tritonchip_agent_harness.task import POINT_SETS, load_task, render  # noqa: E402
 
 SKILL_PATH = f"{adapters.SKILLS_DIR}/testcase-design"
 from tritonchip_agent_harness.workspace import hidden  # noqa: E402
@@ -374,8 +374,7 @@ class BenchmarkCases(unittest.TestCase):
             task = load_task(task_dir)
             if SKILL.name not in task.skills:
                 continue
-            ev = task.evaluation
-            hidden = set(ev.get("validation", [])) | set(ev.get("final", [])) | set(ev.get("board_validation", []))
+            hidden = {p for s in POINT_SETS for p in task.evaluation.get(s, [])}
             self.assertFalse(VISIBLE & hidden, f"{task.task_id} hides {sorted(VISIBLE & hidden)}")
 
     @unittest.skipUnless(HAVE_TORCH, "torch is not installed here; run where it is")

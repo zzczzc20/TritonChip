@@ -50,7 +50,7 @@ from typing import Callable, Optional
 from . import evaluator
 from .provider import AgentContainer, Mount
 from .siteconfig import Site
-from .task import Task
+from .task import Task, board_points
 
 MOUNT = "/run/tnca-board"
 BACKEND = "fpga-u280-multicore-relay"
@@ -448,10 +448,10 @@ def ok(record: dict) -> bool:
 
 
 def baseline(site: Site, repo: Path, task: Task) -> dict:
-    """The base on its own image, validation points only, once per image and platform: what an in-run board
-    aggregate is against. The final set never runs while an agent does."""
+    """The base on its own image, the board's validation points only, once per image and platform: what an
+    in-run board aggregate is against. No held-out set runs while an agent does."""
     image = base_image(site, task)
-    points = list(task.evaluation["validation"])
+    points = board_points(task)
     key = hashlib.sha256(json.dumps([image["sha256"], task.evaluation["platform"]["commit"], task.base_commit,
                                      task.evaluation["profile"], points]).encode()).hexdigest()[:16]
     root = site.state_dir / "board-baselines"

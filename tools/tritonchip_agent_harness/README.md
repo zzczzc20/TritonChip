@@ -302,6 +302,27 @@ compiler can encode what it saw into its timing. Budgets and aggregates narrow
 that channel; only a set that runs after the agent has stopped closes it. That
 is the final set.
 
+**The card's own sets** (decided 2026-11-08). A task with the card may give
+the card points of its own, too slow to simulate (more than about 300,000
+cycles), in two more task fields:
+
+| Field | What it is | Measured by |
+|---|---|---|
+| `evaluation.board_validation` | the board's hidden-scored set: aggregate only, as the validation set | every in-run board request (`fpga_slow.manifest`, `on_card`), against the base on the card (`board.baseline`) |
+| `evaluation.board_final` | the board's held-out set | once, after the run, on the result's image, with the 113-point board run |
+
+`task.board_points` picks what a board request measures: `board_validation`,
+or `validation` for a task without it, as before. The loader keeps the four
+sets disjoint (a point is scored in one place or held out), and
+`board_validation` needs `services.fpga_slow` in board mode. With a board set,
+the board reply has no card-against-simulation comparison: simulation never
+ran those points. Certification still runs the simulated sets on the card,
+so the sim-to-board rows of the task's simulated points are kept. Every point
+name of the four sets is scrubbed from the log lines an agent sees. R41's
+formal task is the first to use them (validation 18, final 25,
+board_validation 18, board_final 40; `reports/archbench_point_split_20261108`
+in the main checkout, untracked, names them).
+
 **An aggregate is:** the number of points, the number that passed, the
 geometric-mean speedup over the points that passed, and `fast_1` (§10.2). It
 never contains a point's name, shape, cycles or error text: an error such as
@@ -919,7 +940,8 @@ are not one series. The agent is not shown them.
 agent asks for the card; the request is asynchronous and the agent keeps
 iterating. A snapshot that changed the machine and whose hardware this run has
 not built is a *hardware* request: one Vivado flow on the build host, then, in
-board mode, its validation points on the card on the image it built. Any other
+board mode, the board's points (`board_validation`, else the validation set;
+§6.4) on the card on the image it built. Any other
 (software only, or hardware this run already built) is a *software* request: the
 card only, on the base's image or that one. Each kind has its own count for the
 run:
@@ -947,10 +969,11 @@ run:
 - **What the agent sees**: for a failed flow, the quick tier's fields plus the
   routed design's (failing stage, hold slack, per-SLR utilisation, SLR
   crossings on the worst paths, failing DRC rules), host paths, names and
-  addresses scrubbed; on the card, the validation set's aggregate against the
-  base on the card (the base measured on its image, validation points only:
-  the final set never runs while an agent does), how many points counted what
-  simulation counted, and which board checks did not pass (pass or fail only:
+  addresses scrubbed; on the card, the board's points' aggregate against the
+  base on the card (the base measured on its image, those points only: no
+  held-out set runs while an agent does), how many points counted what
+  simulation counted (or their ratio, for a task that records board cycles;
+  neither for a board set simulation never ran), and which board checks did not pass (pass or fail only:
   a check's log is the container's). Point names, cycles, logs and records stay
   in the run record. A failed request's error text stays there too.
 - **At the run's end** a slow request still running runs to its end, unseen by
@@ -1309,6 +1332,7 @@ service request's snapshot; each role's CPU time.
 | 2026-11-03 | Which skills a run gets: three layers (§6.3). The catalog is the `skills/` directory, each skill self-describing by its front matter, the hash over all of it the skills' environment version; a task declares its default set in `task.json` (`skills`; none declared, none given); a run may override it (`--skills a,b`, `--no-skills`). Only the selected skills are staged, mounted and linked; the prompt names them from their front matter; the record names the set, its source, each hash and the catalog version. Tools travel inside skills; what needs its own mount is the environment's. The skills mechanism goes to main as one pull request. Decided by the user |
 | 2026-11-07 | Build machines as a pool (§12.5b): a site may list several (`build_hosts`), one flow on each at a time; a task caps its flows at once (`flows_at_once`, default 1, at most the machines); a busy machine is skipped and, with all busy, the request waits and the wait is recorded apart; every machine must be idle before a run starts; another user's lock files (`shared_slots`) count, and our flow holds one. For now one run at a time; parallel runs later, and another run's waits must not count against a run. R41's formal task: 24 h, 3 flows, 2 at once. The quick tier may move to RSCL by site configuration. Decided by the user |
 | 2026-11-08 | The test-case skill carries a visible set: points of the benchmark itself (`benchmark_cases/`, 18 for the next R41 round, one an unfrozen FP8 draft), exported by `skill_cases.py` and checked bit for bit, and the classes the agent is given (`classes.json`) with a rule for covering them at milestones. Seven classes are held out entirely (none of their points or names in the skill). The leak tests now forbid every point the skill does not give and every class it does not list, derived from its own index. The test tasks `replay-mzero` and `r39-v5-main-pilot` no longer default to the skill. Decided by the user (§6.1) |
+| 2026-11-08 | R41's formal task takes the new split: simulation validation 18 (the 10 kept), final 25 (the 7 kept, 11 of them from the seven held-out classes), and the card's own sets, `board_validation` 18 (one per visible class, its largest shape under a minute of device time) and `board_final` 40 (after the run, with the 113-point board run). An in-run board request measures `board_validation`. The two FP8 block-scaled drafts wait for the base commit's registry. Decided by the user (§6.4) |
 
 **Open.**
 

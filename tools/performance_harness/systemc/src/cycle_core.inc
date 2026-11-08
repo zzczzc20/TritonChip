@@ -27,6 +27,7 @@ struct CycleCore {
     struct Result {u64 port=0;unsigned cls=0,rctx=0,idx=0,mask=0,src=0;u64 sdata=0;PhysicalRegisters::Vector vdata{};}; // cls 1 S,2 V,3 P; src 0 single,1 fpnorm,2 mul
     std::vector<Result> sched;                            // fp_v / mu_v tag pipelines
     struct WBStage {bool en=false;Result res;} w;         // w_*
+    Result out_res;                                       // the hybrid's completion register (out_*) [3.6]
     bool red_pend=false;Result red;                       // red_*
     u64 fpu_start=0,fpu_busy_until=0,fpu_done_at=0;bool fpu_red=false; // u_vfpu sequencer: busy during (x+1 .. busy_until), done pulse at done_at
     //------------------------------------------------------------ LSU [3.2]
@@ -37,8 +38,22 @@ struct CycleCore {
         u64 accept=0;std::vector<Beat> beats;unsigned next=0,outstanding=0;
         bool store=false,vector=false,amo=false,sign=false;unsigned rctx=0,dst=0,size=0,active=0;
         u64 last_issue=0;bool cpl=false;
+        std::vector<unsigned> q;                          // REQ_REG: the two-entry queue of planned beats [3.6]
+        bool line_ok=false;u64 line=0,lbe=0;unsigned loff=0;std::array<u64,8> lwdata{};   // the line path's form of the access
     };
-    Unit units[2];unsigned old=0;
+    Unit units[2];unsigned old=0;unsigned nunits=2;
+    //------------------------------------------------------------ R41 hybrid LSU [3.6]
+    // core_lsu_hybrid=1 (HYBRID_LSU, tnca_lsu_hybrid.v): X lands an access in the core's command
+    // register; the line path (tnca_lsu_line.v) takes a contiguous vector access of elements up to
+    // four bytes that fits one 64-byte line as one line request, the word path (one tnca_lsu with
+    // REQ_REG behind tnca_word_line_adapter.v) everything else; one path at a time (mode drain);
+    // every completion passes the hybrid's completion register before the writeback port.
+    bool hybrid=false,lsu_first=false;
+    bool cmd_pending=false;Unit cmd;
+    struct Line {bool valid=false,done=false,issued=false,store=false,sign=false;unsigned size=0,active=0,rctx=0,dst=0,off=0;u64 addr=0,be=0,rsp=0;std::array<u64,8> wdata{},rdata{};};
+    std::vector<Line> lines;unsigned nlines=0;bool fq_valid=false;unsigned fq_tag=0,line_rr=0,held_pick=0;bool held=false;
+    bool out_valid=false,out_fast=false,out_has=false;
+    std::unordered_map<u64,std::array<u64,8>> wide_rsp;   // trace only: the line each response carries on the 512-bit port
     //------------------------------------------------------------ engines [4]
     unsigned mtx_rctx=0;
     bool mtx_busy_q=false,txf_busy_q=false;unsigned txf_rctx=0;
@@ -62,7 +77,8 @@ struct CycleCore {
         auto bd=[&](const char* n,const Bundle& b){o<<" "<<n<<": valid="<<b.valid<<" rctx="<<b.rctx<<" pc="<<std::hex<<b.pc<<std::dec<<(b.valid&&b.in?std::string(" kind=")+kind_name(b.in->kind):std::string())<<"\n";};
         bd("f1",f1);bd("fb",fb);bd("d",d);bd("r",r);bd("x",xb);
         o<<" w.en="<<w.en<<" red_pend="<<red_pend<<" wb_rsv="<<wb_rsv<<" of_got="<<of_got<<" pf_tag="<<pf_tag<<" sched="<<sched.size()<<" fpu_busy_until="<<fpu_busy_until<<" mtx_busy="<<mtx_busy()<<" txf_busy="<<txf_busy()<<"\n";
-        for(unsigned i=0;i<2;++i){const Unit& u=units[i];o<<" lsu"<<i<<": st="<<u.st<<" beats="<<u.beats.size()<<" next="<<u.next<<" outstanding="<<u.outstanding<<" cpl="<<u.cpl<<"\n";}
+        for(unsigned i=0;i<nunits;++i){const Unit& u=units[i];o<<" lsu"<<i<<": st="<<u.st<<" beats="<<u.beats.size()<<" next="<<u.next<<" outstanding="<<u.outstanding<<" queued="<<u.q.size()<<" cpl="<<u.cpl<<"\n";}
+        if(hybrid){o<<" hybrid: cmd_pending="<<cmd_pending<<" line_ok="<<cmd.line_ok<<" lines="<<nlines<<" fq_valid="<<fq_valid<<" held="<<held<<" out_valid="<<out_valid<<" out_fast="<<out_fast<<"\n";}
         for(unsigned rc=0;rc<4;++rc){o<<" sb"<<rc<<":";for(unsigned i=0;i<64;++i){if(sb_s[rc][i])o<<" s"<<i;}for(unsigned i=0;i<64;++i){if(sb_v[rc][i])o<<" v"<<i;}for(unsigned i=0;i<16;++i){if(sb_p[rc][i])o<<" p"<<i;}o<<"\n";}
         return o.str();}
 
@@ -82,8 +98,11 @@ struct CycleCore {
             case 2:{auto& sl=txf.sl[tg.a];sl.rsp_hi=when;sl.dhi=data;break;}
             case 3:{auto& g=txf.tg[tg.a];g.rsp=when;u64 keepm=0;for(unsigned j=0;j<8;++j)if((g.xkeep>>j)&1)keepm|=255ULL<<(j*8);g.data=data&keepm;break;}
             case 4:txf.dl_rsp=when;txf.dl_data=data;break;
+            case 5:lines[tg.a].rsp=when;break;          // a line request: its data was captured at issue
         }
-        if(c.core_trace)c.core_trace.P(when,id,data);
+        if(c.core_trace){
+            if(hybrid){auto w=wide_rsp.find(id);std::array<u64,8> line{};if(w!=wide_rsp.end()){line=w->second;wide_rsp.erase(w);}c.core_trace.PW(when,id,line);}
+            else c.core_trace.P(when,id,data);}
     }
     void deliveries(){  // at the start of a cycle: every response due now
         for(size_t i=0;i<scheduled.size();){if(scheduled[i].when<=t){Scheduled s=scheduled[i];scheduled[i]=scheduled.back();scheduled.pop_back();deliver(s.id,t,s.data);}else ++i;}
@@ -105,6 +124,14 @@ struct CycleCore {
             for(;;){size_t e=s.find(':',b);if(e==std::string::npos){f.push_back(s.substr(b));break;}f.push_back(s.substr(b,e-b));b=e+1;}
             if(f.size()==5){vdbg_core=std::stol(f[0]);vdbg_launch=std::stol(f[1]);vdbg_from=std::stoull(f[2]);vdbg_to=std::stoull(f[3]);if(vdbg_core==long(c.id))vdbg.open(f[4]);}}
         replay=CoreReplay::open_for(c.id);
+        nunits=unsigned(x.c.get("lsu_slots"));require(nunits==1 || nunits==2,"the cycle core builds one or two word units (lsu_slots)");
+        hybrid=x.c.get_or("core_lsu_hybrid",0)!=0;lsu_first=x.c.get_or("core_tensor_line",0)!=0;
+        require(!lsu_first || hybrid,"core_tensor_line=1 needs core_lsu_hybrid=1");
+        if(hybrid){
+            require(nunits==1,"core_lsu_hybrid=1 models R41's one word unit (lsu_slots=1, LSU_INFLIGHT 1)");
+            u64 n=x.c.get_or("core_lsu_line_slots",64);require(n>=2 && n<=64 && (n&(n-1))==0,"core_lsu_line_slots is a power of two, 2..64");
+            lines.resize(n);
+        }
     }
     //------------------------------------------------------------ helpers
     static bool is_fpnorm(const Inst& in){return in.kind==K::Cvt || (in.kind==K::Vfp);} // VFP incl. vf.cmp, CVT [2.11]
@@ -238,6 +265,13 @@ struct CycleCore {
             unsigned active=vector?mask:(mask&1);
             PhysicalRegisters::Vector vd{},vb{};if(vector){if(store){vd=rV(rc,dd);}if(gather)vb=rV(rc,b);}
             Unit& u=e.req;u.st=1;u.accept=t;u.store=store;u.vector=vector;u.amo=false;u.sign=(mod&8)!=0;u.rctx=rc;u.dst=dd;u.size=size;u.active=active;
+            // the line path's eligibility and request [3.6] (tnca_lsu_line.v req_eligible: contiguous vector,
+            // elements up to four bytes, inside one 64-byte line, below 8 GiB, not the TMU page)
+            if(hybrid && vector && !gather && size<=4){const unsigned off=unsigned(base&63);
+                if(off+16*size<=64 && (base>>33)==0 && (base>>12)!=(0x7fff0000ULL>>12)){
+                    u.line_ok=true;u.line=base&~63ULL;u.loff=off;
+                    for(unsigned lane=0;lane<16;++lane)if(active&(1U<<lane))for(unsigned b=0;b<size;++b){unsigned at=off+lane*size+b;u.lbe|=1ULL<<at;
+                        if(store)u.lwdata[at>>3]|=((u64(vd[lane])>>(8*b))&255)<<((at&7)*8);}}}
             if(!active)break;             // nothing to do: the RTL still passes through the LSU? (tnca_lsu.v latches `active`; no beats, completes)
             std::map<u64,size_t> words;
             for(unsigned lane=0;lane<(vector?16U:1U);++lane){
@@ -374,10 +408,57 @@ struct CycleCore {
         if(uncore || replayed){got=c.tm->access(addr,store,data,store?be:255);}
         else when=c.tm->word(c.id,addr,store,data,store?be:255,at,got);
         if(replayed)when=at+latency;
-        if(c.core_trace)c.core_trace.Q(at,store,addr,store?be:0U,id,data);
+        if(c.core_trace){
+            if(hybrid){   // tnca_word_line_adapter.v: the word keeps its address, its bytes take their place in the line
+                std::array<u64,8> wd{},line{};const unsigned w=unsigned((addr&63)>>3);if(store)wd[w]=data;
+                c.core_trace.QW(at,store,addr,store?u64(be&255)<<(addr&63):0,id,wd);
+                if(!store){const u64 base=addr&~63ULL;for(unsigned k=0;k<8;++k)line[k]=c.tm->access(base+8*k,false,0,0);}
+                wide_rsp[id]=line;}
+            else c.core_trace.Q(at,store,addr,store?be:0U,id,data);}
         if(uncore && !replayed)uncore_request(id,at,addr,store,be,got);
         else schedule(id,when,got);
         return id;
+    }
+    // One line request of the hybrid's line path at cycle `at` [3.6]: the functional access of its
+    // words now (a store writes its enabled bytes; a load reads the whole line), the response by the
+    // memory timing in force.
+    void issue_line(unsigned k,u64 at,bool replayed,u64 latency){
+        Line& s=lines[k];const u64 id=next_id++<<5;targets[id]=Target{5,k,0};s.issued=true;s.rsp=0;
+        require(!uncore || replayed,"the cycle uncore has no line requests yet (R41 slice 2)");
+        u64 when=0;
+        if(replayed){
+            for(unsigned w=0;w<8;++w){unsigned be=unsigned((s.be>>(8*w))&255);
+                if(s.store){if(be)c.tm->access(s.addr+8*w,true,s.wdata[w],be);}else s.rdata[w]=c.tm->access(s.addr+8*w,false,0,255);}
+            when=at+latency;
+        }else{
+            require(x.c.get_or("tl_core_beat_bytes",8)==64,"line requests on the timeline need tl_core_beat_bytes=64");
+            std::vector<TimelineMemory::WideWord> words;
+            for(unsigned w=0;w<8;++w){unsigned be=unsigned((s.be>>(8*w))&255);if(!s.store || be)words.push_back({s.addr+8*w,s.wdata[w],s.store?be:255U});}
+            when=c.tm->wide(c.id,words,s.store,at);
+            if(!s.store)for(auto& w:words)s.rdata[unsigned((w.address&63)>>3)]=w.result;
+        }
+        if(c.core_trace){c.core_trace.QW(at,s.store,s.addr,s.be,id,s.store?s.wdata:std::array<u64,8>{});wide_rsp[id]=s.store?std::array<u64,8>{}:s.rdata;}
+        schedule(id,when,0);
+    }
+    // A completion's writeback: the word unit's (lanes assembled from its beats) or a line slot's.
+    Result unit_result(const Unit& u,bool& has){
+        has=!u.store;if(u.store)return Result{};   // a load always takes the port: with no active lane it writes nothing but releases its scoreboard bit [2.12]
+        if(u.vector){PhysicalRegisters::Vector out=rV(u.rctx,u.dst);std::array<u64,16> values{};
+            for(auto& beat:u.beats)for(auto& part:beat.parts){u64 pm=part.bytes==8?UINT64_MAX:((1ULL<<(part.bytes*8))-1);values[part.lane]|=((beat.rdata>>(part.offset*8))&pm)<<part.shift;}
+            for(unsigned lane=0;lane<16;++lane)if(u.active&(1<<lane)){u64 v=values[lane];if(u.sign && u.size<8 && (v&(1ULL<<(u.size*8-1)))){v|=UINT64_MAX<<(u.size*8);}out[lane]=std::uint32_t(v);}
+            return Result{t,2,u.rctx,u.dst,u.active,0,0,out};}
+        u64 v=0;for(auto& beat:u.beats)for(auto& part:beat.parts){u64 pm=part.bytes==8?UINT64_MAX:((1ULL<<(part.bytes*8))-1);v|=((beat.rdata>>(part.offset*8))&pm)<<part.shift;}
+        if(u.sign && u.size<8 && (v&(1ULL<<(u.size*8-1))))v|=UINT64_MAX<<(u.size*8);
+        return Result{t,1,u.rctx,u.dst,0,0,v,{}};
+    }
+    Result line_result(const Line& s,bool& has){   // tnca_lsu_line.v cpl_vdata: the landing shifted by the offset, lanes extended
+        has=!s.store;if(s.store)return Result{};
+        PhysicalRegisters::Vector out=rV(s.rctx,s.dst);
+        for(unsigned lane=0;lane<16;++lane)if(s.active&(1U<<lane)){u64 v=0;
+            for(unsigned b=0;b<s.size;++b){unsigned at=s.off+lane*s.size+b;v|=((s.rdata[at>>3]>>((at&7)*8))&255)<<(8*b);}
+            if(s.sign && s.size<4 && ((v>>(s.size*8-1))&1))v|=UINT64_MAX<<(s.size*8);
+            out[lane]=std::uint32_t(v);}
+        return Result{t,2,s.rctx,s.dst,s.active,0,0,out};
     }
     void uncore_request(u64 id,u64 at,u64 addr,bool store,unsigned be,u64 got);   // defined after CycleUncore
     bool uncore_ready()const;
@@ -396,10 +477,16 @@ struct CycleCore {
     bool fpu_done()const{return fpu_done_at==t;}
     bool mtx_busy()const{return mtx.busy();}
     bool txf_busy()const{return txf.busy();}
-    bool lsu_cpl_valid()const{return units[0].cpl || units[1].cpl;}
-    bool lsu_req_ready()const{return units[0].st==0 && units[1].st==0;}
+    // hybrid [3.6]: lsu_cpl_valid is the completion register; lsu_ready_load is the command register
+    // free (tnca_core.v g_lsu_hybrid: !pending); lsu_req_ready adds the hybrid idle (both paths quiet,
+    // no completion held).
+    bool hybrid_idle()const{return nlines==0 && !fq_valid && units[0].st==0 && !out_valid;}
+    bool lsu_cpl_valid()const{return hybrid?out_valid:(units[0].cpl || units[1].cpl);}
+    bool lsu_req_ready()const{return hybrid?(!cmd_pending && hybrid_idle()):(units[0].st==0 && units[1].st==0);}
     bool lsu_ready_load()const{
+        if(hybrid)return !cmd_pending;
         if(lsu_req_ready())return true;
+        if(nunits<2)return false;
         for(unsigned i=0;i<2;++i)if(units[i].st==0 && (units[1-i].st==3 || units[1-i].st==4) && !units[1-i].amo)return true;
         return false;}
     bool rctx_wr_busy(unsigned rc)const{for(unsigned i=1;i<64;++i){if(sb_s[rc][i])return true;}for(unsigned i=0;i<64;++i){if(sb_v[rc][i])return true;}for(unsigned i=1;i<16;++i){if(sb_p[rc][i])return true;}return false;}
@@ -407,6 +494,56 @@ struct CycleCore {
         return !any_running() && !f1.valid && !fb.valid && !d.valid && !r.valid && !xb.valid && lsu_req_ready() && !lsu_cpl_valid()
             && !fpu_busy() && !red_pend && !w.en && !mtx_busy() && !txf_busy() && wb_rsv==0;}
 
+    // The hybrid LSU's edge [3.6]. Every decision reads the pre-edge state; `out_ack` is the writeback
+    // port taking the completion register (ws_lsu), `fq_fired` / `sq_popped` the port taking the line
+    // path's request register / the word queue's head this cycle, `x_cmd` an access in X.
+    void hybrid_edge(bool out_ack,bool fq_fired,bool sq_popped,bool x_cmd,const Unit& xcmd){
+        Unit& u=units[0];
+        // pre-edge wires (tnca_lsu_hybrid.v)
+        const bool slow_idle=u.st==0,fast_quiet=nlines==0 && !fq_valid;
+        const bool fast_mode=slow_idle && !(out_valid && !out_fast),slow_mode=fast_quiet && !(out_valid && out_fast);
+        int free_tag=-1;for(unsigned k=0;k<lines.size();++k)if(!lines[k].valid){free_tag=int(k);break;}   // lowest free slot
+        const bool fast_ready=free_tag>=0 && (!fq_valid || fq_fired);
+        const bool consume=cmd_pending && (cmd.line_ok?(fast_mode && fast_ready):(slow_mode && slow_idle));
+        int pick=-1;   // tnca_lsu_line.v: a held pick, else round robin over the answered slots from rr
+        if(held)pick=int(held_pick);
+        else for(unsigned n=0;n<lines.size();++n){unsigned k=(line_rr+n)%unsigned(lines.size());if(lines[k].done){pick=int(k);break;}}
+        const bool fv=pick>=0,sv=u.cpl,buffer_ready=!out_valid || out_ack;
+        const bool have_slot=u.outstanding<NBEAT,q_full=u.q.size()>=2;
+        // the word unit (tnca_lsu.v, REQ_REG): responses free beat slots at this edge
+        bool rsp_now=false;
+        for(auto& beat:u.beats)if(beat.issued && !beat.done && beat.rsp && beat.rsp<=t){beat.done=true;--u.outstanding;if(beat.rsp==t)rsp_now=true;}
+        switch(u.st){
+            case 1:u.st=2;break;                                   // SETUP -> RUN
+            case 2:{const bool plan=u.next<u.beats.size(),issue_ok=plan && have_slot && !q_full;
+                const bool q_empty=u.q.empty() || (u.q.size()==1 && sq_popped);
+                if(sq_popped)u.q.erase(u.q.begin());
+                if(issue_ok){u.q.push_back(u.next);++u.next;++u.outstanding;}   // the beat slot is reserved at the push
+                if(!plan && !issue_ok && q_empty)u.st=3;          // RUN ends on the edge its queue empties
+                break;}
+            case 3:if(u.outstanding==0 && !rsp_now)u.st=4;break;
+            case 4:if(!u.cpl)u.cpl=true;break;                     // cpl_valid is registered in S_DONE
+            default:break;
+        }
+        // the line path's answered slots
+        for(auto& s:lines)if(s.valid && s.issued && !s.done && s.rsp && s.rsp<=t)s.done=true;
+        // the completion register: the writeback takes it; either path's completion lands when it is free
+        if(out_ack)out_valid=false;
+        if(buffer_ready && (fv || sv)){out_valid=true;out_fast=fv;out_res=fv?line_result(lines[unsigned(pick)],out_has):unit_result(u,out_has);}
+        if(fv){if(buffer_ready){lines[unsigned(pick)]=Line{};--nlines;line_rr=(unsigned(pick)+1)%unsigned(lines.size());held=false;}
+               else if(!held){held=true;held_pick=unsigned(pick);}}
+        if(sv && buffer_ready && !fv){u.cpl=false;u.st=0;u.beats.clear();u.next=0;u.outstanding=0;u.q.clear();}
+        // the line path's request register; the command register's access enters its path
+        if(fq_valid && fq_fired)fq_valid=false;
+        if(consume){
+            if(cmd.line_ok){Line& s=lines[unsigned(free_tag)];s=Line{};++nlines;
+                s.valid=true;s.done=cmd.active==0;s.store=cmd.store;s.sign=cmd.sign;s.size=cmd.size;s.active=cmd.active;s.rctx=cmd.rctx;s.dst=cmd.dst;
+                s.off=cmd.loff;s.addr=cmd.line;s.be=cmd.lbe;s.wdata=cmd.lwdata;
+                if(cmd.active){fq_valid=true;fq_tag=unsigned(free_tag);}}
+            else{require(u.st==0,"hybrid word path accepted a request while busy");u=cmd;u.st=1;u.cpl=false;u.q.clear();u.next=0;u.outstanding=0;}
+            cmd_pending=false;}
+        if(x_cmd){require(!cmd_pending,"hybrid command landing register overflow");cmd_pending=true;cmd=xcmd;}
+    }
     void step(){
         t=x.now();++*c_cycles;
         deliveries();
@@ -445,11 +582,13 @@ struct CycleCore {
             if(in.kind==K::Sfu && red_busy_next)stall_fpu=true;
             if(is_matrix_fu(in) && (mtx_busy_now || x_mtx_cmd))stall_mtx=true;
             if(is_txfer_fu(in) && (txf_busy_now || x_txf_cmd))stall_txf=true;
-            if(in.kind==K::Fence && (!lsu_req_ready() || lsu_cpl_valid() || rctx_wr_busy(rc)))stall_fence=true;
+            // hybrid: an access in X has not reached the command register yet, so it counts as issued [3.6]
+            const bool x_claim=hybrid && x_mem && xb.valid;
+            if(in.kind==K::Fence && (!lsu_req_ready() || lsu_cpl_valid() || rctx_wr_busy(rc) || x_claim))stall_fence=true;
             if(in.kind==K::Barrier && in.func==2){
                 bool arr_mtx=(mtx_busy_now && mtx_rctx==rc) || (x_mtx_cmd && xb.rctx==rc);
                 bool arr_txf=(txf_busy_now && txf_rctx==rc) || (x_txf_cmd && xb.rctx==rc);
-                if(rctx_wr_busy(rc) || !lsu_req_ready() || arr_mtx || arr_txf)stall_arrive=true;}
+                if(rctx_wr_busy(rc) || !lsu_req_ready() || x_claim || arr_mtx || arr_txf)stall_arrive=true;}
             if(books_wb(in) && (wb_rsv>>(wb_delay(in)+1))&1)stall_rsv=true;
         }
         // ---- operand fetch [2.9]
@@ -515,29 +654,34 @@ struct CycleCore {
         bool kill_r=(e.redirect && r.valid && r.rctx==xr) || rp_go;
         bool issue=!stall_front && r.valid && !kill_r;
         // ---- writeback port arbitration [2.12]
-        bool have_nw=false;Result nw;int cpl_unit=-1;bool red_grant=false;
+        bool have_nw=false;Result nw;int cpl_unit=-1;bool red_grant=false,out_ack=false;
         if(sched_wb){have_nw=true;if(fp_wb>=0)nw=sched[fp_wb];else if(mul_wb>=0){nw=sched[mul_wb];}else {nw=e.single;}}
-        else if(lsu_cpl_valid()){cpl_unit=units[old].cpl?int(old):int(1-old);Unit& u=units[cpl_unit];
-            if(!u.store){have_nw=true;   // a load always takes the port: with no active lane it writes nothing but releases its scoreboard bit [2.12]
-                if(u.vector){PhysicalRegisters::Vector out=rV(u.rctx,u.dst);std::array<u64,16> values{};
-                    for(auto& beat:u.beats)for(auto& part:beat.parts){u64 pm=part.bytes==8?UINT64_MAX:((1ULL<<(part.bytes*8))-1);values[part.lane]|=((beat.rdata>>(part.offset*8))&pm)<<part.shift;}
-                    for(unsigned lane=0;lane<16;++lane)if(u.active&(1<<lane)){u64 v=values[lane];if(u.sign && u.size<8 && (v&(1ULL<<(u.size*8-1)))){v|=UINT64_MAX<<(u.size*8);}out[lane]=std::uint32_t(v);}
-                    nw=Result{t,2,u.rctx,u.dst,u.active,0,0,out};
-                }else{u64 v=0;for(auto& beat:u.beats)for(auto& part:beat.parts){u64 pm=part.bytes==8?UINT64_MAX:((1ULL<<(part.bytes*8))-1);v|=((beat.rdata>>(part.offset*8))&pm)<<part.shift;}
-                    if(u.sign && u.size<8 && (v&(1ULL<<(u.size*8-1))))v|=UINT64_MAX<<(u.size*8);
-                    nw=Result{t,1,u.rctx,u.dst,0,0,v,{}};}
-            }}
+        else if(hybrid && out_valid){out_ack=true;if(out_has){have_nw=true;nw=out_res;nw.port=t;}}   // ws_lsu: the completion register [3.6]
+        else if(lsu_cpl_valid()){cpl_unit=units[old].cpl?int(old):int(1-old);bool has;Result res=unit_result(units[cpl_unit],has);
+            if(has){have_nw=true;nw=res;}}
         else if(red_pend){have_nw=true;nw=red;red_grant=true;}
         // ---- LSU beats on the port this cycle [3.2][3.3]: one request, engine priority not modelled
         bool port_used=false;
         CycleTensor::Req er=txf.request();bool efired=false;u64 eid=0;
         const bool mem_ready=!uncore || uncore_ready();   // mem_req_ready from the NoC [UNCORE 1.3]
-        if(er.valid && mem_ready){u64 latency;bool replayed;
-            if(replay_allows(latency,replayed)){if(replay)replay->advance(er.we,er.addr);
-                eid=issue_beat(er.addr,er.we,er.data,er.be,t,replayed,latency,true,txf.request_target(er));efired=true;port_used=true;}
-        }
+        bool fq_fired=false,sq_popped=false;
+        auto engine_go=[&]{u64 latency;bool replayed;
+            if(mem_ready && replay_allows(latency,replayed)){if(replay)replay->advance(er.we,er.addr);
+                eid=issue_beat(er.addr,er.we,er.data,er.be,t,replayed,latency,true,txf.request_target(er));efired=true;port_used=true;}};
+        if(hybrid){
+            // tnca_mem_mux.v: with TENSOR_LINE the LSU first (A_FIRST), else the LSU only when the engine has
+            // no request; inside the hybrid the line path's request register before the word queue's head [3.6]
+            Unit& u=units[0];const bool lsu_req=fq_valid || !u.q.empty();
+            if(lsu_req && (lsu_first || !er.valid)){u64 latency;bool replayed;
+                if(mem_ready && replay_allows(latency,replayed)){
+                    if(fq_valid){if(replay)replay->advance(lines[fq_tag].store,lines[fq_tag].addr);issue_line(fq_tag,t,replayed,latency);fq_fired=true;}
+                    else{const unsigned b=u.q.front();if(replay)replay->advance(u.beats[b].store,u.beats[b].addr);
+                        port_issue(u.beats[b],0,b,t,replayed,latency);u.last_issue=t;sq_popped=true;}
+                    port_used=true;}
+            }else if(er.valid)engine_go();
+        }else if(er.valid)engine_go();
         // tnca_mem_mux.v: the LSU is served only when the engine has no request at all [3.1]
-        for(unsigned k=0;k<2 && !port_used && !er.valid && mem_ready;++k){unsigned i=(old+k)%2;Unit& u=units[i];
+        for(unsigned k=0;k<2 && !hybrid && !port_used && !er.valid && mem_ready;++k){unsigned i=(old+k)%2;Unit& u=units[i];
             if(u.st==2 && u.next<u.beats.size() && u.outstanding<NBEAT){
                 u64 latency;bool replayed;
                 if(!replay_allows(latency,replayed))continue;   // the RTL's memory accepted it later (back-pressure): wait
@@ -550,6 +694,8 @@ struct CycleCore {
         //==================== the edge
         // launch is handled in launch(); here the pipeline rules.
         // responses that arrive this cycle: bt_valid cleared at this edge [3.2]
+        if(hybrid)hybrid_edge(out_ack,fq_fired,sq_popped,xb.valid && xin->kind==K::Lsu && e.req.st==1,e.req);
+        else{
         for(auto& u:units)for(auto& beat:u.beats)if(beat.issued && !beat.done && beat.rsp && beat.rsp<=t){beat.done=true;--u.outstanding;}
         // LSU unit state machines
         for(unsigned i=0;i<2;++i){Unit& u=units[i];
@@ -566,8 +712,9 @@ struct CycleCore {
         if(cpl_unit>=0 && !sched_wb){Unit& u=units[cpl_unit];u.cpl=false;u.st=0;u.beats.clear();u.next=0;u.outstanding=0;old=1-unsigned(cpl_unit);}
         // the memory request accepted in X [3.2]
         if(e.mem_go || (xb.valid && xin->kind==K::Lsu && !e.req.active && e.req.st==1)){
-            unsigned i=units[0].st==0?0:1;require(units[i].st==0,"LSU accepted a request with no idle unit");
+            unsigned i=units[0].st==0?0:1;require(units[i].st==0 && i<nunits,"LSU accepted a request with no idle unit");
             units[i]=e.req;units[i].st=1;if(units[0].st!=0 && units[1].st!=0){old=1-i;}else {old=i;}
+        }
         }
         const bool w_pre_en=w.en;const unsigned w_pre_rctx=w.res.rctx;
         // the engine's register read answered this cycle (port 4), then its edge [4.2]
@@ -674,7 +821,8 @@ struct CycleCore {
         mtx.reset();mtx_busy_q=txf_busy_q=false;
         txf.reset();for(auto& barrier:c.barriers)barrier.reset();
         if(replay)replay->start_launch();
-        scheduled.clear();targets.clear();
+        scheduled.clear();targets.clear();wide_rsp.clear();
+        require(!hybrid || (hybrid_idle() && !cmd_pending),"hybrid LSU busy at a launch");
         if(uncore)uncore_launch(l.pc,l.roles);
         if(c.core_trace)c.core_trace.L(t,l.pc,unsigned(l.roles));
     }

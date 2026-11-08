@@ -168,7 +168,10 @@ struct Config {
         static const std::vector<std::string> k={"mtx_dp","mtx_dp_extra_latency","mtx_dp_prefetch","mtx_dp_group_16","mtx_dp_group_8","mtx_dp_b_prefetch","tl_core_beat_bytes","tl_noc_payload_bytes","tl_lsu_units","tl_memory_lanes","tl_lsu_shared_issue","tl_pc_stripe_bytes","tl_prefetch_lines",
             // R41 G4 what-ifs (default off): full-line writes allocate without a memory read
             // (HOME_LINE_WRITE_NOFILL); the line-wide multi-command tensor engine.
-            "tl_full_line_nofill","tl_slice_install_occupancy","dma_line_engine","dma_line_buffers","dma_line_rf_cycles","dma_line_combine"};return k;}
+            "tl_full_line_nofill","tl_slice_install_occupancy","dma_line_engine","dma_line_buffers","dma_line_rf_cycles","dma_line_combine",
+            // The cycle core (core_model=1) on R41: the hybrid LSU (HYBRID_LSU, its line path's LINE_SLOTS) and the
+            // line-wide tensor engine's port priority (TENSOR_LINE: the LSU first, tnca_mem_mux A_FIRST).
+            "core_lsu_hybrid","core_lsu_line_slots","core_tensor_line"};return k;}
     u64 get_or(const std::string& k,u64 fallback)const{auto i=v.find(k);return i==v.end()?fallback:i->second;}
     // Hot-path copies of fixed geometry (set once by cache_hot()).
     u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;

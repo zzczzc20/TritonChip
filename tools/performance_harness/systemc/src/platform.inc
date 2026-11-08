@@ -41,6 +41,14 @@ struct CoreTrace {
             (unsigned long long)addr,be,(unsigned long long)tag,(unsigned long long)wdata);out<<line;}
     void P(u64 cycle,u64 tag,u64 rdata){char line[64];
         std::snprintf(line,sizeof line,"P %llu %llu %016llx\n",(unsigned long long)cycle,(unsigned long long)tag,(unsigned long long)rdata);out<<line;}
+    // R41's line-wide core port (HYBRID_LSU, tnca_core_trace.v at MEM_DW 512): 64 byte enables and
+    // 512 data bits, most significant word first, as the RTL monitor prints them.
+    static void hex512(char* p,const std::array<u64,8>& d){for(int w=7;w>=0;--w){std::snprintf(p,17,"%016llx",(unsigned long long)d[unsigned(w)]);p+=16;}}
+    void QW(u64 cycle,bool we,u64 addr,u64 be,u64 tag,const std::array<u64,8>& wdata){char h[129];hex512(h,wdata);char line[240];
+        std::snprintf(line,sizeof line,"Q %llu %u %016llx %016llx %llu 0 %s\n",(unsigned long long)cycle,we?1U:0U,
+            (unsigned long long)addr,(unsigned long long)be,(unsigned long long)tag,h);out<<line;}
+    void PW(u64 cycle,u64 tag,const std::array<u64,8>& rdata){char h[129];hex512(h,rdata);char line[180];
+        std::snprintf(line,sizeof line,"P %llu %llu %s\n",(unsigned long long)cycle,(unsigned long long)tag,h);out<<line;}
     void E(u64 cycle){out<<"E "<<cycle<<"\n";out.flush();}
     // Beside the trace: one line per distinct pc, `K pc kind major func mod d a b c` (what the model decoded there)
     void K(u64 pc,const char* kind,unsigned major,unsigned func,unsigned mod,unsigned d,unsigned a,unsigned b,unsigned c){

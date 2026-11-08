@@ -37,6 +37,18 @@ the gate when a kernel reaches it: response reordering on the port, atomics
 (refused as before). On the suite's smallest tier (2026-10-27) every point
 aligns exactly in replay mode (evidence/model-align/slice1).
 
+**R41 (`core_lsu_hybrid=1`, CORE_TIMING 3.6).** The R41 core's memory side is
+the hybrid LSU: a command register between X and the LSU, a line path that
+sends a contiguous vector access as one 64-byte request (64 slots, completion
+round robin), the word path as one unit with the two-entry request queue, a
+completion register in front of the writeback port, and the LSU ahead of the
+transfer engine on the port (`core_tensor_line=1`). The 64-byte port is traced
+in the RTL monitor's 512-bit form. With the switch off the R40 rules stand
+unchanged. Not yet in the model: TENSOR_LINE's line-wide multi-command transfer
+engine (`tnca_tensor` LINE_ENGINE: the engine still issues 8-byte beats), the
+matrix operand register (MTX_VRF_REG), the G2 FMA rebuild (FMA_IMPL 1), line
+requests in the cycle uncore (slice 2).
+
 Validation path: `record_model.py --replay RTL_RUN` gives every point's
 model process the RTL trace of that point; the replay port checks each LSU
 beat's address and direction against the record, issues no earlier than the

@@ -522,6 +522,93 @@ consumer in X at p+6 (2.13), plus any `wb_steal` cycles.
 its context outstanding; in X it does nothing (1946-1947). `mb.arrive`: same
 LSU condition plus engine conditions (2.8).
 
+### 3.6 R41: the hybrid LSU (HYBRID_LSU=1)
+
+R41's device (`spec/devices/u280-3core-r41.json`: HYBRID_LSU 1, LINE_SLOTS 64,
+TENSOR_LINE 1; profile LSU_INFLIGHT 1) replaces 3.2-3.4 with `tnca_core.v`
+`g_lsu_hybrid` (1762-1841) around `tnca_lsu_hybrid.v`. The core port is 512
+bits (MEM_SHIFT 6); the model switch is `core_lsu_hybrid=1` with
+`core_lsu_line_slots`, `core_tensor_line` and `lsu_slots=1`.
+
+**Command register** (`g_lsu_hybrid` 1786-1802). X does not hand the access to
+an engine: `x_mem_go` sets `pending` and latches the command at `E_x`. It
+leaves at the edge of the first cycle with `consume = pending && (amo ?
+hybrid_idle : hybrid_ready_load)`.
+
+| core wire | hybrid | R40 (3.3) |
+|---|---|---|
+| `lsu_ready_load` (plain load/store in R) | `!pending` | idle unit, or the other draining |
+| `lsu_req_ready` (atomic, fence, arrive, `core_idle`) | `!pending && hybrid_idle` (`hybrid_idle` = line path quiet, word unit idle, no completion held, no atomic pending) | both units idle |
+| `stall_fence`, `stall_arrive` | add `x_mem_claim` (an access in X has not reached the register yet, 2484-2517) | -- |
+
+So memory instructions issue at best every third cycle (M1 in X at c, pending
+during c+1, M2 passes R at c+2 and is in X at c+3), however busy the paths
+behind the register are. `stall_lsu` keeps `!x_mem_claim` (R41 F01: X's
+opcode, not `x_mem_go`).
+
+**Which path** (`tnca_lsu_line.v` 52-55, `req_eligible`): the line path takes a
+contiguous (not indexed) vector access, not atomic, of B/H/W elements
+(`req_size <= 2`), whose `16 << size` bytes from `address[5:0]` fit one 64-byte
+line, below 8 GiB (`address[63:33] == 0`), outside the TMU page. Everything
+else (scalars, 64-bit lanes, gathers/scatters, atomics, a vector access
+crossing a line) takes the word path. One path at a time
+(`tnca_lsu_hybrid.v` 82-87):
+
+| path admits when | condition |
+|---|---|
+| line (`fast_mode && fast_ready`) | word unit idle, the completion register not holding a word completion, a free slot, the request register empty or leaving this cycle |
+| word (`slow_mode && slow_ready`) | no line slot valid and the request register empty, the completion register not holding a line completion, the unit idle |
+
+**Line path** (one access = one request; SLOTS = LINE_SLOTS = 64 tags 64..127
+on the port, `{1, slot}`). Access consumed at k:
+
+| cycle | what happens | line |
+|---|---|---|
+| k | `admit`: lowest free slot; `done <= (mask == 0)`; with lanes, `q_valid <= 1`, address = line, `be = packed_mask << offset` (loads too), write data packed and shifted (stores) | 111-128 |
+| k+1 .. | `mem_req_valid = q_valid`; leaves when `mem_req_ready`, then `issued[tag]` | 109 |
+| p (response) | `done[tag]`, `landing[tag] <= rdata` at `E_p` | 131 |
+| p+1 | `cpl_valid` = a held pick, else round robin from `rr` over done slots; `retire` when the completion register takes it (then `rr <= pick+1`); not taken: the pick is held | 82-90, 132-135 |
+
+A store waits for its response as a load does. With no active lane the slot is
+done at admission and completes without a request.
+
+**Word path** = one `tnca_lsu` (SLOW_UNITS 1 for LSU_INFLIGHT 1; 3.2) with the
+R41 F10 request queue (REQ_REG=1, `tnca_lsu.v` 332-402), behind
+`tnca_word_line_adapter.v`. Its 8-byte beats keep their address and travel at
+`addr[5:0]` of the line (`be << addr[5:0]`, data likewise); the response is the
+whole line. Changes to 3.2:
+
+| cycle | what happens |
+|---|---|
+| k | access consumed: S_IDLE -> S_SETUP |
+| k+1 | S_SETUP -> S_RUN |
+| k+2 .. | S_RUN: a planned beat is pushed into a two-entry queue (`issue_ok = plan_valid && have_slot && !q_tv`); its beat slot is reserved and its lanes retired at the push |
+| push+1 .. | the queue head is on the port (`mem_req_valid = q_hv`), popped on `mem_req_ready` |
+| | S_RUN -> S_DRAIN on the edge the queue empties (`!plan_valid && !issue_fire && q_empty`), then as 3.2 |
+
+**Completion register** (`tnca_lsu_hybrid.v` 97-121): either path's completion
+lands in `out_*` when it is free or being taken this cycle (`buffer_ready =
+!out_valid || cpl_ack`), the line path's first (the modes never overlap). The
+core's `lsu_cpl_valid` is `out_valid`; writeback arbitration is 3.4's
+(`ws_lsu = out_valid && !sched_wb`; a store takes the slot with `nw_en = 0`).
+One cycle more than R40 from a path's completion to the WB stage.
+
+| from the last response p | line path | word path |
+|---|---|---|
+| completion register loaded | `E_{p+1}` | `E_{p+3}` (DRAIN -> DONE at `E_{p+1}`, `cpl_valid` at `E_{p+2}`) |
+| writeback port (no `sched_wb`) | p+2 | p+4 |
+| next access of the same path consumed | as soon as a slot is free | p+4 (unit idle), first beat on the port p+7 |
+
+**Port priority** (`tnca_mem_mux.v` A_FIRST = TENSOR_LINE && HYBRID_LSU): the
+LSU first, the transfer engine only when the LSU has no request (the reverse of
+3.1). Inside the LSU the line path's request comes first (both never have one).
+
+Trace (`tnca_core_trace.v` at MEM_DW 512): `Q` carries 64 byte enables and 512
+data bits, `P` the 512-bit line; the model's `CoreTrace::QW/PW`. Verified in
+core replay, one core, on the smallest tier's elementwise and reduction kernels
+that use no transfer engine: every launch exact (one of them 2,486 cycles, where
+the R40 rules gave 4,384).
+
 ## 4. The engines
 
 ### 4.1 Matrix engine (`tnca_matrix.v`)

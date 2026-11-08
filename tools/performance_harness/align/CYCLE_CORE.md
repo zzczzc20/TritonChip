@@ -54,6 +54,11 @@ or four, the MAC lanes' five-cycle result pipeline (`core_mtx_pipe=5`) and the
 registered port-3 response (`core_mtx_vrf_reg=1`). With the switches off the
 R40 rules stand unchanged. Not yet in the model: line requests in the cycle
 uncore (slice 2); anything else R41 changed shows up as the gate reaches it.
+On the R41 base (`r41-board-core.cfg`, core-level replay) every point of the
+suite's smallest tier aligns exactly in every stream on every launch
+(2026-11-08). No point of that tier issues a line store from the transfer
+engine, so that path (CORE_TIMING 4.4) follows the RTL's text but has not yet
+been compared with a recording.
 
 Validation path: `record_model.py --replay RTL_RUN` gives every point's
 model process the RTL trace of that point; the replay port checks each LSU

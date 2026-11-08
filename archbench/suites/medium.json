@@ -23,7 +23,8 @@
   "silu",
   "softmax",
   "swiglu",
-  "transpose"
+  "transpose",
+  "w8a8_block_linear"
  ],
  "points": [
   {
@@ -279,9 +280,19 @@
    "track": [
     "general"
    ]
+  },
+  {
+   "dtype": "e4m3",
+   "family": "w8a8_block_linear",
+   "id": "op.w8a8_block_linear/medium/e4m3-to-bf16-m1-k384-n384",
+   "kind": "op",
+   "sha256": "83cfbd245cce0a812b150b686351a525eb75db8cf23fbfb39fe8431efde96daf",
+   "track": [
+    "llm"
+   ]
   }
  ],
  "schema": "archbench-suite/1",
- "sha256": "f79429252a41ee2f00ee17bdf15da6e8e9dc56a577cb994fb90fa777679f8470",
+ "sha256": "120b4c609abccbb6934317feab95de4ac78c39ceb39cc71964efc0f2b19e0228",
  "tier": "medium"
 }

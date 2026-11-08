@@ -54,6 +54,13 @@ from .task import Task, board_points
 
 MOUNT = "/run/tnca-board"
 BACKEND = "fpga-u280-multicore-relay"
+# The device cycles one launch may take on the card (TNCA_DEADLINE). archbench.run's own default, 2e8 (2 s at
+# 100 MHz), is a simulator's: R41's board points run up to a minute of device time and a single launch of the
+# larger ones (a 4096-cube matmul, an HBM-sized transpose) passes 2 s, so they ended as runtime faults at 2e8
+# cycles (R41-F2's base, 2026-11-09). The value is the R41 pilot's board measurements' (board_pilot.py), on
+# which the point split's "under a minute of device time" was judged; the session's own time limit still bounds
+# a launch that hangs.
+DEADLINE_CYCLES = 200_000_000_000
 IDLE_SECONDS = 900
 POLL_SECONDS = 20
 MARGIN = 120              # seconds of a session kept back for the relay's own end
@@ -288,7 +295,8 @@ def session(site: Site, repo: Path, task: Task, image: dict, tag: str, deadline_
 def _env(task: Task, cores: int, timeout: float) -> str:
     return (f"TNCA_BACKEND={BACKEND} TNCA_BACKEND_ARGS=\"$(cat /out/backend.json)\" "
             f"TNCA_OPERATING_CLOCK_EVIDENCE=/out/clock_evidence.json "
-            f"TNCA_COMPILE_CACHE_DIR=/caches/tnca-inductor TNCA_ACTIVE_CORES={cores} TNCA_HOST_TIMEOUT={timeout:g}")
+            f"TNCA_COMPILE_CACHE_DIR=/caches/tnca-inductor TNCA_ACTIVE_CORES={cores} TNCA_HOST_TIMEOUT={timeout:g} "
+            f"TNCA_DEADLINE={DEADLINE_CYCLES}")
 
 
 def _container(site: Site, name: str, host_tree: Path, out: Path, caches: Path, socket_dir: Optional[Path],

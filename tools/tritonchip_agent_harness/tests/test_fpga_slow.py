@@ -432,3 +432,14 @@ class Placement(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BoardLaunchDeadline(unittest.TestCase):
+    """R41-F2's base (2026-11-09): six board points ended as runtime faults at archbench.run's default
+    deadline of 2e8 cycles; a board measurement gives each launch the pilot's deadline instead."""
+
+    def test_board_points_get_the_pilots_deadline(self) -> None:
+        task = load_task(HERE / "tasks" / "r41-dp-formal")
+        env = board._env(task, 3, 600)
+        self.assertIn(f"TNCA_DEADLINE={board.DEADLINE_CYCLES}", env.split())
+        self.assertGreaterEqual(board.DEADLINE_CYCLES, 60 * 100_000_000)   # a minute of device time at 100 MHz

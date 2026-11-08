@@ -206,6 +206,30 @@ class U50Run:
 _FLOW_CLOCK = re.compile(r"(?m)^EXPECT_MHZ=(?:\$\{TNCA_KERNEL_MHZ:-(\d+)\}|(\d+))\s*$")
 
 
+_BITSTREAM_DATA = ("devint/bsdata.cfg", "devint/bsoptions.cfg")
+
+
+def bitstream_device_data(vitis_root: Path, vivado: str, part: str | None) -> tuple[bool, str] | None:
+    """Whether the Vivado a link runs has the device data `part`'s bitstream is written from: (ok, where),
+    or None for a part this check does not know. Every Alveo UltraScale+ part (xcu*) writes its bitstream
+    from the virtexuplus family's devint data, even an HBM part whose own family is virtexuplusHBM; an
+    installation without that family routes the design and fails write_bitstream hours later (RSCL,
+    2026-11-08: "Bitstream generation is not supported for part xcu280-fsvh2892-2L-e"). The Vivado is the
+    one beside the Vitis root (AMD's layout, .../Vitis/2023.2 and .../Vivado/2023.2), else the one on PATH."""
+    if not part or not part.startswith("xcu"):
+        return None
+    roots = [vitis_root.parent.parent / "Vivado" / vitis_root.name]
+    found = shutil.which(vivado)
+    if found:
+        roots.append(Path(found).resolve().parent.parent)
+    for root in roots:
+        family = root / "data" / "parts" / "xilinx" / "virtexuplus"
+        if all((family / name).is_file() for name in _BITSTREAM_DATA):
+            return True, str(family)
+    return False, "no virtexuplus bitstream data under " + " or ".join(
+        str(r / "data" / "parts" / "xilinx") for r in roots)
+
+
 def flow_clock(link_text: str) -> tuple[int | None, bool]:
     """(the flow's default kernel clock in MHz, whether it takes TNCA_KERNEL_MHZ)."""
     m = _FLOW_CLOCK.search(link_text)
@@ -435,6 +459,14 @@ class U50Adapter:
                 warnings.append("unzip unavailable (planning mode): v++ --link needs it to unpack the .xo")
             add("unzip", bool(found) or dry_run or not require_vendor_tools, found or "unzip",
                 "warning" if (dry_run or not require_vendor_tools) and not found else "error")
+            # The part's bitstream data: without it the link routes and then fails write_bitstream.
+            data = bitstream_device_data(c.vitis_root, c.vivado, c.package_part)
+            if data is not None:
+                ok, where = data
+                if not ok and (dry_run or not require_vendor_tools):
+                    warnings.append(f"bitstream device data unavailable (planning mode): {where}")
+                add("bitstream_data", ok or dry_run or not require_vendor_tools, where,
+                    "warning" if (dry_run or not require_vendor_tools) and not ok else "error")
 
         if stage == "full":
             existing = _existing_vendor_processes()

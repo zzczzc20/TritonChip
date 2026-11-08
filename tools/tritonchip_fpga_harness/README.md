@@ -820,7 +820,12 @@ remote command does not read the login shell's profile) that also reaches a
 system `unzip`, which `v++ --link` calls to unpack the kernel `.xo` and
 settings64 does not provide (the doctor checks it; x86vivado has none, so its
 `PATH` ends in a directory that holds one), on a card server the ArchBench
-interpreter. Every value is one shell-safe token that does not start
+interpreter. The Vivado beside that Vitis must also hold the device data the
+part's bitstream is written from: for every Alveo UltraScale+ part (`xcu*`),
+`data/parts/xilinx/virtexuplus/devint/` (`bsdata.cfg`, `bsoptions.cfg`), even
+for an HBM part whose own family is `virtexuplusHBM`. An installation without
+that family routes the design and fails `write_bitstream` hours later (RSCL,
+2026-11-08); the doctor checks it (`bitstream_data`). Every value is one shell-safe token that does not start
 with `-`; anything else is refused when the file is read. The harness passes
 `--` before the destination, and quotes for the remote shell every word it did
 not take from the hosts file.

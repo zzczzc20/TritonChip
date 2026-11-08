@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -109,6 +110,63 @@ class WorkspaceTest(unittest.TestCase):
         self.assertEqual((tree / "tb/t.v").read_text(), FILES["tb/t.v"])
         self.assertEqual((tree / "doc/r39_report.md").read_text(), FILES["doc/r39_report.md"],
                          "hidden from the agent, but the evaluator builds from the full base")
+
+
+REPO = HERE.parents[1]
+
+
+def staged_sources(makefile: str) -> list:
+    """What the Makefile's data staging (r2-stage-data) copies: the sources of each `cp` in its recipe."""
+    m = re.search(r"^r2-stage-data:\n((?:\t.*\n)+)", makefile, re.M)
+    if not m:
+        return []
+    sources = []
+    for line in m.group(1).splitlines():
+        for cmd in line.split("&&"):
+            words = cmd.strip().lstrip("@").split()
+            if words[:1] == ["cp"]:
+                sources += [w for w in words[1:-1] if not w.startswith("-")]
+    return sources
+
+
+def matches(source: str, paths) -> bool:
+    if "*" in source:
+        pattern = re.compile(re.escape(source).replace(r"\*", "[^/]*"))
+        return any(pattern.fullmatch(p) for p in paths)
+    source = source.removesuffix("/.").rstrip("/")
+    return any(p == source or p.startswith(source + "/") for p in paths)
+
+
+class TheAgentsTreeBuildsTest(unittest.TestCase):
+    """Before make builds the device simulator it stages the package's data (r2-stage-data), copying spec/,
+    compiler/targets/, isa/, rtl/ and tb/ into python/tnca/data/. A hide list that takes every file a copy
+    names stops that copy, and with it every make target behind it, in the agent's tree; the copy deletes the
+    staged data first, so what it leaves is half a package. Run 6180's agent met this with spec/r40/ hidden
+    whole. The tasks of runs to come are held to it; a finished run's task stays what that run saw."""
+
+    TASKS = ("r41-dp-formal",)
+
+    def test_every_staged_source_is_in_the_agents_tree(self):
+        from tritonchip_agent_harness.task import load_task
+        from tritonchip_agent_harness.workspace import visible_tree
+        for name in self.TASKS:
+            task = load_task(HERE / "tasks" / name / "task.json")
+            try:
+                makefile = git("show", f"{task.base_commit}:Makefile", cwd=REPO).decode()
+            except WorkspaceError:  # a checkout without the base commit's objects
+                self.skipTest(f"{task.base_commit[:12]} is not in this repository")
+            sources = staged_sources(makefile)
+            self.assertIn("spec/r40/*.json", sources, "the staging recipe was not found")
+            paths = set(visible_tree(REPO, task.base_commit, task.hide))
+            for source in sources:
+                self.assertTrue(matches(source, paths), f"{name}: make's staging copies {source}, which the task hides")
+
+    def test_hiding_all_of_a_staged_glob_is_caught(self):
+        sources = ["spec/r40/*.json", "rtl/.", "tools/asm/tnca_asm.py"]
+        paths = {"spec/r40/a.json", "spec/r40/v2/b.json", "rtl/core/x.v", "tools/asm/tnca_asm.py"}
+        self.assertTrue(all(matches(s, paths) for s in sources))
+        self.assertFalse(matches("spec/r40/*.json", {"spec/r40/v2/b.json"}), "a glob does not reach a subdirectory")
+        self.assertFalse(matches("rtl/.", {"rtl2/x.v"}))
 
 
 if __name__ == "__main__":

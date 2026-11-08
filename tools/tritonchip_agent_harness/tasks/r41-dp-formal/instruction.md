@@ -192,3 +192,19 @@ with the model's hook first on `PYTHONPATH` and the model as the backend:
   follows `LSU_INFLIGHT` and the cache's `SETS` in direction and size; it is
   blind to the compiler's register-bank allocation, so a change of that kind
   needs the simulator. A difference smaller than its error is not evidence.
+- **CA Model** (`configs/r41-board-cycle.cfg`): cycle-accurate from the cores
+  to the memory's AXI adapters: every core's pipeline, register-file banks,
+  LSU, transfer and matrix engines, then the dispatcher, the mesh, each core's
+  home cache and the adapters, as the RTL has them. Checked against the
+  simulator with the memory's timing replayed from a recording, it matched
+  every cycle of every recorded stream. On its own, the memory behind the
+  adapters (HBM, the AXI slave) is a fixed-latency stand-in, and that is where
+  its error comes from: on small visible cases a median of 2 %, +17 % at worst
+  (a memory-bound case). It follows the compiler fully (it runs your program
+  instruction by instruction, register banks included), so it sees what the
+  Event Model cannot; it follows the hardware only through its configuration's
+  keys. Some mechanisms no recording has reached yet (a dirty line's eviction,
+  a home request blocked for want of an MSHR, the transfer engine's line
+  stores). Its card, `configs/r41-board-cycle.error_card.md`, has the details.
+  It is slower than the Event Model: a few seconds per small case, roughly
+  10,000 to 40,000 device cycles per second of host time.

@@ -40,7 +40,7 @@ sys.path.insert(0, str(ROOT))
 from archbench import registry     # noqa: E402
 
 EXISTING = ('tiny', 'small', 'medium')
-FP8_FAMILIES = ('scaled_mm', 'w8a8_linear', 'wfp8_linear')
+FP8_FAMILIES = ('scaled_mm', 'w8a8_linear', 'wfp8_linear', 'w8a8_block_linear')
 POINTWISE = ('add', 'silu', 'gelu_tanh', 'swiglu', 'copy', 'softmax', 'rmsnorm', 'layernorm',
              'argmax', 'cumsum', 'rope')
 GEMM = ('matmul', 'linear', 'gemv', 'bmm', 'mlp')
@@ -124,7 +124,8 @@ def subsets():
 
     # R40's subsets predate the FP8 GEMM points (archbench/ops.py scaled_mm,
     # w8a8_linear and wfp8_linear, registered 2026-11-06 for the R41 start of
-    # the agent harness): those are R41's points, not R40 acceptance points,
+    # the agent harness; w8a8_block_linear, 2026-11-08, the block-scaled FP8
+    # decode linear): those are R41's points, not R40 acceptance points,
     # so the frozen spec/r40 suites keep their membership.
     existing = [p for t in EXISTING for p in by_tier.get(t, []) if p.family not in FP8_FAMILIES]
     large, hbm = by_tier.get('large', []), by_tier.get('hbm', [])
@@ -162,7 +163,10 @@ def subsets():
         [p for p in by_tier.get('medium', []) + by_tier.get('hbm', []) if p.family in GEMM])
     add('R40-04.streaming', f'hbm points of the families {", ".join(STREAMING)}',
         [p for p in hbm if p.family in STREAMING])
-    big = by_tier.get('medium', []) + by_tier.get('large', []) + by_tier.get('hbm', [])
+    # R41's FP8 points stay out of R40's medium/large/hbm subsets too (the block FP8 decode linear has a
+    # medium point, 2026-11-08), as they stay out of the existing tiers above.
+    big = [p for p in by_tier.get('medium', []) + by_tier.get('large', []) + by_tier.get('hbm', [])
+           if p.family not in FP8_FAMILIES]
     add('R40-05.compute',
         f'medium, large and hbm points with at least 1e9 MACs -- 16x16 output tiles then give a '
         f'grid of at least 32 x {ACTIVE_CORES} programs -- and arithmetic intensity >= 32 FLOP/B',

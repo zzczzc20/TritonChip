@@ -249,6 +249,7 @@ struct Frame {
     bool sliced=false;unsigned slice_id=0,slice_k=2;
     sc_time fetch_ready=SC_ZERO_TIME; // core_pipeline: refetch after a taken branch
     sc_time ahead=SC_ZERO_TIME;       // time_quantum: this context's local time - simulation time
+    sc_time r_slot=SC_ZERO_TIME;bool has_r_slot=false; // tl_stall_front: the X slot a stall in R ended on
     Frame(std::shared_ptr<PhysicalRegisters> bank,unsigned base):physical(std::move(bank)),vbase(base){require(base<=192,"vector mapping overflow");p[0]=65535;}
 };
 // One program's launch on one core: the role mask's context bits, RPAIR
@@ -265,9 +266,26 @@ struct Launch {
 };
 struct Outcome {unsigned status=STATUS_OK,code=0;u64 pc=0,retired=0;std::string why;};
 
+#include "platform.inc"
+struct CycleCore;
 struct Core : sc_module {
+    std::unique_ptr<CycleCore> cyc;   // core_model=1: the cycle-level core (cycle_core.inc)
+    // Core trace (align/README.md section 2), the validation path's view of
+    // this core: the platform's CoreTrace (platform.inc) decides the file.
+    CoreTrace core_trace;u64 trace_tag=0;
+    void trace_open(){
+        core_trace.open(x,id);if(!core_trace)return;
+        tensor.trace_beat=[this](u64 at,bool store,u64 addr,unsigned be,u64 data,u64 when,u64 got){
+            const u64 tag=16|(trace_tag++<<5);core_trace.Q(at,store,addr,be,tag,data);core_trace.P(when,tag,got);};
+    }
+    ~Core(){core_trace.close(x.now());}
     tlm_utils::simple_initiator_socket<Core> memory;
     Context& x;unsigned id;CodeCache& code;sc_time cycle;Resource issue;Limit lsu;sc_time sfu_available=SC_ZERO_TIME;
+    // tl_fp_fold=1 (tnca_core.v red_busy_next): after an FP reduction reaches X an
+    // ordinary FP op waits tl_fp_fold_fp_wait cycles and the next reduction or SFU
+    // pass tl_fp_fold_next; a reduction or SFU pass also waits for the FP ops in
+    // flight (one completion port, the FMA array's operands).
+    bool fold=false;u64 t_fold_fp=14,t_fold_next=16;sc_time fold_fp_free=SC_ZERO_TIME,fold_next_free=SC_ZERO_TIME,fp_busy_until=SC_ZERO_TIME;
     std::array<BarrierModel,32> barriers;
     TensorEngine tensor;Pool beats;
     std::shared_ptr<PhysicalRegisters> vrf=std::make_shared<PhysicalRegisters>();
@@ -297,6 +315,10 @@ struct Core : sc_module {
         *c_fence_wait,*c_programs_issued,*c_programs_completed;
     std::array<u64,unsigned(K::Count)> class_counts{};
     std::array<u64*,4> c_role_issued{},c_role_completed{};
+    // Debugging only: TNCA_MODEL_ITRACE=<file> writes core 0's launches and
+    // the cycle each instruction leaves execute, in the align trace's L/I/E
+    // records (tools/performance_harness/align/README.md sec 2).
+    static std::FILE* itrace(){static std::FILE* f=[](){const char* p=std::getenv("TNCA_MODEL_ITRACE");return p?std::fopen(p,"w"):nullptr;}();return f;}
     bool tracing=false;sc_time issue_time;std::string lsu_key;u64 t_lsu_slots=2,t_beat_slots=8;
     // core_pipeline=1: the RTL's single in-order pipeline (tnca_core.v).
     bool pipe=false;u64 t_branch,t_park,n_banks,t_bank,t_lsu_setup,t_vload_extra,t_lsu_complete,t_lsu_wb,t_fcmp,t_shuf_s,t_red_vec,t_fred_vec;
@@ -307,8 +329,32 @@ struct Core : sc_module {
     // last response is back (+lsu_complete_cycles); the second unit takes
     // an access only after the first has sent all of its beats.
     struct LsuUnit {u64 free=0,drained=0;};std::vector<LsuUnit> units;
+    // tl_hybrid_lsu=1: R41's HYBRID_LSU (tnca_lsu_hybrid.v). `units` are then
+    // the word path's LSU_INFLIGHT units (tl_word_units); line_inflight holds
+    // the completions of line-path accesses (tl_line_slots slots); mem_next
+    // is the earliest cycle the next memory instruction may reach X.
+    bool hybrid=false;u64 t_mem_gap=3,t_line_slots=64,t_word_setup=3,mem_next=0;std::vector<u64> line_inflight;
+    u64 *c_line_acc=nullptr,*c_word_acc=nullptr,*c_mode_wait=nullptr,*c_slot_wait=nullptr,*c_gap_wait=nullptr;
     std::vector<u64> steals; // LSU completions taking the one writeback port
     unsigned holds=0;sc_event unhold; // a fence/arrive held in R freezes every context
+    // tl_stall_front=1 (tnca_core.v stall_front): a stall in R other than a
+    // register hazard (LSU or SFU busy, bank rounds, fold) holds the whole
+    // front end, so no other context issues until it ends -- also not one
+    // whose slot was reserved before the stall began. The latest freeze
+    // interval [frz_from, frz_until) is kept; issue_slot retakes a slot that
+    // falls inside it. Contexts then reach R again in the order they asked.
+    bool stall_front=false;sc_time frz_from=SC_ZERO_TIME,frz_until=SC_ZERO_TIME;u64* c_front=nullptr;
+    unsigned away=0; // contexts parked on a register or asleep on a barrier: none of them is in D
+    // Slots reserved and not yet reached, per context: a stall in R displaces
+    // those inside it, and they take the first slots after it in the order
+    // they held (they were ahead of any context that asks during the stall).
+    std::array<sc_time,4> pend_slot{};std::array<bool,4> pend{};sc_time displaced_next=SC_ZERO_TIME;
+    void front_hold(const Frame& f,sc_time from,sc_time until){
+        if(from<frz_until){frz_until=std::max(frz_until,until);}else {frz_from=from;frz_until=until;displaced_next=until;}
+        unsigned n=0;for(unsigned r=0;r<4;++r)if(r!=f.role && pend[r] && pend_slot[r]>=frz_from && pend_slot[r]<frz_until)++n;
+        displaced_next=std::max(displaced_next,frz_until);
+        issue.available=std::max(issue.available,displaced_next+issue_time*double(n));
+    }
     // time_quantum > 0: conservative lookahead. A context whose next wait
     // ends before any other pending activity of the simulation (and within
     // the quantum) skips it and runs on at a local time ahead of the
@@ -323,6 +369,7 @@ struct Core : sc_module {
         cycle(ctx.cycles(1)),lsu(unsigned(ctx.c.get("lsu_slots"))),
         tensor("tensor",ctx,i,[this](u64 token){verify_async_token(token);},[this](u64 token,bool error){complete_async(token,error);}),
         beats(unsigned(ctx.c.get("lsu_beat_slots"))){
+        trace_open();
         auto g=[&](const char* k){return x.c.get(k);};
         t_issue=g("issue_cycles");t_scalar=g("scalar_latency");t_mul=g("scalar_mul_latency");t_vint=g("vector_int_latency");
         t_vfp=g("vector_fp_latency");t_cvt=g("convert_latency");t_cmp=g("compare_latency");t_pred=g("predicate_latency");
@@ -337,11 +384,22 @@ struct Core : sc_module {
         if(dp_g16>1 || dp_g8>1 || dp_pf)c_dp=&x.counts[key("matrix_dp_whatif_commands")];
         issue_time=x.cycles(t_issue);lsu_key=key("lsu");t_lsu_slots=g("lsu_slots");t_beat_slots=g("lsu_beat_slots");
         units.resize(x.c.get_or("tl_lsu_units",2));
+        hybrid=x.c.get_or("tl_hybrid_lsu",0)!=0;
+        if(hybrid){
+            units.assign(x.c.get_or("tl_word_units",1),LsuUnit{});
+            t_line_slots=x.c.get_or("tl_line_slots",64);t_mem_gap=x.c.get_or("tl_mem_issue_gap",3);
+            t_word_setup=x.c.get_or("tl_word_setup_cycles",3);
+            c_line_acc=&x.counts[key("lsu_line_accesses")];c_word_acc=&x.counts[key("lsu_word_accesses")];
+            c_mode_wait=&x.counts[key("lsu_mode_wait_cycles")];c_slot_wait=&x.counts[key("lsu_line_slot_wait_cycles")];
+            c_gap_wait=&x.counts[key("lsu_issue_gap_wait_cycles")];
+        }
         pipe=g("core_pipeline")!=0;t_branch=g("branch_taken_cycles");t_park=g("park_refetch_cycles");n_banks=g("vrf_banks");
         t_bank=g("vrf_bank_conflict_cycles");t_lsu_setup=g("lsu_setup_cycles");t_vload_extra=g("lsu_vector_load_extra");
         t_lsu_complete=g("lsu_complete_cycles");t_lsu_wb=g("lsu_writeback_cycles");t_fcmp=g("fp_compare_latency");
         t_shuf_s=g("shuffle_scalar_latency");t_red_vec=g("reduction_vector_extra");t_fred_vec=g("fp_reduction_vector_extra");
         vrf_pf=g("vrf_prefetch")!=0;quantum=g("time_quantum");quantum_t=x.cycles(quantum);
+        stall_front=x.c.get_or("tl_stall_front",0)!=0;if(stall_front)c_front=&x.counts[key("stall_front_wait_cycles")];
+        fold=x.c.get_or("tl_fp_fold",0)!=0;t_fold_fp=x.c.get_or("tl_fp_fold_fp_wait",14);t_fold_next=x.c.get_or("tl_fp_fold_next",16);
         c_freeze=&x.counts[key("pipeline_freeze_cycles")];c_park=&x.counts[key("context_park_cycles")];
         c_bank=&x.counts[key("vrf_bank_conflict_cycles")];c_branch=&x.counts[key("branch_refetch_cycles")];
         port.service=&x.counts[key("memory_port_service_cycles")];port.queue=&x.counts[key("memory_port_queue_cycles")];
@@ -355,7 +413,10 @@ struct Core : sc_module {
         for(unsigned r=0;r<4;++r){c_role_issued[r]=&x.counts[key("role_"+std::to_string(r)+"_issued")];c_role_completed[r]=&x.counts[key("role_"+std::to_string(r)+"_completed")];}
         tracing=x.monitor_mode=="trace";
         start_roles();start_completions();
+        if(ctx.c.v.count("core_model") && ctx.c.get("core_model")==1)cycle_core_attach();
     }
+    void cycle_core_attach();
+    Outcome cycle_program(const Launch& l);
     u64 cycles_of(sc_time t)const{return x.to_cycles(t);}
     void verify_async_token(u64 token){
         unsigned index=unsigned(token&65535);arch(index<32,trapcode::barrier,"BARRIER_FAULT: asynchronous token index");
@@ -387,6 +448,17 @@ struct Core : sc_module {
     // park_refetch_cycles after the wake (tnca_core.v rp_go/rctx_wake).
     void hazard(Frame& f,sc_time t){
         auto now=lt(f);if(t<=now)return;
+        if(stall_front && pipe && role_remaining>1){
+            // rp_go needs another context's instruction in D. With every other
+            // context parked or asleep D stays empty while R is held, so this
+            // one does not give way: it holds R (a freeze), and contexts woken
+            // meanwhile wait behind it.
+            if(away+1>=role_remaining){freeze(f,t);return;}
+            *c_park+=t_park;t+=x.cycles(t_park);*c_dep_wait+=cycles_of(t-now);
+            ++away;go(f,t);--away;
+            if(lt(f)>=frz_from && lt(f)<frz_until)go(f,frz_until);
+            return;
+        }
         if(pipe && role_remaining>1){*c_park+=t_park;t+=x.cycles(t_park);}
         *c_dep_wait+=cycles_of(t-now);go(f,t);
     }
@@ -394,15 +466,41 @@ struct Core : sc_module {
     void freeze(Frame& f,sc_time t){
         auto now=lt(f);if(t<=now)return;
         if(x.functional)return;
-        if(pipe){issue.available=std::max(issue.available,t);*c_freeze+=cycles_of(t-now);}
+        if(pipe){issue.available=std::max(issue.available,t);*c_freeze+=cycles_of(t-now);
+            if(stall_front)front_hold(f,now,t);}
         go(f,t);
+    }
+    // tl_stall_front: the SFU this instruction needs is busy (tnca_core.v
+    // stall_fpu, r_is_sfu && red_busy_next), so it waits in R, every context
+    // behind it, and enters X the cycle the unit admits it. Asked before the
+    // issue slot, as R asks. (The LSU's waits stay in its own code: there the
+    // model reserves the access when it issues, see the hybrid LSU below.)
+    void r_stage(Frame& f,const Inst& in){
+        if(x.functional || in.kind!=K::Sfu)return;
+        u64 r=x.to_cycles(fold?std::max(sfu_available,std::max(fold_next_free,fp_busy_until)):sfu_available);
+        u64 now=lnow(f);if(r<=now)return;
+        sc_time t=x.cycles(r),until=t+issue_time;
+        front_hold(f,lt(f),until);*c_freeze+=r-now;
+        go(f,t);f.has_r_slot=true;f.r_slot=t;
     }
     void issue_slot(Frame& f){
         if(x.functional){if(++untimed_burst>=4096){untimed_burst=0;wait(SC_ZERO_TIME);}return;} // let spinning peers run
+        if(f.has_r_slot){f.has_r_slot=false;*issue.service+=t_issue;issue.available=std::max(issue.available,f.r_slot+issue_time);go(f,f.r_slot+issue_time);return;}
         if(!quantum){issue.use(x,issue_time,t_issue);return;}
         sc_time t=lt(f),begin=std::max(issue.available,t);
         *issue.service+=t_issue;*issue.queue+=cycles_of(begin-t);
-        issue.available=begin+issue_time;go(f,issue.available);
+        issue.available=begin+issue_time;
+        if(stall_front){pend[f.role]=true;pend_slot[f.role]=begin;}
+        go(f,begin+issue_time);
+        while(stall_front && begin>=frz_from && begin<frz_until){
+            // Reserved before another context's stall began, inside it: R was
+            // held. Take the next of the slots kept for the displaced.
+            sc_time again=std::max(displaced_next,frz_until);displaced_next=again+issue_time;
+            issue.available=std::max(issue.available,displaced_next);
+            *c_front+=cycles_of(again-begin);*issue.queue+=cycles_of(again-begin);
+            begin=again;pend_slot[f.role]=begin;go(f,begin+issue_time);
+        }
+        pend[f.role]=false;
     }
     // A stall of unknown length that does not switch (fence, arrive): the
     // other contexts cannot issue until it ends.
@@ -413,7 +511,13 @@ struct Core : sc_module {
         if(--holds==0)unhold.notify(SC_ZERO_TIME);
         *c_freeze+=cycles_of(sc_time_stamp()-t);
     }
-    u64 lsu_idle()const{u64 m=0;for(auto v:lsu_inflight)m=std::max(m,v);for(auto& u:units)m=std::max(m,u.free);return m;}
+    u64 lsu_idle()const{
+        u64 m=0;
+        for(auto v:lsu_inflight)m=std::max(m,v);
+        for(auto v:line_inflight)m=std::max(m,v);
+        for(auto& u:units)m=std::max(m,u.free);
+        return m;
+    }
     // RSLICE (tnca_core.v): an index the instruction names gets the slice
     // number ORed into its top bits -- accumulators (ACC_W 4), barriers
     // (BAR_W 5), descriptors and windows (DESC_W 4).
@@ -435,9 +539,13 @@ struct Core : sc_module {
         tlm::tlm_generic_payload tx;tx.set_address(address);tx.set_command(store?tlm::TLM_WRITE_COMMAND:tlm::TLM_READ_COMMAND);
         tx.set_data_ptr(bytes.data());tx.set_data_length(8);tx.set_streaming_width(8);
         tx.set_byte_enable_ptr(enables.data());tx.set_byte_enable_length(8);tx.set_extension(&ext);
-        sc_time delay=SC_ZERO_TIME;memory->b_transport(tx,delay);tx.clear_extension<Request>();
+        sc_time delay=SC_ZERO_TIME;const u64 tag=trace_tag++;
+        if(core_trace)core_trace.Q(x.now(),store,address,be,tag,data);
+        memory->b_transport(tx,delay);tx.clear_extension<Request>();
         require(tx.is_response_ok() && delay==SC_ZERO_TIME,"core memory transport failed");
-        u64 result=0;for(unsigned b=0;b<8;++b)result|=u64(bytes[b])<<(b*8);return result;
+        u64 result=0;for(unsigned b=0;b<8;++b)result|=u64(bytes[b])<<(b*8);
+        if(core_trace)core_trace.P(x.now(),tag,result);
+        return result;
     }
     u64 special(unsigned spec,const Frame& f){
         switch(spec){case 0:return f.px;case 1:return f.py;case 2:return f.pz;case 4:return f.nx;case 5:return f.ny;case 6:return f.nz;
@@ -582,12 +690,16 @@ struct Core : sc_module {
                         else ++it;
                     }}
             }
+            if(pipe && stall_front)r_stage(f,in);
             // No cycle polling: issue and dependencies reserve their next event.
             issue_slot(f);
             if(pipe)last_issue=lnow(f);
+            if(core_trace)core_trace.I(lnow(f),f.role,f.pc);
             ++class_counts[unsigned(in.kind)];
             switch(in.kind){
-            case K::Exit:drain_own(f);sync(f);++f.retired;++*c_instr;return;
+            case K::Exit:drain_own(f);sync(f);++f.retired;++*c_instr;
+                if(id==0 && itrace())std::fprintf(itrace(),"I %llu %u %016llx\n",(unsigned long long)lnow(f),f.role,(unsigned long long)f.pc);
+                return;
             case K::Nop:case K::Yield:case K::Prefetch:break; // t.prefetch: a hint, dropped (ISA sec 9E.3)
             case K::Trap:throw ArchFault(trapcode::user,"TRAP_USER: code "+std::to_string((a<<16)|(b<<8)|c));
             case K::Special:ws(d,special(mod,f),t_scalar);break;
@@ -649,8 +761,53 @@ struct Core : sc_module {
                     // core-wide; beats leave the core port one per cycle with at
                     // most lsu_beat_slots words outstanding; a load's
                     // destination is scoreboarded until its last word returns.
-                    u64 now=lnow(f),gnow=x.now();unsigned unit_index=0;
-                    if(pipe){
+                    u64 now=lnow(f),gnow=x.now();unsigned unit_index=0;bool line_path=false;
+                    if(pipe && hybrid){
+                        // R41 HYBRID_LSU. One memory instruction reaches X at most
+                        // every tl_mem_issue_gap cycles core-wide (x_mem_claim, then
+                        // the landing register: tnca_core.v lsu_free_next). A vector,
+                        // non-indexed access of elements <= 4 bytes whose 16 lanes lie
+                        // in one 64-byte line below 2^33 takes the line path
+                        // (tnca_lsu_line.v req_eligible): one request, one line slot
+                        // until it completes. Anything else takes the word path: 8-byte
+                        // requests on the LSU_INFLIGHT units, each held to completion.
+                        // A path is entered only once the other is empty
+                        // (tnca_lsu_hybrid.v mode switch). A wait holds R: every
+                        // context of the core stalls.
+                        line_path=vector && !gather && size<=4 && (base&63)+16*u64(size)<=64 && base<(1ULL<<33);
+                        // Re-evaluated after every wait: another context of this core
+                        // may have taken the issue gap, a word unit or line slots while
+                        // this one waited (they all wake at the same free cycle).
+                        for(;;){
+                            u64 at=std::max(now,mem_next),gap=at,mode=at;
+                            if(line_path){
+                                for(auto& u:units)mode=std::max(mode,u.free);
+                                at=mode;
+                                std::vector<u64> live;for(auto v:line_inflight)if(v>at)live.push_back(v);
+                                if(live.size()>=t_line_slots){
+                                    std::nth_element(live.begin(),live.begin()+(live.size()-t_line_slots),live.end());
+                                    u64 m=live[live.size()-t_line_slots];*c_slot_wait+=m-at;at=m;
+                                }
+                            }else{
+                                for(auto v:line_inflight)mode=std::max(mode,v);
+                                u64 best=UINT64_MAX;
+                                for(unsigned i=0;i<units.size();++i){
+                                    u64 a=std::max(mode,units[i].free);
+                                    for(unsigned j=0;j<units.size();++j)if(j!=i)a=std::max(a,units[j].drained);
+                                    if(a<best){best=a;unit_index=i;}
+                                }
+                                at=best;
+                            }
+                            *c_gap_wait+=gap-now;*c_mode_wait+=mode-gap;
+                            if(at<=now)break;
+                            *c_lsu_wait+=at-now;freeze(f,x.cycles(at));now=lnow(f);
+                        }
+                        if(line_path){
+                            line_inflight.erase(std::remove_if(line_inflight.begin(),line_inflight.end(),[&](u64 v){return v<=now;}),line_inflight.end());
+                            ++*c_line_acc;
+                        }else{line_inflight.clear();++*c_word_acc;}
+                        mem_next=now+t_mem_gap;
+                    }else if(pipe){
                         // A busy unit holds the access in R: every context stalls.
                         u64 best=UINT64_MAX;
                         for(unsigned i=0;i<units.size();++i){
@@ -669,7 +826,8 @@ struct Core : sc_module {
                         *c_lsu_wait+=m-now;ready(f,x.cycles(m));now=lnow(f);prune();}
                     }
                     gnow=x.now();
-                    std::array<u64,16> values{};std::vector<u64> window;u64 t=pipe?now+1+t_lsu_setup:now,complete=now;
+                    std::array<u64,16> values{};std::vector<u64> window;
+                    u64 t=pipe?now+1+(hybrid && !line_path?t_word_setup:t_lsu_setup):now,complete=now;
                     std::map<u64,std::pair<std::pair<u64,unsigned>,std::vector<Part>>> plan2;
                     for(unsigned lane=0;lane<(vector?16U:1U);++lane){
                         if(!(active&(1<<lane)))continue;
@@ -687,7 +845,9 @@ struct Core : sc_module {
                     // Group only addresses sharing one aligned hypothetical core
                     // beat. Each group still consumes a finite LSU slot, core
                     // issue slot, NoC capacity, home engine and outlet service.
-                    const u64 width=x.c.get_or("tl_core_beat_bytes",8);
+                    // The hybrid LSU's word path sends 8-byte requests on the 512-bit
+                    // port (tnca_word_line_adapter.v); its line path one line.
+                    const u64 width=hybrid?(line_path?64:8):x.c.get_or("tl_core_beat_bytes",8);
                     for(auto it=plan2.begin();it!=plan2.end();){
                         auto end=it;u64 region=it->first&~(width-1);
                         std::vector<TimelineMemory::WideWord> words;
@@ -696,6 +856,9 @@ struct Core : sc_module {
                         while(window.size()>=t_beat_slots){auto m=std::min_element(window.begin(),window.end());t=std::max(t,*m);window.erase(m);}
                         u64 at=port.reserve(t,1,gnow);t=at+1;
                         u64 when=width==8?tm->word(id,words[0].address,store,words[0].data,words[0].be,at,words[0].result):tm->wide(id,words,store,at);
+                        if(core_trace && width==8){ // the timeline memory's beat: issued at `at`, answered at `when`
+                            // (an exploratory wide beat, tl_core_beat_bytes>8, is not traced)
+                            const u64 tag=trace_tag++;core_trace.Q(at,store,words[0].address,unsigned(store?words[0].be:255),tag,words[0].data);core_trace.P(when,tag,words[0].result);}
                         window.push_back(when);complete=std::max(complete,when);
                         unsigned wi=0;
                         for(;it!=end;++it,++wi)if(!store)for(auto& part:it->second.second){
@@ -703,7 +866,17 @@ struct Core : sc_module {
                             values[part.lane]|=((words[wi].result>>(part.offset*8))&part_mask)<<part.shift;
                         }
                     }
-                    if(pipe){units[unit_index].drained=t;units[unit_index].free=complete+t_lsu_complete;
+                    if(pipe && hybrid){
+                        static const bool lsu_log=std::getenv("TNCA_MODEL_LSU_LOG")!=nullptr; // debugging only
+                        if(lsu_log)std::fprintf(stderr,"LSU core %u x %llu %s %s addr %llx req %llu done %llu\n",id,(unsigned long long)now,
+                            line_path?"line":"word",store?"st":"ld",(unsigned long long)base,(unsigned long long)(t-1),(unsigned long long)complete);
+                        // A line slot frees when its completion leaves; a word unit is
+                        // held until its completion is accepted. Loads and stores share
+                        // the one completion register and the writeback port (wb_steal).
+                        if(line_path)line_inflight.push_back(complete);
+                        else{units[unit_index].drained=t;units[unit_index].free=complete+t_lsu_complete;}
+                        if(t_lsu_wb)steals.push_back(complete+t_load-1);
+                    }else if(pipe){units[unit_index].drained=t;units[unit_index].free=complete+t_lsu_complete;
                         if(t_lsu_wb && !store)steals.push_back(complete+t_load-1);}
                     else lsu_inflight.push_back(complete);
                     role_lsu_done[f.role]=std::max(role_lsu_done[f.role],complete);
@@ -773,6 +946,7 @@ struct Core : sc_module {
                 else publish(f,d,func==25?65535:mask,t_vint);
                 break;}
             case K::Vfp:{
+                if(fold && pipe && !x.functional){freeze(f,fold_fp_free);fp_busy_until=std::max(fp_busy_until,lt(f)+x.cycles(t_vfp));}
                 rv(a);if(func!=24)rv(d);
                 if(func!=20 && func!=21)rv(b);
                 if(func==6 || func==7)rv(c);
@@ -815,6 +989,10 @@ struct Core : sc_module {
             case K::Insert:{rv(d);auto value=std::uint32_t(rs(a));if(mask&(1<<(mod&15)))f.v[d][mod&15]=value;publish(f,d,mask&(1<<(mod&15)),t_shuf);break;}
             case K::Reduce:{
                 rv(a);
+                if(fold && pipe && func>=8 && !x.functional){
+                    freeze(f,std::max(fold_next_free,fp_busy_until));
+                    fold_fp_free=lt(f)+x.cycles(t_fold_fp);fold_next_free=lt(f)+x.cycles(t_fold_next);
+                }
                 std::uint32_t reduced=tnca_vector_ops::reduce(func,f.v[a],mask);
                 u64 latency=func>=8?t_fred:t_red;
                 if(mod&1){if(pipe)latency+=func>=8?t_fred_vec:t_red_vec;rv(d);f.v[d].fill(reduced);publish(f,d,65535,latency);}
@@ -823,7 +1001,9 @@ struct Core : sc_module {
             case K::Sfu:{
                 rv(a);rv(d);
                 if(!x.functional){
-                auto waiting=lt(f);if(pipe)freeze(f,sfu_available);else ready(f,sfu_available);
+                auto waiting=lt(f);
+                if(pipe)freeze(f,fold?std::max(sfu_available,std::max(fold_next_free,fp_busy_until)):sfu_available);
+                else ready(f,sfu_available);
                 *c_sfu_queue+=cycles_of(lt(f)-waiting);
                 sfu_available=lt(f)+x.cycles(t_sfu_occ);}
                 for(unsigned lane=0;lane<16;++lane)if(mask&(1<<lane))f.v[d][lane]=tnca_sfu::evaluate(func,f.v[a][lane]);
@@ -859,7 +1039,7 @@ struct Core : sc_module {
                 }else if(func==3 || func==4){
                     u64 token=token_of(f,rs(a));unsigned index=unsigned(token&65535);sync(f);
                     if(func==3)ws(d,barriers[index].test(token),t_bar);
-                    else {auto sleep=sc_time_stamp();barriers[index].sleep(token);*c_sleep+=cycles_of(sc_time_stamp()-sleep);}
+                    else {auto sleep=sc_time_stamp();++away;barriers[index].sleep(token);--away;*c_sleep+=cycles_of(sc_time_stamp()-sleep);}
                 }else if(func==5)barriers[sliced(f,a,5)].invalidate();
                 else throw std::runtime_error("reserved barrier function");
                 break;}
@@ -887,6 +1067,7 @@ struct Core : sc_module {
             }
             ++f.retired;++*c_instr;
             if(tracing)x.span("native instruction",id,begin,f.retired);
+            if(id==0 && itrace())std::fprintf(itrace(),"I %llu %u %016llx %s.%u\n",(unsigned long long)lnow(f),f.role,(unsigned long long)f.pc,kind_name(in.kind),func);
             f.pc=next;
         }
     }
@@ -916,12 +1097,15 @@ struct Core : sc_module {
     }
     Outcome program(const Launch& l){
         require(l.roles>0 && l.roles<16,"invalid role mask");
+        if(cyc)return cycle_program(l);
         require(role_remaining==0,"program started on a core with contexts still running");
         tensor.reset();
         for(auto& barrier:barriers)barrier.reset();
-        aborting=false;fault=Outcome{};
+        aborting=false;fault=Outcome{};away=0;
         current=&l;role_active=unsigned(__builtin_popcount(l.roles));role_remaining=role_active;role_retired=0;
         ++*c_programs_issued;
+        if(core_trace)core_trace.L(x.now(),l.pc,unsigned(l.roles));
+        if(id==0 && itrace())std::fprintf(itrace(),"L %llu %016llx %u\n",(unsigned long long)x.now(),(unsigned long long)l.pc,l.roles);
         for(unsigned role=0;role<4;++role)if(l.roles&(1<<role))role_start[role].notify();
         while(role_remaining)wait(role_done);
         u64 retired=role_retired;
@@ -930,557 +1114,20 @@ struct Core : sc_module {
         tensor.drain();engine_wait();
         while(!completions.empty())wait(completions_drained);
         if(!aborting)++*c_programs_completed;
+        if(core_trace)core_trace.E(x.now());
+        if(id==0 && itrace()){std::fprintf(itrace(),"E %llu\n",(unsigned long long)x.now());std::fflush(itrace());}
         Outcome out=aborting?fault:Outcome{};out.retired=retired;
         return out;
     }
     void report_classes(){for(unsigned k=0;k<unsigned(K::Count);++k)if(class_counts[k])x.counts[key("class_")+kind_name(K(k))]=class_counts[k];}
 };
 
-//==============================================================================
-// The chip: cores, NoC, NUCA homes, HBM; grid dispatch and host access.
-//==============================================================================
-struct Chip : sc_module {
-    SC_HAS_PROCESS(Chip);
-    Context& x;HBM& hbm;std::vector<std::unique_ptr<Slice>>& caches;CodeCache code;
-    std::vector<std::unique_ptr<Core>> cores;
-    // Host-driven command interface: one pending command, one completion.
-    struct Command {bool grid=false;Launch launch;u64 stride=0,core_mask=1,deadline=0;unsigned gx=1,gy=1,gz=1,group=1;};
-    std::unique_ptr<Command> pending;bool command_done=false,flush_request=false,shutdown=false;
-    Outcome result;u64 start_cycle=0,end_cycle=0,launches=0;sc_event wake;
-    u64 *c_grid_launches,*c_single_launches,*c_host_cycles;
-    Chip(sc_module_name n,Context& ctx,HBM& mem,Network& net,std::vector<std::unique_ptr<Slice>>& s):
-        sc_module(n),x(ctx),hbm(mem),caches(s){
-        code.read_word=[this](u64 pc){u64 v=0;unsigned char bytes[8];host_read(pc,bytes,8);for(unsigned b=0;b<8;++b)v|=u64(bytes[b])<<(8*b);return v;};
-        for(unsigned i=0;i<x.c.cores();++i){
-            cores.emplace_back(new Core(("core"+std::to_string(i)).c_str(),x,i,code));
-            cores.back()->memory.bind(net.target);cores.back()->tensor.memory.bind(net.target);
-        }
-        c_grid_launches=&x.counts["chip_grid_launches"];c_single_launches=&x.counts["chip_single_launches"];
-        c_host_cycles=&x.counts["chip_host_gap_cycles"];
-        SC_THREAD(run);
-    }
-    // Functionally coherent host access in zero modeled time: the device is
-    // idle, so a line is either valid in its home slice (newest copy) or in
-    // HBM. Writes update both copies. Nothing is flushed or perturbed.
-    void host_access(u64 address,unsigned char* data,u64 n,bool write){
-        if(!n)return;
-        if(const char* w=std::getenv("TLM_DEBUG_WATCH")){u64 lo=std::strtoull(w,nullptr,0);const char* c=std::strchr(w,',');u64 hi=lo+(c?std::strtoull(c+1,nullptr,0):0);
-            if(address+n>lo && address<hi)std::fprintf(stderr,"WATCH host t %llu %s a %llx n %llu\n",(unsigned long long)x.now(),write?"W":"R",(unsigned long long)address,(unsigned long long)n);}
-        u64 base=x.c.get("memory_base"),bytes=x.c.get("memory_bytes");
-        require(address>=base && n<=bytes && address-base<=bytes-n,"host access outside model memory window");
-        require(!(address<0x7fff1000ULL && address+n>0x7fff0000ULL),"TMU MMIO is not ordinary model memory");
-        if(write)code.invalidate(address,n);
-        u64 done=0;
-        while(done<n){
-            u64 a=address+done,line=a&~63ULL;unsigned off=unsigned(a&63),len=unsigned(std::min<u64>(64-off,n-done));
-            CacheLine* cached=caches[x.c.home(line)]->find(line);
-            if(write){
-                auto& backing=hbm.memory[line];std::memcpy(backing.data()+off,data+done,len);
-                if(cached)std::memcpy(cached->data.data()+off,data+done,len);
-            }else if(cached)std::memcpy(data+done,cached->data.data()+off,len);
-            else if(const Line* backing=hbm.memory.find(line))std::memcpy(data+done,backing->data()+off,len);
-            else std::memset(data+done,0,len);
-            done+=len;
-        }
-    }
-    void host_write(u64 a,const unsigned char* p,u64 n){host_access(a,const_cast<unsigned char*>(p),n,true);}
-    void host_read(u64 a,unsigned char* p,u64 n){host_access(a,p,n,false);}
-    TimelineMemory* tm=nullptr;
-    void flush(){
-        if(tm && x.functional)return; // untimed: nothing is cached on the timeline path
-        if(tm){u64 now=x.now(),done=tm->flush(now);if(done>now)wait(x.cycles(done-now));return;}
-        unsigned remaining=unsigned(caches.size());sc_event done;
-        for(auto& c:caches){auto* ptr=c.get();sc_spawn([&,ptr](){ptr->flush();--remaining;done.notify(SC_ZERO_TIME);});}
-        while(remaining)wait(done);
-        for(auto& slot:hbm.slots)require(slot->used==0,"completion visibility still has outstanding writes");
-    }
-    // tnca_grid_dispatch.v: groups of `group` consecutive x along x, then y,
-    // then z; each idle active core takes the next group with its own
-    // argument block at arg_base + core * stride. A fault stops dispatch.
-    Outcome dispatch(const Command& cmd){
-        u64 groups_x=(u64(cmd.gx)+cmd.group-1)/cmd.group,total=groups_x*cmd.gy*cmd.gz;
-        unsigned x0=0,y0=0,z0=0;u64 issued=0;Outcome first;bool faulted=false;u64 retired=0;
-        unsigned live=0;sc_event done;
-        for(auto& core:cores){
-            if(!((cmd.core_mask>>core->id)&1))continue;
-            ++live;auto* ptr=core.get();
-            sc_spawn([&,ptr](){
-                while(issued<total && !faulted){
-                    Launch l=cmd.launch;l.px=x0;l.py=y0;l.pz=z0;l.nx=cmd.gx;l.ny=cmd.gy;l.nz=cmd.gz;l.arg=cmd.launch.arg+ptr->id*cmd.stride;
-                    ++issued;
-                    if(x0+cmd.group>=cmd.gx){x0=0;if(y0+1==cmd.gy){y0=0;++z0;}else ++y0;}else x0+=cmd.group;
-                    if(!x.functional)wait(x.cycles(x.c.get("dispatch_cycles")+ptr->t_launch));
-                    Outcome o=ptr->program(l);retired+=o.retired;
-                    if(o.status!=STATUS_OK && !faulted){faulted=true;first=o;}
-                }
-                --live;done.notify(SC_ZERO_TIME);
-            });
-        }
-        require(live>0 || total==0,"no active core for the grid");
-        while(live)wait(done);
-        first.retired=retired;return first;
-    }
-    // Server mode: host transfers since the previous launch and the fixed
-    // per-launch host overhead elapse (device idle) before the next launch.
-    bool serving=false;u64 host_debt=0;
-    void host_charge(u64 bytes){
-        if(!serving || x.functional)return;
-        host_debt+=x.c.get("host_transfer_cycles")+(bytes*x.c.get("host_transfer_cycles_per_kib")+1023)/1024;
-    }
-    Outcome run_command(const Command& cmd){
-        if(serving && x.functional)host_debt=0;
-        else if(serving){u64 d=host_debt+x.c.get("host_launch_cycles");host_debt=0;if(d)wait(x.cycles(d));*c_host_cycles+=d;}
-        for(auto& core:cores)core->deadline=cmd.deadline?sc_time_stamp()+x.cycles(cmd.deadline):SC_ZERO_TIME;
-        start_cycle=x.now();Outcome out;
-        if(cmd.grid){++*c_grid_launches;out=dispatch(cmd);}
-        else{
-            ++*c_single_launches;if(!x.functional)wait(x.cycles(cores[0]->t_launch));
-            Launch l=cmd.launch;out=cores[0]->program(l);
-        }
-        end_cycle=x.now();++launches;
-        // Post-hoc check as well: a launch that finished past its deadline is
-        // what a device with the same deadline would have aborted.
-        if(out.status==STATUS_OK && cmd.deadline && end_cycle-start_cycle>cmd.deadline){out.status=STATUS_TIMEOUT;out.why="device deadline expired";}
-        return out;
-    }
-    // Host mode: the host loop (sc_main) sets `pending`, resumes simulation,
-    // and gets control back through sc_pause once the command is complete.
-    void run(){
-        for(;;){
-            while(!pending && !flush_request){sc_pause();wait(wake);}
-            if(flush_request){flush();flush_request=false;command_done=true;continue;}
-            auto cmd=std::move(pending);
-            result=run_command(*cmd);
-            command_done=true;
-        }
-    }
-    void report(){for(auto& core:cores)core->report_classes();}
-};
+#include "cycle_core.inc"
+#include "cycle_uncore.inc"
+void Core::cycle_core_attach(){require(tm!=nullptr || true,"");cyc.reset(new CycleCore(*this));}
+Outcome Core::cycle_program(const Launch& l){require(tm!=nullptr,"core_model=1 requires memory_model=1");return cyc->program(l);}
 
-//==============================================================================
-// Front ends: classifier, command script (validation) and host server.
-//==============================================================================
-static void classify(){
-    std::string word;
-    while(std::cin>>word){
-        Inst in=decode(integer("0x"+word));
-        bool ok=in.kind!=K::Refused && in.kind!=K::Illegal;
-        std::cout<<word<<'\t'<<(ok?"implemented":in.kind==K::Illegal?"illegal":"refused")<<'\t'<<timing_class(in)<<'\t'<<kind_name(in.kind)<<' '<<in.why<<'\n';
-    }
-}
-struct Model {
-    Config cfg;Context x;HBM hbm;Network net;std::vector<std::unique_ptr<Slice>> caches;
-    std::vector<std::unique_ptr<SocketMonitor>> probes;std::unique_ptr<Chip> chip;
-    Model(const char* config,const std::string& out):cfg(config,std::getenv("TNCA_DRAM_MAP")!=nullptr),x(cfg,out),hbm("hbm",x),net("noc",x){
-        for(unsigned i=0;i<cfg.cores();++i){
-            caches.emplace_back(new Slice(("home"+std::to_string(i)).c_str(),x,i));
-            auto home="home_"+std::to_string(i),mem="hbm_"+std::to_string(i);
-            probes.emplace_back(new SocketMonitor(home.c_str(),x,home,500+i));
-            net.homes[i].bind(probes.back()->target);probes.back()->downstream.bind(caches.back()->target);
-            probes.emplace_back(new SocketMonitor(mem.c_str(),x,mem,600+i));
-            caches.back()->memory.bind(probes.back()->target);probes.back()->downstream.bind(hbm.target);
-        }
-        chip.reset(new Chip("chip",x,hbm,net,caches));
-        if(cfg.get("memory_model")==1){
-            tmem.reset(new TimelineMemory(cfg,x,hbm.memory));chip->tm=tmem.get();
-            for(auto& core:chip->cores){core->tm=tmem.get();core->tensor.tm=tmem.get();core->tensor.port=&core->port;core->tensor.rtl=cfg.get("core_pipeline")!=0;}
-        }
-        select_dram_path();
-    }
-    std::unique_ptr<TimelineMemory> tmem;
-    // DRAM path (include/tnca_dram.hpp): fast, or slow = Ramulator2 by a
-    // per-command fixed point of forked child passes.
-    std::unique_ptr<SlowDram> slow;std::string dram_path_name="fast",dram_config,dram_config_sha256,dram_commit;
-    std::unique_ptr<DramAddressMap> physical_map;std::string dram_map_path,dram_map_sha256;
-    u64 dram_fixed=0,dram_ratio=10,dram_max_passes=3,dram_tol_ppm=5000,dram_commands=0;
-    void select_dram_path(){
-        u64 path=cfg.get("dram_path");
-        if(const char* e=std::getenv("TNCA_DRAM_PATH")){
-            std::string v=e;require(v=="fast" || v=="slow","TNCA_DRAM_PATH must be fast or slow");path=v=="slow";
-        }
-        require(path<=1,"dram_path is 0 (fast) or 1 (slow)");
-        if(const char* map=std::getenv("TNCA_DRAM_MAP")){
-            require(bool(tmem),"DRAM address map requires timeline memory");dram_map_path=map;
-            physical_map.reset(new DramAddressMap(map,unsigned(cfg.get("pc_count")),cfg.get("pc_bytes")));
-            // Replaces Config's logical PC check: the model window (local
-            // region plus AXI addresses) must end at or below the mapped BO top.
-            require(cfg.get("memory_base")+cfg.get("memory_bytes")<=physical_map->local_limit+physical_map->bo_size,
-                "DRAM address map: model window exceeds the mapped AXI BO");
-            tmem->physical_map=physical_map.get();
-#ifdef TNCA_HAVE_RAMULATOR2
-            dram_map_sha256=tnca_dram::sha256_file(map);
-#endif
-        }
-        if(!path)return;
-        require(cfg.get("memory_model")==1,"the slow DRAM path needs the timeline memory (memory_model=1)");
-#ifndef TNCA_HAVE_RAMULATOR2
-        throw std::runtime_error("MODEL_REFUSED slow DRAM path: this binary is built without Ramulator2 (-DRAMULATOR2_DIR)");
-#else
-        dram_path_name="slow";dram_commit=TNCA_RAMULATOR2_COMMIT;
-        require(cfg.get("pc_bytes")==268435456,"slow DRAM path: HBM2 bridge requires 256 MiB physical pseudo channels");
-        const char* cfgenv=std::getenv("TNCA_RAMULATOR2_CONFIG");dram_config=cfgenv?cfgenv:TNCA_RAMULATOR2_CONFIG;
-        dram_config_sha256=tnca_dram::sha256_file(dram_config);require(!dram_config_sha256.empty(),"cannot read Ramulator2 config "+dram_config);
-        auto t=tnca_dram::timing(dram_config);require(t.error.empty(),"Ramulator2 config: "+t.error);
-        dram_fixed=cfg.get("dram_fixed_cycles");dram_ratio=cfg.get("dram_clock_ratio");
-        dram_max_passes=cfg.get("dram_max_passes");dram_tol_ppm=cfg.get("dram_tolerance_ppm");
-        require(dram_ratio>0 && dram_max_passes>=1,"slow DRAM path: dram_clock_ratio and dram_max_passes must be positive");
-        require(dram_tol_ppm>0 && dram_tol_ppm<=1000000,"slow DRAM path: fixed-point tolerance must be in (0, 1000000] ppm");
-        slow.reset(new SlowDram);slow->beats_extra=cfg.get("tl_outlet_beat_cycles");
-        // Until a replay exists: the idle row-miss read (tRCD + RL) and write (tRCD + WL + BL).
-        slow->fallback[0]=std::uint32_t(dram_fixed+(u64(t.nRCDRD+t.read_latency)+dram_ratio-1)/dram_ratio);
-        slow->fallback[1]=std::uint32_t(dram_fixed+(u64(t.nRCDWR+t.nCWL+t.nBL)+dram_ratio-1)/dram_ratio);
-        tmem->dram=slow.get();
-#endif
-    }
-    // Run one command inside the simulation; false if the kernel starved.
-    bool run_once(const Chip::Command* cmd,bool flush){
-        chip->command_done=false;
-        if(flush)chip->flush_request=true;else chip->pending.reset(new Chip::Command(*cmd));
-        chip->wake.notify(SC_ZERO_TIME);
-        sc_start();
-        return chip->command_done;
-    }
-    bool execute(std::unique_ptr<Chip::Command> cmd,bool flush=false){
-#ifdef TNCA_HAVE_RAMULATOR2
-        if(slow && !x.functional)return execute_slow(cmd.get(),flush);
-#endif
-        return run_once(cmd.get(),flush);
-    }
-#ifdef TNCA_HAVE_RAMULATOR2
-    // A child pass: the command runs on a copy-on-write snapshot of this
-    // process with the current latency table, logging every DRAM request;
-    // the trailer holds its makespan. It touches no descriptor of the parent
-    // (host channel, trace, logs) and leaves with _exit.
-    [[noreturn]] void child_pass(const Chip::Command* cmd,bool flush,const std::string& path){
-        int code=6;
-        try{
-            ::close_range(3,~0U,0);
-            int nul=::open("/dev/null",O_WRONLY);if(nul>=0){::dup2(nul,1);::dup2(nul,2);if(nul>2)::close(nul);}
-            x.monitor_mode="off";
-            FILE* f=std::fopen(path.c_str(),"wb");if(!f)::_exit(5);
-            slow->log=f;slow->begin_command();
-            u64 t0=x.now();bool ok=run_once(cmd,flush);
-            u64 makespan=flush?x.now()-t0:chip->end_cycle-chip->start_cycle;
-            SlowDram::Record trailer[2]={{UINT64_MAX,makespan},{UINT64_MAX-1,ok?1ULL:0ULL}};
-            if(std::fwrite(trailer,sizeof trailer[0],2,f)!=2 || std::fflush(f)!=0)::_exit(7);
-            code=ok?0:3;
-        }catch(...){code=6;}
-        ::_exit(code);
-    }
-    struct PassResult {bool ok=false,replayed=false;u64 makespan=0,requests=0;double child_s=0,replay_s=0;tnca_dram::Result replay;
-        std::vector<u64> keys,arrival;std::vector<std::uint16_t> lat;std::uint32_t mean[2]={0,0};double mean_all=0;};
-    PassResult pass(const Chip::Command* cmd,bool flush){
-        PassResult out;
-        std::string path=x.directory+"/dram_pass_"+std::to_string(::getpid())+".bin";
-        auto t0=std::chrono::steady_clock::now();
-        std::cout.flush();std::cerr.flush();
-        const pid_t owner=::getpid();
-        pid_t pid=::fork();require(pid>=0,"slow DRAM path: fork failed");
-        if(pid==0){
-            // fork clears the parent's death signal. Bind this pass to its
-            // actual owner again, including death before prctl is armed.
-            if(::prctl(PR_SET_PDEATHSIG,SIGKILL)!=0 || ::getppid()!=owner)::_exit(8);
-            child_pass(cmd,flush,path);
-        }
-        int status=0;while(::waitpid(pid,&status,0)<0 && errno==EINTR){}
-        auto t1=std::chrono::steady_clock::now();out.child_s=std::chrono::duration<double>(t1-t0).count();
-        // The log, read into two arrays (16 bytes per request).
-        u64 trailer[2][2]={{0,0},{0,0}};bool good=false;
-        if(FILE* f=std::fopen(path.c_str(),"rb")){
-            std::fseek(f,0,SEEK_END);long size=std::ftell(f);std::fseek(f,0,SEEK_SET);
-            size_t total=size>0?size_t(size)/sizeof(SlowDram::Record):0;
-            if(total>=2){
-                size_t n=total-2;out.keys.resize(n);out.arrival.resize(n);
-                std::vector<SlowDram::Record> chunk(1<<16);size_t at=0;good=true;
-                while(at<n && good){
-                    size_t k=std::min(chunk.size(),n-at);
-                    if(std::fread(chunk.data(),sizeof(SlowDram::Record),k,f)!=k){good=false;break;}
-                    for(size_t i=0;i<k;++i){out.keys[at+i]=chunk[i].key;out.arrival[at+i]=chunk[i].arrival;}
-                    at+=k;
-                }
-                if(good && std::fread(trailer,sizeof(SlowDram::Record),2,f)!=2)good=false;
-            }
-            std::fclose(f);
-        }
-        std::remove(path.c_str());
-        if(!good || !WIFEXITED(status) || trailer[0][0]!=UINT64_MAX || trailer[1][0]!=UINT64_MAX-1){
-            std::vector<u64>().swap(out.keys);std::vector<u64>().swap(out.arrival);return out;}
-        out.makespan=trailer[0][1];out.ok=WEXITSTATUS(status)==0 && trailer[1][1]==1;out.requests=out.keys.size();
-        return out;
-    }
-    // Replay a pass's request log through Ramulator2 and build its table.
-    struct DecodeContext {const u64* keys;u64 base,pcb;const std::vector<std::int32_t>* dense;const DramAddressMap* map;};
-    static void decode_key(const void* c,size_t i,std::uint32_t& pc,std::uint64_t& offset,bool& write){
-        auto& d=*static_cast<const DecodeContext*>(c);u64 k=d.keys[i],address=SlowDram::address_of(k);
-        if(d.map){auto a=d.map->translate(address);pc=std::uint32_t((*d.dense)[a.pc]);offset=a.offset;}
-        else{u64 a=address-d.base;pc=std::uint32_t((*d.dense)[size_t(a/d.pcb)]);offset=a%d.pcb;}
-        write=SlowDram::write_of(k);
-    }
-    void replay(PassResult& out){
-        auto t1=std::chrono::steady_clock::now();out.replayed=true;
-        // Dense pseudo channels, DRAM-clock arrivals.
-        u64 base=cfg.get("memory_base"),pcb=cfg.get("pc_bytes");
-        std::vector<std::int32_t> dense;std::int32_t n_pc=0;
-        for(u64 k:out.keys){u64 a=SlowDram::address_of(k);size_t pc=physical_map?physical_map->translate(a).pc:size_t((a-base)/pcb);
-            if(pc>=dense.size())dense.resize(pc+1,-1);
-            if(dense[pc]<0)dense[pc]=n_pc++;}
-        for(auto& a:out.arrival)a*=dram_ratio;
-        DecodeContext ctx{out.keys.data(),base,pcb,&dense,physical_map.get()};
-        tnca_dram::Batch b;b.n=out.keys.size();b.arrival=out.arrival.data();b.context=&ctx;b.decode=decode_key;
-        std::vector<std::uint32_t> latency;
-        out.replay=tnca_dram::replay(dram_config,unsigned(n_pc),b,latency);
-        require(out.replay.error.empty(),"Ramulator2 replay: "+out.replay.error);
-        std::vector<u64>().swap(out.arrival);
-        out.replay_s=std::chrono::duration<double>(std::chrono::steady_clock::now()-t1).count();
-        out.lat.resize(latency.size());
-        double sum[2]={0,0};u64 n[2]={0,0};
-        for(size_t i=0;i<latency.size();++i){
-            u64 l=dram_fixed+(u64(latency[i])+dram_ratio-1)/dram_ratio;
-            out.lat[i]=SlowDram::latency_value(l);
-            unsigned w=SlowDram::write_of(out.keys[i])?1:0;sum[w]+=double(l);++n[w];
-        }
-        for(unsigned w=0;w<2;++w)out.mean[w]=n[w]?std::uint32_t(sum[w]/double(n[w])+0.5):slow->fallback[w];
-        out.mean_all=(n[0]+n[1])?(sum[0]+sum[1])/double(n[0]+n[1]):0;
-    }
-    std::ofstream fixed_point_log;
-    bool execute_slow(const Chip::Command* cmd,bool flush){
-        ++dram_commands;
-        std::vector<u64> makespans;double change=-1,child_total=0,replay_total=0;unsigned passes=0;
-        bool damped=false,failed=false,converged=false;PassResult last;SlowDram::Stability stability;
-        // Makespan agreement alone can hide changed streams or latencies.
-        // Replay every traffic-bearing pass, including the last one, and
-        // compare its request/latency vector with the table actually used.
-        unsigned replays=0;std::vector<double> means{(double(slow->fallback[0])+double(slow->fallback[1]))/2}; // before replay 1: the fallback
-        for(unsigned k=1;k<=dram_max_passes;++k){
-            PassResult r=pass(cmd,flush);
-            if(!r.ok){failed=true;++x.counts["dram_child_failures"];break;}
-            ++passes;makespans.push_back(r.makespan);child_total+=r.child_s;
-            if(passes>=2)change=double(r.makespan>makespans[passes-2]?r.makespan-makespans[passes-2]:makespans[passes-2]-r.makespan)/double(std::max<u64>(r.makespan,1));
-            if(r.requests==0){change=0;converged=true;last=std::move(r);break;}
-            replay(r);++replays;
-            replay_total+=r.replay_s;
-            stability=slow->stability(r.keys,r.lat,dram_tol_ppm);
-            converged=passes>=2 && change*1e6<double(dram_tol_ppm) && stability.within_tolerance;
-            // Retain the installed table, so the real run repeats this
-            // observed child, whether validated or explicitly inconclusive.
-            if(converged || k==dram_max_passes){last=std::move(r);break;}
-            // Damping: when the mean latency reverses direction between
-            // replays (an oscillating iteration), the new table is averaged
-            // with the previous one, key by key.
-            double mean=r.mean_all;
-            if(replays>=2 && (mean-means.back())*(means.back()-means[means.size()-2])<0){
-                damped=true;++x.counts["dram_slow_damped"];
-                for(size_t i=0;i<r.keys.size();++i){
-                    size_t pos;if(slow->lookup(r.keys[i],pos))r.lat[i]=std::uint16_t((u64(r.lat[i])+slow->lat[pos]+1)/2);
-                }
-            }
-            means.push_back(mean);
-            slow->install(std::move(r.keys),std::move(r.lat));slow->fallback[0]=r.mean[0];slow->fallback[1]=r.mean[1];
-            last=std::move(r);
-        }
-        if(failed){
-            if(!fixed_point_log.is_open())fixed_point_log.open(x.directory+"/dram_fixed_point.jsonl",std::ios::app);
-            fixed_point_log<<"{\"command\":"<<dram_commands<<",\"child_failed\":true,\"converged\":false,\"prediction_status\":\"refused-child-pass\"}\n";
-            fixed_point_log.flush();
-            throw std::runtime_error("slow DRAM path: child pass failed; prediction unavailable");
-        }
-        slow->log=nullptr;slow->begin_command();
-        auto w0=std::chrono::steady_clock::now();
-        u64 t0=x.now();bool ok=run_once(cmd,flush);
-        u64 makespan=flush?x.now()-t0:chip->end_cycle-chip->start_cycle;
-        bool reproduced=ok && !makespans.empty() && makespan==makespans.back() && slow->requests==last.requests
-            && (slow->requests==0 || slow->matched==slow->requests);
-        converged=converged && reproduced;
-        double real_s=std::chrono::duration<double>(std::chrono::steady_clock::now()-w0).count();
-        tnca_dram::PcStats tot;
-        for(auto& p:last.replay.pcs){tot.reads+=p.reads;tot.writes+=p.writes;tot.row_hits+=p.row_hits;tot.row_misses+=p.row_misses;
-            tot.accepted_bursts+=p.accepted_bursts;tot.completed_bursts+=p.completed_bursts;tot.queue_refusals+=p.queue_refusals;
-            tot.peak_rw_queued_bursts=std::max(tot.peak_rw_queued_bursts,p.peak_rw_queued_bursts);
-            tot.row_conflicts+=p.row_conflicts;tot.read_row_hits+=p.read_row_hits;tot.read_row_misses+=p.read_row_misses;
-            tot.read_row_conflicts+=p.read_row_conflicts;tot.write_row_hits+=p.write_row_hits;tot.write_row_misses+=p.write_row_misses;
-            tot.write_row_conflicts+=p.write_row_conflicts;tot.refreshes+=p.refreshes;}
-        auto& c=x.counts;
-        ++c["dram_slow_commands"];++c["dram_slow_fixed_point_checked"];
-        c["dram_slow_child_passes"]+=passes;c["dram_slow_replays"]+=replays;if(!converged)++c["dram_slow_unconverged"];
-        c["dram_slow_requests"]+=slow->requests;c["dram_slow_unmatched"]+=slow->requests-slow->matched;
-        c["dram_replay_requests"]+=last.requests;c["dram_row_hits"]+=tot.row_hits;c["dram_row_misses"]+=tot.row_misses;
-        c["dram_replay_accepted_bursts"]+=tot.accepted_bursts;c["dram_replay_completed_bursts"]+=tot.completed_bursts;
-        c["dram_replay_queue_refusals"]+=tot.queue_refusals;
-        c["dram_replay_peak_rw_queued_bursts_per_pc"]=std::max(c["dram_replay_peak_rw_queued_bursts_per_pc"],tot.peak_rw_queued_bursts);
-        c["dram_row_conflicts"]+=tot.row_conflicts;c["dram_read_row_conflicts"]+=tot.read_row_conflicts;
-        c["dram_write_row_conflicts"]+=tot.write_row_conflicts;c["dram_refreshes"]+=tot.refreshes;
-        c["dram_replay_ticks"]+=last.replay.ticks;c["dram_replay_skipped"]+=last.replay.skipped;
-        c["dram_pseudo_channels_max"]=std::max<u64>(c["dram_pseudo_channels_max"],last.replay.pcs.size());
-        if(!fixed_point_log.is_open())fixed_point_log.open(x.directory+"/dram_fixed_point.jsonl",std::ios::app);
-        fixed_point_log<<"{\"command\":"<<dram_commands<<",\"kind\":\""<<(flush?"flush":cmd->grid?"grid":"program")
-            <<"\",\"passes\":"<<passes<<",\"replays\":"<<replays<<",\"child_failed\":"<<(failed?"true":"false")<<",\"converged\":"<<(converged?"true":"false")
-            <<",\"prediction_status\":\""<<(converged?"uncalibrated-fixed-point-checked":"inconclusive-fixed-point")
-            <<"\",\"same_requests\":"<<(stability.same_requests?"true":"false")<<",\"latencies_stable\":"<<(stability.within_tolerance?"true":"false")
-            <<",\"latency_max_delta\":"<<stability.max_delta<<",\"unmatched_replay_keys\":"<<stability.missing<<",\"reproduced_last_pass\":"<<(reproduced?"true":"false")
-            <<",\"damped\":"<<(damped?"true":"false")<<",\"last_rel_change\":"<<change<<",\"pass_makespans\":[";
-        for(size_t i=0;i<makespans.size();++i)fixed_point_log<<(i?",":"")<<makespans[i];
-        fixed_point_log<<"],\"makespan\":"<<makespan<<",\"requests\":"<<slow->requests<<",\"unmatched\":"<<slow->requests-slow->matched
-            <<",\"pseudo_channels\":"<<last.replay.pcs.size()<<",\"row_hits\":"<<tot.row_hits<<",\"row_misses\":"<<tot.row_misses
-            <<",\"row_conflicts\":"<<tot.row_conflicts<<",\"refreshes\":"<<tot.refreshes<<",\"mean_read_latency\":"<<slow->fallback[0]
-            <<",\"mean_write_latency\":"<<slow->fallback[1]<<",\"replay_ticks\":"<<last.replay.ticks<<",\"replay_skipped\":"<<last.replay.skipped
-            <<",\"replay_accepted_bursts\":"<<tot.accepted_bursts<<",\"replay_completed_bursts\":"<<tot.completed_bursts
-            <<",\"replay_queue_refusals\":"<<tot.queue_refusals<<",\"replay_peak_rw_queued_bursts_per_pc\":"<<tot.peak_rw_queued_bursts
-            <<",\"child_s\":"<<child_total<<",\"replay_s\":"<<replay_total<<",\"real_s\":"<<real_s<<"}\n";
-        fixed_point_log.flush();
-        return ok;
-    }
-#endif
-    void counters_json(std::ostream& o){
-        chip->report();
-        o<<"{";bool first=true;for(auto& c:x.counts){if(!first)o<<',';first=false;o<<'"'<<c.first<<"\":"<<c.second;}o<<"}";
-    }
-    void summary(const std::string& path,const std::string& status,u64 checked){
-        std::ofstream result(path);
-        auto count=[&](const char* key){auto it=x.counts.find(key);return it==x.counts.end()?u64(0):it->second;};
-        const char* prediction_status="uncalibrated";
-        if(dram_path_name=="slow")prediction_status=(count("dram_slow_commands")>0 &&
-            count("dram_slow_fixed_point_checked")==count("dram_slow_commands") &&
-            !count("dram_slow_unconverged") && !count("dram_slow_unmatched") && !count("dram_child_failures"))?
-            "uncalibrated-fixed-point-checked":"inconclusive-fixed-point";
-        result<<"{\"schema\":\"tnca-systemc-result/1\",\"status\":\""<<status<<"\",\"dram_path\":\""<<dram_path_name<<"\",\"ramulator2_commit\":\""<<dram_commit
-            <<"\",\"ramulator2_config\":\""<<dram_config<<"\",\"ramulator2_config_sha256\":\""<<dram_config_sha256<<"\",\"execution\":\"native-isa-event-driven\",\"coverage\":\"partial-ISA\",\"performance_gate\":\"not-measured\",\"calibration\":\"not-measured\",\"visible_cycles\":"<<x.now()<<",\"launches\":"<<chip->launches<<",\"checked_bytes\":"<<checked<<",\"counters\":";
-        counters_json(result);result<<",\"prediction_status\":\""<<prediction_status
-            <<"\",\"address_map_domain\":\""<<(physical_map?"axi-bo-physical-pc":"synthetic-logical")
-            <<"\",\"address_map_sha256\":\""<<dram_map_sha256<<"\",\"bank_row_mapping\":\"unverified\"}\n";
-    }
-};
-static Chip::Command grid_command(u64 pc,u64 arg,unsigned gx,unsigned gy,unsigned gz,u64 mask,u64 cores){
-    require(gx && gy && gz && u64(gx)*gy<=16777216 && u64(gx)*gy*gz<=16777216,"invalid grid");
-    Chip::Command c;c.grid=true;c.launch=Launch::from_mask(mask);c.launch.pc=pc;c.launch.arg=arg;c.gx=gx;c.gy=gy;c.gz=gz;c.core_mask=cores;
-    return c;
-}
-static int script(const char* config,const char* commands,const std::string& out){
-    Model m(config,out);std::ifstream input(commands);require(bool(input),"cannot open chip script");
-    std::string line;bool host_owned=true;u64 checked=0;u64 all_cores=(1ULL<<m.cfg.cores())-1;
-    auto launch=[&](Chip::Command c){
-        require(m.execute(std::unique_ptr<Chip::Command>(new Chip::Command(c))),"native chip model deadlocked");
-        auto& r=m.chip->result;
-        if(r.status!=STATUS_OK)throw std::runtime_error("MODEL_FAULT status="+std::to_string(r.status)+" code="+std::to_string(r.code)+" pc="+std::to_string(r.pc)+": "+r.why);
-    };
-    while(std::getline(input,line)){
-        if(line.empty() || line[0]=='#')continue;
-        std::istringstream s(line);std::string kind;s>>kind;
-        auto end=[&](){s>>std::ws;require(s.eof() || s.peek()=='#',"trailing chip command fields");};
-        if(kind=="code"){
-            std::string file;require(bool(s>>std::quoted(file)),"code requires a file");end();
-            std::ifstream image(file);require(bool(image),"code image missing");
-            std::vector<unsigned char> bytes;std::string word;
-            while(image>>word){u64 v=integer("0x"+word);for(unsigned b=0;b<8;++b)bytes.push_back(static_cast<unsigned char>(v>>(8*b)));}
-            require(!bytes.empty() && bytes.size()<=16384*8,"invalid code image size");
-            m.chip->host_write(0,bytes.data(),bytes.size());
-        }else if(kind=="data" || kind=="expect"){
-            std::string addr,file;require(bool(s>>addr>>std::quoted(file)),"data/expect require address and file");end();
-            u64 address=integer(addr);require(host_owned,"host data access requires drained ownership");
-            std::ifstream in(file,std::ios::binary);require(bool(in),"data file missing");
-            std::vector<unsigned char> bytes((std::istreambuf_iterator<char>(in)),std::istreambuf_iterator<char>());
-            require(!bytes.empty(),"empty data file");
-            if(kind=="data")m.chip->host_write(address,bytes.data(),bytes.size());
-            else{
-                std::vector<unsigned char> got(bytes.size());m.chip->host_read(address,got.data(),got.size());
-                for(size_t i=0;i<got.size();++i)require(got[i]==bytes[i],"chip numerical mismatch at address "+std::to_string(address+i));
-                checked+=got.size();
-            }
-        }else if(kind=="fence"){end();require(m.execute(nullptr,true),"maintenance deadlocked");host_owned=true;}
-        else if(kind=="launch" || kind=="launch_roles" || kind=="launch_mask"){
-            u64 id;unsigned gx,gy,gz;std::string pcstr,argstr;
-            require(bool(s>>id>>pcstr>>argstr>>gx>>gy>>gz),"launch requires id pc arg gx gy gz");
-            u64 mask=1;
-            if(kind=="launch_roles"){
-                std::string role_str,pair_str;require(bool(s>>role_str>>pair_str),"launch_roles requires mask and pair-alias flag");
-                auto roles=integer(role_str),pair=integer(pair_str);require(roles>0 && roles<16 && pair<=1,"invalid role mapping");
-                mask=roles|(pair<<28);
-            }else if(kind=="launch_mask"){
-                // The runtime's full 32-bit role mask: contexts, RPAIR (bit 28),
-                // RSLICE (bit 31) and log2 slices (bits 30:29).
-                std::string mask_str;require(bool(s>>mask_str),"launch_mask requires the role mask");mask=integer(mask_str);
-            }
-            end();
-            auto start=sc_time_stamp();
-            launch(grid_command(integer(pcstr),integer(argstr),gx,gy,gz,mask,all_cores));
-            m.x.span("grid completion",300,start,id);host_owned=false;
-        }else throw std::runtime_error("unknown chip script command: "+kind);
-    }
-    require(m.execute(nullptr,true),"maintenance deadlocked");
-    m.summary(out+"/summary.json","completed",checked);m.x.close();
-    return 0;
-}
-// Host server on two file descriptors (commands in, replies out); stdout and
-// stderr stay free for SystemC and diagnostics. One line per command; W and
-// R carry raw payload bytes after their line.
-struct Channel {
-    int in,out;std::vector<char> buffer;size_t head=0;
-    bool fill(){if(head==buffer.size()){buffer.clear();head=0;}char chunk[65536];ssize_t n;
-        do n=::read(in,chunk,sizeof chunk);while(n<0 && errno==EINTR);
-        if(n<=0)return false;
-        buffer.insert(buffer.end(),chunk,chunk+n);return true;}
-    bool line(std::string& s){
-        for(;;){for(size_t i=head;i<buffer.size();++i)if(buffer[i]=='\n'){s.assign(buffer.data()+head,i-head);head=i+1;return true;}
-            if(!fill())return false;}
-    }
-    void bytes(unsigned char* p,u64 n){
-        u64 got=0;while(got<n){if(head==buffer.size() && !fill())throw std::runtime_error("host channel closed mid-payload");
-            u64 take=std::min<u64>(n-got,buffer.size()-head);std::memcpy(p+got,buffer.data()+head,take);head+=take;got+=take;}
-    }
-    void send(const void* p,size_t n){const char* c=static_cast<const char*>(p);while(n){ssize_t k=::write(out,c,n);if(k<0 && errno==EINTR)continue;
-        require(k>0,"host reply channel closed");c+=k;n-=size_t(k);}}
-    void send(const std::string& s){send(s.data(),s.size());}
-};
-static int serve(const char* config,const std::string& out,int fd_in,int fd_out){
-    Model m(config,out);Channel ch{fd_in,fd_out,{},0};m.chip->serving=true;
-    ch.send("READY "+std::to_string(m.cfg.cores())+" "+std::to_string(m.cfg.get("memory_base"))+" "+std::to_string(m.cfg.get("memory_bytes"))+"\n");
-    std::string line;
-    try{
-        while(ch.line(line)){
-            std::istringstream s(line);std::string op;s>>op;
-            if(op=="W" || op=="R"){
-                u64 address,n;require(bool(s>>address>>n),"W/R need address and length");
-                std::vector<unsigned char> data(n);
-                if(op=="W"){ch.bytes(data.data(),n);m.chip->host_write(address,data.data(),n);ch.send("OK\n");}
-                else{m.chip->host_read(address,data.data(),n);ch.send("OK "+std::to_string(n)+"\n");ch.send(data.data(),n);}
-                m.chip->host_charge(n);
-            }else if(op=="L" || op=="G"){
-                std::unique_ptr<Chip::Command> c(new Chip::Command);
-                u64 pc,arg,mask,deadline;
-                if(op=="L"){
-                    unsigned px,py,pz,nx,ny,nz;require(bool(s>>pc>>arg>>mask>>px>>py>>pz>>nx>>ny>>nz>>deadline),"L fields");
-                    c->launch=Launch::from_mask(mask);c->launch.pc=pc;c->launch.arg=arg;
-                    c->launch.px=px;c->launch.py=py;c->launch.pz=pz;c->launch.nx=nx;c->launch.ny=ny;c->launch.nz=nz;
-                }else{
-                    unsigned gx,gy,gz,group;u64 cores,stride;require(bool(s>>pc>>arg>>mask>>gx>>gy>>gz>>cores>>stride>>group>>deadline),"G fields");
-                    require(group==1 || group==2 || group==4,"physical group width");
-                    require(cores && cores<(1ULL<<m.cfg.cores()),"active core mask outside the modeled cores");
-                    *c=grid_command(pc,arg,gx,gy,gz,mask,cores);c->stride=stride;c->group=group;
-                }
-                c->deadline=deadline;
-                if(!m.execute(std::move(c)))throw std::runtime_error("MODEL_DEADLOCK: no runnable process and the launch did not complete");
-                auto& r=m.chip->result;
-                std::ostringstream reply;reply<<"DONE "<<r.status<<' '<<r.code<<' '<<r.pc<<' '<<m.chip->start_cycle<<' '<<m.chip->end_cycle<<' '<<r.retired<<'\n';
-                ch.send(reply.str());
-                if(r.status!=STATUS_OK)std::cerr<<"launch status "<<r.status<<": "<<r.why<<'\n';
-            }else if(op=="C"){std::ostringstream o;m.counters_json(o);auto t=o.str();ch.send("OK "+std::to_string(t.size())+"\n");ch.send(t);}
-            else if(op=="F"){require(m.execute(nullptr,true),"maintenance deadlocked");ch.send("OK\n");}
-            else if(op=="T"){unsigned on;require(bool(s>>on) && on<=1,"T needs 0 or 1");
-                require(m.cfg.get("memory_model")==1 || on,"untimed execution needs the timeline memory (memory_model=1)");
-                m.x.functional=!on;++m.x.counts[on?"host_timing_on":"host_timing_off"];ch.send("OK\n");}
-            else if(op=="X"){m.summary(out+"/summary.json","completed",0);m.x.close();ch.send("BYE\n");return 0;}
-            else throw std::runtime_error("unknown host command: "+op);
-        }
-        throw std::runtime_error("host channel closed without X");
-    }catch(const std::exception& e){
-        std::string why=e.what();for(auto& ch_:why)if(ch_=='\n')ch_=' ';
-        try{ch.send("ERR "+why+"\n");}catch(...){}
-        throw;
-    }
-}
-int sc_main(int argc,char** argv){try{
-    sc_set_time_resolution(1,SC_PS);
-    if(argc==2 && std::string(argv[1])=="--classify"){classify();return 0;}
-    if(argc==6 && std::string(argv[1])=="--serve")return serve(argv[2],argv[3],int(integer(argv[4])),int(integer(argv[5])));
-    require(argc==4,"usage: tnca-chip CONFIG COMMANDS OUTPUT_DIRECTORY | --serve CONFIG OUTPUT_DIRECTORY IN_FD OUT_FD | --classify");
-    return script(argv[1],argv[2],argv[3]);
-}catch(const std::exception& e){std::cerr<<"MODEL_REFUSED: "<<e.what()<<'\n';return 2;}}
+// The chip, its command loop and the process entry points are the platform's
+// host side (chip_host.inc): the transport the evaluator drives and the cycle
+// count it reports, built from these device parts.
+#include "chip_host.inc"

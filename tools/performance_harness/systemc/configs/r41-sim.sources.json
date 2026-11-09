@@ -1,0 +1,372 @@
+{
+ "_note": "Provenance of r41cal/make_config.py's keys: image (device description or profile), derived (RTL structure), testbench, model (control). Evidence with file:line: the R41 structure inventory of 2026-11-08. Keys not listed keep the base file's value.",
+ "_base": "r41-hbm8-device-service.cfg",
+ "_device": "u280-3core-r41",
+ "_profile": "core-vrf-sync-v5-x8-g2c4-dp-board",
+ "_not_expressible": {
+  "home same-line spacing": "two requests to one line at least 2 cycles apart; RQ_N 16 request buffer",
+  "VALU late class, writeback-slot reservation": "core datapath details",
+  "hybrid LSU command landing register": "a memory instruction leaves X when the one-entry register is empty (tnca_core.v g_lsu_hybrid pending) and the word unit takes it later. The model's contexts reserve issue slots ahead, so an access reserved at landing reorders the word path; tried 2026-11-08, worse on the visible set (median 3.4 -> 4.5 %, max 12.7 -> 22.7 %). The model waits for the unit instead",
+  "VRF bank ports beyond one instruction's sources": "the compiler's bank allocation (TNCA_BANK_ALLOC) moves op.linear small by 3.8 % in RTL; the model sees no same-instruction conflict either way"
+ },
+ "nx": {
+  "value": 3,
+  "class": "image",
+  "source": "device platform.core_count (3x1 mesh, board top NX)"
+ },
+ "ny": {
+  "value": 1,
+  "class": "image",
+  "source": "board top: one row"
+ },
+ "sets": {
+  "value": 32,
+  "class": "image",
+  "source": "device uncore.SETS -> home pipe SETS (tile)"
+ },
+ "ways": {
+  "value": 8,
+  "class": "image",
+  "source": "device uncore.WAYS"
+ },
+ "outlets": {
+  "value": 3,
+  "class": "image",
+  "source": "one outlet per core (home s -> outlet s % PORTS, tnca_mem_ports.v)"
+ },
+ "active_outlets": {
+  "value": 3,
+  "class": "image",
+  "source": "device uncore.MEM_PORTS"
+ },
+ "outstanding": {
+  "value": 32,
+  "class": "image",
+  "source": "device uncore.AXI_OUT_N: outlet slots and the admission limit (MMIO reset)"
+ },
+ "clock_hz": {
+  "value": 100000000,
+  "class": "image",
+  "source": "device platform.kernel_clock_mhz (bench clock #5 = 100 MHz)"
+ },
+ "mshrs": {
+  "value": 64,
+  "class": "image",
+  "source": "device uncore.HOME_MSHR_N -> MSHR_N (multicore shell)"
+ },
+ "targets": {
+  "value": 128,
+  "class": "derived",
+  "source": "TARGET_N = HOME_MSHR_N>8 ? 2*HOME_MSHR_N : 16 (multicore shell)"
+ },
+ "noc_stages": {
+  "value": 3,
+  "class": "derived",
+  "source": "NOC_LINK_STAGES + router stage per XY hop (router/mesh unchanged since R40)"
+ },
+ "tl_slice_to_outlet_cycles": {
+  "value": 6,
+  "class": "derived",
+  "source": "home issues its memory request at accept+3 (model: accept+1) + MEM_HOME_STAGES + LINK_STAGES link stages"
+ },
+ "tl_outlet_to_slice_cycles": {
+  "value": 6,
+  "class": "derived",
+  "source": "MEM_HOME_STAGES + LINK_STAGES response registers + MS_FILL latch + fill-unit start (R40 FIT 13 retired)"
+ },
+ "tl_outlet_read_issue_cycles": {
+  "value": 1,
+  "class": "derived",
+  "source": "AXI_PIPELINED_ISSUE: one issue register, next line on the AR handshake"
+ },
+ "tl_outlet_write_issue_cycles": {
+  "value": 1,
+  "class": "derived",
+  "source": "AXI_PIPELINED_ISSUE: a write leaves after AW and W"
+ },
+ "tl_outlet_beat_cycles": {
+  "value": 0,
+  "class": "image",
+  "source": "AXI_DATA_W 512: one beat per 64-byte line"
+ },
+ "tl_slice_hit_occupancy": {
+  "value": 1,
+  "class": "derived",
+  "source": "home pipe takes one request per cycle (tnca_home_pipe.v)"
+ },
+ "tl_slice_hit_latency": {
+  "value": 4,
+  "class": "derived",
+  "source": "accept, S1 tag read, S2 decide, S3 data -> response valid at +4"
+ },
+ "tl_slice_miss_occupancy": {
+  "value": 1,
+  "class": "derived",
+  "source": "S2 allocates an MSHR in one cycle"
+ },
+ "tl_slice_mreq_occupancy": {
+  "value": 0,
+  "class": "derived",
+  "source": "the memory request leaves from MSHR state on its own port"
+ },
+ "tl_slice_fill_occupancy": {
+  "value": 0,
+  "class": "derived",
+  "source": "separate fill unit; pairs with wake 1"
+ },
+ "tl_slice_wake_occupancy": {
+  "value": 1,
+  "class": "derived",
+  "source": "one target per cycle; HOME_LINE_PIPE 2 chains MSHR fills with no gap (1 leaves one)"
+ },
+ "tl_slice_writeback_occupancy": {
+  "value": 0,
+  "class": "derived",
+  "source": "victims queue in S3 (4-entry WBQ), issued before reads"
+ },
+ "tl_full_line_nofill": {
+  "value": 1,
+  "class": "image",
+  "source": "device HOME_LINE_WRITE_NOFILL"
+ },
+ "tl_core_beat_bytes": {
+  "value": 64,
+  "class": "image",
+  "source": "HYBRID_LSU: 512-bit core port"
+ },
+ "tl_noc_payload_bytes": {
+  "value": 64,
+  "class": "derived",
+  "source": "one 64-byte line per NoC flit (NOC_PAYLOAD_W)"
+ },
+ "tl_hybrid_lsu": {
+  "value": 1,
+  "class": "image",
+  "source": "device HYBRID_LSU: line path for line-eligible accesses, word path for the rest"
+ },
+ "tl_line_slots": {
+  "value": 64,
+  "class": "image",
+  "source": "device LINE_SLOTS: line-path slots per core"
+ },
+ "tl_word_units": {
+  "value": 1,
+  "class": "image",
+  "source": "profile LSU_INFLIGHT -> SLOW_UNITS = LSU_INFLIGHT>=2 ? 2 : 1 word-path units (tnca_core.v)"
+ },
+ "tl_mem_issue_gap": {
+  "value": 3,
+  "class": "derived",
+  "source": "x_mem_claim blocks R in X, the landing register in X+1: one memory instruction per 3 cycles"
+ },
+ "tl_word_setup_cycles": {
+  "value": 3,
+  "class": "derived",
+  "source": "word unit: first beat at X+4 (tnca_lsu.v; inferred count)"
+ },
+ "tl_grid_admission_cycles": {
+  "value": 4,
+  "class": "derived",
+  "source": "tnca_grid_dispatch.v: four registered cycles before the first command"
+ },
+ "tl_launch_drain": {
+  "value": 1,
+  "class": "derived",
+  "source": "done waits for memory_drained: every outlet transaction complete (tnca_multicore_axi.v)"
+ },
+ "dma_line_engine": {
+  "value": 1,
+  "class": "image",
+  "source": "device TENSOR_LINE -> transfer engine LINE_ENGINE (eligibility: stage B)"
+ },
+ "dma_line_buffers": {
+  "value": 64,
+  "class": "derived",
+  "source": "LSLOT_N = 2^(MTAG_W-1), the port tag width from LINE_SLOTS (inferred)"
+ },
+ "dma_queue": {
+  "value": 8,
+  "class": "derived",
+  "source": "line-eligible transfer commands overlap up to CMD_N 8 (word walk: 1)"
+ },
+ "dma_line_rtl": {
+  "value": 1,
+  "class": "derived",
+  "source": "le_elig (not transposed, row start line-aligned, outer strides x64, whole-line rows, inside) else the word walk; setup rank+3 (+TENSOR_MUL_PIPE) after the previous issue; snapshot 4 lines + 6, unaligned 32 serial words (tnca_tensor.v)"
+ },
+ "mtx_dp": {
+  "value": 1,
+  "class": "image",
+  "source": "profile elaboration.MAC_DP"
+ },
+ "mtx_pipe_cycles": {
+  "value": 6,
+  "class": "derived",
+  "source": "PIPE = OPND_REG + popcount(MAC_CUTS[4:0]) on the MAC lane, drain PIPE+1 (tnca_matrix.v)"
+ },
+ "mtx_dp_extra_latency": {
+  "value": 0,
+  "class": "derived",
+  "source": "dp and plain m.mma share the MAC lane and its PIPE"
+ },
+ "mtx_dp_prefetch": {
+  "value": 0,
+  "class": "derived",
+  "source": "each group step reads B before its MACs"
+ },
+ "mtx_rf_read_cycles": {
+  "value": 3,
+  "class": "image",
+  "source": "profile MTX_VRF_REG registers every matrix VRF read (2 + MTX_VRF_REG)"
+ },
+ "mtx_mac_unbuffered_cycles": {
+  "value": 3,
+  "class": "image",
+  "source": "one matrix VRF read per unbuffered MAC (2 + MTX_VRF_REG)"
+ },
+ "mtx_abuf": {
+  "value": 1,
+  "class": "image",
+  "source": "profile MTX_ABUF"
+ },
+ "vrf_prefetch": {
+  "value": 1,
+  "class": "image",
+  "source": "profile VRF_PREFETCH"
+ },
+ "scalar_latency": {
+  "value": 1,
+  "class": "derived",
+  "source": "X_PROD_S forwarding"
+ },
+ "predicate_latency": {
+  "value": 1,
+  "class": "derived",
+  "source": "single-cycle VALU op"
+ },
+ "reduction_latency": {
+  "value": 3,
+  "class": "derived",
+  "source": "integer reductions are in the late class, no X_PROD"
+ },
+ "fp_reduction_latency": {
+  "value": 16,
+  "class": "derived",
+  "source": "4 levels x (FP_LAT+1), then done -> red_pend -> W"
+ },
+ "sfu_occupancy": {
+  "value": 27,
+  "class": "derived",
+  "source": "SFU pass VLEN+LAT plus the core's done -> red_pend -> writeback; RTL trace op.rmsnorm tiny (rtl2, single core): four SFU issues exactly 27 cycles apart (author's reading 22)"
+ },
+ "sfu_latency": {
+  "value": 28,
+  "class": "derived",
+  "source": "as sfu_occupancy; the consumer issues 29-31 cycles after the SFU in the same trace (author's 23)"
+ },
+ "barrier_latency": {
+  "value": 1,
+  "class": "derived",
+  "source": "mb.arm / mb.test write in X"
+ },
+ "reduction_vector_extra": {
+  "value": 1,
+  "class": "derived",
+  "source": "integer reduction broadcast in the late class"
+ },
+ "dispatch_cycles": {
+  "value": 6,
+  "class": "derived",
+  "source": "per-program dispatch (R40 derivation, path unchanged), DISPATCH_STAGES 2"
+ },
+ "launch_cycles": {
+  "value": 5,
+  "class": "derived",
+  "source": "per program; grid admission is tl_grid_admission_cycles"
+ },
+ "tl_fp_fold": {
+  "value": 1,
+  "class": "derived",
+  "source": "red_busy_next: a reduction or SFU pass waits for FP ops in flight; FP ops wait behind a reduction"
+ },
+ "tl_fp_fold_fp_wait": {
+  "value": 14,
+  "class": "derived",
+  "source": "after a reduction in X, an ordinary FP op waits about 14 cycles (sub-read, inferred count)"
+ },
+ "tl_fp_fold_next": {
+  "value": 16,
+  "class": "derived",
+  "source": "after a reduction in X, the next reduction or SFU pass waits 16 (4 levels x (FP_LAT+1))"
+ },
+ "tl_stall_front": {
+  "value": 1,
+  "class": "derived",
+  "source": "stall_front = stall_raw && !rp_go: a stall in R other than a register hazard holds every context; rp_go needs another context's instruction in D (d_valid), so with all others parked the hazarded one holds R; fetch is round robin from rr_ptr (tnca_core.v)"
+ },
+ "hbm_latency_cycles": {
+  "value": 61,
+  "class": "testbench",
+  "source": "mean over outlets of LATENCY 25+19p ([25, 44, 63]) + 2 + mean slot jitter (id*11)%31 (15.0) + mean arready wait 0.45; per-outlet latency and slot identity: stage B"
+ },
+ "tl_hbm_write_latency_cycles": {
+  "value": 72,
+  "class": "testbench",
+  "source": "mean LATENCY + 15 + 1 + mean (id*7)%23 (11.0) + mean AW/W wait 1.08"
+ },
+ "tl_tb_hbm": {
+  "value": 1,
+  "class": "testbench",
+  "source": "per outlet: LATENCY 25+19p (board_regs) + slot jitter (id*11)%31 read, 15+(id*7)%23 write (tnca_axi_line_model.v), slot = lowest free (tnca_line_axi.v); hbm_latency_cycles above is then unused"
+ },
+ "tl_tb_latency_base": {
+  "value": 25,
+  "class": "testbench",
+  "source": "tnca_multicore_board_regs.v: LATENCY(25+p*19)"
+ },
+ "tl_tb_latency_step": {
+  "value": 19,
+  "class": "testbench",
+  "source": "tnca_multicore_board_regs.v: LATENCY(25+p*19)"
+ },
+ "tl_tb_read_wait": {
+  "value": 0,
+  "class": "testbench",
+  "source": "arready true 69 % of cycles: mean wait 0.45, rounded"
+ },
+ "tl_tb_write_wait": {
+  "value": 1,
+  "class": "testbench",
+  "source": "awready 64 %, wready 59 %: mean wait 1.08, rounded"
+ },
+ "host_launch_cycles": {
+  "value": 0,
+  "class": "testbench",
+  "source": "the count runs from MMIO decode to done: host time is outside it"
+ },
+ "host_transfer_cycles": {
+  "value": 0,
+  "class": "testbench",
+  "source": "as host_launch_cycles"
+ },
+ "host_transfer_cycles_per_kib": {
+  "value": 0,
+  "class": "testbench",
+  "source": "as host_launch_cycles"
+ },
+ "dram_path": {
+  "value": 0,
+  "class": "testbench",
+  "source": "the testbench HBM has fixed latency and no banks"
+ },
+ "memory_model": {
+  "value": 1,
+  "class": "model",
+  "source": "timeline memory: the only path with line-granular ports"
+ },
+ "core_pipeline": {
+  "value": 1,
+  "class": "model",
+  "source": "core pipeline: units, freezes, park, writeback steal"
+ }
+}

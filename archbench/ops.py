@@ -292,6 +292,64 @@ for tier, (m, k, n) in FP8_GEMM.items():
        note='weight-only FP8: the weight is read as E4M3 (1 byte), scaled once, and the GEMM is bf16')
 
 
+# Decode-shaped block-scaled FP8: the format the FP8 checkpoints are stored in
+# (E4M3 weights with one fp32 scale per 128x128 block) and how a decode step
+# runs it: one token row, the activation quantised dynamically per 1x128
+# group, one FP8 GEMM per 128-deep K block with the block's activation and
+# weight scales applied to its fp32 partial, bf16 out. The block GEMMs are
+# tensorwise torch._scaled_mm calls with unit scales: the platform's default
+# path compiles CPU tensors (platforms/tnca.py), where tracing accepts only
+# tensorwise and rowwise recipes, so a single blockwise _scaled_mm / F.scaled_mm
+# cannot be compiled there; and the CPU reference is then torch's own op, as
+# for the other FP8 points. N and K are multiples of 128; the weight is larger
+# than the 48 KiB NUCA, so it streams.
+
+TILE_FP8 = 128
+
+
+class W8A8BlockLinear(torch.nn.Module):
+    """Dynamic W8A8 with block scales: the activation quantised per 1x128
+    group (amax / 448), the E4M3 weight (n, k) with one fp32 scale per
+    128x128 block in the checkpoints' (n/128, k/128) layout, per K block an
+    FP8 GEMM to fp32 scaled by the block's activation scale and weight
+    scales, summed in K order, bf16 out."""
+    def forward(self, x, w, ws):
+        m, k = x.shape
+        g = x.float().reshape(m, k // TILE_FP8, TILE_FP8)
+        sa = g.abs().amax(-1).clamp(min=1e-12) / 448.0
+        q = (g / sa[..., None]).clamp(-448.0, 448.0).reshape(m, k).to(torch.float8_e4m3fn)
+        one = torch.ones((), dtype=torch.float32, device=x.device)
+        out = None
+        for kb in range(k // TILE_FP8):
+            s = slice(kb * TILE_FP8, (kb + 1) * TILE_FP8)
+            part = torch._scaled_mm(q[:, s], w[:, s].t(), scale_a=one, scale_b=one,
+                                    out_dtype=torch.float32)
+            part = part * sa[:, kb:kb + 1] * ws[:, kb].repeat_interleave(TILE_FP8)[None, :]
+            out = part if out is None else out + part
+        return out.to(torch.bfloat16)
+
+
+# validation: small (one program per core, two K blocks, 96 KiB of weight);
+# final: medium (three K blocks); k128 kept as the cheaper fallback shape.
+FP8_BLOCK_DECODE = dict(small=[(1, 256, 384), (1, 128, 384)], medium=[(1, 384, 384)])
+for tier, shapes in FP8_BLOCK_DECODE.items():
+    for (m, k, n) in shapes:
+        def mk_w8a8_block(seed, m=m, k=k, n=n):
+            g = gen(seed)
+            x = randn(g, (m, k), 'bf16', 2.0)
+            w = (torch.randn(n, k, generator=g)
+                 * torch.pow(2.0, torch.randint(-2, 3, (n, k), generator=g).float())).to(torch.float8_e4m3fn)
+            ws = torch.rand(n // TILE_FP8, k // TILE_FP8, generator=g) * 0.02 + 0.005
+            return W8A8BlockLinear(), (x, w, ws)
+        kb = k // TILE_FP8
+        op('w8a8_block_linear', tier, 'e4m3', dict(m=m, k=k, n=n), mk_w8a8_block,
+           Demand(macs=m * k * n, fp_ops=4 * m * k + 2 * m * n * kb,
+                  read_bytes=m * k * B['bf16'] + n * k * B['e4m3'] + kb * (n // TILE_FP8) * 4,
+                  write_bytes=m * n * B['bf16']),
+           out='bf16', note='decode-shaped block-scaled W8A8: per-1x128 dynamic activation '
+                            'quantisation, 128x128 weight scales applied after each K block')
+
+
 # ---------------------------------------------------------------------------
 # Attention
 # ---------------------------------------------------------------------------

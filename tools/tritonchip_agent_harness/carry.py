@@ -9,7 +9,11 @@ refused: the base is measured again.
 
     MEASUREMENT_NEUTRAL   python/tnca/backends/board_relay.py: the card relay's log of anomalies (the
                           read race fixed on 2026-11-09). The simulator never imports it, and it counts
-                          a finished launch the same before and after.
+                          a finished launch the same before and after. And that fix's own test, which
+                          no measurement runs.
+
+The whole tree's difference counts, not only the task's platform paths: the card host runs a checkout of
+the platform commit, not just those files.
 """
 
 from __future__ import annotations
@@ -24,7 +28,7 @@ from . import board, evaluator
 from .task import Task
 from .workspace import git
 
-MEASUREMENT_NEUTRAL = ("python/tnca/backends/board_relay.py",)
+MEASUREMENT_NEUTRAL = ("python/tnca/backends/board_relay.py", "python/tnca/test_board_relay_observe_cpu.py")
 
 
 class CarryError(RuntimeError):

@@ -60,8 +60,7 @@ def transfers(session, *, stacks=False):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    # the frozen point the inventory names (the benchmark is hidden from agents; its name stays here)
-    ap.add_argument('--point', default='op.attention_decode/tiny/fp16-b1-h2-l16-d16')
+    ap.add_argument('--point', required=True)
     ap.add_argument('--steps', type=int, default=2)
     ap.add_argument('--source-tree', help='require this parent suite software digest')
     args = ap.parse_args()

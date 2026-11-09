@@ -9,7 +9,9 @@ cores, one per SLR of the FPGA, each with a home slice of a shared NUCA cache
 and a line-wide transfer engine, three 512-bit HBM outlets striped across the
 memory, at a 100 MHz kernel clock. Its matrix unit executes the grouped
 dot-product opcode `m.mma.dp.async` (ISA sec 9C.4): four E4M3 products per lane
-and cycle, two for the other formats. Improve the device cycles of small
+and cycle, two for the other formats. This run's base is that machine as an
+earlier run left it: 64 sets in each home cache (R41 had 32) and four changes to
+the compiler and the runtime, measured on the card. Improve the device cycles of
 PyTorch workloads on it without changing any numerical result. The whole chain
 stays: PyTorch → `torch.compile` (Inductor) → Triton → the TNCA compiler → ISA
 → RTL. You may change the compiler, the ISA and the hardware: the RTL, the
@@ -62,12 +64,14 @@ top level already passes.
 A benchmark you are not shown. You will not find it in your copy of the
 repository, and you are not told its programs. What you are told is this:
 
-- **The workloads** are small PyTorch programs of the kinds language and
-  vision models are made of: element-wise operations, reductions and
-  normalisations, data movement, and matrix multiplication, at shapes small
-  enough for the RTL simulator, in the floating-point types TNCA's compiler
-  supports, the OCP 8-bit formats included (`torch._scaled_mm` and the
-  linear layers quantisation code writes with it).
+- **The workloads** are PyTorch programs of the kinds language and vision
+  models are made of: element-wise operations, reductions and normalisations,
+  data movement, matrix multiplication and attention, and whole decoder
+  models, in the floating-point types TNCA's compiler supports, the OCP 8-bit
+  formats included (`torch._scaled_mm` and the linear layers quantisation
+  code writes with it). They come in three sizes: small ones of a few
+  thousand to a few hundred thousand cycles, medium ones, and large ones
+  (realistic model shapes, too slow for the RTL simulator).
 - **How a program runs:** it is given to `torch.compile` with TNCA as the
   backend (`TNCA_OPT_LEVEL=2`), on the `core-vrf-sync-v5-x8-g2c4-dp-board`
   profile as your changes leave it, on the machine your description builds
@@ -80,10 +84,13 @@ repository, and you are not told its programs. What you are told is this:
   PyTorch's on the CPU beyond the usual tolerance for its type, if any of it
   falls back to the host, or if it produces no result. The other programs still
   count.
-- **The score** compares each program's device time with the base machine's:
-  how many programs passed, the geometric mean of the speedups over the
-  programs that passed, and the share of all programs that passed and got
-  faster.
+- **The score** is measured on the card (below) and compares each program's
+  device time with the base machine's on the card. Programs are grouped into
+  families, one per operator (a decoder's decode and prefill programs form one
+  end-to-end family that weighs twice); each family's value is the geometric
+  mean of its programs' speedups, a program that fails counting as 0.5; the
+  score is the weighted geometric mean of the families. A family counts once
+  however many programs it has.
 
 ## How far each program is from the machine's limit
 
@@ -96,9 +103,9 @@ time, says how far the program is from that limit; the resource that binds says
 which limit it is. On the base machine every scored program is far from it:
 most are bound by memory and below 2 %, the matrix products reach about 15 %.
 
-The reply to a scoring request lists every validation program in a fixed order,
-numbered and never named: the resource that binds it, its η and the base's η. A
-board request's reply does the same for the card's programs. The test-case
+The reply to a scoring request lists every program of the scored set in a fixed
+order, numbered and never named: its family, the resource that binds it, its η
+and the base's η. The test-case
 skill's `tnca_case.py` prints η and the binding resource for a case of your own,
 against one core's limit (the evaluation's per-core bound): it compares your
 cases with each other, and a version with the one before.
@@ -113,12 +120,14 @@ teaches little.
 ## The card
 
 The device is an FPGA: an AMD Alveo U280 with its kernel clock fixed at
-100 MHz, so device cycles are latency. A submission that changes the hardware
-(an RTL file, a profile's parameters, or the description's uncore) is built for
-that card at 100 MHz and its programs are run on it. If the design does not fit
-the card, does not close timing at 100 MHz, or any program counts other cycles
-on the card than in simulation beyond the tolerance the base machine shows,
-every program fails. The three cores sit in three SLRs: a path that crosses
+100 MHz, so device cycles are latency. Every commit is scored by running its
+programs on that card. A commit that changes the hardware (an RTL file, a
+profile's parameters, or the description's uncore) is first built for the card
+at 100 MHz (a flow), and only a built machine can be scored. If the design does
+not fit the card or does not close timing at 100 MHz, it cannot be built. The
+run's result is certified on the card afterwards with programs you are not
+shown; if any of them counts other cycles on the card than in simulation beyond
+the tolerance the base machine shows, every program fails. The three cores sit in three SLRs: a path that crosses
 between them is the hardest to close, and the base machine already fills most
 of SLR0; the second load/store unit it gave up costs about 36k LUTs.
 
@@ -126,9 +135,10 @@ of SLR0; the second load/store unit it gave up costs about 36k LUTs.
 taken from 4 h 40 min to more than 8 h on one build machine (31 GB of memory;
 a large design swaps there) and about 6 h on the other. A flow is cut at its
 cap. A flow you submit later than about 16 hours into your time will most likely
-come back after your time is up: it still runs to its end, unseen by you, and
-its image can serve the certification after the run. A flow that wrote no image
-but got through routing still tells you whether the routed design met timing.
+not come back before your time is up, and a flow still running then is stopped:
+a hardware change counts only once a scoring request has run it on the card. A
+flow that wrote no image but got through routing still tells you whether the
+routed design met timing.
 
 **What the quick tier cannot see.** `fpga-quick` synthesises the top level
 out of context and passes it only the profile's parameters that top declares:
@@ -186,9 +196,9 @@ is pointed at TNCA.
 
 Performance models of this machine are in `tools/performance_harness/systemc/`,
 built as one program, `tnca-chip`; a configuration picks the model. They are
-not the score: the score is the simulation above and, for hardware, the card.
-They are fast, a few seconds for a case the simulator takes minutes over, so
-use them to decide what is worth a simulation, a scoring request or a flow.
+not the score: the score is the card. They are fast, a few seconds for a case
+the simulator takes minutes over, and between card sessions they and the
+simulation are the only measurements there are.
 Your changes to `systemc/` stay in your working directory and never enter a
 submission. Build the program once (SystemC is installed at `/opt/systemc`):
 
@@ -233,7 +243,9 @@ with the model's hook first on `PYTHONPATH` and the model as the backend:
   LSU, transfer and matrix engines, then the dispatcher, the mesh, each core's
   home cache and the adapters, as the RTL has them. Checked against the
   simulator with the memory's timing replayed from a recording, it matched
-  every cycle of every recorded stream. On its own, the memory behind the
+  every cycle of every recorded stream (on R41 with 32 home-cache sets; with
+  this base's 64, its configuration's `sets=64`, no check has been made beyond
+  a few small cases). On its own, the memory behind the
   adapters (HBM, the AXI slave) is a fixed-latency stand-in, and that is where
   its error comes from: on small visible cases a median of 2 %, +17 % at worst
   (a memory-bound case); on the test-case skill's eight examples within 3 %.
@@ -278,3 +290,8 @@ with the model's hook first on `PYTHONPATH` and the model as the backend:
   up with a change of yours is for you to judge: run the same case on the
   simulator and on it and compare the totals; a gap well beyond its few
   percent says it does not.
+
+  A change to the RTL's timing is one the CA Model does not have until its
+  source changes to match: after one, it describes the old machine. The trace
+  gate in `tools/performance_harness/align/` compares the two cycle by cycle on
+  a case of your own and names the first event where they part.

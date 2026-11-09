@@ -1,6 +1,6 @@
 """Tiled element-wise lowering: a 1-D program as a loop over register tiles.
 
-Option `tiled_pointwise` (TNCA_TILED_POINTWISE), default 0 (off):
+Option `tiled_pointwise` (TNCA_TILED_POINTWISE), selected by the backend:
 
   0  off: the program is lowered as before.
   1  a 1-D element-wise program of block W runs as a loop over tiles of
@@ -148,7 +148,14 @@ def plan(imp, ops, module_text, func_name):
             return p
         imp.tiled_pointwise = 2
         try:
-            return _plan(imp, ops, module_text, func_name)
+            fallback = _plan(imp, ops, module_text, func_name)
+            # In short blocks, grouped narrow-element word transfers
+            # cost more setup than they hide. Keep the narrow kernel there.
+            if fallback is not None and fallback.width <= 128 and (
+                    any(imp._ELEM_BYTES.get(a.elem) != 4 for a in fallback.accesses.values())
+                    or any(o.get_name() in _LONG_OPS for o in ops)):
+                return None
+            return fallback
         finally:
             imp.tiled_pointwise = 3
     return _plan(imp, ops, module_text, func_name)
@@ -204,6 +211,26 @@ def _plan(imp, ops, module_text, func_name):
     tile_min = 2 * vlen
     if width is None or width % tile_min or width < 2 * tile_min:
         return _no(imp, 9)
+    # A padded block whose final store ends inside a vector makes the
+    # grouped loop pay for many masked lanes. Let the narrow configuration
+    # handle such tails.
+    for o in stores:
+        if o.get_num_operands() <= 2:
+            continue
+        mo = defs.get(o.get_operand(2).id())
+        if mo is None or mo.get_name() != 'arith.cmpi':
+            continue
+        no = defs.get(mo.get_operand(1).id())
+        limit = None
+        if no is not None and no.get_name() == 'tt.splat':
+            limit = imp._scalar_const(no.get_operand(0).id())
+        elif no is not None and no.get_name() == 'arith.constant':
+            literal = (getattr(imp, '_printed_consts', None) or {}).get(no.get_result(0).id(), '')
+            match = re.fullmatch(r'dense<(\d+)>', literal)
+            if match:
+                limit = int(match.group(1))
+        if limit is not None and int(limit) % vlen:
+            return _no(imp, 34)
     # Every arange is the lane index of `splat(s) + arange`, and that splat
     # serves only such sums: then tile t is lanes [t*TILE, (t+1)*TILE).
     ranges = [o for o in tensor_ops if o.get_name() == 'tt.make_range']
@@ -316,6 +343,10 @@ def _plan(imp, ops, module_text, func_name):
         if imp._ELEM_BYTES.get(elem) not in (1, 2, 4, 8):
             continue
         accesses[id(o)] = Access(o, 'vstore' if store else 'vload', name, elem, base, None)
+    if width <= 128 and len(accesses) != len(loads) + len(stores):
+        # A short grouped loop with an unhandled access repeats its address
+        # work in every tile; leave the whole block on the narrow path.
+        return _no(imp, 35)
     nl = sum(1 for a in accesses.values() if a.kind == 'load')
     ns = sum(1 for a in accesses.values() if a.kind == 'store')
     # Window registers: two tiles per iteration, each transfer with a window

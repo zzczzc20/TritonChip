@@ -412,11 +412,11 @@ class TTIRImporter:
                 self.tiled_pointwise_plan = pt.summary()
         if getattr(self, 'tiled_pointwise', 0) and self.tiled_pointwise_plan is None:
             from .pointwise_tiles import widest
-            if widest(self._all_ops) > 128:
+            if widest(self._all_ops) > (16 if func_name.startswith('triton_poi_') else 128):
                 # The block grew only because tiling was asked for (inductor.py
                 # TILED_POINTWISE_BLOCK); a program that cannot be tiled takes
                 # Inductor's 16-lane configuration instead.
-                raise Unsupported('a block wider than 128 lanes that is not a tileable '
+                raise Unsupported('a widened pointwise block that is not a tileable '
                                   '1-D element-wise program (pointwise_tiles.py refusal '
                                   f'{getattr(self, "tiled_pointwise_refused", None)})')
         if self.large_tiles and not cfg_blocks and self.tiled_pointwise_plan is None:

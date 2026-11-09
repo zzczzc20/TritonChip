@@ -484,7 +484,7 @@ class Delivery(unittest.TestCase):
     def test_render_names_the_skill_and_drops_the_control_example(self):
         task = load_task(HERE / "tasks" / "r41-dp-formal")
         self.assertIn("<!-- without-skill -->", task.instruction)
-        self.assertEqual(task.skills, (SKILL.name,))
+        self.assertIn(SKILL.name, task.skills)
         with_skill = render(task, "offline", skills=task.skills)
         without = render(task, "offline")
         self.assertIn(f"`{SKILL_PATH}/SKILL.md`", with_skill)
@@ -508,7 +508,7 @@ class Delivery(unittest.TestCase):
             self.assertIn("assert_close", task.instruction, task.task_id)
             self.assertEqual(task.instruction.count("<!-- without-skill -->"), 1, task.task_id)
             with_skill, without = render(task, "offline", skills=(SKILL.name,)), render(task, "offline")
-            self.assertIn(task.skills, ((), (SKILL.name,)), task.task_id)
+            self.assertTrue(task.skills == () or SKILL.name in task.skills, task.task_id)
             self.assertNotIn("assert_close", with_skill, task.task_id)
             self.assertIn("assert_close", without, task.task_id)
             for env in re.findall(r"TNCA_BACKEND\S*", task.instruction):

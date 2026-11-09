@@ -183,7 +183,10 @@ for dtype in ('fp16', 'fp32'):
            track=('llm', 'general') if dtype == 'fp16' else ('general',))
 
 LINEAR = dict(tiny=(16, 64, 64), small=(64, 256, 256), medium=(128, 320, 256), large=(512, 2048, 8192))
-for tier, (m, k, n) in LINEAR.items():
+# R41-F3 (2026-11-10): a second medium shape of the board score's key families, outside every held-out set --
+# the board set's middle size between the simulated small points and the large card-only ones.
+LINEAR_F3 = [('medium', (128, 512, 384))]
+for tier, (m, k, n) in list(LINEAR.items()) + LINEAR_F3:
     def mk(seed, m=m, k=k, n=n):
         g = gen(seed)
         return _linear(k, n, 'fp16', g, True), (randn(g, (m, k), 'fp16'),)
@@ -191,7 +194,8 @@ for tier, (m, k, n) in LINEAR.items():
        Demand(macs=m * k * n, fp_ops=m * n, read_bytes=(m * k + k * n + n) * 2, write_bytes=m * n * 2))
 
 GEMV = dict(tiny=(64, 64), small=(256, 512), medium=(320, 448), large=(2048, 8192))
-for tier, (k, n) in GEMV.items():
+GEMV_F3 = [('medium', (1024, 1536))]
+for tier, (k, n) in list(GEMV.items()) + GEMV_F3:
     def mk(seed, k=k, n=n):
         g = gen(seed)
         return _linear(k, n, 'fp16', g, False), (randn(g, (1, k), 'fp16'),)
@@ -365,7 +369,8 @@ class DecodeAttention(torch.nn.Module):
 
 
 PREFILL = dict(tiny=(1, 2, 16, 16), small=(1, 4, 64, 32), medium=(1, 4, 96, 32), large=(1, 32, 512, 64))
-for tier, (b, h, s, d) in PREFILL.items():
+PREFILL_F3 = [('medium', (1, 8, 128, 32))]
+for tier, (b, h, s, d) in list(PREFILL.items()) + PREFILL_F3:
     tri = s * (s + 1) // 2
     op('attention_prefill', tier, 'fp16', dict(b=b, h=h, s=s, d=d),
        lambda seed, b=b, h=h, s=s, d=d: (CausalAttention(), tuple(
@@ -379,7 +384,8 @@ DECODE = dict(tiny=(1, 2, 16, 16), small=(1, 4, 256, 32), medium=(1, 8, 256, 32)
 # l256 point at about a quarter of its cycles (262k on the R41 board), for a
 # scoring set that is run many times; the l256 point stays for the final set.
 DECODE_SHORT = [('small', (1, 4, 64, 32))]
-for tier, (b, h, l, d) in list(DECODE.items()) + DECODE_SHORT:
+DECODE_F3 = [('medium', (1, 8, 512, 32))]
+for tier, (b, h, l, d) in list(DECODE.items()) + DECODE_SHORT + DECODE_F3:
     op('attention_decode', tier, 'fp16', dict(b=b, h=h, l=l, d=d),
        lambda seed, b=b, h=h, l=l, d=d: (DecodeAttention(), (
            randn(gen(seed), (b, h, 1, d), 'fp16'),

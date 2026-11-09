@@ -297,8 +297,10 @@ def _terminate_local(job: dict) -> None:
 
 
 def cancel(job: dict, cfg: dict) -> dict:
-    """Stop the local controller and reconcile the build host's detached stages."""
+    """Stop the local controller and reconcile the build host's detached stages -- the attempt that is running
+    (a retry runs under `<remote_id>-r<n>`), not the first."""
     job["_cancel_requested"] = True
+    _terminate_local(job)
     try:
         names = provider.docker("ps", "-a", "--format", "{{.Names}}", check=False, timeout=10).stdout.split()
         for name in names:
@@ -306,7 +308,6 @@ def cancel(job: dict, cfg: dict) -> dict:
                 provider.docker("rm", "-f", name, check=False, timeout=15)
     except (provider.ProviderError, OSError, subprocess.SubprocessError):
         pass
-    _terminate_local(job)
     commit, name = job.get("tree_commit"), job.get("build_host")
     if not commit or not name:
         return {"remote": "not-started"}   # no machine taken yet: nothing ran there
@@ -317,7 +318,8 @@ def cancel(job: dict, cfg: dict) -> dict:
         # The machine the request's flow ran on, not the site's first.
         host = host_for(load_hosts(cfg["hosts"]), name, "build")
         argv = [host.python, host.cli(commit), "--repo", host.checkout(commit),
-                "reconcile", job["remote_id"], "--state-dir", host.state_dir, "--terminate"]
+                "reconcile", job.get("current_remote_id") or job["remote_id"], "--state-dir", host.state_dir,
+                "--terminate"]
         reply = remote(host, argv, check=False, timeout=90)
         return {"build": {"exit": reply.returncode, "detail": reply.stdout.decode(errors="replace")[-500:]}}
     except (OSError, ValueError, subprocess.SubprocessError) as exc:
@@ -587,6 +589,11 @@ def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir
     m = manifest(task, job["id"], commit, board=False)
     for attempt in range(RETRIES + 1):
         remote_id = job["remote_id"] if attempt == 0 else f"{job['remote_id']}-r{attempt}"
+        if job.get("_cancel_requested"):
+            # Stopped before this attempt began (a gate that did not pass, D3, or the agent's end): none starts.
+            pipe, outcome = {"status": "CANCELLED", "error": "stopped before the flow started"}, "infra"
+            attempts.append({"remote_id": None, "status": "CANCELLED", "outcome": outcome})
+            break
         if failed_on and not [n for n in build_hosts(cfg) if n not in failed_on]:
             # Every build machine has failed this flow on the infrastructure: a machine's own fault (a missing
             # part, a missing tool) would only repeat there, as RSCL's missing bitstream data did (2026-11-08).
@@ -600,10 +607,18 @@ def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir
             attempts.append({"remote_id": remote_id, "status": pipe["status"], "outcome": outcome,
                              "build_host": None, "busy": job.get("build_hosts_busy")})
             break
+        if job.get("_cancel_requested"):
+            # Stopped while the machine was being taken: it is given back before anything runs on it.
+            _drop_slot(holder)
+            _release(job["remote_id"], host)
+            pipe, outcome = {"status": "CANCELLED", "error": "stopped before the flow started"}, "infra"
+            attempts.append({"remote_id": None, "status": "CANCELLED", "outcome": outcome, "build_host": host})
+            break
         try:
             mpath, output = job_dir / f"manifest-{attempt}.json", job_dir / f"pipeline-{attempt}.json"
             mpath.write_text(json.dumps(m, indent=2, sort_keys=True) + "\n", encoding="utf-8")
             argv = _pipeline_args(tree, mpath, output, cfg, remote_id, host, command_timeout=seconds)
+            job["current_remote_id"] = remote_id
             with (job_dir / f"pipeline-{attempt}.log").open("wb") as log:
                 proc = subprocess.Popen(argv, cwd=tree, stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
                                         env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
@@ -770,13 +785,17 @@ def _gate_beside_flow(site: Site, repo: Path, task: Task, candidate: Optional[Pa
             box["sim"] = gate()
         except Exception as exc:  # noqa: BLE001 -- the infrastructure's: the flow is stopped, not charged
             box["error"] = f"{type(exc).__name__}: {str(exc)[:300]}"
-        if not _passes(box.get("sim")) and not job.get("_cancel_requested"):
+        if not _passes(box.get("sim")) and not job.get("_cancel_requested") and not box.get("flow_over"):
             job["gate_stopped_flow"] = True
             job["gate_stop_cleanup"] = cancel(job, site.fpga_pipeline)
 
     t = threading.Thread(target=judge, name=f"gate-{job.get('id')}", daemon=True)
     t.start()
-    built = build(site, repo, task, candidate, job_dir, job, flow_seconds)
+    try:
+        built = build(site, repo, task, candidate, job_dir, job, flow_seconds)
+    except BaseException:
+        box["flow_over"] = True      # the request ends here (the broker: infrastructure); the gate stops nothing
+        raise
     t.join()
     sim = box.get("sim")
     full["simulation"] = sim
@@ -814,7 +833,9 @@ def run(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: 
         built, sim, refusal = _gate_beside_flow(site, repo, task, candidate, job_dir, job, gate, flow_seconds, full)
         if refusal is not None:
             return refusal, full
-        if sim is None or job.get("_cancel_requested"):
+        # A flow that ran past its cap is stopped by build() itself (cancel): that is its outcome, said below,
+        # not a cancelled request. Only a flow that built while the gate gave no answer is one.
+        if sim is None and built["outcome"] == "ok":
             job["outcome"] = "cancelled"
             return {"status": "cancelled"}, full
     else:

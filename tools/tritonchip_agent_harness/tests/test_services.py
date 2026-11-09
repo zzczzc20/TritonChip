@@ -341,17 +341,17 @@ class Dedupe(unittest.TestCase):
         site = types.SimpleNamespace(fpga_worker=None, fpga_pipeline=None)
         self.shared = Shared(site, self.task)
         self.brokers, self.calls = [], []
+        self.result = {"aggregate": {"n": 1, "passed": 1, "speedup_geomean": 1.1, "fast_1": 1.0}}
         for i in range(2):
             ws = Path(tempfile.mkdtemp()) / f"ws{i}"
             export(self.repo, base, (), ws)
             (ws / "compiler/a.py").write_text("a = 7\n")
-
-            def score(job, candidate, job_dir, i=i):
-                self.calls.append(i)
-                return {"validation": {"n": 1, "passed": 1}}, {"aggregate": {"n": 1, "passed": 1}}
-
             self.brokers.append(Broker(site, self.repo, self.task, ws, Path(tempfile.mkdtemp()) / f"run{i}",
-                                       island=i, shared=self.shared, runners={"score": score}))
+                                       island=i, shared=self.shared))
+        patcher = mock.patch("tritonchip_agent_harness.services.evaluator.measure_validation",
+                             side_effect=lambda *a: self.calls.append(a[-1]) or self.result)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def wait(self, b, job_id):
         for _ in range(200):
@@ -368,8 +368,8 @@ class Dedupe(unittest.TestCase):
         self.assertEqual((again["same_as"], again["score_requests_left"]), ("0:s1", 2))
         reply = self.wait(self.brokers[1], again["id"])
         self.assertEqual(reply["result"]["cached_from"], "0:s1")
-        self.assertEqual(reply["result"]["validation"], {"n": 1, "passed": 1})
-        self.assertEqual(self.calls, [0])
+        self.assertEqual(reply["result"]["validation"], self.result["aggregate"])
+        self.assertEqual(len(self.calls), 1)
         self.assertIsNone(self.brokers[1].jobs[again["id"]]["charged"])
         # A changed snapshot is a new request again, and charged.
         (self.brokers[1].workspace / "compiler/a.py").write_text("a = 8\n")
@@ -377,7 +377,31 @@ class Dedupe(unittest.TestCase):
         self.assertNotIn("same_as", third)
         self.assertEqual(third["score_requests_left"], 1)
         self.wait(self.brokers[1], third["id"])
-        self.assertEqual(self.calls, [0, 1])
+        self.assertEqual(len(self.calls), 2)
+
+    def test_a_result_that_failed_on_the_host_is_measured_again(self):
+        self.result = {"aggregate": {"n": 1, "passed": 0, "speedup_geomean": None, "fast_1": 0.0},
+                       "failures": {"timeout": 1}}
+        first = self.brokers[0].submit("score", message="x")
+        self.wait(self.brokers[0], first["id"])
+        self.assertTrue(self.brokers[0].jobs["s1"]["simulation"]["not_kept"])
+        again = self.brokers[1].submit("score", message="same")
+        self.assertNotIn("same_as", again)          # charged and measured afresh
+        self.wait(self.brokers[1], again["id"])
+        self.assertEqual(len(self.calls), 2)
+
+
+class SlotWait(unittest.TestCase):
+    def test_a_cancel_is_heard_while_waiting_for_a_slot(self):
+        from tritonchip_agent_harness.services import Simulations
+        slots = threading.BoundedSemaphore(1)
+        slots.acquire()                               # every slot taken by someone else
+        sims, stop = Simulations(slots), {"now": False}
+        threading.Timer(0.2, lambda: stop.update(now=True)).start()
+        with mock.patch.object(slots, "acquire", side_effect=lambda timeout=None: time.sleep(0.05) or False):
+            r, how = sims.measure("k", "0:l1", lambda: {"never": 1}, cancelled=lambda: stop["now"])
+        self.assertEqual((r, how.get("cancelled_waiting")), (None, True))
+        self.assertFalse(sims.kept("k"))
 
 
 class IslandPools(unittest.TestCase):

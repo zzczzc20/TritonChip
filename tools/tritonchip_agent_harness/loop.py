@@ -71,8 +71,16 @@ def _write(run_dir: Path, record: dict) -> None:
         record["host_load"] = occupancy.load_summary(run_dir / "load.jsonl")
     if record.get("finished") and run_dir in _SAMPLERS:
         _SAMPLERS.pop(run_dir).stop()
-    (run_dir / "run.json").write_text(json.dumps(record, indent=2, sort_keys=True, default=str) + "\n",
-                                      encoding="utf-8")
+    for attempt in range(3):
+        try:
+            text = json.dumps(record, indent=2, sort_keys=True, default=str) + "\n"
+            break
+        except RuntimeError:
+            # A request's thread changed a dict while it was written (an operator stop, threads still ending).
+            if attempt == 2:
+                raise
+            time.sleep(1)
+    (run_dir / "run.json").write_text(text, encoding="utf-8")
 
 
 def _stopped(site: Site, task: Task, record: dict, run_dir: Path, rows: Optional[list], stage: str,

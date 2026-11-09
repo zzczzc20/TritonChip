@@ -205,7 +205,9 @@ class Archive:
         "adopted": {layer: commit id}, "layers"} or {"refused", "files"}."""
         role = (self.roles or [])[island] if self.roles and island < len(self.roles) else None
         digests = layer_digests(self.task, candidate)
-        changed = {LABEL_LAYER[label] for label in layer_labels(self.repo, self.task, candidate)}
+        # Any file of a layer counts -- a comment in an RTL file, another profile in spec/r1_profiles.json, a
+        # profile's compiler fields: the layer is its files (the review of 2026-11-09).
+        changed = {layer for layer, d in digests.items() if d != "base"}
         writes = set(role["authors"]) if role else set(LAYERS)
         seen = {island, *visible(self.cfg, island)}
         with self.lock:

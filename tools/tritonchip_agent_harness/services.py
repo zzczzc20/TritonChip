@@ -76,6 +76,20 @@ def sim_key(task: Task, candidate: Optional[Path]) -> str:
                                       EVALUATOR_VERSION]).encode()).hexdigest()
 
 
+# Failures that say more about the host than about the snapshot (the review of 2026-11-09): a point that never
+# reported, timed out or was not measured, and a stage that stopped before any point ran. A result with any of
+# them is not kept for later askers; a point that ran and was wrong (numeric-error, a device fault, a fallback)
+# is the snapshot's own, and is.
+INFRA_LIKE = ("missing", "no-status", "no-observation", "not-measured", "timeout", "other")
+
+
+def reusable(result: Optional[dict]) -> bool:
+    """Whether a simulation's result is the snapshot's to hand to the next asker (D2)."""
+    if not result or result.get("stage_errors"):
+        return False
+    return not any(k in INFRA_LIKE for k in (result.get("failures") or {}))
+
+
 class Simulations:
     """A run's simulations of the validation set, one per snapshot (D1/D2/D6). `measure` runs `fn` once per key:
     a finished result is handed to every later asker (passed or not), a running one is waited for; a source
@@ -87,7 +101,8 @@ class Simulations:
         self.lock = threading.Lock()
         self.entries: dict = {}
 
-    def measure(self, key: str, who: str, fn: Callable[[], dict], cancelled: Callable[[], bool] = lambda: False) -> tuple:
+    def measure(self, key: str, who: str, fn: Callable[[], dict], cancelled: Callable[[], bool] = lambda: False,
+                keep: Callable[[dict], bool] = lambda r: True) -> tuple:
         """(result, how). `how`: {"cached_from": who} for a finished result, {"joined": who} for one waited for,
         {"ran": True, "eval_queued_seconds": s} for one this asker ran. The result is None when `cancelled`
         said so before a simulation of its own began, or while it waited on another."""
@@ -110,18 +125,24 @@ class Simulations:
                     return e["result"], {"joined": e["source"]}
             # The source was cancelled or failed on the infrastructure: never reused (D2); run it again.
         how: dict = {"ran": True}
-        queued, kept, result = time.time(), False, None
-        if self.slots is not None:
-            self.slots.acquire()
-        how["eval_queued_seconds"] = round(time.time() - queued, 1)
+        queued, kept, result, held = time.time(), False, None, False
         try:
+            # Waiting for a slot, a cancel is still heard (the review of 2026-11-09: a stopped request's gate sat
+            # in acquire() past the run's record).
+            while self.slots is not None and not held:
+                held = self.slots.acquire(timeout=10)
+                if not held and cancelled():
+                    break
+            how["eval_queued_seconds"] = round(time.time() - queued, 1)
             if cancelled():
                 return None, {**how, "cancelled_waiting": True}
             result = fn()
-            kept = not cancelled()
+            kept = not cancelled() and keep(result)
+            if not kept:
+                how["not_kept"] = True
             return result, how
         finally:
-            if self.slots is not None:
+            if held:
                 self.slots.release()
             with self.lock:
                 if kept:
@@ -131,6 +152,12 @@ class Simulations:
                     if self.entries.get(key) is e:
                         del self.entries[key]
             e["done"].set()
+
+    def kept(self, key: str) -> bool:
+        """Whether the run keeps a result for `key` that later askers get."""
+        with self.lock:
+            e = self.entries.get(key)
+            return e is not None and e["state"] == "done"
 
 
 class Shared:
@@ -408,7 +435,15 @@ class Broker:
         if service == "score":
             with self.lock:
                 src = self.shared.commits.get(job["sim_key"])
-                if src is not None and src[1]["state"] in ("queued", "running", "done"):
+                if src is not None and not (src[1]["state"] in ("queued", "running")
+                                            or (src[1]["state"] == "done"
+                                                and self.shared.sims.kept(job["sim_key"]))):
+                    src = None   # failed, cancelled, or a result not kept for reuse: this one is measured afresh
+                if src is None:
+                    # Registered now, in the same lock as the check: a second island's identical snapshot submitted
+                    # at the same moment is this one's repeat, never a second charge.
+                    self.shared.commits[job["sim_key"]] = (self, job)
+                if src is not None:
                     # D4: the same snapshot as an earlier scoring request of the run -- not charged, no new
                     # commit, no simulation; its reply is that request's, once it has one.
                     self._unbusy(service, job_id)
@@ -445,7 +480,6 @@ class Broker:
                 self.shared.flows.add(f"{self.run_id}:{job_id}")
             if service == "score":
                 self.score_left -= 1
-                self.shared.commits[job["sim_key"]] = (self, job)
             elif service == "fpga-slow":
                 if job["charge"] == "flow":
                     self.flows_left -= 1
@@ -560,7 +594,7 @@ class Broker:
         r, how = self.shared.sims.measure(
             job.get("sim_key") or sim_key(self.task, candidate), self._who(job),
             lambda: evaluator.measure_validation(self.site, self.repo, self.task, candidate, job_dir, job["containers"]),
-            cancelled=lambda: job.get("state", "running") != "running")
+            cancelled=lambda: job.get("state", "running") != "running", keep=reusable)
         job["simulation"] = how
         job["eval_queued_seconds"] = how.get("eval_queued_seconds", 0.0)
         if r is None:
@@ -590,9 +624,10 @@ class Broker:
             if job.get("state") != "running":
                 return {"status": "cancelled"}, {"cancelled_waiting": True}
             time.sleep(2)
-        if src_job is None or src_job["state"] != "done":
-            return ({"status": "failed", "why": f"the same snapshot's request {job['dedupe_of']} did not finish; "
-                     "ask again; not charged"}, {"same_as": job["dedupe_of"], "source_state": (src_job or {}).get("state")})
+        if src_job is None or src_job["state"] != "done" or not self.shared.sims.kept(job["sim_key"]):
+            return ({"status": "failed", "why": f"the same snapshot's request {job['dedupe_of']} gave no result to "
+                     "share (it did not finish, or failed on the infrastructure); ask again; not charged"},
+                    {"same_as": job["dedupe_of"], "source_state": (src_job or {}).get("state")})
         r = src_job.get("full") or {}
         visible = {k: v for k, v in (src_job.get("result") or {}).items()
                    if k in ("validation", "failures", "device_build_errors", "stage_errors")}
@@ -612,7 +647,7 @@ class Broker:
             job.get("sim_key") or sim_key(self.task, candidate), self._who(job),
             lambda: evaluator.measure_validation(self.site, self.repo, self.task, candidate, job_dir / "sim",
                                                  job["containers"]),
-            cancelled=lambda: bool(job.get("_cancel_requested")))
+            cancelled=lambda: bool(job.get("_cancel_requested")), keep=reusable)
         job["gate"] = how
         return r
 
@@ -714,8 +749,10 @@ class Broker:
     def record(self) -> dict:
         """For the run record: every request, what the agent saw, and what it did not."""
         with self.lock:
-            jobs = [{k: v for k, v in j.items() if k != "thread" and not k.startswith("_")}
-                    for j in self.jobs.values()]
+            # dict() copies in one step: a request's thread may add a key at the same time (an operator stop
+            # records brokers whose requests are still ending).
+            jobs = [{k: v for k, v in dict(j).items() if k != "thread" and not k.startswith("_")}
+                    for j in list(self.jobs.values())]
         return {"config": self.task.services, "left": self.budget(), "requests": jobs}
 
 

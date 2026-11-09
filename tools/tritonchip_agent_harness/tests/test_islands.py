@@ -223,6 +223,11 @@ class Roles(unittest.TestCase):
             self.assertEqual((ok["authored"], ok["adopted"]), (["hardware", "software"], {}))
             isa = snapshot(root, "isa", {"isa/ops.json": "{}\n"})
             self.assertIn("refused", a.authorship(1, isa))        # the ISA is island 2's
+            # Any file of a layer counts, a comment-only RTL edit or another profile too (the review of 2026-11-09).
+            comment = snapshot(root, "cmt", {"compiler/a.py": "x\n", "rtl/core/x.v": "// a note\n"})
+            self.assertEqual(a.authorship(0, comment)["files"], ["rtl/core/x.v"])
+            profiles = snapshot(root, "prof", {"spec/r1_profiles.json": "{\"profiles\": {}}\n"})
+            self.assertIn("refused", a.authorship(0, profiles))
 
     def test_a_layer_taken_whole_from_a_visible_commit_is_adopted(self):
         with tempfile.TemporaryDirectory() as tmp:

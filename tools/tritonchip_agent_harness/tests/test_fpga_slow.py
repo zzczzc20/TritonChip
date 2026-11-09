@@ -350,6 +350,54 @@ class SlowService(unittest.TestCase):
         self.assertEqual(waiting, {"remote": "not-started"})
 
 
+    def test_a_cancel_stops_the_attempt_that_is_running(self):
+        # The review of 2026-11-09: a retried flow runs as <remote_id>-r<n>; reconciling the first id left it running.
+        from tritonchip_fpga_harness import hosts, pipeline
+        remote_host = types.SimpleNamespace(python="python3", state_dir="/state", cli=lambda c: "/cli.py",
+                                            checkout=lambda c: "/repo")
+        job = {"remote_id": "tnca-abc", "current_remote_id": "tnca-abc-r1", "tree_commit": "c" * 40,
+               "containers": "tnca-test", "build_host": "rscl"}
+        with (mock.patch.object(fpga_slow.provider, "docker", return_value=types.SimpleNamespace(stdout="")),
+              mock.patch.object(hosts, "load_hosts", return_value={}),
+              mock.patch.object(hosts, "host_for", return_value=remote_host),
+              mock.patch.object(pipeline, "remote", return_value=types.SimpleNamespace(
+                  returncode=0, stdout=b"terminated")) as remote):
+            fpga_slow.cancel(job, {"hosts": Path("/h")})
+        argv = remote.call_args.args[1]
+        self.assertEqual(argv[argv.index("reconcile") + 1], "tnca-abc-r1")
+
+    def test_no_flow_starts_once_the_request_is_stopped(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            site = types.SimpleNamespace(fpga_pipeline={"hosts": root / "h", "build_host": "build"})
+            job = {"id": "l1", "remote_id": "r", "containers": "c", "kind": "hardware", "_cancel_requested": True}
+            with (mock.patch.object(fpga_slow.certify, "build_tree", return_value="t" * 40),
+                  mock.patch.object(fpga_slow, "place") as place,
+                  mock.patch.object(fpga_slow.subprocess, "Popen") as popen):
+                built = fpga_slow.build(site, root, task(), None, root / "job", job, 60)
+            place.assert_not_called()
+            popen.assert_not_called()
+            self.assertEqual((built["outcome"], built["pipeline"]["status"]), ("infra", "CANCELLED"))
+
+    def test_a_flow_past_its_cap_says_so_and_is_not_a_cancelled_request(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            site = types.SimpleNamespace(fpga_pipeline={"hosts": root / "h", "build_host": "build"})
+            job = {"id": "l1", "remote_id": "r", "containers": "c", "kind": "hardware"}
+
+            def build(site_, repo, task_, candidate, job_dir, job_, seconds):
+                job_["_cancel_requested"] = True          # what build()'s own timeout does (cancel)
+                return {"outcome": "timeout", "pipeline": {"status": "TIMEOUT"}, "attempts": [], "tree_commit": "t",
+                        "manifest": {}, "routed": {}, "visible": {}, "run_id": "r", "build_host": "b"}
+
+            with mock.patch.object(fpga_slow, "build", side_effect=build):
+                visible, _ = fpga_slow.run(site, root, task(), None, root / "job", job, with_board=True, image=None,
+                                           flow_seconds=60, board_seconds=60,
+                                           gate=lambda: {"aggregate": {"n": 1, "passed": 1}})
+            self.assertEqual((visible["status"], visible["charged"], job["outcome"]), ("not built", None, "timeout"))
+            self.assertIn("ran past its time limit", visible["why"])
+
+
 def slow_task(**slow) -> Task:
     return dataclasses.replace(task(), wall_seconds=1440 * 60, services={"fpga_slow": {
         "mode": "board", "flows": 3, "board_runs": 2, "flow_minutes": 480, "board_minutes": 240, **slow}})

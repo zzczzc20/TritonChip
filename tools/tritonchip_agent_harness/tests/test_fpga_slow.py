@@ -184,17 +184,110 @@ class SlowService(unittest.TestCase):
             self.assertNotIn("secret.final", json.dumps(visible))
 
     def test_a_snapshot_failing_in_simulation_is_refused_uncharged(self):
+        # Software (no flow): the gate first, and nothing else when it does not pass.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            site = types.SimpleNamespace(fpga_pipeline={"hosts": root / "h", "build_host": "build"})
+            job = {"id": "l1", "remote_id": "r", "containers": "c", "kind": "software"}
+            sim = {"aggregate": {"n": 2, "passed": 1}, "failures": {"numeric-error": 1}}
+            with (mock.patch.object(fpga_slow.evaluator, "measure_validation", return_value=sim),
+                  mock.patch.object(fpga_slow, "build") as build, mock.patch.object(fpga_slow, "on_card") as card):
+                visible, _ = fpga_slow.run(site, root, task(), None, root / "job", job, with_board=True,
+                                           image={"path": "/i"}, flow_seconds=60, board_seconds=60)
+            build.assert_not_called()
+            card.assert_not_called()
+            self.assertEqual((visible["status"], visible["charged"], job["outcome"]), ("refused", None, "refused"))
+
+    @staticmethod
+    def _stoppable_build(started, stopped):
+        """A flow that runs until it is cancelled (or 5 s), as build() returns for a stopped flow."""
+        def build(site, repo, task_, candidate, job_dir, job, seconds):
+            started.set()
+            stopped.wait(5)
+            return {"outcome": "infra", "pipeline": {"status": "TIMEOUT"}, "attempts": [], "tree_commit": "t",
+                    "manifest": {}, "routed": {}, "visible": {}, "run_id": "r", "build_host": "b"}
+        return build
+
+    @staticmethod
+    def _cancel(stopped):
+        def cancel(job, cfg):
+            job["_cancel_requested"] = True
+            stopped.set()
+            return {"remote": "not-started"}
+        return cancel
+
+    def test_a_hardware_gate_runs_beside_its_flow_and_stops_it_when_it_fails(self):
+        import threading
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             site = types.SimpleNamespace(fpga_pipeline={"hosts": root / "h", "build_host": "build"})
             job = {"id": "l1", "remote_id": "r", "containers": "c", "kind": "hardware"}
+            started, stopped = threading.Event(), threading.Event()
             sim = {"aggregate": {"n": 2, "passed": 1}, "failures": {"numeric-error": 1}}
-            with (mock.patch.object(fpga_slow.evaluator, "measure_validation", return_value=sim),
-                  mock.patch.object(fpga_slow, "build") as build):
-                visible, _ = fpga_slow.run(site, root, task(), None, root / "job", job, with_board=True,
-                                           image=None, flow_seconds=60, board_seconds=60)
-            build.assert_not_called()
+
+            def gate():
+                # The flow is already running when the simulation finishes (D3).
+                self.assertTrue(started.wait(5))
+                return sim
+
+            with (mock.patch.object(fpga_slow, "build", side_effect=self._stoppable_build(started, stopped)),
+                  mock.patch.object(fpga_slow, "cancel", side_effect=self._cancel(stopped)) as cancel):
+                visible, full = fpga_slow.run(site, root, task(), None, root / "job", job, with_board=True,
+                                              image=None, flow_seconds=60, board_seconds=60, gate=gate)
+            cancel.assert_called_once()
             self.assertEqual((visible["status"], visible["charged"], job["outcome"]), ("refused", None, "refused"))
+            self.assertIn("flow was stopped", visible["why"])
+            self.assertEqual(visible["failures"], {"numeric-error": 1})
+            self.assertIs(full["simulation"], sim)
+            self.assertTrue(job["gate_stopped_flow"])
+
+    def test_a_gate_that_fails_on_the_infrastructure_stops_the_flow_uncharged(self):
+        import threading
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            site = types.SimpleNamespace(fpga_pipeline={"hosts": root / "h", "build_host": "build"})
+            job = {"id": "l1", "remote_id": "r", "containers": "c", "kind": "hardware"}
+            started, stopped = threading.Event(), threading.Event()
+
+            def gate():
+                raise RuntimeError("the simulator host went away")
+
+            with (mock.patch.object(fpga_slow, "build", side_effect=self._stoppable_build(started, stopped)),
+                  mock.patch.object(fpga_slow, "cancel", side_effect=self._cancel(stopped))):
+                visible, full = fpga_slow.run(site, root, task(), None, root / "job", job, with_board=True,
+                                              image=None, flow_seconds=60, board_seconds=60, gate=gate)
+            self.assertEqual((visible["status"], visible["charged"], job["outcome"]), ("not built", None, "infra"))
+            self.assertIn("RuntimeError", full["gate_error"])
+            self.assertNotIn("simulator host", json.dumps(visible))
+
+    def test_a_flow_that_ends_first_waits_for_its_gate(self):
+        import threading
+        import time as _time
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            site = types.SimpleNamespace(fpga_pipeline={"hosts": root / "h", "build_host": "build"})
+            job = {"id": "l1", "remote_id": "r", "containers": "c", "kind": "hardware"}
+            sim = {"aggregate": {"n": 2, "passed": 2}}
+            ended = []
+
+            def gate():
+                _time.sleep(0.3)
+                ended.append("gate")
+                return sim
+
+            def build(site_, repo, task_, candidate, job_dir, job_, seconds):
+                ended.append("flow")
+                return {"outcome": "design", "pipeline": {"status": "FAIL"}, "attempts": [], "tree_commit": "t",
+                        "manifest": {}, "routed": {}, "visible": {"status": "FAIL"}, "run_id": "r", "build_host": "b"}
+
+            with (mock.patch.object(fpga_slow, "build", side_effect=build),
+                  mock.patch.object(fpga_slow, "cancel") as cancel):
+                visible, full = fpga_slow.run(site, root, task(), None, root / "job", job, with_board=True,
+                                              image=None, flow_seconds=60, board_seconds=60, gate=gate)
+            cancel.assert_not_called()
+            self.assertEqual(ended, ["flow", "gate"])
+            self.assertEqual((visible["status"], visible["charged"], job["outcome"]), ("infeasible", "flow", "design"))
+            self.assertIs(full["simulation"], sim)
 
     def test_a_failed_flow_is_the_designs_or_the_infrastructures(self):
         self.assertEqual(fpga_slow.classify({"status": "PASS", "build": {"status": "PASS", "xclbin_sha256": "x"}}), "ok")

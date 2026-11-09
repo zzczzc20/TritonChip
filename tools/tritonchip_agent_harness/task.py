@@ -160,6 +160,43 @@ def board_points(task: Task) -> list:
 
 # The descriptors an island grid may use (islands.py); the first version has the change's layer only.
 FEATURES = ("layer",)
+# The layers an island role may write (islands.LAYERS), and how the task text names them.
+ROLE_LAYERS = {"software": "software (`compiler/`, `python/tnca/`)",
+               "hardware": "hardware (`rtl/`, the scored profile in `spec/r1_profiles.json`, the device "
+                           "description in `spec/devices/`)",
+               "isa": "the ISA (`isa/`)"}
+
+
+def _check_roles(path: Path, roles, n: int, services: dict) -> Optional[list]:
+    """`islands.roles` (2026-11-09): one per island -- the layers it writes and its own budgets for the slow tier
+    (flows, board runs) and the quick tier (minutes). The slow tier's counts add up to the task's."""
+    if roles is None:
+        return None
+    if not isinstance(roles, list) or len(roles) != n:
+        raise TaskError(f"{path}: islands.roles needs one entry per island ({n})")
+    out = []
+    for i, r in enumerate(roles):
+        if (not isinstance(r, dict) or set(r) - {"name", "authors", "flows", "board_runs", "fpga_quick_minutes"}
+                or not isinstance(r.get("authors"), list) or not r["authors"]
+                or any(a not in ROLE_LAYERS for a in r["authors"])):
+            raise TaskError(f"{path}: islands.roles[{i}] needs authors (a list of {', '.join(ROLE_LAYERS)}) and may "
+                            f"have name, flows, board_runs, fpga_quick_minutes")
+        for key in ("flows", "board_runs"):
+            x = r.get(key, 0)
+            if not isinstance(x, int) or isinstance(x, bool) or x < 0:
+                raise TaskError(f"{path}: islands.roles[{i}].{key} must be a count")
+        q = r.get("fpga_quick_minutes")
+        if q is not None and (not isinstance(q, (int, float)) or isinstance(q, bool) or q < 0):
+            raise TaskError(f"{path}: islands.roles[{i}].fpga_quick_minutes must be >= 0")
+        out.append({"name": str(r.get("name") or f"island-{i}"), "authors": sorted(set(r["authors"])),
+                    "flows": int(r.get("flows", 0)), "board_runs": int(r.get("board_runs", 0)),
+                    **({"fpga_quick_minutes": float(q)} if q is not None else {})})
+    slow = (services or {}).get("fpga_slow")
+    if slow:
+        for key in ("flows", "board_runs"):
+            if sum(r[key] for r in out) != int(slow.get(key, 0)):
+                raise TaskError(f"{path}: islands.roles' {key} must add up to services.fpga_slow.{key}")
+    return out
 
 
 def _check_islands(path: Path, value, services: dict) -> Optional[dict]:
@@ -169,7 +206,7 @@ def _check_islands(path: Path, value, services: dict) -> Optional[dict]:
     if value is None:
         return None
     known = {"count", "topology", "migration_interval", "migration_rate", "features", "max_idle_turns",
-             "max_restarts", "target"}
+             "max_restarts", "target", "roles"}
     if not isinstance(value, dict) or set(value) - known or "count" not in value:
         raise TaskError(f"{path}: islands needs count (and may have {', '.join(sorted(known - {'count'}))})")
     n = value["count"]
@@ -199,10 +236,11 @@ def _check_islands(path: Path, value, services: dict) -> Optional[dict]:
         raise TaskError(f"{path}: islands.target may name speedup_geomean and/or fast_1")
     if not ((services or {}).get("score") or {}).get("requests"):
         raise TaskError(f"{path}: islands need services.score.requests: an island's commits")
+    roles = _check_roles(path, value.get("roles"), n, services)
     return {"count": n, "topology": topo, "migration_interval": int(value.get("migration_interval", 3)),
             "migration_rate": float(rate), "features": list(features),
             "max_idle_turns": int(value.get("max_idle_turns", 3)), "max_restarts": int(value.get("max_restarts", 2)),
-            "target": target}
+            "target": target, **({"roles": roles} if roles else {})}
 
 
 def _check_resume(path: Path, value) -> Optional[dict]:
@@ -225,7 +263,7 @@ _CHECK_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,30}$")
 def _check_slow(path: Path, slow, ev: dict) -> None:
     """services.fpga_slow (report section 8.9): counts, not minutes, for the run; caps for one request."""
     required = {"mode", "flows", "board_runs", "flow_minutes", "board_minutes"}
-    optional = {"base_image_sha256", "board_checks", "certify_after_run", "flows_at_once"}
+    optional = {"base_image_sha256", "board_checks", "certify_after_run", "flows_at_once", "board_faster_than"}
     if not isinstance(slow, dict) or not required <= set(slow) or set(slow) - required - optional:
         raise TaskError(f"{path}: services.fpga_slow needs {', '.join(sorted(required))} "
                         f"(and may have {', '.join(sorted(optional))})")
@@ -241,6 +279,9 @@ def _check_slow(path: Path, slow, ev: dict) -> None:
     at_once = slow.get("flows_at_once", 1)
     if not isinstance(at_once, int) or isinstance(at_once, bool) or at_once < 1:
         raise TaskError(f"{path}: services.fpga_slow.flows_at_once must be an integer >= 1")
+    faster = slow.get("board_faster_than", 1.0)
+    if not isinstance(faster, (int, float)) or isinstance(faster, bool) or not 1.0 <= faster < 2.0:
+        raise TaskError(f"{path}: services.fpga_slow.board_faster_than must be in [1, 2)")
     sha = slow.get("base_image_sha256")
     if sha is not None and not (isinstance(sha, str) and re.fullmatch(r"[0-9a-f]{64}", sha)):
         raise TaskError(f"{path}: services.fpga_slow.base_image_sha256 must be a sha256")
@@ -272,8 +313,9 @@ def render(task: Task, mode: str, skills: Iterable[str] = (), island: Optional[i
            "The network is open. Every connection is logged.")
     design = ", ".join(f"`{d}`" for d in task.design)
     skill_text = catalog_.prompt_lines(selected)
+    roles = (task.islands or {}).get("roles") if island is not None else None
     services = _services_text(task.services, islands=island is not None and bool(task.islands),
-                              resumed=bool(task.resume),
+                              resumed=bool(task.resume), role=roles[island] if roles else None,
                               board_cycles=((task.evaluation or {}).get("certify") or {}).get("board_cycles", "equal"),
                               board_set=bool((task.evaluation or {}).get("board_validation")))
     return instruction.rstrip() + services + f"""
@@ -304,7 +346,19 @@ def _ending(task: Task, island: Optional[int]) -> str:
     n = cfg["count"]
     others = ("" if n == 1 else
               f" You are island {island} of {n}; other islands work on the same task at the same time, and you "
-              f"see the commits of the islands your island is connected to.")
+              f"see the commits of the islands your island is connected to. Every island starts from the same "
+              f"base at the same time, and the run's result is the best commit of all islands by the validation "
+              f"set.")
+    role = (cfg.get("roles") or [None] * n)[island]
+    if role:
+        writes = [ROLE_LAYERS[a] for a in role["authors"]]
+        others += (f" Your island writes {', '.join(writes[:-1]) + ' and ' + writes[-1] if len(writes) > 1 else writes[0]}"
+                   + (": a commit may change only that. " if len(writes) == 1 else ": a commit may change only those. ")
+                   if len(writes) < len(ROLE_LAYERS) else " Your island may write every layer.")
+        if len(writes) < len(ROLE_LAYERS):
+            others += ("Another layer may differ from the base only when it is exactly that layer of a commit you can "
+                       "see, taken whole (`tnca-service read-commit ID`, then `git apply`); anything else is refused, "
+                       "uncharged.")
     target = cfg.get("target")
     goal = (f" The run ends early if a commit reaches {', '.join(f'{k} {v:g}' for k, v in target.items())} on the "
             f"validation set." if target else "")
@@ -315,8 +369,11 @@ def _ending(task: Task, island: Optional[int]) -> str:
             f"- `tnca-service submit score --message \"one line on what this commit changes\"` commits a snapshot: "
             f"it is scored as the score service scores it and kept in the archive with your message (shown to other "
             f"islands as yours, unverified). Its reply, once done, also gives your best commit, your island's grid "
-            f"(one elite per cell; cells are what a commit changed: compiler only, hardware only, or both), and every "
-            f"{cfg['migration_interval']} commits some elites of connected islands to consider.\n"
+            f"(one elite per cell; cells are what a commit changed: compiler only, hardware only, or both), and "
+            + ("with every commit the elites of connected islands you have not been given yet"
+               if cfg["migration_interval"] == 1 else
+               f"every {cfg['migration_interval']} commits some elites of connected islands")
+            + " to consider.\n"
             f"- `tnca-service archive` lists the commits you can see; `tnca-service read-commit ID` prints one as a "
             f"patch against the base commit (`git apply` it on a clean tree to continue from it).\n"
             f"- If you stop, you are asked to continue; a turn that calls no tool counts as idle, and "
@@ -324,11 +381,16 @@ def _ending(task: Task, island: Optional[int]) -> str:
 
 
 def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, board_cycles: str = "equal",
-                   board_set: bool = False) -> str:
-    """How the agent may ask the evaluator for a measurement, and how much it may ask."""
+                   board_set: bool = False, role: Optional[dict] = None) -> str:
+    """How the agent may ask the evaluator for a measurement, and how much it may ask. `role`: the island's
+    (islands.roles), whose budgets are its own."""
     if not cfg:
         return ""
     score, fpga, slow = cfg.get("score") or {}, cfg.get("fpga_quick") or {}, cfg.get("fpga_slow") or {}
+    quick_minutes = float((role or {}).get("fpga_quick_minutes", fpga.get("minutes", 0)) if fpga else 0)
+    flows = int(role["flows"]) if role else int(slow.get("flows", 0)) if slow else 0
+    board_runs = int(role["board_runs"]) if role else int(slow.get("board_runs", 0)) if slow else 0
+    shared = (", your island's own" if role else ", shared by every island") if islands else ""
     at_once = int(slow.get("flows_at_once", 1)) if slow else 1
     # One at a time keeps the text it always had; more says how many, and that a flow may wait for a machine.
     concurrency = ("One slow request at a time; the quick tier stays open while it runs." if at_once == 1 else
@@ -352,15 +414,23 @@ def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, boar
                      f"numeric-error, timeout or measurement-rejected), and when your device did not build or "
                      f"staging stopped before any point ran, the last lines of that log. Never which point, its "
                      f"shape or its own error text. You have "
-                     f"{int(score.get('requests', 0))} such requests.")
+                     f"{int(score.get('requests', 0))} such requests, one running at a time. The "
+                     + ("run (every island) " if islands else "run ")
+                     + "simulates only a few validation sets at once, scoring requests and the simulations of "
+                     "`fpga-slow` requests together, so a request may wait for its turn, and its time includes the "
+                     "wait. A snapshot exactly like one this run already scored is not measured or charged again"
+                     + (" and is not a new commit" if islands else "") + ": you get that request's result.")
     if fpga:
         lines.append(f"- `tnca-service submit fpga-quick`: out-of-context synthesis and timing of the whole device "
                      f"on the FPGA part at a {float(fpga.get('period_ns', 10.0)):g} ns clock, for the profile you are "
                      f"scored on: worst slack, the frequency it implies, the worst paths and the utilisation. A "
-                     f"request may take up to {float(fpga.get('job_minutes', 30)):g} minutes. You have "
-                     f"{float(fpga.get('minutes', 0)):g} minutes of FPGA time in total, charged as used; one request "
-                     f"at a time, and one that could run past what is left is refused. Post-synthesis timing is "
-                     f"optimistic: routing adds delay.")
+                     f"request may take up to {float(fpga.get('job_minutes', 30)):g} minutes. "
+                     + (f"You have {quick_minutes:g} minutes of FPGA time in total, charged as used; one "
+                        f"request at a time, and one that could run past what is left is refused. "
+                        if quick_minutes > 0 else "Your island has no FPGA time for it. ")
+                     + "Post-synthesis timing is optimistic: routing adds delay. It synthesises the core's top "
+                     "level only, so a change it cannot apply there (the uncore's, or a parameter that top does not "
+                     "take) is listed in its reply as `not_applied`.")
     if slow and slow["mode"] == "build":
         lines.append(f"- `tnca-service submit fpga-slow`: the full implementation of your machine on the FPGA "
                      f"(place and route at the target clock, one Vivado flow of up to "
@@ -372,12 +442,14 @@ def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, boar
             f"- `tnca-service submit fpga-slow`: the real card. Board time is precious: a request that changed "
             f"the machine (RTL, the profile's parameters, the device description) is first fully implemented "
             f"(one Vivado flow, which takes hours; up to {float(slow['flow_minutes']):g} minutes), and you have "
-            f"{int(slow['flows'])} flows in this run{', shared by every island' if islands else ''}. Accumulate enough hardware change, and be confident in it, "
+            f"{flows} flows in this run{shared}. Accumulate enough hardware change, and be confident in it, "
             f"before you ask. A request that kept the machine (compiler and software only), or that asks again "
             f"for hardware this run already built, needs no flow and runs on the card directly; you have "
-            f"{int(slow['board_runs'])} such board runs{', shared by every island' if islands else ''}. Before anything is charged, the snapshot's validation "
+            f"{board_runs} such board runs{shared}. Before anything is charged, the snapshot's validation "
             f"set must pass in simulation, and a hardware request needs an `fpga-quick` result of this run on "
-            f"exactly that hardware that met timing; otherwise it is refused and not charged. A flow that fails "
+            f"exactly that hardware that met timing; otherwise it is refused and not charged. For a request "
+            f"that needs a flow, the simulation runs beside the flow, and a simulation that does not pass stops "
+            f"the flow, which is then not charged. A flow that fails "
             f"on your design (timing or place-and-route does not converge, it does not fit, DRC) counts; one "
             f"that fails on the infrastructure does not, and is retried for you. {concurrency} "
             f"The card is shared: a request waits until the card has "
@@ -394,7 +466,14 @@ def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, boar
             + f", and any board check (such as FP8 bit "
             f"alignment) that did not pass; for a flow that failed, why: the failing stage, slack, the worst "
             f"paths and whether they cross an SLR, utilisation per SLR, the DRC rules that failed. A board "
-            f"request still running when you stop runs to its end, but you will not see its result.")
+            f"request still running when you stop runs to its end, but you will not see its result."
+            + (f" On the card a point counts as faster only when it is more than "
+               f"{(float(slow['board_faster_than']) - 1) * 100:g}% faster than the base: the card's count of one "
+               f"program differs by up to about half a percent from run to run."
+               if float(slow.get("board_faster_than", 1.0)) > 1.0 else "")
+            + " `tnca-service status` gives a running slow request's `ends_within_minutes`, the time within which "
+            "it ends at the latest; asking again does not make it end sooner, and the time in between is yours "
+            "to work in.")
     lines += ["- `tnca-service budget`, `tnca-service status [ID]`, `tnca-service result ID`, "
               "`tnca-service wait ID`: what is left, and the results."]
     return "\n".join(lines)

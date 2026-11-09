@@ -86,6 +86,7 @@ class Services(unittest.TestCase):
         self.gate_open.set()
         self.wait_done("s1")
         self.assertEqual(self.broker.handle({"op": "result", "id": "s1"})["result"], {"ok": "score"})
+        (self.ws / "compiler/a.py").write_text("a = 3\n")
         self.assertEqual(self.broker.submit("score")["id"], "s2")
         self.wait_done("s2")
         self.assertEqual(self.broker.submit("score")["refused"], "no scoring requests left")
@@ -245,3 +246,167 @@ class Services(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RunSimulations(unittest.TestCase):
+    """D1/D2/D6 (2026-11-09): one simulation per snapshot for the run, joined while it runs, within the slots."""
+
+    def test_a_finished_result_is_reused_whether_or_not_it_passed(self):
+        from tritonchip_agent_harness.services import Simulations
+        sims, calls = Simulations(None), []
+        failed = {"aggregate": {"n": 2, "passed": 1}}
+        r1, how1 = sims.measure("k", "0:s1", lambda: calls.append(1) or failed)
+        r2, how2 = sims.measure("k", "1:l2", lambda: calls.append(2) or {})
+        self.assertEqual((r1, r2, calls), (failed, failed, [1]))
+        self.assertEqual((how1["ran"], how2), (True, {"cached_from": "0:s1"}))
+
+    def test_a_running_simulation_is_joined_and_the_joiner_takes_no_slot(self):
+        from tritonchip_agent_harness.services import Simulations
+        slots = threading.BoundedSemaphore(1)
+        sims, go, out = Simulations(slots), threading.Event(), {}
+
+        def source():
+            go.wait(5)
+            return {"aggregate": {"n": 1, "passed": 1}}
+
+        t = threading.Thread(target=lambda: out.setdefault("a", sims.measure("k", "0:s1", source)))
+        t.start()
+        time.sleep(0.2)
+        j = threading.Thread(target=lambda: out.setdefault("b", sims.measure("k", "2:l4", lambda: {"no": 1})))
+        j.start()
+        time.sleep(0.2)
+        go.set()
+        t.join(5)
+        j.join(5)
+        self.assertEqual(out["b"], ({"aggregate": {"n": 1, "passed": 1}}, {"joined": "0:s1"}))
+        self.assertTrue(slots.acquire(blocking=False))   # the one slot is free again: nobody else held it
+
+    def test_a_source_that_raised_or_was_cancelled_is_not_reused(self):
+        from tritonchip_agent_harness.services import Simulations
+        sims = Simulations(None)
+
+        def broken():
+            raise RuntimeError("host")
+
+        with self.assertRaises(RuntimeError):
+            sims.measure("k", "0:s1", broken)
+        r, how = sims.measure("k", "1:s2", lambda: {"fresh": 1})
+        self.assertEqual((r, how["ran"]), ({"fresh": 1}, True))
+        stop = {"now": False}
+
+        def measured_then_cancelled():
+            stop["now"] = True
+            return {"torn": 1}
+
+        sims.measure("c", "0:s3", measured_then_cancelled, cancelled=lambda: stop["now"])
+        self.assertEqual(sims.measure("c", "1:s4", lambda: {"own": 1})[0], {"own": 1})
+
+    def test_a_score_and_a_gate_of_one_snapshot_simulate_once_and_both_take_slots(self):
+        repo, base = make_repo()
+        ws = Path(tempfile.mkdtemp()) / "ws"
+        export(repo, base, (), ws)
+        (ws / "compiler/a.py").write_text("a = 9\n")
+        t = Task(task_id="t", kind="cross-layer", base_commit=base, design=("compiler/", "rtl/"),
+                 evaluator_owned=(), hide=(), instruction="", reference=None, wall_seconds=60,
+                 evaluation={"profile": "core-sim", "validation": ["p"], "final": ["q"]},
+                 services={"score": {"requests": 3}}, path=repo, sha256="")
+        site = types.SimpleNamespace(fpga_worker=None, fpga_pipeline=None, evaluations=1)
+        b = Broker(site, repo, t, ws, Path(tempfile.mkdtemp()) / "run")
+        calls = []
+        r = {"aggregate": {"n": 1, "passed": 1, "speedup_geomean": 1.2, "fast_1": 1.0}}
+        with mock.patch("tritonchip_agent_harness.services.evaluator.measure_validation",
+                        side_effect=lambda *a: calls.append(a[-1]) or r):
+            job_dir = Path(tempfile.mkdtemp())
+            from tritonchip_agent_harness.workspace import gate as take
+            take(repo, base, (), t.design, ws, out=job_dir / "candidate")
+            cand = job_dir / "candidate"
+            visible, _ = b._run_score({"id": "s1", "containers": "c-s1"}, cand, job_dir)
+            gated = b._gate({"id": "l2", "containers": "c-l2"}, cand, job_dir)
+        self.assertEqual(calls, ["c-s1"])
+        self.assertIs(gated, r)
+        self.assertEqual(visible["validation"], r["aggregate"])
+        self.assertTrue(b.shared.evaluations.acquire(blocking=False))
+
+
+class Dedupe(unittest.TestCase):
+    """D4: a scoring request of a snapshot the run already scored is not charged and is no new commit."""
+
+    def setUp(self):
+        from tritonchip_agent_harness.services import Shared
+        self.repo, base = make_repo()
+        self.task = Task(task_id="t", kind="cross-layer", base_commit=base, design=("compiler/", "rtl/"),
+                         evaluator_owned=(), hide=(), instruction="", reference=None, wall_seconds=60,
+                         evaluation={"profile": "core-sim", "validation": ["p"], "final": ["q"]},
+                         services={"score": {"requests": 2}}, path=self.repo, sha256="")
+        site = types.SimpleNamespace(fpga_worker=None, fpga_pipeline=None)
+        self.shared = Shared(site, self.task)
+        self.brokers, self.calls = [], []
+        for i in range(2):
+            ws = Path(tempfile.mkdtemp()) / f"ws{i}"
+            export(self.repo, base, (), ws)
+            (ws / "compiler/a.py").write_text("a = 7\n")
+
+            def score(job, candidate, job_dir, i=i):
+                self.calls.append(i)
+                return {"validation": {"n": 1, "passed": 1}}, {"aggregate": {"n": 1, "passed": 1}}
+
+            self.brokers.append(Broker(site, self.repo, self.task, ws, Path(tempfile.mkdtemp()) / f"run{i}",
+                                       island=i, shared=self.shared, runners={"score": score}))
+
+    def wait(self, b, job_id):
+        for _ in range(200):
+            reply = b.handle({"op": "result", "id": job_id})
+            if reply["state"] in ("done", "failed", "cancelled"):
+                return reply
+            time.sleep(0.05)
+        self.fail(f"{job_id} did not finish")
+
+    def test_an_identical_snapshot_is_answered_with_the_earlier_result_uncharged(self):
+        first = self.brokers[0].submit("score", message="x")
+        self.wait(self.brokers[0], first["id"])
+        again = self.brokers[1].submit("score", message="same")
+        self.assertEqual((again["same_as"], again["score_requests_left"]), ("0:s1", 2))
+        reply = self.wait(self.brokers[1], again["id"])
+        self.assertEqual(reply["result"]["cached_from"], "0:s1")
+        self.assertEqual(reply["result"]["validation"], {"n": 1, "passed": 1})
+        self.assertEqual(self.calls, [0])
+        self.assertIsNone(self.brokers[1].jobs[again["id"]]["charged"])
+        # A changed snapshot is a new request again, and charged.
+        (self.brokers[1].workspace / "compiler/a.py").write_text("a = 8\n")
+        third = self.brokers[1].submit("score", message="new")
+        self.assertNotIn("same_as", third)
+        self.assertEqual(third["score_requests_left"], 1)
+        self.wait(self.brokers[1], third["id"])
+        self.assertEqual(self.calls, [0, 1])
+
+
+class IslandPools(unittest.TestCase):
+    """2026-11-09: with roles, each island's own slow-tier counts and quick minutes; the run's quick results."""
+
+    def test_each_island_has_its_own_counts_and_any_islands_quick_result_counts(self):
+        from tritonchip_agent_harness.services import Shared
+        repo, base = make_repo()
+        roles = [{"name": "software", "authors": ["software"], "flows": 0, "board_runs": 4, "fpga_quick_minutes": 0},
+                 {"name": "hardware", "authors": ["hardware"], "flows": 2, "board_runs": 3, "fpga_quick_minutes": 90},
+                 {"name": "both", "authors": ["hardware", "isa", "software"], "flows": 2, "board_runs": 3,
+                  "fpga_quick_minutes": 90}]
+        t = Task(task_id="t", kind="cross-layer", base_commit=base, design=("compiler/", "rtl/"),
+                 evaluator_owned=(), hide=(), instruction="", reference=None, wall_seconds=60,
+                 evaluation={"profile": "core-sim", "validation": ["p"], "final": ["q"]},
+                 services={"score": {"requests": 2}, "fpga_quick": {"minutes": 45, "job_minutes": 30},
+                           "fpga_slow": {"mode": "board", "flows": 4, "board_runs": 10, "flow_minutes": 60,
+                                         "board_minutes": 60}},
+                 path=repo, sha256="", islands={"count": 3, "topology": "all", "roles": roles})
+        site = types.SimpleNamespace(fpga_worker=None, fpga_pipeline=None)
+        shared = Shared(site, t)
+        b = [Broker(site, repo, t, Path(tempfile.mkdtemp()), Path(tempfile.mkdtemp()) / f"r{i}", island=i,
+                    shared=shared) for i in range(3)]
+        self.assertEqual([(x.budget()["fpga_slow_flows_left"], x.budget()["fpga_slow_board_runs_left"],
+                           x.budget()["fpga_minutes_left"]) for x in b], [(0, 4, 0.0), (2, 3, 90.0), (2, 3, 90.0)])
+        b[1].flows_left -= 1
+        self.assertEqual((b[1].flows_left, b[2].flows_left), (1, 2))
+        self.assertFalse(b[1]._timing_met("H"))
+        b[2].jobs["f1"] = {"id": "f1", "service": "fpga-quick", "hardware": "H", "state": "done",
+                           "full": {"wns_ns": 0.4, "failing_endpoints": 0}}
+        self.assertTrue(b[1]._timing_met("H"))       # island 2's quick result on exactly this hardware
+        self.assertEqual(len(b[0]._all_jobs()), 1)

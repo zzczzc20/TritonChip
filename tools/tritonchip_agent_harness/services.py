@@ -27,10 +27,19 @@ hardware while a flow runs is what the slow tier's asynchrony is for. A slow
 request still running when the agent stops runs to its end, unseen by the
 agent, for the certification after the run. Everything asked and answered,
 and the full results the agent does not see, go into the run record.
+
+A run simulates each snapshot's validation set once (decided 2026-11-09, D1-D6): one memo for the run,
+shared by its islands, keyed by the whole snapshot, the base's measurement and the evaluator's code. A
+scoring request and an fpga-slow gate of the same snapshot take one simulation: a finished result is
+reused (passed or not), a running one is joined, and one that was cancelled or failed on the
+infrastructure is not -- the asker then simulates itself. At most `resources.evaluations` simulations
+run at once, scores and gates together; a join takes no slot. A scoring request of a snapshot an
+earlier one of the run already scored is not charged and is no new commit: its reply is that one's.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import secrets
 import shutil
@@ -49,20 +58,96 @@ from .workspace import apply_candidate, export, gate
 SERVICES = ("score", "fpga-quick", "fpga-slow")
 # What of an FPGA result the agent may see: all of it is its own design's.
 FPGA_VISIBLE = ("status", "profile", "period_ns", "part", "wns_ns", "tns_ns", "failing_endpoints",
-                "total_endpoints", "fmax_est_mhz", "utilization", "worst_paths", "errors", "seconds")
+                "total_endpoints", "fmax_est_mhz", "utilization", "worst_paths", "errors", "seconds",
+                "not_applied")
 FPGA_NOTE = ("post-synthesis estimate: delays leave out most of the wire, so the frequency is optimistic; "
              "the routed design is the slow tier's to judge")
 
 
+# The evaluator's own code is part of what a simulation's result depends on (D1).
+EVALUATOR_VERSION = hashlib.sha256(Path(evaluator.__file__).read_bytes()).hexdigest()[:16]
+
+
+def sim_key(task: Task, candidate: Optional[Path]) -> str:
+    """What a simulation of the validation set depends on (D1): the whole snapshot (every file the gate took,
+    software and hardware), the base's measurement (evaluator.baseline_key: base commit, profile, the point
+    lists, the platform, the device) and the evaluator's code."""
+    return hashlib.sha256(json.dumps([fpga_slow.snapshot_digest(candidate), evaluator.baseline_key(task),
+                                      EVALUATOR_VERSION]).encode()).hexdigest()
+
+
+class Simulations:
+    """A run's simulations of the validation set, one per snapshot (D1/D2/D6). `measure` runs `fn` once per key:
+    a finished result is handed to every later asker (passed or not), a running one is waited for; a source
+    that was cancelled or raised leaves nothing behind, and the next asker runs its own. Only a simulation that
+    runs takes one of the run's slots."""
+
+    def __init__(self, slots: Optional[threading.BoundedSemaphore]) -> None:
+        self.slots = slots
+        self.lock = threading.Lock()
+        self.entries: dict = {}
+
+    def measure(self, key: str, who: str, fn: Callable[[], dict], cancelled: Callable[[], bool] = lambda: False) -> tuple:
+        """(result, how). `how`: {"cached_from": who} for a finished result, {"joined": who} for one waited for,
+        {"ran": True, "eval_queued_seconds": s} for one this asker ran. The result is None when `cancelled`
+        said so before a simulation of its own began, or while it waited on another."""
+        while True:
+            with self.lock:
+                e = self.entries.get(key)
+                if e is not None and e["state"] == "done":
+                    return e["result"], {"cached_from": e["source"]}
+                mine = e is None
+                if mine:
+                    e = {"state": "running", "source": who, "done": threading.Event(), "result": None}
+                    self.entries[key] = e
+            if mine:
+                break
+            while not e["done"].wait(10):
+                if cancelled():
+                    return None, {"cancelled_waiting": True}
+            with self.lock:
+                if e["state"] == "done":
+                    return e["result"], {"joined": e["source"]}
+            # The source was cancelled or failed on the infrastructure: never reused (D2); run it again.
+        how: dict = {"ran": True}
+        queued, kept, result = time.time(), False, None
+        if self.slots is not None:
+            self.slots.acquire()
+        how["eval_queued_seconds"] = round(time.time() - queued, 1)
+        try:
+            if cancelled():
+                return None, {**how, "cancelled_waiting": True}
+            result = fn()
+            kept = not cancelled()
+            return result, how
+        finally:
+            if self.slots is not None:
+                self.slots.release()
+            with self.lock:
+                if kept:
+                    e["state"], e["result"] = "done", result
+                else:
+                    e["state"] = "dropped"
+                    if self.entries.get(key) is e:
+                        del self.entries[key]
+            e["done"].set()
+
+
 class Shared:
     """What a run's islands share (report sections 8.9 B7/B8 and 8.8 P10): the slow tier's counts and the
-    images it built, one slow request at a time, the cap on evaluations at once -- and one lock for all of
-    their brokers' state. A run without islands has one of its own."""
+    images it built, one slow request at a time, the cap on evaluations at once, the run's simulations -- and
+    one lock for all of their brokers' state. A run without islands has one of its own.
+
+    The slow tier's counts are the run's, or with island roles (`islands.roles`, 2026-11-09) each island's own."""
 
     def __init__(self, site: Site, task: Task) -> None:
         fs = (task.services or {}).get("fpga_slow") or {}
-        self.flows_left = int(fs.get("flows", 0))
-        self.board_runs_left = int(fs.get("board_runs", 0))
+        roles = (task.islands or {}).get("roles")
+        if roles:
+            self.counts = {i: {"flows": int(r.get("flows", 0)), "board_runs": int(r.get("board_runs", 0))}
+                           for i, r in enumerate(roles)}
+        else:
+            self.counts = {None: {"flows": int(fs.get("flows", 0)), "board_runs": int(fs.get("board_runs", 0))}}
         self.images: dict = {}
         # The run's Vivado flows running now (the hardware requests holding them): at most flows_at_once,
         # each on a build machine of its own (fpga_slow.place); one by default (B8). Card runs are serial on
@@ -74,6 +159,19 @@ class Shared:
         self.lock = threading.Lock()
         n = getattr(site, "evaluations", None)
         self.evaluations = threading.BoundedSemaphore(int(n)) if n else None
+        self.sims = Simulations(self.evaluations)
+        self.brokers: list = []          # every island's broker: the run-wide checks look at all their requests
+        self.commits: dict = {}          # sim_key -> (broker, job): the run's scoring requests, for D4
+
+    def pool(self, island: Optional[int]) -> dict:
+        """The slow tier's counts an island draws on: its own with roles, else the run's."""
+        return self.counts[island] if island in self.counts else self.counts[None]
+
+    # A run without roles: one pool (kept for the callers that read the run's counts).
+    flows_left = property(lambda self: self.pool(None)["flows"],
+                          lambda self, v: self.pool(None).__setitem__("flows", v))
+    board_runs_left = property(lambda self: self.pool(None)["board_runs"],
+                               lambda self, v: self.pool(None).__setitem__("board_runs", v))
 
 
 class Broker:
@@ -86,7 +184,11 @@ class Broker:
         cfg = task.services or {}
         self.score_left = int((cfg.get("score") or {}).get("requests", 0))
         fq = cfg.get("fpga_quick") or {}
-        self.fpga_left = float(fq.get("minutes", 0)) * 60.0
+        roles = (task.islands or {}).get("roles") or []
+        # The island's role (islands.roles, 2026-11-09): which layers it writes, and its own budgets.
+        self.role = roles[island] if island is not None and island < len(roles) else None
+        minutes = (self.role or {}).get("fpga_quick_minutes", fq.get("minutes", 0))
+        self.fpga_left = float(minutes) * 60.0
         self.fpga_job = float(fq.get("job_minutes", 30)) * 60.0
         self.period = float(fq.get("period_ns", 10.0))
         fs = cfg.get("fpga_slow") or {}
@@ -95,6 +197,7 @@ class Broker:
         self.board_seconds = int(float(fs.get("board_minutes", 120)) * 60)
         # The slow tier's counts and images, and the lock, are the run's (islands share them).
         self.shared = shared or Shared(site, task)
+        self.shared.brokers.append(self)
         self.island, self.archive = island, archive
         self.runners: dict = runners or {"score": self._run_score, "fpga-quick": self._run_fpga,
                                          "fpga-slow": self._run_slow}
@@ -104,12 +207,19 @@ class Broker:
         self.socket_dir: Optional[Path] = None
         self._server = None
 
-    # The slow tier's counts and images live in Shared: one pool for a run's islands.
-    flows_left = property(lambda self: self.shared.flows_left,
-                          lambda self, v: setattr(self.shared, "flows_left", v))
-    board_runs_left = property(lambda self: self.shared.board_runs_left,
-                               lambda self, v: setattr(self.shared, "board_runs_left", v))
+    # The slow tier's counts and images live in Shared: the run's pool, or this island's with roles.
+    flows_left = property(lambda self: self.shared.pool(self.island)["flows"],
+                          lambda self, v: self.shared.pool(self.island).__setitem__("flows", v))
+    board_runs_left = property(lambda self: self.shared.pool(self.island)["board_runs"],
+                               lambda self, v: self.shared.pool(self.island).__setitem__("board_runs", v))
     images = property(lambda self: self.shared.images)
+
+    def _who(self, job: dict) -> str:
+        return f"{self.island}:{job.get('id')}" if self.island is not None else str(job.get("id"))
+
+    def _all_jobs(self) -> list:
+        """Under the lock: every request of the run, every island's."""
+        return [j for b in self.shared.brokers for j in b.jobs.values()]
 
     # -- lifetime ------------------------------------------------------------------
     def start(self) -> Path:
@@ -269,9 +379,21 @@ class Broker:
                 self._unbusy(service, job_id)
             return {"refused": "the snapshot cannot be measured", "rejected": g["rejected"][:20] or problems,
                     "snapshot": snapshot, **self.budget()}
+        authorship = None
+        if self.role is not None and self.archive is not None:
+            # The island writes its own layers only; another layer it may take whole from a commit it can see
+            # (2026-11-09, "adopt, don't author"). Refused before anything is charged.
+            authorship = self.archive.authorship(self.island, candidate)
+            if authorship.get("refused"):
+                with self.lock:
+                    self._unbusy(service, job_id)
+                return {"refused": authorship["refused"], "files": authorship.get("files", [])[:20],
+                        "snapshot": snapshot, **self.budget()}
         job = {"id": job_id, "service": service, "state": "queued", "submitted": time.time(),
                "snapshot": snapshot, "containers": f"tnca-svc-{self.run_id}-{job_id}",
                "remote_id": f"tnca-{secrets.token_hex(8)}"}
+        if authorship is not None:
+            job["authorship"] = {k: v for k, v in authorship.items() if k != "refused"}
         if self.island is not None:
             if service == "score":
                 job["message"] = str(message or "")[:200]
@@ -281,6 +403,23 @@ class Broker:
         if service in ("fpga-quick", "fpga-slow"):
             job["hardware"] = fpga_slow.hardware_digest(candidate)
             job["digest"] = fpga_slow.snapshot_digest(candidate)
+        if service in ("score", "fpga-slow"):
+            job["sim_key"] = sim_key(self.task, candidate)
+        if service == "score":
+            with self.lock:
+                src = self.shared.commits.get(job["sim_key"])
+                if src is not None and src[1]["state"] in ("queued", "running", "done"):
+                    # D4: the same snapshot as an earlier scoring request of the run -- not charged, no new
+                    # commit, no simulation; its reply is that request's, once it has one.
+                    self._unbusy(service, job_id)
+                    job.update(charged=None, dedupe_of=src[0]._who(src[1]))
+                    self.jobs[job_id] = job
+                    job["thread"] = threading.Thread(target=self._run, args=(job, candidate, job_dir), daemon=True)
+                    job["thread"].start()
+                    return {"id": job_id, "state": "queued", "snapshot": snapshot,
+                            "same_as": job["dedupe_of"], "note": "the same snapshot as an earlier scoring request "
+                            "of this run: not charged, not a new commit; its result is that request's",
+                            **self.budget()}
         if service == "fpga-slow":
             job["mode"] = self.slow_mode
             refused = self._slow_kind(job, candidate)
@@ -296,7 +435,7 @@ class Broker:
                     refused = ("another Vivado flow of this run is running; one at a time per run" if at_once == 1
                                else f"{at_once} Vivado flows of this run are running; at most {at_once} at once")
                 elif any(j.get("hardware") == job["hardware"] and j.get("kind") == "hardware"
-                         and j["state"] in ("queued", "running") for j in self.jobs.values()):
+                         and j["state"] in ("queued", "running") for j in self._all_jobs()):
                     # Two flows of the same machine would build one image twice.
                     refused = ("a flow of this run is already building exactly this hardware; ask again when it "
                                "is done, and it will need no flow")
@@ -306,6 +445,7 @@ class Broker:
                 self.shared.flows.add(f"{self.run_id}:{job_id}")
             if service == "score":
                 self.score_left -= 1
+                self.shared.commits[job["sim_key"]] = (self, job)
             elif service == "fpga-slow":
                 if job["charge"] == "flow":
                     self.flows_left -= 1
@@ -344,8 +484,9 @@ class Broker:
         return None
 
     def _timing_met(self, digest: str) -> bool:
+        """A quick-tier result of this run -- any island's -- on exactly this hardware that met timing."""
         with self.lock:
-            quick = [j for j in self.jobs.values()
+            quick = [j for j in self._all_jobs()
                      if j["service"] == "fpga-quick" and j.get("hardware") == digest and j["state"] == "done"]
         for j in quick:
             r = j.get("full") or {}
@@ -390,7 +531,8 @@ class Broker:
                 return
             job["state"], job["started"] = "running", time.time()
         try:
-            visible, full = self.runners[job["service"]](job, candidate, job_dir)
+            runner = self._run_dedupe if job.get("dedupe_of") else self.runners[job["service"]]
+            visible, full = runner(job, candidate, job_dir)
             job["full"] = full
             # A cancelled request's numbers were measured while it was being torn
             # down: they go into the record as `full`, never as its result.
@@ -414,21 +556,16 @@ class Broker:
                 self._release_flow(job)
 
     def _run_score(self, job: dict, candidate: Optional[Path], job_dir: Path) -> tuple:
-        slots = self.shared.evaluations
-        queued = time.time()
-        if slots is not None:
-            slots.acquire()
-        job["eval_queued_seconds"] = round(time.time() - queued, 1)
-        if job.get("state", "running") != "running":
-            # Cancelled while it waited for a slot (its island stopped): nothing is measured or archived.
-            if slots is not None:
-                slots.release()
+        # One simulation per snapshot for the run (D1/D2), within the run's slots (D6).
+        r, how = self.shared.sims.measure(
+            job.get("sim_key") or sim_key(self.task, candidate), self._who(job),
+            lambda: evaluator.measure_validation(self.site, self.repo, self.task, candidate, job_dir, job["containers"]),
+            cancelled=lambda: job.get("state", "running") != "running")
+        job["simulation"] = how
+        job["eval_queued_seconds"] = how.get("eval_queued_seconds", 0.0)
+        if r is None:
+            # Cancelled while it waited (its island stopped): nothing is measured or archived.
             return {"status": "cancelled"}, {"cancelled_waiting": True}
-        try:
-            r = evaluator.measure_validation(self.site, self.repo, self.task, candidate, job_dir, job["containers"])
-        finally:
-            if slots is not None:
-                slots.release()
         visible = {"validation": r["aggregate"]}
         # On failure, what may be said of why (README section 6.4): failed points counted by
         # kind, and the logs of what failed before any point ran (a device that did not
@@ -442,6 +579,42 @@ class Broker:
             job["commit"] = entry["id"]
             visible.update(self.archive.reply(self.island, entry))
         return visible, r
+
+    def _run_dedupe(self, job: dict, candidate: Optional[Path], job_dir: Path) -> tuple:
+        """D4: a scoring request of a snapshot the run already scored, answered with that request's result once
+        it has one; if that one does not finish (cancelled, failed), neither does this, uncharged."""
+        with self.lock:
+            src = self.shared.commits.get(job["sim_key"])
+        src_job = src[1] if src else None
+        while src_job is not None and src_job["state"] in ("queued", "running"):
+            if job.get("state") != "running":
+                return {"status": "cancelled"}, {"cancelled_waiting": True}
+            time.sleep(2)
+        if src_job is None or src_job["state"] != "done":
+            return ({"status": "failed", "why": f"the same snapshot's request {job['dedupe_of']} did not finish; "
+                     "ask again; not charged"}, {"same_as": job["dedupe_of"], "source_state": (src_job or {}).get("state")})
+        r = src_job.get("full") or {}
+        visible = {k: v for k, v in (src_job.get("result") or {}).items()
+                   if k in ("validation", "failures", "device_build_errors", "stage_errors")}
+        visible["cached_from"] = job["dedupe_of"]
+        if self.archive is not None and src_job.get("commit"):
+            job["commit"] = src_job["commit"]
+            entry = self.archive.by_id.get(src_job["commit"])
+            if entry is not None:
+                visible.update(self.archive.reply(self.island, entry))
+        return visible, {"same_as": job["dedupe_of"], "commit": src_job.get("commit"),
+                         "aggregate": r.get("aggregate")}
+
+    def _gate(self, job: dict, candidate: Optional[Path], job_dir: Path) -> Optional[dict]:
+        """An fpga-slow request's gate: the validation set in simulation, the run's one simulation of this
+        snapshot (D1/D2), within the run's slots (D6). None when the request was cancelled first."""
+        r, how = self.shared.sims.measure(
+            job.get("sim_key") or sim_key(self.task, candidate), self._who(job),
+            lambda: evaluator.measure_validation(self.site, self.repo, self.task, candidate, job_dir / "sim",
+                                                 job["containers"]),
+            cancelled=lambda: bool(job.get("_cancel_requested")))
+        job["gate"] = how
+        return r
 
     def _run_fpga(self, job: dict, candidate: Optional[Path], job_dir: Path) -> tuple:
         tree = job_dir / "device-tree"
@@ -482,7 +655,8 @@ class Broker:
                     job["remote_id"], build_host=job["image"].get("build_host"))
             visible, full = fpga_slow.run(self.site, self.repo, self.task, candidate, job_dir, job,
                                           with_board=self.slow_mode == "board", image=image,
-                                          flow_seconds=self.flow_seconds, board_seconds=self.board_seconds)
+                                          flow_seconds=self.flow_seconds, board_seconds=self.board_seconds,
+                                          gate=lambda: self._gate(job, candidate, job_dir))
         except Exception:
             job["outcome"] = "infra"
             raise

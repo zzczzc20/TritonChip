@@ -777,8 +777,10 @@ def _geomean(xs: list) -> Optional[float]:
     return math.exp(sum(math.log(x) for x in xs) / len(xs)) if xs and all(x > 0 for x in xs) else None
 
 
-def score(base: dict, got: dict, names) -> dict:
-    """One set of points, each judged on its own against the base's cycles."""
+def score(base: dict, got: dict, names, faster_than: float = 1.0) -> dict:
+    """One set of points, each judged on its own against the base's cycles. `faster_than`: the speedup a point
+    must exceed to count in fast_1 -- 1.0 in simulation, whose counts are exact; above it on the card, whose
+    counts of one program vary a little from run to run (services.fpga_slow.board_faster_than)."""
     rows = []
     for p in names:
         b, c = base.get(p, {}), got.get(p)
@@ -801,7 +803,7 @@ def score(base: dict, got: dict, names) -> dict:
     n = len(rows)
     return {"points": rows, "n": n, "passed": len(passed),
             "speedup_geomean": _geomean(passed),
-            "fast_1": (sum(1 for x in passed if x > 1.0) / n) if n else None}
+            "fast_1": (sum(1 for x in passed if x > faster_than) / n) if n else None}
 
 
 def evaluate(site: Site, repo: Path, task: Task, candidate: Optional[Path], run_dir: Path) -> dict:

@@ -10,8 +10,11 @@ The agent asks; the request is asynchronous, and the agent goes on iterating whi
                only the card, on the base's image or that one. Charged to the board runs (`board_runs`).
 
 Gate, before anything is charged for good: the snapshot's validation set must pass in simulation
-(measured here, the score service's way), and a hardware request needs an fpga-quick result of
-this run on the same hardware that met timing. A refused request is not charged.
+(measured the score service's way, the run's one simulation of the snapshot: services.Simulations), and
+a hardware request needs an fpga-quick result of this run on the same hardware that met timing. A
+refused request is not charged. A hardware request's flow does not wait for the simulation (D3,
+2026-11-09): both start at once, and a simulation that does not pass -- or that fails on the
+infrastructure -- stops the flow, which is then not charged.
 
 Charging: a flow that failed on the candidate's own design (timing or place-and-route did not
 converge, it does not fit, DRC, a lowered clock, the card refused the image) counts; one that
@@ -605,6 +608,10 @@ def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir
                 proc = subprocess.Popen(argv, cwd=tree, stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
                                         env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
                 job["_process"] = proc
+                if job.get("_cancel_requested"):
+                    # Stopped between taking the machine and starting the flow (a gate that did not pass, D3,
+                    # or the agent's end): what started is stopped here and on the build host.
+                    job["cleanup"] = cancel(job, cfg)
                 try:
                     proc.wait(timeout=seconds + 600)
                     timed_out = False
@@ -697,7 +704,8 @@ def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image
         visible["note"] = "the card session ran out of time before every point ran"
     try:
         base = board.baseline(site, repo, task)
-        full = evaluator.score(base["points"], got, points)
+        full = evaluator.score(base["points"], got, points,
+                               faster_than=float(((task.services or {}).get("fpga_slow") or {}).get("board_faster_than", 1.0)))
         visible["validation"] = {k: full[k] for k in ("n", "passed", "speedup_geomean", "fast_1")}
         failures = evaluator.failure_counts(full)
         if failures:
@@ -740,34 +748,86 @@ def base_xclbin(site: Site, repo: Path, task: Task, candidate: Optional[Path], i
         return None
 
 
+def _refused(sim: dict, why: str) -> dict:
+    visible = {"status": "refused", "charged": None, "why": why, "validation": sim["aggregate"]}
+    if sim.get("failures"):
+        visible["failures"] = sim["failures"]
+    return visible
+
+
+def _passes(sim: Optional[dict]) -> bool:
+    return bool(sim) and sim["aggregate"]["passed"] >= sim["aggregate"]["n"]
+
+
+def _gate_beside_flow(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: Path, job: dict,
+                      gate, flow_seconds: int, full: dict) -> tuple:
+    """D3: the gate's simulation and the Vivado flow at once; a gate that does not pass (or fails on the
+    infrastructure) stops the flow. (built or None, sim or None, the visible refusal or None)."""
+    box: dict = {}
+
+    def judge() -> None:
+        try:
+            box["sim"] = gate()
+        except Exception as exc:  # noqa: BLE001 -- the infrastructure's: the flow is stopped, not charged
+            box["error"] = f"{type(exc).__name__}: {str(exc)[:300]}"
+        if not _passes(box.get("sim")) and not job.get("_cancel_requested"):
+            job["gate_stopped_flow"] = True
+            job["gate_stop_cleanup"] = cancel(job, site.fpga_pipeline)
+
+    t = threading.Thread(target=judge, name=f"gate-{job.get('id')}", daemon=True)
+    t.start()
+    built = build(site, repo, task, candidate, job_dir, job, flow_seconds)
+    t.join()
+    sim = box.get("sim")
+    full["simulation"] = sim
+    full["build"] = {k: v for k, v in built.items() if k != "visible"}
+    if box.get("error"):
+        full["gate_error"] = box["error"]
+    if job.get("gate_stopped_flow"):
+        if box.get("error") or sim is None:
+            job["outcome"] = "infra"
+            return built, sim, {"status": "not built", "charged": None,
+                                "why": "the simulation gate failed on the infrastructure and the flow was stopped; "
+                                       "not charged"}
+        job["outcome"] = "refused"
+        return built, sim, _refused(sim, "the validation set does not pass in simulation; the flow was stopped "
+                                         "and is not charged")
+    return built, sim, None
+
+
 def run(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: Path, job: dict,
-        *, with_board: bool, image: Optional[dict], flow_seconds: int, board_seconds: int) -> tuple:
+        *, with_board: bool, image: Optional[dict], flow_seconds: int, board_seconds: int, gate=None) -> tuple:
     """One request: the gate, the flow when it needs one, the card when the task asks for it.
-    `image`: the image to run on when no flow is needed (the base's, or one this run built)."""
+    `image`: the image to run on when no flow is needed (the base's, or one this run built). `gate`: the
+    validation set's simulation (the broker's, through the run's one simulation per snapshot); by default
+    measured here."""
     cfg = site.fpga_pipeline
     if not cfg:
         raise SlowError("this site has no FPGA pipeline")
     job_dir.mkdir(parents=True, exist_ok=True)
     full: dict = {"kind": job["kind"]}
-    # The gate: the validation set passes in simulation, measured as the score service measures it.
-    sim = evaluator.measure_validation(site, repo, task, candidate, job_dir / "sim", job["containers"])
-    full["simulation"] = sim
-    agg = sim["aggregate"]
-    if job.get("_cancel_requested"):
-        job["outcome"] = "cancelled"
-        return {"status": "cancelled"}, full
-    if agg["passed"] < agg["n"]:
-        job["outcome"] = "refused"
-        visible = {"status": "refused", "charged": None,
-                   "why": "the validation set does not pass in simulation; nothing was built",
-                   "validation": agg}
-        if sim.get("failures"):
-            visible["failures"] = sim["failures"]
-        return visible, full
+    if gate is None:
+        def gate():
+            return evaluator.measure_validation(site, repo, task, candidate, job_dir / "sim", job["containers"])
     visible: dict = {"status": "done", "kind": job["kind"]}
     if job["kind"] == "hardware":
-        built = build(site, repo, task, candidate, job_dir, job, flow_seconds)
-        full["build"] = {k: v for k, v in built.items() if k != "visible"}
+        built, sim, refusal = _gate_beside_flow(site, repo, task, candidate, job_dir, job, gate, flow_seconds, full)
+        if refusal is not None:
+            return refusal, full
+        if sim is None or job.get("_cancel_requested"):
+            job["outcome"] = "cancelled"
+            return {"status": "cancelled"}, full
+    else:
+        # The gate: the validation set passes in simulation, measured as the score service measures it.
+        sim = gate()
+        full["simulation"] = sim
+        if sim is None or job.get("_cancel_requested"):
+            job["outcome"] = "cancelled"
+            return {"status": "cancelled"}, full
+        if not _passes(sim):
+            job["outcome"] = "refused"
+            return _refused(sim, "the validation set does not pass in simulation; nothing was built"), full
+    if job["kind"] == "hardware":
         job["tree_commit"] = built["tree_commit"]
         visible["build"] = built["visible"]
         job["outcome"] = built["outcome"]

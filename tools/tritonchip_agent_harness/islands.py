@@ -25,10 +25,17 @@ images and its one-at-a-time stay the run's (section 8.9, B7/B8), and so does a 
 - After the run, the archive's top 3 by the validation aggregate (fast_1, then the geometric-mean speedup)
   get the final evaluation and, when the task asks for it, the card, in that order until one is certified
   (D8, section 8.9 B1). The final set is never run while an agent does.
+- Roles (decided 2026-11-09): `islands.roles` gives each island the layers it writes -- software
+  (`compiler/`, `python/tnca/` outside the platform), hardware (`rtl/`, the scored profile, the device
+  description), isa -- and its own slow-tier and quick-tier budgets. A layer the island does not write
+  may still differ from the base when it is exactly that layer of a commit the island can see (adopt,
+  don't author); anything else is refused at submit, uncharged. Each commit records which layers it wrote
+  and which it took, from which commit.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import re
@@ -43,6 +50,9 @@ from .workspace import export, git
 
 CELLS = ("compiler-only", "hardware-only", "cross-layer")
 SOFTWARE = ("compiler/", "python/tnca/")
+# The layers an island role writes (2026-11-09), and the layer each label of layer_labels() belongs to.
+LAYERS = ("software", "hardware", "isa")
+LABEL_LAYER = {"compiler": "software", "isa": "isa", "rtl": "hardware", "profile": "hardware", "device": "hardware"}
 _RTL_SPACE = re.compile(r"\s+")
 
 
@@ -81,6 +91,51 @@ def layer_labels(repo: Path, task: Task, candidate: Optional[Path]) -> list:
     if hw.get("device"):
         labels.add("device")
     return sorted(labels)
+
+
+def layer_of(path: str, platform: set) -> Optional[str]:
+    """The role layer a design path belongs to; None for the evaluator's platform and anything else."""
+    if path in platform:
+        return None
+    if path.startswith(SOFTWARE):
+        return "software"
+    if path.startswith("isa/"):
+        return "isa"
+    if path.startswith(evaluator.HARDWARE):
+        return "hardware"
+    return None
+
+
+def layer_files(task: Task, candidate: Optional[Path]) -> dict:
+    """The files a snapshot took, by role layer."""
+    out: dict = {layer: [] for layer in LAYERS}
+    if candidate is None:
+        return out
+    platform = set(((task.evaluation.get("platform") or {}).get("paths")) or [])
+    report = json.loads((candidate / "candidate.json").read_text(encoding="utf-8"))
+    for c in sorted(report["taken"], key=lambda c: c["path"]):
+        layer = layer_of(c["path"], platform)
+        if layer:
+            out[layer].append(c)
+    return out
+
+
+def layer_digests(task: Task, candidate: Optional[Path]) -> dict:
+    """Each layer of a snapshot as one hash -- its files' paths, statuses and bytes -- or "base" when the
+    snapshot took none of it: two snapshots carry the same layer exactly when the hashes are equal."""
+    out = {}
+    for layer, files in layer_files(task, candidate).items():
+        if not files:
+            out[layer] = "base"
+            continue
+        h = hashlib.sha256()
+        for c in files:
+            h.update(f"{c['path']}\0{c['status']}\0".encode())
+            f = candidate / "files" / c["path"]
+            if c["status"] != "deleted" and f.is_file():
+                h.update(f.read_bytes())
+        out[layer] = h.hexdigest()
+    return out
 
 
 def layer_cell(labels: list) -> Optional[str]:
@@ -123,6 +178,7 @@ class Archive:
 
     def __init__(self, repo: Path, task: Task):
         self.repo, self.task, self.cfg = repo, task, task.islands
+        self.roles = self.cfg.get("roles")
         n = self.cfg["count"]
         self.entries: list = []
         self.by_id: dict = {}
@@ -136,13 +192,42 @@ class Archive:
         self.halt = threading.Event()      # the target, or the operator: every island stops
 
     def _summary(self, e: dict) -> dict:
-        return {"id": e["id"], "island": e["island"], "labels": e["labels"], "cell": e["cell"],
-                "validation": e["validation"], "message": e["message"], "message_unverified": True}
+        out = {"id": e["id"], "island": e["island"], "labels": e["labels"], "cell": e["cell"],
+               "validation": e["validation"], "message": e["message"], "message_unverified": True}
+        if e.get("adopted"):
+            out["adopted"] = e["adopted"]
+        return out
+
+    def authorship(self, island: int, candidate: Optional[Path]) -> dict:
+        """Whether the island may submit this snapshot under its role (2026-11-09): every layer it changed that
+        the role does not write must be exactly that layer of a commit the island can see. {"authored",
+        "adopted": {layer: commit id}, "layers"} or {"refused", "files"}."""
+        role = (self.roles or [])[island] if self.roles and island < len(self.roles) else None
+        digests = layer_digests(self.task, candidate)
+        changed = {LABEL_LAYER[label] for label in layer_labels(self.repo, self.task, candidate)}
+        writes = set(role["authors"]) if role else set(LAYERS)
+        seen = {island, *visible(self.cfg, island)}
+        with self.lock:
+            sources = [e for e in self.entries if e["island"] in seen and (e["listed"] or e["island"] == island)]
+        adopted = {}
+        for layer in sorted(changed - writes):
+            src = next((e for e in reversed(sources) if (e.get("layers") or {}).get(layer) == digests[layer]), None)
+            if src is None:
+                files = [c["path"] for c in layer_files(self.task, candidate)[layer]]
+                return {"refused": (f"island {island} writes {' and '.join(sorted(writes))} only: the {layer} in this "
+                                    f"snapshot is not exactly the {layer} of any commit you can see. Leave it as the "
+                                    f"base, or take one commit's {layer} whole (`tnca-service read-commit ID`)."),
+                        "files": files}
+            adopted[layer] = src["id"]
+        return {"authored": sorted(changed & writes), "adopted": adopted, "layers": digests}
 
     def add(self, island: int, job: dict, candidate: Optional[Path], result: dict) -> dict:
         """A finished commit, entered: its labels and cell, the grid, the trajectory, the target."""
         labels = layer_labels(self.repo, self.task, candidate)
         agg = result.get("aggregate") or {}
+        who = job.get("authorship") or {}
+        layers = who.get("layers") or layer_digests(self.task, candidate)
+        authored = who.get("authored", sorted({LABEL_LAYER[label] for label in labels}))
         with self.lock:
             self.commits[island] += 1
             seq = self.commits[island]
@@ -151,7 +236,8 @@ class Archive:
                  "listed": bool(agg.get("passed")) and not result.get("device_build_errors")
                  and not result.get("stage_errors"),
                  "candidate": str(candidate) if candidate else None, "digest": job.get("digest"),
-                 "hardware": job.get("hardware"), "at": time.time()}
+                 "hardware": job.get("hardware"), "layers": layers, "authored": authored,
+                 "adopted": dict(who.get("adopted") or {}), "at": time.time()}
             self.entries.append(e)
             self.by_id[e["id"]] = e
             if e["listed"] and e["cell"]:
@@ -188,11 +274,13 @@ class Archive:
     def _migration(self, island: int) -> list:
         """The top `migration_rate` of the connected islands' current elites, each given to an island once."""
         pool = [self.by_id[cid] for j in visible(self.cfg, island) for cid in self.elites[j].values()]
-        pool.sort(key=lambda x: fitness(x["validation"]), reverse=True)
-        take = pool[:max(1, math.ceil(len(pool) * self.cfg["migration_rate"]))] if pool else []
-        fresh = [x for x in take if x["id"] not in self.given[island]]
-        self.given[island].update(x["id"] for x in fresh)
-        return [self._summary(x) for x in fresh]
+        # The ones not given yet, then the top share of them: cutting first could keep a lower-ranked elite
+        # from ever being given while a higher one, already given, stays on top (2026-11-09).
+        fresh = sorted((x for x in pool if x["id"] not in self.given[island]),
+                       key=lambda x: fitness(x["validation"]), reverse=True)
+        take = fresh[:max(1, math.ceil(len(fresh) * self.cfg["migration_rate"]))] if fresh else []
+        self.given[island].update(x["id"] for x in take)
+        return [self._summary(x) for x in take]
 
     def view(self, island: int) -> dict:
         """The listed commits of this island and the islands it sees; a failed commit only to its own island."""

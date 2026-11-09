@@ -161,6 +161,23 @@ class RunRecord(unittest.TestCase):
         with self.assertRaises(skills.SkillError):
             self.run_task(task, skills=["no-such-skill"])
 
+    def test_a_named_run_carries_its_name(self):
+        task = make_task(self.base)
+        saved = self.run_task(task, name="R41-F2")
+        self.assertEqual(saved["name"], "R41-F2")
+        self.assertRegex(saved["run_id"], r"^R41-F2-\d{8}T\d{6}Z-[0-9a-f]{4}$")
+        self.assertTrue((self.site.state_dir / "runs" / saved["run_id"] / "run.json").is_file())
+        unnamed = self.run_task(task)
+        self.assertIsNone(unnamed["name"])
+        self.assertTrue(unnamed["run_id"].startswith(f"{task.task_id}-noop-"))
+
+    def test_a_name_that_is_no_safe_id_is_refused_before_anything_runs(self):
+        task = make_task(self.base)
+        for bad in ("", "-x", "R41 F2", "a/b", "x" * 41):
+            with self.assertRaises(ValueError, msg=bad):
+                self.run_task(task, name=bad)
+        self.assertFalse((self.site.state_dir / "runs").exists() and any((self.site.state_dir / "runs").iterdir()))
+
 
 if __name__ == "__main__":
     unittest.main()

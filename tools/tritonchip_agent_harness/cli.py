@@ -50,6 +50,8 @@ def main(argv=None) -> int:
     t.add_argument("--agent", required=True, help="an account label, or noop / reference")
     t.add_argument("--mode", choices=("offline", "open"), default="offline")
     t.add_argument("--model", help="override the account's main model for this run")
+    t.add_argument("--name", help="the run's own name (e.g. R41-F2): the run id becomes NAME-<stamp> and the "
+                                  "record's `name` says it")
     t.add_argument("--budget-seconds", type=int, help="override the task's wall-clock budget (the prompt says it too)")
     which_skills = t.add_mutually_exclusive_group()
     which_skills.add_argument("--skills", metavar="NAME[,NAME...]",
@@ -107,7 +109,7 @@ def main(argv=None) -> int:
             if args.budget_seconds:
                 task = dataclasses.replace(task, wall_seconds=args.budget_seconds)
             chosen = [] if args.no_skills else ([s for s in args.skills.split(",") if s] if args.skills else None)
-            value = loop.run_task(site, task, args.agent, args.mode, args.model, skills=chosen)
+            value = loop.run_task(site, task, args.agent, args.mode, args.model, skills=chosen, name=args.name)
             value["ok"] = value.get("validity") == "valid"
             if not args.json and value.get("islands"):
                 print(f"{value['run_id']}: validity={value['validity']} islands={len(value['islands']['islands'])}")

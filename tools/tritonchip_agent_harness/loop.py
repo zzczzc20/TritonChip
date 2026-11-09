@@ -15,6 +15,7 @@ import contextlib
 import dataclasses
 import hashlib
 import json
+import re
 import secrets
 import signal
 import subprocess
@@ -92,17 +93,25 @@ def _stopped(site: Site, task: Task, record: dict, run_dir: Path, rows: Optional
     _write(run_dir, record)
 
 
+RUN_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,39}")
+
+
 def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: Optional[str] = None,
-             skills: Optional[list] = None) -> dict:
+             skills: Optional[list] = None, name: Optional[str] = None) -> dict:
     """`skills`: the names of the skills this run provides; None takes the task's own set (`task.json`
     `skills`), a list overrides it -- [] runs without any, a pilot's control arm. The record says which.
+    `name`: the operator's name for the run (e.g. R41-F2), so that its records line up by it: the run id
+    becomes `<name>-<stamp>` and the record's `name` says it; without one the id is `<task>-<agent>-<stamp>`.
     A run the operator stops (SIGINT or SIGTERM) writes its record before it ends (validity "stopped")."""
+    if name is not None and not RUN_NAME.fullmatch(name):
+        raise ValueError(f"run name {name!r}: letters, digits, '-' and '_', starting with a letter or digit, "
+                         "at most 40")
     with operator_signals():
-        return _run_task(site, task, agent, mode, model, skills)
+        return _run_task(site, task, agent, mode, model, skills, name)
 
 
 def _run_task(site: Site, task: Task, agent: str, mode: str, model: Optional[str],
-              skills: Optional[list]) -> dict:
+              skills: Optional[list], name: Optional[str] = None) -> dict:
     if site.repository is None:
         raise SiteError("site.json has no `repository`: the clone workspaces are exported from")
     repo = site.repository
@@ -122,7 +131,7 @@ def _run_task(site: Site, task: Task, agent: str, mode: str, model: Optional[str
                   f"the run has {fit['minutes_of_run']:g}", file=sys.stderr)
     stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + secrets.token_hex(2)
     label = f"patch-{Path(agent.split(':', 1)[1]).stem}" if agent.startswith("patch:") else agent
-    run_dir = site.state_dir / "runs" / f"{task.task_id}-{label}-{stamp}"
+    run_dir = site.state_dir / "runs" / (f"{name}-{stamp}" if name else f"{task.task_id}-{label}-{stamp}")
     run_dir.mkdir(parents=True)
     workspace = run_dir / "workspace"
     island_run = bool(task.islands) and agent not in PSEUDO and not agent.startswith("patch:")
@@ -135,7 +144,7 @@ def _run_task(site: Site, task: Task, agent: str, mode: str, model: Optional[str
     prompt = render(task, mode, skills=names)
     (run_dir / "prompt.md").write_text(prompt, encoding="utf-8")
     record: dict = {
-        "schema": "tritonchip-agent-run/1", "run_id": run_dir.name, "harness_version": __version__,
+        "schema": "tritonchip-agent-run/1", "run_id": run_dir.name, "name": name, "harness_version": __version__,
         "task": {"id": task.task_id, "sha256": task.sha256, "base_commit": task.base_commit},
         "agent": agent, "mode": mode, "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
         "skills": {"selected": names, "source": source, "hashes": skills_.manifest(selected),

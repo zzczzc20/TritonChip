@@ -50,7 +50,7 @@ import time
 from pathlib import Path
 from typing import Callable, Optional
 
-from . import board, evaluator, fpga_quick, fpga_slow, provider
+from . import board, evaluator, fpga_quick, fpga_slow, provider, roofline
 from .siteconfig import Site
 from .task import Task
 from .workspace import apply_candidate, export, gate
@@ -188,6 +188,9 @@ class Shared:
         self.evaluations = threading.BoundedSemaphore(int(n)) if n else None
         self.sims = Simulations(self.evaluations)
         self.brokers: list = []          # every island's broker: the run-wide checks look at all their requests
+        # The whole chip's lower bound of each scored point (roofline.table), when the run computed it: each
+        # reply then lists every point's eta (decided 2026-11-10).
+        self.roofline: Optional[dict] = None
         self.commits: dict = {}          # sim_key -> (broker, job): the run's scoring requests, for D4
 
     def pool(self, island: Optional[int]) -> dict:
@@ -616,6 +619,10 @@ class Broker:
             # Cancelled while it waited (its island stopped): nothing is measured or archived.
             return {"status": "cancelled"}, {"cancelled_waiting": True}
         visible = {"validation": r["aggregate"]}
+        points = roofline.view(self.shared.roofline, (r.get("full") or {}).get("points") or [],
+                               self.task.evaluation["validation"])
+        if points is not None:
+            visible["points"] = points
         # On failure, what may be said of why (README section 6.4): failed points counted by
         # kind, and the logs of what failed before any point ran (a device that did not
         # build, staging that stopped the host). Never a point's name or its own log.
@@ -645,7 +652,7 @@ class Broker:
                     {"same_as": job["dedupe_of"], "source_state": (src_job or {}).get("state")})
         r = src_job.get("full") or {}
         visible = {k: v for k, v in (src_job.get("result") or {}).items()
-                   if k in ("validation", "failures", "device_build_errors", "stage_errors")}
+                   if k in ("validation", "points", "failures", "device_build_errors", "stage_errors")}
         visible["cached_from"] = job["dedupe_of"]
         if self.archive is not None and src_job.get("commit"):
             job["commit"] = src_job["commit"]
@@ -714,7 +721,8 @@ class Broker:
             visible, full = fpga_slow.run(self.site, self.repo, self.task, candidate, job_dir, job,
                                           with_board=self.slow_mode == "board", image=image,
                                           flow_seconds=self.flow_seconds, board_seconds=self.board_seconds,
-                                          gate=lambda: self._gate(job, candidate, job_dir))
+                                          gate=lambda: self._gate(job, candidate, job_dir),
+                                          roofline=self.shared.roofline)
         except Exception:
             job["outcome"] = "infra"
             raise

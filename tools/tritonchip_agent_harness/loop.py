@@ -194,6 +194,8 @@ def _run_task(site: Site, task: Task, agent: str, mode: str, model: Optional[str
         if model:
             account = dataclasses.replace(account, models={**account.models, "main": model})
         broker = Broker(site, repo, task, workspace, run_dir) if task.services else None
+        if broker is not None:
+            broker.shared.roofline = _roofline(site, repo, task, record)
         # The task's `resume`: when the CLI stops early, it is continued (islands.Turns, without an archive).
         turns = None
         if task.resume:
@@ -267,6 +269,23 @@ def _run_task(site: Site, task: Task, agent: str, mode: str, model: Optional[str
     return record
 
 
+def _roofline(site: Site, repo: Path, task: Task, record: dict) -> Optional[dict]:
+    """The scored points' whole-chip bounds (roofline.table), for the replies' eta lists; a run without them still
+    runs, and its record says why."""
+    from . import roofline
+    if not task.services or not task.evaluation.get("device"):
+        return None
+    try:
+        value = roofline.table(site, repo, task)
+    except Exception as exc:  # noqa: BLE001 -- the run goes on without the eta lists
+        record["roofline"] = {"error": f"{type(exc).__name__}: {str(exc)[:300]}"}
+        return None
+    record["roofline"] = {k: value.get(k) for k in ("version", "base_commit", "profile", "cores", "mem_bytes_per_cycle")}
+    record["roofline"]["points"] = {p: {k: v.get(k) for k in ("cycles", "binding", "error")}
+                                    for p, v in (value.get("points") or {}).items()}
+    return value
+
+
 def _island_rows(results) -> list:
     """The islands' rows for the record: each island's own, with every request its broker kept."""
     rows = []
@@ -290,6 +309,7 @@ def _islands(site: Site, task: Task, account, mode: str, names: list, record: di
     from . import islands as islands_, services
     evaluator.baseline(site, repo, task)
     shared = services.Shared(site, task)
+    shared.roofline = _roofline(site, repo, task, record)
     got, rows, stage = None, None, "islands"
     try:
         got = islands_.run(site, task, account, mode, run_dir, repo, names, Broker, shared)

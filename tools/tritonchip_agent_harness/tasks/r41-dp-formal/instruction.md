@@ -85,6 +85,31 @@ repository, and you are not told its programs. What you are told is this:
   programs that passed, and the share of all programs that passed and got
   faster.
 
+## How far each program is from the machine's limit
+
+Each program has a least number of cycles the base machine could take for its
+work, L: the largest of its semantic work divided by what the whole chip can
+serve per cycle -- its multiply-accumulates and other floating-point operations
+over the three cores' vector and matrix rates, every byte it must read or write
+over the three 512-bit memory outlets. η = L / T, with T its measured device
+time, says how far the program is from that limit; the resource that binds says
+which limit it is. On the base machine every scored program is far from it:
+most are bound by memory and below 2 %, the matrix products reach about 15 %.
+
+The reply to a scoring request lists every validation program in a fixed order,
+numbered and never named: the resource that binds it, its η and the base's η. A
+board request's reply does the same for the card's programs. The test-case
+skill's `tnca_case.py` prints η and the binding resource for a case of your own,
+against one core's limit (the evaluation's per-core bound): it compares your
+cases with each other, and a version with the one before.
+
+Work from the bottleneck. Before you change something, find where the time of
+the programs furthest from their limit goes: which resource binds them, and why
+the program or the machine leaves it idle. Choose the change that removes that
+limit, and check afterwards that η moved as you expected. A parameter changed
+without knowing what binds, sent to a flow or to the card, costs hours and
+teaches little.
+
 ## The card
 
 The device is an FPGA: an AMD Alveo U280 with its kernel clock fixed at

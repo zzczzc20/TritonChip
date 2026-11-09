@@ -317,7 +317,8 @@ def render(task: Task, mode: str, skills: Iterable[str] = (), island: Optional[i
     services = _services_text(task.services, islands=island is not None and bool(task.islands),
                               resumed=bool(task.resume), role=roles[island] if roles else None,
                               board_cycles=((task.evaluation or {}).get("certify") or {}).get("board_cycles", "equal"),
-                              board_set=bool((task.evaluation or {}).get("board_validation")))
+                              board_set=bool((task.evaluation or {}).get("board_validation")),
+                              roofline=bool((task.evaluation or {}).get("device")))
     return instruction.rstrip() + services + f"""
 
 ## The rules of this run
@@ -381,7 +382,7 @@ def _ending(task: Task, island: Optional[int]) -> str:
 
 
 def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, board_cycles: str = "equal",
-                   board_set: bool = False, role: Optional[dict] = None) -> str:
+                   board_set: bool = False, role: Optional[dict] = None, roofline: bool = False) -> str:
     """How the agent may ask the evaluator for a measurement, and how much it may ask. `role`: the island's
     (islands.roles), whose budgets are its own."""
     if not cfg:
@@ -412,9 +413,14 @@ def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, boar
                      f"points passed, the geometric-mean speedup over the points that passed, and the share of all "
                      f"points that passed and got faster. When points fail, how many failed of each kind (such as "
                      f"numeric-error, timeout or measurement-rejected), and when your device did not build or "
-                     f"staging stopped before any point ran, the last lines of that log. Never which point, its "
-                     f"shape or its own error text. You have "
-                     f"{int(score.get('requests', 0))} such requests, one running at a time. The "
+                     f"staging stopped before any point ran, the last lines of that log. Never a point's name, its "
+                     f"shape or its own error text. "
+                     + ("The reply also lists every validation point in a fixed order, numbered and never named: the "
+                        "resource that binds it and its η, its distance from the whole chip's roofline (η = L / T: L "
+                        "the least cycles the base machine's cores and memory outlets could take for its work, T the "
+                        "cycles measured; none for a point that did not pass), beside the base's η. "
+                        if roofline else "")
+                     + f"You have {int(score.get('requests', 0))} such requests, one running at a time. The "
                      + ("run (every island) " if islands else "run ")
                      + "simulates only a few validation sets at once, scoring requests and the simulations of "
                      "`fpga-slow` requests together, so a request may wait for its turn, and its time includes the "
@@ -463,6 +469,7 @@ def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, boar
                   if board_cycles == "equal" else
                   "the card's cycle counts against simulation's in aggregate (the geometric mean and range of "
                   "board over simulation)"))
+            + (", the same list of η for the card's points" if roofline else "")
             + f", and any board check (such as FP8 bit "
             f"alignment) that did not pass; for a flow that failed, why: the failing stage, slack, the worst "
             f"paths and whether they cross an SLR, utilisation per SLR, the DRC rules that failed. A board "

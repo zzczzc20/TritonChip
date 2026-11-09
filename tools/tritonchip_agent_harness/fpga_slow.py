@@ -46,7 +46,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from . import board, certify, evaluator, provider
+from . import board, certify, evaluator, provider, roofline as roofline_
 from .siteconfig import Site
 from .task import Task, board_points
 
@@ -693,7 +693,8 @@ def _cycles_view(points: list, got: dict, sim_rows: dict) -> dict:
 
 
 def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image: dict, sim: dict,
-            job_dir: Path, job: dict, seconds: int, base_xclbin: Optional[str] = None) -> dict:
+            job_dir: Path, job: dict, seconds: int, base_xclbin: Optional[str] = None,
+            roofline: Optional[dict] = None) -> dict:
     """The board's validation points (and the task's board checks) on `image`, tried again on an infrastructure
     failure; the agent's view against the base on the card. outcome: ok, candidate (charged) or infra."""
     points = board_points(task)
@@ -726,6 +727,9 @@ def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image
         full = evaluator.score(base["points"], got, points,
                                faster_than=float(((task.services or {}).get("fpga_slow") or {}).get("board_faster_than", 1.0)))
         visible["validation"] = {k: full[k] for k in ("n", "passed", "speedup_geomean", "fast_1")}
+        listed = roofline_.view(roofline, full.get("points") or [], points)
+        if listed is not None:
+            visible["points"] = listed     # each card point's eta against the whole chip's roofline, by number
         failures = evaluator.failure_counts(full)
         if failures:
             visible["failures"] = failures
@@ -819,7 +823,8 @@ def _gate_beside_flow(site: Site, repo: Path, task: Task, candidate: Optional[Pa
 
 
 def run(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: Path, job: dict,
-        *, with_board: bool, image: Optional[dict], flow_seconds: int, board_seconds: int, gate=None) -> tuple:
+        *, with_board: bool, image: Optional[dict], flow_seconds: int, board_seconds: int, gate=None,
+        roofline: Optional[dict] = None) -> tuple:
     """One request: the gate, the flow when it needs one, the card when the task asks for it.
     `image`: the image to run on when no flow is needed (the base's, or one this run built). `gate`: the
     validation set's simulation (the broker's, through the run's one simulation per snapshot); by default
@@ -883,7 +888,7 @@ def run(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: 
     elif not with_board:
         raise SlowError("a request that needs no flow has nothing to do without the board")
     card = on_card(site, repo, task, candidate, image, sim, job_dir, job, board_seconds,
-                   base_xclbin=base_xclbin(site, repo, task, candidate, image))
+                   base_xclbin=base_xclbin(site, repo, task, candidate, image), roofline=roofline)
     full["card"] = {k: v for k, v in card.items() if k != "visible"}
     visible["board"] = card["visible"]
     if job["kind"] == "software":

@@ -52,6 +52,7 @@ import argparse
 import importlib.util
 import json
 import os
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -188,6 +189,16 @@ def main(argv=None):
     ap.add_argument('--opt-level', type=int, default=int(os.environ.get('TNCA_OPT_LEVEL', '2')))
     ap.add_argument('--json', type=Path, help='append one JSON record per case to this file')
     args = ap.parse_args(argv)
+    if len(args.cases) > 1 and os.environ.get('TNCA_BACKEND', '').startswith('systemc-tlm'):
+        # A performance model is one process per Python process, and the Event Model keeps its caches from one
+        # case to the next, so a later case would start warm and come out short. One process per case, as the
+        # evaluation runs one point per process.
+        bad = 0
+        for path in args.cases:
+            cmd = [sys.executable, os.path.abspath(__file__), str(path), '--profile', args.profile,
+                   '--opt-level', str(args.opt_level)] + (['--json', str(args.json)] if args.json else [])
+            bad += subprocess.run(cmd).returncode != 0
+        return 1 if bad else 0
     bad = 0
     for path in args.cases:
         rec = run_case(path, args.profile, args.opt_level)

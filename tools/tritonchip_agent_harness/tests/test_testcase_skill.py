@@ -518,3 +518,43 @@ class Delivery(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ModelCasesOnePerProcess(unittest.TestCase):
+    """The Event Model keeps one model, and its caches, for a whole Python process (2026-11-09: a second case in
+    the same process came out up to a fifth short), so on a model backend tnca_case.py runs each case alone."""
+
+    def runner_module(self):
+        import types
+        from unittest import mock
+        stubs = {"protocol": types.ModuleType("protocol"), "bound": types.ModuleType("bound")}   # they need torch
+        with mock.patch.dict(sys.modules, stubs):
+            spec = importlib.util.spec_from_file_location("_tnca_case_under_test", SKILL / "scripts" / "tnca_case.py")
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+        return mod
+
+    def run_main(self, backend, cases):
+        from unittest import mock
+        mod = self.runner_module()
+        record = {"status": "pass", "case": "x", "time": None, "correctness": None, "eta": None, "problems": []}
+        with mock.patch.dict("os.environ", {"TNCA_BACKEND": backend}), \
+                mock.patch.object(mod.subprocess, "run", return_value=mock.Mock(returncode=0)) as run, \
+                mock.patch.object(mod, "run_case", return_value=record) as in_process, \
+                mock.patch.object(mod, "summary", return_value=""):
+            code = mod.main(cases + ["--profile", "p", "--opt-level", "2", "--json", "/tmp/out.jsonl"])
+        return code, run, in_process
+
+    def test_several_cases_on_a_model_run_one_process_each(self):
+        code, run, in_process = self.run_main("systemc-tlm-grid", ["a.py", "b.py"])
+        self.assertEqual(code, 0)
+        self.assertEqual(in_process.call_count, 0)
+        self.assertEqual([c.args[0][2] for c in run.call_args_list], ["a.py", "b.py"])
+        for c in run.call_args_list:
+            argv = c.args[0]
+            self.assertEqual(argv[3:], ["--profile", "p", "--opt-level", "2", "--json", "/tmp/out.jsonl"])
+
+    def test_the_simulator_and_a_single_case_stay_in_process(self):
+        for backend, cases in (("", ["a.py", "b.py"]), ("systemc-tlm-grid", ["a.py"])):
+            code, run, in_process = self.run_main(backend, cases)
+            self.assertEqual((code, run.call_count, in_process.call_count), (0, 0, len(cases)), backend)

@@ -16,7 +16,7 @@
   "uncore": {
     "MEM_PORTS": 3,
     "AXI_OUT_N": 32,
-    "SETS": 32,
+    "SETS": 64,
     "WAYS": 8,
     "CODE_LINK_STAGES": 2,
     "LINK_STAGES": 2,

@@ -389,7 +389,11 @@ def _blocks(text: str) -> list:
 
 
 def worst_paths(text: str, n: int = PATHS) -> list:
-    out = []
+    """The paths the routed design misses timing on, worst first (setup before hold); when none misses, the ones
+    with the least slack. Not the report's first paths: its order is the clocks', the platform's first, and
+    R41-F2's flow l8 (2026-11-09) showed the agent its frequency counters' +3.9 ns paths and none of the 4062
+    failing ones in the core."""
+    rows = []
     for block in _blocks(text):
         row = {}
         for line in block:
@@ -416,12 +420,12 @@ def worst_paths(text: str, n: int = PATHS) -> list:
                     pass
             elif s.startswith("Path Type:") and len(w) > 2:
                 row["type"] = "hold" if "Min" in s else "setup"
-        if "start" in row:
+        if "start" in row and isinstance(row.get("slack_ns"), float):
             row["crosses_slr"] = any("Inter-SLR Compensation" in line for line in block)
-            out.append(row)
-        if len(out) >= n:
-            break
-    return out
+            rows.append(row)
+    order = lambda r: (r.get("type") == "hold", r["slack_ns"])  # noqa: E731 -- setup first, then the least slack
+    violated = sorted((r for r in rows if r["slack_ns"] < 0), key=order)
+    return (violated or sorted(rows, key=order))[:n]
 
 
 def slr_utilization(text: str) -> dict:

@@ -778,13 +778,19 @@ class U50Adapter:
 
         The tables are fixed-width, and a cell is blank where a clock has no
         path of that kind (a pulse-width-only clock, a crossing with no hold
-        check), so a row is cut at the columns its dash line marks, never split
-        on whitespace. Clock names keep their spelling; generated clocks lose
-        only their indentation. None unless the intra-clock table is there,
-        and every table there has known columns and numbers for values. A
-        design with no crossings may print no inter-clock table; that is not
-        a gap a failure can hide in, since _exempt_timing holds the rows to
-        the design row's own totals.
+        check), so a value is placed by where it sits, never by its order in
+        the row. A name (clock, path group) is left-aligned in its column: it
+        belongs to the column it starts in. A number is right-aligned to the
+        end of its column's dash run and may start before the run when it is
+        wider than the heading (a TNS of -457.657 under `TNS(ns)`): it belongs
+        to the column its last character is in. Cutting at the dash runs
+        instead put that TNS's sign into the WNS cell (R41-F2's flow l8,
+        2026-11-09), and the whole table was lost. Clock names keep their
+        spelling; generated clocks lose only their indentation. None unless
+        the intra-clock table is there, and every table there has known
+        columns and numbers for values. A design with no crossings may print
+        no inter-clock table; that is not a gap a failure can hide in, since
+        _exempt_timing holds the rows to the design row's own totals.
         """
         lines = text.splitlines()
         tables: dict[str, list[dict[str, Any]]] = {}
@@ -798,26 +804,36 @@ class U50Adapter:
             if at + 1 >= len(lines):
                 return None
             header, dashes = lines[at], lines[at + 1]
-            starts = [m.start() for m in re.finditer(r"-+", dashes)]
-            if not starts or starts[0] != 0:
+            runs = [(m.start(), m.end()) for m in re.finditer(r"-+", dashes)]
+            if not runs or runs[0][0] != 0:
                 return None
+            starts = [a for a, _ in runs]
             bounds = list(zip(starts, starts[1:] + [None]))
             names = [header[a:b].strip() if b else header[a:].strip() for a, b in bounds]
             if any(name not in U50Adapter._TABLE_COLUMNS for name in names):
                 return None
             keys = [U50Adapter._TABLE_COLUMNS[name] for name in names]
+            text = ("clock", "from_clock", "to_clock", "path_group")
             rows = []
             for row in lines[at + 2:]:
                 if not row.strip():
                     break
                 entry: dict[str, Any] = {}
-                for key, (a, b) in zip(keys, bounds):
-                    cell = (row[a:b] if b else row[a:]).strip()
-                    if not cell:
+                for token in re.finditer(r"\S+", row):
+                    first, last = token.start(), token.end() - 1
+                    # A number: the column whose dash run its last character is in.
+                    column = next((i for i, (a, b) in enumerate(runs) if keys[i] not in text and a <= last < b), None)
+                    if column is None:
+                        # A name: the column it starts in.
+                        column = max((i for i, a in enumerate(starts) if a <= first), default=None)
+                        if column is None or keys[column] not in text:
+                            return None
+                    key, cell = keys[column], token.group()
+                    if key in text:
+                        entry[key] = f"{entry[key]} {cell}" if key in entry else cell
                         continue
-                    if key in ("clock", "from_clock", "to_clock", "path_group"):
-                        entry[key] = cell
-                        continue
+                    if key in entry:
+                        return None
                     try:
                         entry[key] = int(cell) if key.endswith("_endpoints") else float(cell)
                     except ValueError:

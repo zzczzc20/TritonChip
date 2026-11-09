@@ -584,3 +584,33 @@ class BoardLaunchDeadline(unittest.TestCase):
         env = board._env(task, 3, 600)
         self.assertIn(f"TNCA_DEADLINE={board.DEADLINE_CYCLES}", env.split())
         self.assertGreaterEqual(board.DEADLINE_CYCLES, 60 * 100_000_000)   # a minute of device time at 100 MHz
+
+
+def path_block(slack: float, source: str, levels: int, hold: bool = False) -> str:
+    state = "VIOLATED" if slack < 0 else "MET"
+    return (f"Slack ({state}) :        {slack:.3f}ns  (required time - arrival time)\n"
+            f"  Source:                 {source}/C\n"
+            f"  Destination:            {source}_dst/D\n"
+            f"  Path Group:             clk\n"
+            f"  Path Type:              {'Min' if hold else 'Max'} at Slow Process Corner\n"
+            f"  Data Path Delay:        6.076ns  (logic 2.1ns (34%)  route 3.9ns (66%))\n"
+            f"  Logic Levels:           {levels}  (CARRY8=8 LUT3=4)\n\n")
+
+
+class WorstPaths(unittest.TestCase):
+    """2026-11-09: the paths that miss timing, not the report's first (R41-F2's l8 showed the platform's)."""
+
+    def test_the_failing_paths_come_first_worst_first(self):
+        report = (path_block(3.934, "level0_i/ulp/ulp_ucs/inst/frequency_counters/a", 3)
+                  + path_block(3.996, "level0_i/ulp/ulp_ucs/inst/frequency_counters/b", 3)
+                  + path_block(-0.120, "u_tile/u_core/g_lsu_hybrid.u_lsu/fast/x", 19)
+                  + path_block(-0.010, "u_tile/u_core/hold_path", 1, hold=True)
+                  + path_block(-0.352, "g_tile[1].u_tile/u_core/g_lsu_hybrid.u_lsu/fast/rr_reg[1]", 26))
+        got = fpga_slow.worst_paths(report)
+        self.assertEqual([(p["slack_ns"], p["type"]) for p in got], [(-0.352, "setup"), (-0.12, "setup"), (-0.01, "hold")])
+        self.assertEqual(got[0]["levels"], 26)
+        self.assertNotIn("frequency_counters", json.dumps(got))
+
+    def test_a_design_that_meets_timing_shows_its_least_slack(self):
+        report = path_block(3.9, "platform/a", 3) + path_block(0.05, "core/tight", 22) + path_block(1.2, "core/b", 9)
+        self.assertEqual([p["slack_ns"] for p in fpga_slow.worst_paths(report, n=2)], [0.05, 1.2])

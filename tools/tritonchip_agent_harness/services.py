@@ -230,6 +230,9 @@ class Broker:
                                          "fpga-slow": self._run_slow}
         self.jobs: dict = {}
         self.busy: dict = {}
+        # Every submission refused before it became a request (2026-11-09): when, which service, why. The agent
+        # had the answer at once; the record keeps it, since a role's refusals are part of what a run shows.
+        self.refusals: list = []
         self.lock = self.shared.lock
         self.socket_dir: Optional[Path] = None
         self._server = None
@@ -368,19 +371,31 @@ class Broker:
         with self.lock:
             refused = self._refusal(service)
             if refused:
+                self._refused(service, refused)
                 return {"refused": refused, **self.budget()}
             n = len(self.jobs) + 1
             job_id = f"{'s' if service == 'score' else 'f' if service == 'fpga-quick' else 'l'}{n}"
             job_dir = self.dir / job_id
             self.busy.setdefault(service, []).append(job_id)
         try:
-            return self._submit(service, message, job_id, job_dir)
+            reply = self._submit(service, message, job_id, job_dir)
+            if "refused" in reply:
+                with self.lock:
+                    self._refused(service, reply["refused"], reply.get("files") or reply.get("rejected"))
+            return reply
         except Exception:
             # Whatever failed after the reservation (a gate on a broken tree, a description that does not
             # parse) gives it back: one bad snapshot never blocks a service for the rest of the run.
             with self.lock:
                 self._unbusy(service, job_id)
             raise
+
+    def _refused(self, service: str, why: str, files=None) -> None:
+        """Under the lock: a refused submission, for the record."""
+        entry = {"at": round(time.time(), 1), "service": service, "why": str(why)[:300]}
+        if files:
+            entry["files"] = [str(f)[:200] for f in list(files)[:20]]
+        self.refusals.append(entry)
 
     def _unbusy(self, service: str, job_id: str) -> None:
         """Under the lock: the request no longer counts as one of the service's running ones."""
@@ -753,7 +768,8 @@ class Broker:
             # records brokers whose requests are still ending).
             jobs = [{k: v for k, v in dict(j).items() if k != "thread" and not k.startswith("_")}
                     for j in list(self.jobs.values())]
-        return {"config": self.task.services, "left": self.budget(), "requests": jobs}
+        return {"config": self.task.services, "left": self.budget(), "requests": jobs,
+                "refusals": [dict(r) for r in list(self.refusals)]}
 
 
 __all__ = ["Broker", "SERVICES"]

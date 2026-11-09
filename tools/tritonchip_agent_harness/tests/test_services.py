@@ -92,6 +92,20 @@ class Services(unittest.TestCase):
         self.assertEqual(self.broker.submit("score")["refused"], "no scoring requests left")
         self.assertEqual(self.seen, [("score", True), ("score", True)])
 
+    def test_refused_submissions_are_in_the_record(self):
+        (self.ws / "compiler/a.py").write_text("a = 2\n")
+        self.broker.submit("score")
+        self.broker.submit("score")                          # one at a time
+        (self.ws / "tb/t.v").write_text("module t2; endmodule\n")
+        self.broker.fpga_left = 0
+        self.broker.submit("fpga-quick")                     # no FPGA time
+        refusals = self.broker.record()["refusals"]
+        self.assertEqual([r["service"] for r in refusals], ["score", "fpga-quick"])
+        self.assertIn("one at a time", refusals[0]["why"])
+        self.assertTrue(all(isinstance(r["at"], float) for r in refusals))
+        self.gate_open.set()
+        self.wait_done("s1")
+
     def test_a_failed_score_says_what_it_may_and_keeps_the_rest(self):
         r = {"aggregate": {"n": 3, "passed": 1, "speedup_geomean": 1.1, "fast_1": 0.33},
              "failures": {"numeric-error": 1, "measurement-rejected": 1}, "device_build_errors": None,

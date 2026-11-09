@@ -313,6 +313,47 @@ def tool_calls(account: Account, out: str) -> int:
     return n
 
 
+def codex_rollouts(run_dir: Path) -> tuple:
+    """What Codex's own session logs say: the models that served, and the usage so far -- each session's last
+    `token_count` total (a running total, a turn cut off before it completed included), summed over sessions.
+
+    Decided 2026-11-09 from the R41-F3 smoke run: turn.completed carries the thread's running total, so adding up
+    a resumed session's turns counted the earlier ones again (island 1: 20.5 M recorded, 13.7 M used), and a turn
+    cut off at the time limit has no turn.completed at all (island 0: none recorded, 5.2 M used)."""
+    models, total, found = set(), {}, False
+    for rollout in sorted((run_dir / "codex-home" / "sessions").rglob("rollout-*.jsonl")):
+        last = None
+        for line in rollout.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                p = json.loads(line).get("payload") or {}
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(p, dict):
+                continue
+            if p.get("model"):
+                models.add(p["model"])
+            if p.get("type") == "token_count" and isinstance(p.get("info"), dict):
+                last = p["info"].get("total_token_usage") or last
+        if isinstance(last, dict):
+            found = True
+            for k, v in last.items():
+                if k != "total_tokens" and isinstance(v, (int, float)) and not isinstance(v, bool):
+                    total[k] = total.get(k, 0) + v
+    return models, (total if found else None)
+
+
+def token_delta(now: Optional[dict], before: Optional[dict]) -> Optional[dict]:
+    """One turn's share of two running totals in tokens()'s schema: each count's difference (None stays None)."""
+    if now is None:
+        return None
+    before = before or {}
+    out = {}
+    for k, v in now.items():
+        b = before.get(k)
+        out[k] = (v - b if isinstance(b, (int, float)) else v) if isinstance(v, (int, float)) else (None if k == "by_model" else v)
+    return out
+
+
 def parse(account: Account, out: str, run_dir: Path, export_session=None) -> dict:
     """What the CLI answered last, which models served it, the usage it reported, and that usage in one schema."""
     r = _read(account, out, run_dir, export_session)
@@ -332,23 +373,17 @@ def _read(account: Account, out: str, run_dir: Path, export_session=None) -> dic
                  model_usage=final.get("modelUsage"))
         return r
     if account.cli == "codex":
-        usage = {}
+        turn_usage = None
         for e in events:
             if e.get("type") == "item.completed" and (e.get("item") or {}).get("type") == "agent_message":
                 r["text"] = e["item"].get("text")
             if e.get("type") == "turn.completed":
-                for k, v in (e.get("usage") or {}).items():
-                    usage[k] = usage.get(k, 0) + (v or 0)
-        r["usage"] = usage or None
-        models = set()
-        for rollout in (run_dir / "codex-home" / "sessions").rglob("rollout-*.jsonl"):
-            for line in rollout.read_text(encoding="utf-8").splitlines():
-                try:
-                    p = json.loads(line).get("payload") or {}
-                except json.JSONDecodeError:
-                    continue
-                if isinstance(p, dict) and p.get("model"):
-                    models.add(p["model"])
+                turn_usage = e.get("usage") or turn_usage
+        models, usage = codex_rollouts(run_dir)
+        # The run's usage so far (a running total): the rollouts' when they have it, which a turn cut off before
+        # it completed is in too; else the last turn.completed, which carries the same running total.
+        r["usage"] = usage or turn_usage
+        r["turn_usage"] = turn_usage
         r["served_models"] = sorted(models)
         return r
     session, usage = None, {}
@@ -378,5 +413,5 @@ def _read(account: Account, out: str, run_dir: Path, export_session=None) -> dic
     return r
 
 
-__all__ = ["CODEX_HOME", "Launch", "MODES", "SKILLS_DIR", "TOKEN_FIELDS", "WORKDIR", "codex_config", "launch",
+__all__ = ["codex_rollouts", "token_delta", "CODEX_HOME", "Launch", "MODES", "SKILLS_DIR", "TOKEN_FIELDS", "WORKDIR", "codex_config", "launch",
            "opencode_config", "parse", "session_id", "throttle", "tokens", "tool_calls"]

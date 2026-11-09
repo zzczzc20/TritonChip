@@ -236,6 +236,7 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
                             **(link_skills(agent, launch.skills_dir) if selected else {})}
         start = time.time()
         command, turn, session, turns_log, total = launch.command, 0, None, [], {}
+        running = None       # Codex: the run's usage so far, after the last turn
         while True:
             left = timeout - (time.time() - start)
             stdout, stderr, record = _turn(agent, account, command, left)
@@ -245,15 +246,23 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
             exporter = (lambda sid: _exec(agent, ["opencode", "export", sid], timeout=120).stdout) \
                 if account.cli == "opencode" else None
             parsed = adapters.parse(account, stdout or "", run_dir, exporter)
+            if account.cli == "codex":
+                # Codex's usage is the run's running total (adapters.codex_rollouts): this turn's is the difference,
+                # and the run's is the last.
+                turn_tokens = adapters.token_delta(parsed.get("tokens"), running)
+                running = parsed.get("tokens") or running
+                total = dict(running or {})
+            else:
+                turn_tokens = parsed.get("tokens")
+                for k, v in (turn_tokens or {}).items():
+                    if isinstance(v, (int, float)):
+                        total[k] = total.get(k, 0) + v
             record.update(turn=turn, tool_calls=adapters.tool_calls(account, stdout or ""),
                           throttled=adapters.throttle(account, stdout or "", stderr or ""),
-                          tokens=parsed.get("tokens"))
+                          tokens=turn_tokens)
             session = adapters.session_id(account, stdout or "") or session
             record["session"] = session
             turns_log.append(record)
-            for k, v in (parsed.get("tokens") or {}).items():
-                if isinstance(v, (int, float)):
-                    total[k] = total.get(k, 0) + v
             result.update(parsed)
             result.update(stop_reason=record["stop_reason"], exit=record["exit"], throttled=record["throttled"])
             # One CLI run, or an island's turns (report section 8.4 D2/D7): the controller says whether, and

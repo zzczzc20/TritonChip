@@ -179,3 +179,48 @@ class Throttle(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def rollout(path: Path, totals: list, model: str = "gpt-6-luna") -> None:
+    """A Codex session log: its model, then one token_count per model call carrying the running total."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [json.dumps({"type": "turn_context", "payload": {"model": model}})]
+    for t in totals:
+        lines.append(json.dumps({"type": "event_msg", "payload": {"type": "token_count", "info": {
+            "total_token_usage": {"input_tokens": t, "cached_input_tokens": t - 100, "cache_write_input_tokens": 0,
+                                  "output_tokens": 10, "reasoning_output_tokens": 4, "total_tokens": t + 10},
+            "last_token_usage": {}}}}))
+    path.write_text("\n".join(lines) + "\n")
+
+
+class CodexUsage(unittest.TestCase):
+    """2026-11-09 (R41-F3 smoke): Codex's usage is a running total; the rollouts have it, cut-off turns included."""
+
+    def test_the_rollouts_last_total_is_the_runs_usage(self):
+        from tritonchip_agent_harness.adapters import codex_rollouts, token_delta
+        with tempfile.TemporaryDirectory() as tmp:
+            run = Path(tmp)
+            rollout(run / "codex-home/sessions/2026/11/09/rollout-a.jsonl", [1000, 3000, 5000])
+            # The stdout of a turn cut off at the time limit: no turn.completed at all.
+            got = parse(account("codex"), json.dumps({"type": "item.started", "item": {"type": "command_execution"}}),
+                        run)
+            self.assertEqual((got["tokens"]["cache_read"], got["tokens"]["input_uncached"], got["tokens"]["output"]),
+                             (4900, 100, 10))
+            self.assertIsNone(got["turn_usage"])
+            self.assertEqual(got["served_models"], ["gpt-6-luna"])
+            # A second session (the new-session fallback) adds its own last total.
+            rollout(run / "codex-home/sessions/2026/11/09/rollout-b.jsonl", [200, 700])
+            models, usage = codex_rollouts(run)
+            self.assertEqual(usage["input_tokens"], 5700)
+            later = parse(account("codex"), "", run)["tokens"]
+            self.assertEqual(token_delta(later, got["tokens"])["cache_read"], 600)
+
+    def test_a_turn_completed_is_a_running_total_too_not_a_turns_share(self):
+        # Without rollouts: the last turn.completed, never the sum of several.
+        events = [{"type": "turn.completed", "usage": {"input_tokens": 3000, "cached_input_tokens": 2900,
+                                                        "output_tokens": 5, "reasoning_output_tokens": 1}},
+                  {"type": "turn.completed", "usage": {"input_tokens": 8000, "cached_input_tokens": 7800,
+                                                        "output_tokens": 9, "reasoning_output_tokens": 2}}]
+        with tempfile.TemporaryDirectory() as tmp:
+            got = parse(account("codex"), "\n".join(json.dumps(e) for e in events), Path(tmp))
+        self.assertEqual(got["tokens"]["cache_read"], 7800)

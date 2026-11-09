@@ -190,7 +190,12 @@ with the model's hook first on `PYTHONPATH` and the model as the backend:
   `LSU_INFLIGHT` and the cache's `SETS` in direction and size; it is blind to
   the compiler's register-bank allocation, so a change of that kind needs the
   CA Model or the simulator. A difference smaller than its error is not
-  evidence. After a change to the profile or the device description, generate
+  evidence. Run one case per process on it: the backend keeps one model for a
+  whole Python process, so a case after the first starts on the caches the
+  earlier one left and comes out short, by up to about a fifth, with no
+  warning (the CA Model writes back and empties the caches before each host
+  transfer, so it is not affected).
+  After a change to the profile or the device description, generate
   its configuration from them again:
 
       python3 tools/performance_harness/systemc/r41cal/make_config.py \
@@ -206,11 +211,45 @@ with the model's hook first on `PYTHONPATH` and the model as the backend:
   every cycle of every recorded stream. On its own, the memory behind the
   adapters (HBM, the AXI slave) is a fixed-latency stand-in, and that is where
   its error comes from: on small visible cases a median of 2 %, +17 % at worst
-  (a memory-bound case); on the test-case skill's eight examples within 3 %. It follows the compiler fully (it runs your program
-  instruction by instruction, register banks included), so it sees what the
-  Event Model cannot; it follows the hardware only through its configuration's
-  keys. Some mechanisms no recording has reached yet (a dirty line's eviction,
+  (a memory-bound case); on the test-case skill's eight examples within 3 %.
+  It follows the compiler fully (it runs your program instruction by
+  instruction, register banks included), so it sees what the Event Model
+  cannot; it follows the hardware only through its configuration's keys. Some
+  mechanisms no recording has reached yet (a dirty line's eviction,
   a home request blocked for want of an MSHR, the transfer engine's line
   stores). Its card, `configs/r41-board-cycle.error_card.md`, has the details.
   It is slower than the Event Model: a few seconds per small case, roughly
   10,000 to 40,000 device cycles per second of host time.
+
+  Its configuration is written by hand: nothing generates it from the device
+  description or the profile, so after a change to one of these fields (the
+  device description's `uncore`, the profile's RTL parameters) change the
+  matching key yourself:
+
+    - `MEM_PORTS` -> `active_outlets` (1 or 3)
+    - `AXI_OUT_N` -> `outstanding` and `uncore_axi_slots`, both
+    - `SETS` -> `sets`; `WAYS` -> `ways`
+    - `HOME_MSHR_N` -> `uncore_home_mshr_n`
+    - `HOME_LINE_PIPE` -> `uncore_home_line_pipe`
+    - `HOME_LINE_WRITE_NOFILL` -> `uncore_home_line_write_nofill`
+    - `AXI_PIPELINED_ISSUE` -> `uncore_axi_pipelined_issue`
+    - `HYBRID_LSU` -> `core_lsu_hybrid`; `LINE_SLOTS` -> `core_lsu_line_slots`;
+      `TENSOR_LINE` -> `core_tensor_line`
+    - `NOC_LINK_STAGES` -> `tl_noc_link_stages` (2 when the key is absent)
+    - `MTX_VRF_REG` (profile) -> `core_mtx_vrf_reg`
+    - `MAC_CUTS` (the core's parameter, 29 on R41) -> `core_mtx_pipe`, which
+      is 1 plus the number of ones in the low five bits of `MAC_CUTS` (5)
+    - `LSU_INFLIGHT` (profile) -> `lsu_slots`; with the hybrid LSU the model
+      has one word unit and refuses 2 when it starts, rather than give a
+      wrong count
+
+  These fields have no key: the model has R41's values in its source and does
+  not see a change to them: `DISPATCH_STAGES`, `MEM_HOME_STAGES`,
+  `LINK_STAGES`, `CODE_LINK_STAGES`, the `DCO_*` fields, `HBM_STRIPED`,
+  `AXI_LINE_LUTRAM`, and the profile's `USE_BANKED_VRF`, `VRF_BYPASS`,
+  `FE_NOBUBBLE`, `VRF_PREFETCH`, `FPU_OVERLAP`, `MTX_ABUF` and `FMA_IMPL`.
+  With `HOME_LINE_PIPE` 0 or `HYBRID_LSU` 0 it falls back to an older model of
+  that part of the machine, which was not checked against R41. Whether it keeps
+  up with a change of yours is for you to judge: run the same case on the
+  simulator and on it and compare the totals; a gap well beyond its few
+  percent says it does not.

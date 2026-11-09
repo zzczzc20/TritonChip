@@ -18,6 +18,10 @@ Run them all with
 | `two_launches.py` | two products with a nonlinearity between: several launches in one program, the model tolerance |
 | `long_stream_row.py` | one row against a matrix too large to keep in flight: the stream length, where memory-level parallelism binds (the decode-time projection at a realistic size) |
 | `cached_context.py` | one query against a cached context: the stream is the stored context, the reduction ends in a softmax (the other half of a decode step) |
+| `projection_reuse_medium.py` | the size ladder, reuse: many rows against weights larger than one home cache and smaller than all of them (about two million cycles: a cycle model) |
+| `stream_weights_large.py` | the size ladder, streaming: one row against weights larger than every cache, a model's projection (about four million cycles: a cycle model) |
+| `long_context_decode.py` | the size ladder, the cache: one query against a context larger than every cache (about seven million cycles: a cycle model) |
+| `decoder_step.py` | everything together: one decode step of a small two-layer decoder, every kind of launch a step makes, in order, judged at the model tolerance (about 0.6 million cycles: a cycle model, or hours of simulation) |
 
 The same method applies to any class: ask what the class varies in (dtype,
 the leading dimension, a reduction length, a batch, an epilogue, a tail, how

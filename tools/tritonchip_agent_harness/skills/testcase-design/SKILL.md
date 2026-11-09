@@ -147,11 +147,28 @@ it. Shapes are yours to choose, and an arbitrary choice is a better test than
 a round one. A set of six to ten cases built this way covers a class; a
 single shape covers nothing but itself.
 
+**Size is a dimension of its own.** A case's working set either fits in the
+home caches (on R41, a few tens of KiB per core's slice), fits in all of them
+together, or fits in none and streams from memory. The three are different
+regimes: a change that speeds up the first can do nothing for the last, where
+the memory outlets and the requests kept in flight against them decide, and
+a change that only matters for the last is invisible on a small case. A
+benchmark that scores small, medium and large programs rewards a method that
+holds across the three. The RTL simulator runs a few tens of device cycles
+per second, so it reaches the first regime and the edge of the second; for
+the third, run the case on a cycle model (the task text says how) and check
+the model against the simulator on the largest case the simulator still
+finishes.
+
 **A worked example** for the matrix-multiply class is in `examples/`: eight
 cases, one per dimension, with a note on what each isolates; the last two
 are the decode-time shapes (one row against a large matrix, one query
 against a cached context), which a class of model workloads always has and a
-set of small square shapes never covers. Copy the pattern for any class.
+set of small square shapes never covers. Four more take the same shapes up
+the size ladder (a projection of many rows at a medium size, one row against
+weights larger than every cache, one query against a context larger than
+every cache) and put them together (one decode step of a small two-layer
+decoder, end to end). Copy the pattern for any class.
 
 ## 5. Measuring
 

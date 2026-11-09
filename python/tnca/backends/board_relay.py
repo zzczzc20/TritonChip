@@ -401,10 +401,18 @@ class BoardRelay:
                 conn.launches += 1
             conn.pending = None
         elif r(R_RSP_SEQ) == pending:
-            # Answered at the doorbell (its flags refused) and never started:
-            # a running launch holds rsp_seq at zero until it completes.
-            conn.line(f'refused seq={pending} status={r(R_RSP_STATUS) & 0xF}', anomaly=True)
-            conn.pending = None
+            # rsp_seq shows the pending sequence when the doorbell refused the
+            # launch (its flags: rsp_status 3, launch_sequence left as it was)
+            # -- or when the launch completed between the two reads above, since
+            # the device sets rsp_seq and launch_sequence to it in one cycle
+            # (rtl/fpga/tnca_multicore_mmio.v). A second look at
+            # launch_sequence tells them apart; a completion is the next
+            # observe()'s to log. A refusal always carries a status: one
+            # without is not taken for a refusal either.
+            status = r(R_RSP_STATUS) & 0xF
+            if r(R_LAUNCH_SEQUENCE) != pending and status != 0:
+                conn.line(f'refused seq={pending} status={status}', anomaly=True)
+                conn.pending = None
         return conn.pending is None
 
     def write(self, conn, offset, value):

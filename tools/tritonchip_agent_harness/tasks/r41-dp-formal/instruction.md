@@ -177,21 +177,27 @@ with the model's hook first on `PYTHONPATH` and the model as the backend:
     TNCA_TLM_BINARY=/tmp/tnca-model/tnca-chip TNCA_TLM_CONFIG=<the model's configuration> ...
 
 - **Event Model** (`configs/r41-sim.cfg`): a transaction-level timeline of the
-  machine. Its structure is read from the RTL; the few quantities the RTL does
-  not fix (host time, the memory stand-ins' latency) were fitted on cases like
-  your own. After a change to the profile or the device description, generate
+  machine, not a cycle-by-cycle one. It models each core's issue slot and the
+  latency of each instruction class, the occupancy of the SFU and the matrix
+  engine, the LSU's outstanding accesses, the mesh's links, each home cache
+  (its sets, ways and MSHRs) and the memory outlets. It leaves out the
+  register-file banks and their ports, instruction fetch, and the memory's
+  banks and rows; the model's `README.md` lists the rest. Its structure is
+  read from the RTL; the few quantities the RTL does not fix (host time, the
+  memory stand-ins' latency) were fitted on cases like your own. Against the
+  simulation it is typically within about 5 % and off by up to about 17 % on
+  some kernels, more often counting too few cycles than too many. It follows
+  `LSU_INFLIGHT` and the cache's `SETS` in direction and size; it is blind to
+  the compiler's register-bank allocation, so a change of that kind needs the
+  CA Model or the simulator. A difference smaller than its error is not
+  evidence. After a change to the profile or the device description, generate
   its configuration from them again:
 
       python3 tools/performance_harness/systemc/r41cal/make_config.py \
           --device spec/devices/u280-3core-r41.json --profiles spec/r1_profiles.json \
           --base tools/performance_harness/systemc/configs/r41-hbm8-device-service.cfg --out /tmp/event.cfg
 
-  Its error card, `configs/r41-sim.error_card.md`, says how far to trust it:
-  against the simulation on cases held back from its calibration, a median
-  error of 4.5 %, 15.3 % at the 95th percentile and about 17 % at worst; it
-  follows `LSU_INFLIGHT` and the cache's `SETS` in direction and size; it is
-  blind to the compiler's register-bank allocation, so a change of that kind
-  needs the simulator. A difference smaller than its error is not evidence.
+  Its error card, `configs/r41-sim.error_card.md`, has the details.
 - **CA Model** (`configs/r41-board-cycle.cfg`): cycle-accurate from the cores
   to the memory's AXI adapters: every core's pipeline, register-file banks,
   LSU, transfer and matrix engines, then the dispatcher, the mesh, each core's

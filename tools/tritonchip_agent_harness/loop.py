@@ -286,6 +286,16 @@ def _roofline(site: Site, repo: Path, task: Task, record: dict) -> Optional[dict
     return value
 
 
+def _quiet_baseline(site: Site, repo: Path, task: Task, record: dict) -> None:
+    """The base's simulation, measured while the islands run; the final evaluation measures it if this failed."""
+    started = time.time()
+    try:
+        evaluator.baseline(site, repo, task)
+        record["simulated_baseline"] = {"seconds": round(time.time() - started, 1)}
+    except Exception as exc:  # noqa: BLE001 -- kept for the record; evaluate() asks again
+        record["simulated_baseline"] = {"error": f"{type(exc).__name__}: {str(exc)[:300]}"}
+
+
 def _island_rows(results) -> list:
     """The islands' rows for the record: each island's own, with every request its broker kept."""
     rows = []
@@ -307,8 +317,22 @@ def _islands(site: Site, task: Task, account, mode: str, names: list, record: di
     evaluation and, when the task asks, to the card."""
     import types
     from . import islands as islands_, services
-    evaluator.baseline(site, repo, task)
     shared = services.Shared(site, task)
+    if ((task.services or {}).get("score") or {}).get("on") == "board":
+        # The board as the score (2026-11-10): the base on the card before any island's clock starts -- every
+        # board score's denominator and each point's deadline -- and the health check's tree. The base's
+        # simulation is the final evaluation's alone: it runs beside the islands.
+        from . import board
+        started = time.time()
+        base = board.baseline(site, repo, task)
+        record["board_base"] = {"key": board.baseline_key(task), "seconds": round(time.time() - started, 1),
+                                "points": {p: (v or {}).get("cycles") for p, v in base["points"].items()}}
+        if task.evaluation.get("health_point"):
+            shared.health_tree = board.health_tree(site, repo, task)
+        threading.Thread(target=_quiet_baseline, args=(site, repo, task, record), daemon=True,
+                         name="simulated-baseline").start()
+    else:
+        evaluator.baseline(site, repo, task)
     shared.roofline = _roofline(site, repo, task, record)
     got, rows, stage = None, None, "islands"
     try:

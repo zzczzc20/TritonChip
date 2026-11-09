@@ -39,6 +39,7 @@ earlier one of the run already scored is not charged and is no new commit: its r
 
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import json
 import secrets
@@ -52,10 +53,10 @@ from typing import Callable, Optional
 
 from . import board, evaluator, fpga_quick, fpga_slow, provider, roofline
 from .siteconfig import Site
-from .task import Task
+from .task import Task, board_points
 from .workspace import apply_candidate, export, gate
 
-SERVICES = ("score", "fpga-quick", "fpga-slow")
+SERVICES = ("score", "fpga-quick", "fpga-slow", "flow")
 # What of an FPGA result the agent may see: all of it is its own design's.
 FPGA_VISIBLE = ("status", "profile", "period_ns", "part", "wns_ns", "tns_ns", "failing_endpoints",
                 "total_endpoints", "fmax_est_mhz", "utilization", "worst_paths", "errors", "seconds",
@@ -187,6 +188,12 @@ class Shared:
         n = getattr(site, "evaluations", None)
         self.evaluations = threading.BoundedSemaphore(int(n)) if n else None
         self.sims = Simulations(self.evaluations)
+        # The board as the score (2026-11-10): one card run per snapshot for the run, the card one session at a
+        # time for every island, and its health as the last check found it (None: healthy).
+        self.boards = Simulations(None)
+        self.card = threading.Lock()
+        self.card_unhealthy: Optional[dict] = None
+        self.health_tree: Optional[Path] = None
         self.brokers: list = []          # every island's broker: the run-wide checks look at all their requests
         # The whole chip's lower bound of each scored point (roofline.table), when the run computed it: each
         # reply then lists every point's eta (decided 2026-11-10).
@@ -229,8 +236,12 @@ class Broker:
         self.shared = shared or Shared(site, task)
         self.shared.brokers.append(self)
         self.island, self.archive = island, archive
-        self.runners: dict = runners or {"score": self._run_score, "fpga-quick": self._run_fpga,
-                                         "fpga-slow": self._run_slow}
+        # The board as the score (services.score.on "board", decided 2026-11-10): a scoring request is a card run
+        # and a commit; `flow` builds hardware, and no simulation scores.
+        self.board_scoring = (cfg.get("score") or {}).get("on") == "board"
+        self.runners: dict = runners or {"score": self._run_board_score if self.board_scoring else self._run_score,
+                                         "fpga-quick": self._run_fpga, "fpga-slow": self._run_slow,
+                                         "flow": self._run_flow}
         self.jobs: dict = {}
         self.busy: dict = {}
         # Every submission refused before it became a request (2026-11-09): when, which service, why. The agent
@@ -300,7 +311,16 @@ class Broker:
                     self._release_flow(job)
                     stopped.append(job)
                     continue
-                if job["service"] == "fpga-slow" and job["state"] == "running":
+                if job["service"] == "flow" and job["state"] == "running":
+                    # An image built after the agent's end would never be scored: the flow is stopped, uncharged.
+                    job["_cancel_requested"] = True
+                    job["state"] = "cancelled"
+                    job["note"] = "still building when the agent stopped; stopped, not charged"
+                    self._release_flow(job)
+                    stopped.append(job)
+                    continue
+                if (job["service"] == "fpga-slow" or (job["service"] == "score" and self.board_scoring
+                                                       and not job.get("dedupe_of"))) and job["state"] == "running":
                     job["outlived_run"] = True
                     job["note"] = "still running when the agent stopped; it ran to its end, unseen by the agent"
                     continue
@@ -317,7 +337,7 @@ class Broker:
         for job in stopped:
             if job["service"] == "fpga-quick" and self.site.fpga_worker:
                 fpga_quick.cancel(self.site.fpga_worker, job["remote_id"])
-            elif job["service"] == "fpga-slow" and getattr(self.site, "fpga_pipeline", None):
+            elif job["service"] in ("fpga-slow", "flow") and getattr(self.site, "fpga_pipeline", None):
                 job["cleanup"] = fpga_slow.cancel(job, self.site.fpga_pipeline)
             else:
                 for name in provider.docker("ps", "-a", "--format", "{{.Names}}", check=False).stdout.split():
@@ -361,6 +381,11 @@ class Broker:
         return {"error": f"unknown operation {op!r}; see `tnca-service --help`"}
 
     def budget(self) -> dict:
+        if self.board_scoring:
+            return {"score_requests_left": self.score_left,
+                    "fpga_minutes_left": round(self.fpga_left / 60.0, 1),
+                    "fpga_minutes_per_request": round(self.fpga_job / 60.0, 1),
+                    "flows_left": self.flows_left, "busy": sorted(self.busy)}
         return {"score_requests_left": self.score_left,
                 "fpga_minutes_left": round(self.fpga_left / 60.0, 1),
                 "fpga_minutes_per_request": round(self.fpga_job / 60.0, 1),
@@ -377,7 +402,7 @@ class Broker:
                 self._refused(service, refused)
                 return {"refused": refused, **self.budget()}
             n = len(self.jobs) + 1
-            job_id = f"{'s' if service == 'score' else 'f' if service == 'fpga-quick' else 'l'}{n}"
+            job_id = f"{ {'score': 's', 'fpga-quick': 'f', 'flow': 'b'}.get(service, 'l')}{n}"
             job_dir = self.dir / job_id
             self.busy.setdefault(service, []).append(job_id)
         try:
@@ -410,7 +435,11 @@ class Broker:
 
     def _at_once(self, service: str) -> int:
         """How many of a service's requests may run at once: the run's flows at once for the slow tier, else one."""
-        return max(1, self.shared.flows_at_once) if service == "fpga-slow" else 1
+        return max(1, self.shared.flows_at_once) if service in ("fpga-slow", "flow") else 1
+
+    def _memo(self) -> "Simulations":
+        """Where a snapshot's one measurement lives: the card's runs on the board, else the simulations."""
+        return self.shared.boards if self.board_scoring else self.shared.sims
 
     def _submit(self, service: str, message, job_id: str, job_dir: Path) -> dict:
         g = gate(self.repo, self.task.base_commit, self.task.hide, self.task.design, self.workspace,
@@ -445,17 +474,32 @@ class Broker:
                 job["digest"] = fpga_slow.snapshot_digest(candidate)
                 job["hardware"] = fpga_slow.hardware_digest(candidate)
                 job["candidate"] = str(candidate) if candidate else None
-        if service in ("fpga-quick", "fpga-slow"):
+        if service in ("fpga-quick", "fpga-slow", "flow"):
             job["hardware"] = fpga_slow.hardware_digest(candidate)
             job["digest"] = fpga_slow.snapshot_digest(candidate)
-        if service in ("score", "fpga-slow"):
+        if service in ("score", "fpga-slow", "flow"):
             job["sim_key"] = sim_key(self.task, candidate)
+        if service == "score" and self.board_scoring:
+            job["hardware"] = fpga_slow.hardware_digest(candidate)
+            changed = evaluator.hardware_changed(self.repo, self.task, candidate)["changed"]
+            if changed and job["hardware"] not in self.images:
+                with self.lock:
+                    self._unbusy(service, job_id)
+                return {"refused": "this snapshot's hardware has no image yet: `tnca-service submit flow` builds it; "
+                        "a scoring request runs on the card only the base's machine or one this run built",
+                        "snapshot": snapshot, **self.budget()}
+        if service == "flow":
+            refused = self._flow_refusal(job, candidate)
+            if refused:
+                with self.lock:
+                    self._unbusy(service, job_id)
+                return {"refused": refused, "snapshot": snapshot, **self.budget()}
         if service == "score":
             with self.lock:
                 src = self.shared.commits.get(job["sim_key"])
                 if src is not None and not (src[1]["state"] in ("queued", "running")
                                             or (src[1]["state"] == "done"
-                                                and self.shared.sims.kept(job["sim_key"]))):
+                                                and self._memo().kept(self._memo_key(job)))):
                     src = None   # failed, cancelled, or a result not kept for reuse: this one is measured afresh
                 if src is None:
                     # Registered now, in the same lock as the check: a second island's identical snapshot submitted
@@ -481,7 +525,7 @@ class Broker:
                     self._unbusy(service, job_id)
                 return {"refused": refused, "snapshot": snapshot, **self.budget()}
         with self.lock:
-            if service == "fpga-slow" and job["kind"] == "hardware":
+            if service in ("fpga-slow", "flow") and job["kind"] == "hardware":
                 at_once = max(1, self.shared.flows_at_once)
                 refused = None
                 if len(self.shared.flows) >= at_once:
@@ -498,6 +542,8 @@ class Broker:
                 self.shared.flows.add(f"{self.run_id}:{job_id}")
             if service == "score":
                 self.score_left -= 1
+            elif service == "flow":
+                self.flows_left -= 1
             elif service == "fpga-slow":
                 if job["charge"] == "flow":
                     self.flows_left -= 1
@@ -507,6 +553,22 @@ class Broker:
         job["thread"] = threading.Thread(target=self._run, args=(job, candidate, job_dir), daemon=True)
         job["thread"].start()
         return {"id": job_id, "state": "queued", "snapshot": snapshot, **self.budget()}
+
+    def _memo_key(self, job: dict) -> str:
+        return job["sim_key"]
+
+    def _flow_refusal(self, job: dict, candidate: Optional[Path]) -> Optional[str]:
+        """Why a `flow` request is refused, if it is: it must change the machine, not one built already, and the
+        quick tier must have met timing on exactly that hardware."""
+        if not evaluator.hardware_changed(self.repo, self.task, candidate)["changed"]:
+            return "the snapshot's machine is the base's: there is nothing to build; `score` runs it on the card"
+        if job["hardware"] in self.images:
+            return "this run already built exactly this hardware: `score` runs it on the card"
+        if not self._timing_met(job["hardware"]):
+            return ("a flow needs an fpga-quick result of this run on exactly this hardware that met timing; ask the "
+                    "quick tier first")
+        job["kind"], job["charge"] = "hardware", "flow"
+        return None
 
     def _release_flow(self, job: dict) -> None:
         """Under the lock: the request's Vivado flow, given back to the run."""
@@ -563,6 +625,23 @@ class Broker:
             if self.fpga_left < self.fpga_job:
                 return (f"an FPGA request may take up to {self.fpga_job / 60:.0f} min and "
                         f"{self.fpga_left / 60:.1f} min of FPGA time is left")
+        if self.board_scoring and service == "fpga-slow":
+            return "in this task `score` is the card run and `flow` builds hardware: ask those"
+        if service == "flow":
+            if not self.board_scoring:
+                return "this task has no flow service; ask fpga-slow"
+            if not getattr(self.site, "fpga_pipeline", None):
+                return "this site has no FPGA pipeline"
+            if self.flows_left <= 0:
+                return "no Vivado flows left" + (" for your island" if self.island is not None else "")
+        if service == "score" and self.board_scoring:
+            if not (getattr(self.site, "fpga_pipeline", None) or {}).get("card"):
+                return "this site has no card for the board score"
+            bad = self.shared.card_unhealthy
+            if bad and time.time() - bad["at"] < self.UNHEALTHY_SECONDS:
+                return ("the card failed its health check after a recent session; it takes no board scores for "
+                        f"about {round((self.UNHEALTHY_SECONDS - (time.time() - bad['at'])) / 60)} min; nothing "
+                        "was charged")
         if service == "fpga-slow":
             if not (self.task.services or {}).get("fpga_slow"):
                 return "this task does not enable the FPGA slow service"
@@ -595,7 +674,8 @@ class Broker:
             # A slow request's failure can carry host names, paths and whatever a container wrote: the
             # agent learns that it failed and was not charged; the text stays in the record.
             shown = ({"status": "failed", "why": "the request failed on the infrastructure; not charged"}
-                     if job["service"] == "fpga-slow" else error)
+                     if job["service"] in ("fpga-slow", "flow") or (job["service"] == "score" and self.board_scoring)
+                     else error)
             if job["state"] == "running":
                 job["state"], job["result"] = "failed", shown
                 job["full"] = error
@@ -636,6 +716,130 @@ class Broker:
             visible.update(self.archive.reply(self.island, entry))
         return visible, r
 
+    # -- the board as the score (2026-11-10) ------------------------------------------------
+    UNHEALTHY_SECONDS = 1800   # a card that failed its health check takes no board scores for this long
+
+    def _card_health(self) -> Optional[dict]:
+        """The known-answer check after each card session ({point, tree}), when the task names one."""
+        point = self.task.evaluation.get("health_point")
+        if not point:
+            return None
+        if self.shared.health_tree is None:
+            self.shared.health_tree = board.health_tree(self.site, self.repo, self.task)
+        return {"point": point, "tree": str(self.shared.health_tree)}
+
+    def _card_image(self, job: dict) -> dict:
+        built = self.images.get(job["hardware"])
+        if built is None:
+            return board.base_image(self.site, self.task)
+        if not built.get("card"):
+            built["card"] = board.put_image(self.site, built["build_run"], built["sha256"], built["xclbin"],
+                                            job["remote_id"], build_host=built.get("build_host"))
+        return built["card"]
+
+    def _on_card(self, job: dict, candidate: Optional[Path], job_dir: Path) -> dict:
+        """One card session for the snapshot, the card one session at a time for every island; the time it
+        waited for the card is the agent's (decided 2026-11-10)."""
+        queued = time.time()
+        held = False
+        while not held:
+            held = self.shared.card.acquire(timeout=10)
+            if not held and job.get("state", "running") != "running" and not job.get("outlived_run"):
+                return {"outcome": "cancelled"}
+        job["card_queued_seconds"] = round(time.time() - queued, 1)
+        try:
+            image = self._card_image(job)
+            return fpga_slow.on_card(self.site, self.repo, self.task, candidate, image, None, job_dir, job,
+                                     self.board_seconds,
+                                     base_xclbin=fpga_slow.base_xclbin(self.site, self.repo, self.task, candidate,
+                                                                       image),
+                                     roofline=self.shared.roofline, health=self._card_health())
+        finally:
+            self.shared.card.release()
+
+    def _run_board_score(self, job: dict, candidate: Optional[Path], job_dir: Path) -> tuple:
+        """A scoring request with the board as the score: the snapshot on the card (the base's machine, or one a
+        flow of this run built), once per snapshot for the run; a commit when it was measured. A session that
+        failed on the infrastructure, or whose card then failed its health check, is not charged."""
+        try:
+            card, how = self.shared.boards.measure(
+                self._memo_key(job), self._who(job), lambda: self._on_card(job, candidate, job_dir),
+                cancelled=lambda: job.get("state", "running") != "running" and not job.get("outlived_run"),
+                keep=lambda r: r.get("outcome") in ("ok", "candidate"))
+        except Exception:
+            self._refund_score(job)
+            raise
+        job["board"] = how
+        if card is None or card.get("outcome") == "cancelled":
+            self._refund_score(job)
+            return {"status": "cancelled"}, {"cancelled_waiting": True}
+        if card.get("health") and not card["health"].get("ok"):
+            with self.lock:
+                self.shared.card_unhealthy = {"at": time.time(), "job": self._who(job), "health": card["health"]}
+        if card["outcome"] == "infra":
+            self._refund_score(job)
+            return {**card["visible"], "charged": None}, {k: v for k, v in card.items() if k != "visible"}
+        visible = dict(card["visible"])
+        if job.get("card_queued_seconds"):
+            visible["waited_for_the_card_minutes"] = round(job["card_queued_seconds"] / 60.0, 1)
+        agg = dict(visible.get("validation") or {"n": len(board_points(self.task)), "passed": 0})
+        result = {"aggregate": agg, "full": card.get("score"), "families": visible.get("families"),
+                  "outcome": card["outcome"]}
+        if self.archive is not None and (job.get("state", "running") == "running" or job.get("outlived_run")):
+            entry = self.archive.add(self.island, job, candidate, result)
+            job["commit"] = entry["id"]
+            visible.update(self.archive.reply(self.island, entry))
+        return visible, {k: v for k, v in card.items() if k != "visible"}
+
+    def _refund_score(self, job: dict) -> None:
+        with self.lock:
+            if job.get("charged", "score") is not None and not job.get("dedupe_of"):
+                self.score_left += 1
+            job["charged"] = None
+
+    def _flow_gate(self, job: dict, candidate: Optional[Path], job_dir: Path) -> Optional[dict]:
+        """The short functional RTL gate before a flow (2026-11-10): the task's gate points in simulation, the
+        run's one such simulation per snapshot, within the run's slots."""
+        ev = self.task.evaluation
+        gtask = dataclasses.replace(self.task, evaluation={**ev, "validation": list(ev.get("gate_points") or ()),
+                                                           "final": []})
+        r, how = self.shared.sims.measure(
+            "gate:" + job["sim_key"], self._who(job),
+            lambda: evaluator.measure_validation(self.site, self.repo, gtask, candidate, job_dir / "gate",
+                                                 job["containers"]),
+            cancelled=lambda: bool(job.get("_cancel_requested")), keep=reusable)
+        job["gate"] = how
+        return r
+
+    def _run_flow(self, job: dict, candidate: Optional[Path], job_dir: Path) -> tuple:
+        """A hardware snapshot's image: the RTL gate beside its Vivado flow (a gate that does not pass stops the
+        flow, uncharged); a built image is the run's, for any island's `score` of exactly this hardware."""
+        visible, full = {}, {}
+        try:
+            visible, full = fpga_slow.run(self.site, self.repo, self.task, candidate, job_dir, job, with_board=False,
+                                          image=None, flow_seconds=self.flow_seconds, board_seconds=0,
+                                          gate=lambda: self._flow_gate(job, candidate, job_dir))
+        except Exception:
+            job["outcome"] = "infra"
+            raise
+        finally:
+            kept = job.get("outcome") in ("ok", "design")
+            with self.lock:
+                job["charged"] = "flow" if kept else None
+                if not kept:
+                    self.flows_left += 1
+                if job.get("image") and job.get("outcome") == "ok":
+                    self.images[job["hardware"]] = job["image"]
+        if "validation" in visible:
+            # The gate's tiny points, not the validation set: whether they passed.
+            g = visible.pop("validation")
+            visible["gate"] = {"n": g.get("n"), "passed": g.get("passed")}
+            if job.get("outcome") == "refused":
+                visible["why"] = "the RTL gate's points do not pass in simulation; the flow was stopped, not charged"
+        if job.get("outcome") == "ok":
+            visible["next"] = "built: `tnca-service submit score` with this snapshot runs it on the card"
+        return visible, full
+
     def _run_dedupe(self, job: dict, candidate: Optional[Path], job_dir: Path) -> tuple:
         """D4: a scoring request of a snapshot the run already scored, answered with that request's result once
         it has one; if that one does not finish (cancelled, failed), neither does this, uncharged."""
@@ -646,13 +850,14 @@ class Broker:
             if job.get("state") != "running":
                 return {"status": "cancelled"}, {"cancelled_waiting": True}
             time.sleep(2)
-        if src_job is None or src_job["state"] != "done" or not self.shared.sims.kept(job["sim_key"]):
+        if src_job is None or src_job["state"] != "done" or not self._memo().kept(self._memo_key(job)):
             return ({"status": "failed", "why": f"the same snapshot's request {job['dedupe_of']} gave no result to "
                      "share (it did not finish, or failed on the infrastructure); ask again; not charged"},
                     {"same_as": job["dedupe_of"], "source_state": (src_job or {}).get("state")})
         r = src_job.get("full") or {}
         visible = {k: v for k, v in (src_job.get("result") or {}).items()
-                   if k in ("validation", "points", "failures", "device_build_errors", "stage_errors")}
+                   if k in ("validation", "families", "points", "failures", "device_build_errors", "stage_errors",
+                            "checks", "counted_as_in_simulation", "cycles_on_card")}
         visible["cached_from"] = job["dedupe_of"]
         if self.archive is not None and src_job.get("commit"):
             job["commit"] = src_job["commit"]

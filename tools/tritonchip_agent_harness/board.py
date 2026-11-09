@@ -292,11 +292,64 @@ def session(site: Site, repo: Path, task: Task, image: dict, tag: str, deadline_
 
 # -- here: the candidate's host side, in the evaluator's containers ------------------------------
 
-def _env(task: Task, cores: int, timeout: float) -> str:
+def _env(task: Task, cores: int, timeout: float, deadline: Optional[int] = None) -> str:
     return (f"TNCA_BACKEND={BACKEND} TNCA_BACKEND_ARGS=\"$(cat /out/backend.json)\" "
             f"TNCA_OPERATING_CLOCK_EVIDENCE=/out/clock_evidence.json "
             f"TNCA_COMPILE_CACHE_DIR=/caches/tnca-inductor TNCA_ACTIVE_CORES={cores} TNCA_HOST_TIMEOUT={timeout:g} "
-            f"TNCA_DEADLINE={DEADLINE_CYCLES}")
+            f"TNCA_DEADLINE={int(deadline or DEADLINE_CYCLES)}")
+
+
+# A point's launches may take this many times the base's cycles for the whole point before the device gives
+# up on one (decided 2026-11-10): a runaway program ends in seconds, not in DEADLINE_CYCLES' 2000 s.
+DEADLINE_FACTOR = 20
+# The health check's tolerance on the card's cycles of its known-answer point (the card repeats a program to
+# within about half a percent).
+HEALTH_TOLERANCE = 0.02
+
+
+def health_tree(site: Site, repo: Path, task: Task) -> Path:
+    """The base's own host tree, staged once and kept: the health check runs its known-answer point with the
+    base's software, never a candidate's, so a candidate's compiler cannot fail the card's check."""
+    key = hashlib.sha256(json.dumps([task.base_commit, (task.evaluation.get("platform") or {}).get("commit")]
+                                    ).encode()).hexdigest()[:16]
+    root = site.state_dir / "health-trees" / key
+    host = root / "host-tree"
+    if (root / "staged").exists():
+        return host
+    root.mkdir(parents=True, exist_ok=True)
+    with open(root / "lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if (root / "staged").exists():
+            return host
+        host, _dev = evaluator._trees(repo, task, None, root)
+        out = root / "stage"
+        out.mkdir(exist_ok=True)
+        out.chmod(0o777)
+        status = evaluator._run(_container(site, f"tnca-health-stage-{key}", host, out, root / "caches", None, {}),
+                                ["sh", "-c", "cd /work && make -s python/tnca/data/.staged > /out/stage.log 2>&1"],
+                                1800)
+        if status != 0:
+            raise BoardError(f"the health tree did not stage (exit {status!r})")
+        (root / "staged").write_text("ok\n")
+    return host
+
+
+def judge_health(record: dict, observe: Path, health: dict) -> dict:
+    """Whether the card answered the known-answer point as the base does: it passed, the relay counted every
+    launch, and its cycles are within HEALTH_TOLERANCE of the base's on the card."""
+    rec = ((record.get("measured") or {}).get("health_record"))
+    obs = read_board_observer(observe / "health.log")
+    row = evaluator.observed_multicore_point(rec, obs, None)
+    expect = health.get("expect")
+    cycles = row.get("cycles")
+    why = None
+    if row.get("status") != "pass":
+        why = f"the known-answer point did not pass ({row.get('status')})"
+    elif obs is None or obs.get("anomalies"):
+        why = "the relay did not count every launch of the known-answer point"
+    elif expect and cycles and abs(cycles - expect) > HEALTH_TOLERANCE * expect:
+        why = f"the known-answer point took {cycles} cycles, the base {expect}"
+    return {"ok": why is None, "why": why, "point": health.get("point"), "cycles": cycles, "expect": expect}
 
 
 def _container(site: Site, name: str, host_tree: Path, out: Path, caches: Path, socket_dir: Optional[Path],
@@ -313,7 +366,7 @@ def _container(site: Site, name: str, host_tree: Path, out: Path, caches: Path, 
 
 
 def measure_host(site: Site, task: Task, host_tree: Path, out: Path, name: str, points: list, checks: list,
-                 s: Session) -> dict:
+                 s: Session, deadlines: Optional[dict] = None, health: Optional[dict] = None) -> dict:
     """The candidate's host side against the relay: staging once, then each point, and each board check, in
     a container of its own, under the label the harness gave the relay for it."""
     ev = task.evaluation
@@ -352,7 +405,8 @@ def measure_host(site: Site, task: Task, host_tree: Path, out: Path, name: str, 
                        f"{' '.join(shlex.quote(str(a)) for a in check['command'])} > /out/check.log 2>&1; "
                        f"echo $? > /out/check.exit")
         else:
-            command = (f"cd /work && {_env(task, cores, limit)} /opt/torchenv/bin/python -m archbench.run "
+            command = (f"cd /work && {_env(task, cores, limit, (deadlines or {}).get(point))} "
+                       f"/opt/torchenv/bin/python -m archbench.run "
                        f"--platform tnca --profile {ev['profile']} --point {shlex.quote(point)} "
                        f"--out /out/archbench.jsonl > /out/archbench.log 2>&1 || true")
         s.label(label)
@@ -371,6 +425,29 @@ def measure_host(site: Site, task: Task, host_tree: Path, out: Path, name: str, 
                     continue
                 if isinstance(r, dict) and r.get("point_id") == point:
                     done["records"][point] = r
+    if health and not done["stopped"] and s.left() >= 60:
+        # The card's health: the base's own software, its known-answer point, on this session's card.
+        box = out / "health"
+        box.mkdir(exist_ok=True)
+        box.chmod(0o777)
+        (box / "backend.json").write_text(json.dumps({**args, "address": f"{MOUNT}/relay.sock", "label": "health"}),
+                                          encoding="utf-8")
+        (box / "clock_evidence.json").write_text(json.dumps(s.ready.get("clock_evidence") or {}), encoding="utf-8")
+        s.check()
+        s.label("health")
+        evaluator._run(_container(site, f"{name}-health", Path(health["tree"]), box, caches, s.socket_dir, {}),
+                       ["sh", "-c", f"cd /work && {_env(task, cores, timeout)} /opt/torchenv/bin/python -m "
+                        f"archbench.run --platform tnca --profile {ev['profile']} "
+                        f"--point {shlex.quote(health['point'])} --out /out/archbench.jsonl "
+                        f"> /out/archbench.log 2>&1 || true"], min(timeout, s.left()))
+        for line in _text(box / "archbench.jsonl").splitlines():
+            try:
+                r = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(r, dict) and r.get("point_id") == health["point"]:
+                done["health_record"] = r
+        done["health_ran"] = True
     s.check()
     s.label("idle")
     done["stage_log"] = _text(stage / "stage.log").splitlines()[-30:]
@@ -414,7 +491,8 @@ def scored(task: Task, points: list, measured: dict, observe: Path) -> dict:
 
 def measure(site: Site, repo: Path, task: Task, candidate: Optional[Path], image: dict, points: list,
             job_dir: Path, name: str, tag: str, deadline_s: float, with_checks: bool = True,
-            base_xclbin: Optional[str] = None) -> dict:
+            base_xclbin: Optional[str] = None, deadlines: Optional[dict] = None,
+            health: Optional[dict] = None) -> dict:
     """A snapshot's points (and the task's board checks) on `image`: the card session's record, and every
     point scored from the card's own log. Raises BoardError when the infrastructure failed it."""
     checks = list(((task.services or {}).get("fpga_slow") or {}).get("board_checks") or []) if with_checks else []
@@ -423,14 +501,18 @@ def measure(site: Site, repo: Path, task: Task, candidate: Optional[Path], image
     if task.evaluation.get("device"):
         raw = read_safe(host_tree / evaluator.device_path(task), 1 << 20)
         device = raw if raw else None
-    labels = [str(i) for i in range(len(points))] + [f"check-{c['name']}" for c in checks]
+    labels = [str(i) for i in range(len(points))] + [f"check-{c['name']}" for c in checks] + (
+        ["health"] if health else [])
     try:
         record = session(site, repo, task, image, tag, deadline_s, job_dir,
-                         lambda s: measure_host(site, task, host_tree, job_dir / "eval", name, points, checks, s),
+                         lambda s: measure_host(site, task, host_tree, job_dir / "eval", name, points, checks, s,
+                                                deadlines=deadlines, health=health),
                          labels, device=device, base_xclbin=base_xclbin)
     finally:
         shutil.rmtree(job_dir / "trees", ignore_errors=True)
     record["points"] = scored(task, points, record.get("measured") or {}, job_dir / "observe")
+    if health and (record.get("measured") or {}).get("health_ran"):
+        record["health"] = judge_health(record, job_dir / "observe", health)
     return record
 
 

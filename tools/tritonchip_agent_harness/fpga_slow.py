@@ -46,7 +46,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from . import board, certify, evaluator, provider, roofline as roofline_
+from . import board, certify, evaluator, families as families_, provider, roofline as roofline_
 from .siteconfig import Site
 from .task import Task, board_points
 
@@ -694,15 +694,29 @@ def _cycles_view(points: list, got: dict, sim_rows: dict) -> dict:
 
 def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image: dict, sim: dict,
             job_dir: Path, job: dict, seconds: int, base_xclbin: Optional[str] = None,
-            roofline: Optional[dict] = None) -> dict:
+            roofline: Optional[dict] = None, health: Optional[dict] = None) -> dict:
     """The board's validation points (and the task's board checks) on `image`, tried again on an infrastructure
-    failure; the agent's view against the base on the card. outcome: ok, candidate (charged) or infra."""
+    failure; the agent's view against the base on the card. outcome: ok, candidate (charged) or infra.
+    `health`: the known-answer check after the points ({point, tree}; board.judge_health): a card that fails
+    it makes this an infrastructure failure, and the result is not the candidate's."""
     points = board_points(task)
+    fams = (task.evaluation or {}).get("families")
+    deadlines, base = None, None
+    try:
+        # Each point's deadline from the base's cycles on the card (2026-11-10); the base measures first.
+        base = board.baseline(site, repo, task)
+        deadlines = {p: int(board.DEADLINE_FACTOR * ((base["points"].get(p) or {}).get("cycles") or 0))
+                     for p in points if (base["points"].get(p) or {}).get("cycles")}
+    except Exception as exc:  # noqa: BLE001 -- no base yet: the global bound, and the aggregate says so below
+        job["baseline_error"] = f"{type(exc).__name__}: {exc}"
+    if health and base is not None:
+        health = {**health, "expect": (base["points"].get(health["point"]) or {}).get("cycles")}
     rec, attempts = None, []
     for attempt in range(RETRIES + 1):
         try:
             rec = board.measure(site, repo, task, candidate, image, points, job_dir / f"card-{attempt}",
-                                job["containers"], f"{job['remote_id']}-c{attempt}", seconds, base_xclbin=base_xclbin)
+                                job["containers"], f"{job['remote_id']}-c{attempt}", seconds, base_xclbin=base_xclbin,
+                                deadlines=deadlines, health=health)
             outcome = board.status(rec)
         except Exception as exc:  # noqa: BLE001 -- a host, the forward, a parse: the infrastructure's
             rec, outcome = {"error": f"{type(exc).__name__}: {exc}"}, "infra"
@@ -714,6 +728,11 @@ def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image
     if outcome == "infra":
         return {"outcome": "infra", "record": rec, "attempts": attempts,
                 "visible": {"status": "not measured", "why": "the card host could not give a session; not charged"}}
+    if health and rec.get("health") and not rec["health"]["ok"]:
+        # The card itself failed its known-answer check: nothing this session measured is the candidate's.
+        return {"outcome": "infra", "record": rec, "attempts": attempts, "health": rec["health"],
+                "visible": {"status": "not measured", "why": "the card failed its health check after this run; "
+                            "the result is not kept and not charged"}}
     if outcome == "candidate" and not (rec.get("measured") or {}).get("stopped"):
         return {"outcome": "candidate", "record": rec, "attempts": attempts,
                 "visible": {"status": "the card did not take the image",
@@ -723,11 +742,17 @@ def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image
     if (rec.get("measured") or {}).get("stopped"):
         visible["note"] = "the card session ran out of time before every point ran"
     try:
-        base = board.baseline(site, repo, task)
+        base = base or board.baseline(site, repo, task)
         full = evaluator.score(base["points"], got, points,
                                faster_than=float(((task.services or {}).get("fpga_slow") or {}).get("board_faster_than", 1.0)))
-        visible["validation"] = {k: full[k] for k in ("n", "passed", "speedup_geomean", "fast_1")}
-        listed = roofline_.view(roofline, full.get("points") or [], points)
+        if fams is not None:
+            # The board score (B2): each family's geometric mean, then their weighted geometric mean.
+            full.update(families_.scores(full.get("points") or [], fams))
+        visible["validation"] = {k: full[k] for k in ("n", "passed", "speedup_geomean", "fast_1", "score") if k in full}
+        if full.get("families"):
+            visible["families"] = full["families"]
+        listed = roofline_.view(roofline, full.get("points") or [], points,
+                                family=(lambda p: families_.family_of(p, fams)) if fams is not None else None)
         if listed is not None:
             visible["points"] = listed     # each card point's eta against the whole chip's roofline, by number
         failures = evaluator.failure_counts(full)
@@ -752,7 +777,7 @@ def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image
         bad = {name: _check_view(ran) for name, ran in checks.items() if _check_view(ran) != "pass"}
         visible["checks"] = bad or "all passed"
     return {"outcome": outcome if outcome == "candidate" else "ok", "record": rec, "attempts": attempts,
-            "score": full, "visible": visible}
+            "score": full, "visible": visible, "health": rec.get("health")}
 
 
 def base_xclbin(site: Site, repo: Path, task: Task, candidate: Optional[Path], image: dict) -> Optional[str]:

@@ -115,6 +115,7 @@ def load_task(path: Path) -> Task:
     slow = services.get("fpga_slow")
     if slow is not None:
         _check_slow(path, slow, ev)
+    _check_board_score(path, services, ev)
     islands = _check_islands(path, v.get("islands"), services)
     resume = _check_resume(path, v.get("resume"))
     models = v.get("models", False)
@@ -152,9 +153,49 @@ def _check_point_sets(path: Path, ev: dict, services: dict) -> None:
         raise TaskError(f"{path}: evaluation.board_validation needs services.fpga_slow in board mode")
 
 
+def _check_board_score(path: Path, services: dict, ev: dict) -> None:
+    """The board as the score (2026-11-10): `services.score.on` "board" scores a commit on the card, by
+    `evaluation.families` (B2); `evaluation.gate_points` are the short RTL gate before a flow and
+    `evaluation.health_point` the card's known-answer check -- neither may be a held-out point."""
+    on = (services.get("score") or {}).get("on", "simulation")
+    if on not in ("simulation", "board"):
+        raise TaskError(f"{path}: services.score.on must be simulation or board")
+    fams = ev.get("families")
+    if fams is not None:
+        def good(spec) -> bool:
+            w = spec.get("weight", 1) if isinstance(spec, dict) else None
+            return (isinstance(spec, dict) and isinstance(spec.get("prefixes"), list) and bool(spec["prefixes"])
+                    and all(isinstance(x, str) and x for x in spec["prefixes"])
+                    and isinstance(w, (int, float)) and not isinstance(w, bool) and w > 0)
+        if not isinstance(fams, dict) or not all(isinstance(k, str) and k and good(v) for k, v in fams.items()):
+            raise TaskError(f"{path}: evaluation.families maps a name to {{prefixes: [...], weight: > 0}}")
+    held = set(ev.get("final") or ()) | set(ev.get("board_final") or ())
+    gate = ev.get("gate_points")
+    if gate is not None:
+        if not isinstance(gate, list) or not gate or not all(isinstance(x, str) and x for x in gate) \
+                or len(set(gate)) != len(gate):
+            raise TaskError(f"{path}: evaluation.gate_points must be a list of distinct point ids")
+        if held & set(gate):
+            raise TaskError(f"{path}: evaluation.gate_points has held-out points: {sorted(held & set(gate))}")
+    health = ev.get("health_point")
+    if health is not None and (not isinstance(health, str) or not health or health in held):
+        raise TaskError(f"{path}: evaluation.health_point must be one point id outside the held-out sets")
+    if on == "board":
+        if (services.get("fpga_slow") or {}).get("mode") != "board":
+            raise TaskError(f"{path}: services.score.on board needs services.fpga_slow in board mode (the card)")
+        if not ev.get("board_validation"):
+            raise TaskError(f"{path}: services.score.on board needs evaluation.board_validation")
+        if not gate:
+            raise TaskError(f"{path}: services.score.on board needs evaluation.gate_points (the gate before a flow)")
+
+
 def board_points(task: Task) -> list:
-    """The points an in-run board request measures: the task's board validation set, else its validation set."""
+    """The points an in-run board request measures: the task's board validation set, else its validation set.
+    With the board as the score (2026-11-10, B1) both: the simulated validation set's small points and the
+    card's own medium and large ones, in that order."""
     ev = task.evaluation
+    if ((task.services or {}).get("score") or {}).get("on") == "board":
+        return list(dict.fromkeys([*ev["validation"], *(ev.get("board_validation") or ())]))
     return list(ev.get("board_validation") or ev["validation"])
 
 
@@ -318,7 +359,8 @@ def render(task: Task, mode: str, skills: Iterable[str] = (), island: Optional[i
                               resumed=bool(task.resume), role=roles[island] if roles else None,
                               board_cycles=((task.evaluation or {}).get("certify") or {}).get("board_cycles", "equal"),
                               board_set=bool((task.evaluation or {}).get("board_validation")),
-                              roofline=bool((task.evaluation or {}).get("device")))
+                              roofline=bool((task.evaluation or {}).get("device")),
+                              board=_board_facts(task))
     return instruction.rstrip() + services + f"""
 
 ## The rules of this run
@@ -331,6 +373,15 @@ def render(task: Task, mode: str, skills: Iterable[str] = (), island: Optional[i
   are wrong, or that does not run on the device, is a failed point; the other points still count.
 {skill_text}- {net}
 {_ending(task, island)}"""
+
+
+def _board_facts(task: Task) -> Optional[dict]:
+    """What the services text says of the board score, for a task that scores on the card; else None."""
+    if ((task.services or {}).get("score") or {}).get("on") != "board":
+        return None
+    ev = task.evaluation
+    return {"n": len(board_points(task)), "families": ev.get("families") or {},
+            "gate": len(ev.get("gate_points") or ()), "health": bool(ev.get("health_point"))}
 
 
 def _ending(task: Task, island: Optional[int]) -> str:
@@ -361,12 +412,14 @@ def _ending(task: Task, island: Optional[int]) -> str:
                        "see, taken whole (`tnca-service read-commit ID`, then `git apply`); anything else is refused, "
                        "uncharged.")
     target = cfg.get("target")
-    goal = (f" The run ends early if a commit reaches {', '.join(f'{k} {v:g}' for k, v in target.items())} on the "
-            f"validation set." if target else "")
+    by = "the board score" if _board_facts(task) else "the validation set"
+    others = others.replace("by the validation set.", f"by {by}.")
+    goal = (f" The run ends early if a commit reaches {', '.join(f'{k} {v:g}' for k, v in target.items())} on "
+            f"{by}." if target else "")
     return (f"- You have {task.wall_seconds // 60} minutes and "
             f"{int(((task.services or {}).get('score') or {}).get('requests', 0))} commits.{others} Keep improving "
             f"until your commits or your time run out: a commit is what counts, not your working directory as you "
-            f"leave it, and the best commit by the validation set is the result.{goal}\n"
+            f"leave it, and the best commit by {by} is the result.{goal}\n"
             f"- `tnca-service submit score --message \"one line on what this commit changes\"` commits a snapshot: "
             f"it is scored as the score service scores it and kept in the archive with your message (shown to other "
             f"islands as yours, unverified). Its reply, once done, also gives your best commit, your island's grid "
@@ -382,7 +435,8 @@ def _ending(task: Task, island: Optional[int]) -> str:
 
 
 def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, board_cycles: str = "equal",
-                   board_set: bool = False, role: Optional[dict] = None, roofline: bool = False) -> str:
+                   board_set: bool = False, role: Optional[dict] = None, roofline: bool = False,
+                   board: Optional[dict] = None) -> str:
     """How the agent may ask the evaluator for a measurement, and how much it may ask. `role`: the island's
     (islands.roles), whose budgets are its own."""
     if not cfg:
@@ -408,7 +462,9 @@ def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, boar
               "(a board request still running then runs to its end, unseen)." if resumed else
               "A request still running when you stop is cancelled, and its result is lost (a board request "
               "excepted, below)."), ""]
-    if score:
+    if score and board is not None:
+        lines += _board_lines(score, slow, board, flows, shared, islands, at_once)
+    elif score:
         lines.append(f"- `tnca-service submit score`: the hidden validation set, in simulation. You get how many "
                      f"points passed, the geometric-mean speedup over the points that passed, and the share of all "
                      f"points that passed and got faster. When points fail, how many failed of each kind (such as "
@@ -437,7 +493,9 @@ def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, boar
                      + "Post-synthesis timing is optimistic: routing adds delay. It synthesises the core's top "
                      "level only, so a change it cannot apply there (the uncore's, or a parameter that top does not "
                      "take) is listed in its reply as `not_applied`.")
-    if slow and slow["mode"] == "build":
+    if board is not None:
+        pass   # the card is the score, and `flow` builds a machine (above): no separate slow service
+    elif slow and slow["mode"] == "build":
         lines.append(f"- `tnca-service submit fpga-slow`: the full implementation of your machine on the FPGA "
                      f"(place and route at the target clock, one Vivado flow of up to "
                      f"{float(slow['flow_minutes']):g} minutes), and its routed timing. You have "
@@ -484,6 +542,59 @@ def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, boar
     lines += ["- `tnca-service budget`, `tnca-service status [ID]`, `tnca-service result ID`, "
               "`tnca-service wait ID`: what is left, and the results."]
     return "\n".join(lines)
+
+
+def _board_lines(score: dict, slow: dict, board: dict, flows: int, shared: str, islands: bool,
+                 at_once: int) -> list:
+    """The services text when the board is the score (2026-11-10): `score` on the card, `flow` for a changed
+    machine's image."""
+    named = [f"{', '.join('`' + x.rstrip('/') + '`' for x in spec['prefixes'])} points together form the family "
+             f"`{name}`, of weight {float(spec.get('weight', 1)):g}" for name, spec in board["families"].items()]
+    faster = float(slow.get("board_faster_than", 1.0))
+    every = "every island's" if islands else "every"
+    return [
+        f"- `tnca-service submit score`: the hidden board validation set on the real card -- your machine on the "
+        f"FPGA at its target clock, {board['n']} points of small, medium and large size (the large ones too slow "
+        f"to simulate) -- against the base on the card. The score: each family of points (the operator a point "
+        f"exercises"
+        + ("; " + "; ".join(named) if named else "")
+        + ", every other family of weight 1) gets the geometric mean of its points' speedups over the base, a point "
+        "that does not pass counting as a speedup of 0.5; the score is the weighted geometric mean over the "
+        "families, so a family counts once however many points it has. You get the score, each family's value, "
+        "how many points passed, failures counted by kind, and every point of the set in a fixed order, numbered "
+        "and never named: its family, the resource that binds it and its η, its distance from the whole chip's "
+        "roofline (η = L / T: L the least cycles the base machine's cores and memory outlets could take for its "
+        "work, T the cycles measured; none for a point that did not pass), beside the base's η. Never a point's "
+        "shape or its own error text."
+        + (f" A point counts as faster only when it is more than {(faster - 1) * 100:g}% faster than the base: "
+           "the card's count of one program differs by up to about half a percent from run to run."
+           if faster > 1.0 else "")
+        + " Each point may run for 20 times the base's cycles on it; past that it fails as a timeout.",
+        f"- A snapshot that kept the base's machine (compiler and software only) goes straight to the card. One "
+        f"that changed the machine (RTL, the profile's parameters, the device description) runs on the card once "
+        f"this run has built its image (`flow`, below); before that, `score` refuses it, uncharged. The card is "
+        f"one, shared by {every} requests: one session at a time, first come first served, so a request may "
+        f"wait for the card, and the wait is part of your time; a session takes about half an hour. You have "
+        f"{int(score.get('requests', 0))} scoring requests, one running at a time. A snapshot exactly like one "
+        f"this run already scored is not measured or charged again" + (" and is not a new commit" if islands else "")
+        + ": you get that request's result. A session that fails on the infrastructure, or after which the card "
+        "fails its own known-answer check, is not charged.",
+        f"- `tnca-service submit flow`: the full implementation of a changed machine on the FPGA (place and route "
+        f"at the target clock, one Vivado flow, which takes hours; up to {float(slow.get('flow_minutes', 480)):g} "
+        f"minutes); the image it builds is then this run's, for any scoring request of exactly that hardware. "
+        f"You have {flows} flows{shared}"
+        + (f"; up to {at_once} run at a time across the run, each on a build machine of its own (a flow may wait "
+           f"for one to be free)" if at_once > 1 else "; one runs at a time across the run")
+        + ". Before it is charged, a flow needs an `fpga-quick` result of this run on exactly that hardware that "
+        f"met timing, and a short functional gate ({board['gate']} tiny points in RTL simulation) runs beside it: "
+        "a gate that does not pass stops the flow, which is then not charged. A flow that fails on your design "
+        "(timing or place-and-route does not converge, it does not fit, DRC) counts; one that fails on the "
+        "infrastructure does not, and is retried for you. You get its routed timing; for a flow that failed, why: "
+        "the failing stage, slack, the worst paths and whether they cross an SLR, utilisation per SLR, the DRC "
+        "rules that failed. A flow still running when you stop is stopped.",
+        "- There is no simulated scoring service in this task: between card sessions, what you measure is your own "
+        "-- the RTL simulation and the cycle models in your working directory.",
+    ]
 
 
 __all__ = ["POINT_SETS", "Task", "TaskError", "WITHOUT_SKILL", "board_points", "load_task", "render"]

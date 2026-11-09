@@ -2,9 +2,11 @@
 """tnca-service: the agent's way to ask the evaluator for a measurement, within its budget.
 
     tnca-service budget                what is left
-    tnca-service submit score          the hidden validation set, in simulation: an aggregate
+    tnca-service submit score          the hidden validation set: an aggregate (in simulation, or on the
+                                       card when the task scores on the board)
     tnca-service submit fpga-quick     synthesis and timing of the whole device on the FPGA part
     tnca-service submit fpga-slow      the card: a hardware change is first fully linked (a flow)
+    tnca-service submit flow           a task that scores on the board: a changed machine's image (a flow)
     tnca-service submit score --message TEXT    on an island: a commit, with one line on what it changes
     tnca-service archive               on an island: the commits you can see
     tnca-service read-commit ID        on an island: one commit, as a patch against the base commit

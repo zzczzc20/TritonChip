@@ -75,7 +75,11 @@ def services(site, task, requests) -> list:
             continue  # cancelled before it started: it held nothing
         times = (job["started"], job.get("finished"))
         common = {"queued": job["started"] - job["submitted"], "request_id": job["id"]}
-        if job["service"] == "score":
+        if job["service"] == "score" and (job.get("full") or {}).get("record") is not None:
+            # The board as the score (2026-11-10): the request's card session.
+            out += (_card(job["full"]["record"], "board-score", job["id"])
+                    or [entry("board-score", None, *times, **common, reserved={"cards": 1})])
+        elif job["service"] == "score":
             out.append(entry("score", None, *times, **common,
                              reserved=evaluator.reserved(site, task, task.evaluation["validation"])))
         elif job["service"] == "fpga-quick":

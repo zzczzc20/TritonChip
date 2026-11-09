@@ -107,7 +107,7 @@ def table(site, repo: Path, task, run=None) -> dict:
         shutil.rmtree(work, ignore_errors=True)
 
 
-def view(bounds: Optional[dict], rows: list, order: list) -> Optional[list]:
+def view(bounds: Optional[dict], rows: list, order: list, family=None) -> Optional[list]:
     """What an agent sees: one entry per point of `order` (the set's fixed order), by number -- the binding
     resource, eta and the base's eta. `rows`: evaluator.score's rows (point, failure, cycles, base_cycles). A
     point that did not pass has no eta."""
@@ -118,7 +118,8 @@ def view(bounds: Optional[dict], rows: list, order: list) -> Optional[list]:
     for n, p in enumerate(order, 1):
         b, r = pts.get(p) or {}, by.get(p) or {}
         L = b.get("cycles")
-        entry = {"n": n, "binds": NAMES.get(b.get("binding"), b.get("binding"))}
+        entry = {"n": n, **({"family": family(p)} if family else {}),
+                 "binds": NAMES.get(b.get("binding"), b.get("binding"))}
         entry["eta"] = (round(L / r["cycles"], 4) if L and r.get("failure") is None and r.get("cycles") else None)
         entry["eta_base"] = round(L / r["base_cycles"], 4) if L and r.get("base_cycles") else None
         out.append(entry)

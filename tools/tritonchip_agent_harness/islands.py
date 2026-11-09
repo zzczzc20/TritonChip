@@ -151,8 +151,11 @@ def layer_cell(labels: list) -> Optional[str]:
 
 
 def fitness(agg: Optional[dict]) -> tuple:
-    """The order commits are compared in (O12): fast_1 first, then the geometric-mean speedup."""
+    """The order commits are compared in. On the card (2026-11-10): the family-weighted board score, then
+    fast_1. In simulation (O12): fast_1 first, then the geometric-mean speedup."""
     agg = agg or {}
+    if "score" in agg:
+        return (agg.get("score") or 0.0, agg.get("fast_1") or 0.0)
     return (agg.get("fast_1") or 0.0, agg.get("speedup_geomean") or 0.0)
 
 
@@ -432,7 +435,9 @@ class Turns:
                              + ("commits" if self.archive is not None else "score requests"))
             if "fpga_quick" in svc:
                 parts.append(f"{b.get('fpga_minutes_left')} minutes of fpga-quick")
-            if "fpga_slow" in svc:
+            if "flows_left" in b:
+                parts.append(f"{b.get('flows_left')} flows")
+            elif "fpga_slow" in svc:
                 parts.append(f"{b.get('fpga_slow_flows_left')} fpga-slow flows and "
                              f"{b.get('fpga_slow_board_runs_left')} board runs")
         return "Left: " + ", ".join(parts) + "."

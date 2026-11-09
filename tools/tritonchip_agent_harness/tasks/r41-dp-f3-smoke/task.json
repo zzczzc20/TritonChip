@@ -1,0 +1,207 @@
+{
+  "schema": "tritonchip-agent-task/1",
+  "task_id": "r41-dp-f3-smoke",
+  "kind": "cross-layer",
+  "note": "Smoke test of the R41-F3 harness path (user, 2026-11-09: test the harness itself with a cheap model before the formal run): r41-dp-formal's islands (3, roles software/hardware/both, topology all, migration every commit at rate 1.0), its instruction and base, on two short validation points and one short final point, all three from r41-dp-formal's validation set (no held-out point); 30 minutes and 3 commits per island; no FPGA tier, no card. Not a formal run.",
+  "base_commit": "0ab2c738fa619c02446d23bc66017efc1b16e7d2",
+  "design": [
+    "compiler/",
+    "python/tnca/",
+    "isa/",
+    "rtl/",
+    "spec/r1_profiles.json",
+    "spec/devices/"
+  ],
+  "evaluator_owned": [
+    "python/tnca/device.py",
+    "python/tnca/runtime.py",
+    "python/tnca/transport.py",
+    "python/tnca/backend.py",
+    "python/tnca/backends/",
+    "python/tnca/triton_backend/driver.py",
+    "python/tnca/inductor.py",
+    "python/tnca/profiles.py",
+    "python/tnca/_data.py",
+    "rtl/board/",
+    "rtl/fpga/",
+    "python/tnca/devices.py",
+    "python/tnca/compile_cache.py",
+    "python/tnca/code_residency.py",
+    "python/tnca/eos_guard.py",
+    "python/tnca/hbm_layout.py",
+    "python/tnca/linalg_decomp.py",
+    "python/tnca/mask_index.py",
+    "python/tnca/inductor_tuning.py",
+    "python/tnca/inductor_tuning_worker.py",
+    "python/tnca/torch_device/queue.py"
+  ],
+  "hide": [
+    "archbench/",
+    "compiler/README.md",
+    "doc/architecture_overview.md",
+    "doc/compiler_overview.md",
+    "doc/docmap.state.json",
+    "doc/docmap.toml",
+    "doc/r38_board_bringup.md",
+    "doc/r38_pytorch_p1plus.md",
+    "doc/r38_stage1_status.md",
+    "doc/r39_report.md",
+    "doc/r39_tasks_and_acceptance.md",
+    "doc/r40_closeout_plan.md",
+    "doc/r40_cold_call_audit.md",
+    "doc/r40_hbm.md",
+    "doc/r40_report.md",
+    "doc/r40_tasks_and_acceptance.md",
+    "doc/r40_tasks_and_acceptance_v2.en.md",
+    "doc/r40_tasks_and_acceptance_v2.md",
+    "doc/r40_tasks_and_acceptance_v3.en.md",
+    "doc/r40_tasks_and_acceptance_v3.md",
+    "doc/r40_tnca_device.md",
+    "doc/r40_v3/",
+    "doc/r41_chat.md",
+    "doc/r41_execution_tasks.md",
+    "doc/r41_report.md",
+    "doc/r41_stage1_report.md",
+    "doc/r41_stage2_report.md",
+    "doc/r41_tasks_and_acceptance.md",
+    "flow/fpga/README.md",
+    "spec/r35_workloads.json",
+    "spec/r38/design_changes/xpose-dma-001.json",
+    "spec/r38/evidence_registry.json",
+    "spec/r38/suites/dev.json",
+    "spec/r39/baseline_archbench.json",
+    "spec/r39/baseline_archbench.jsonl",
+    "spec/r39/baseline_archbench_medium.jsonl",
+    "spec/r3_workloads.json",
+    "spec/r3v2_inventory.json",
+    "spec/r40/ablation_matrix.json",
+    "spec/r40/api_lock.json",
+    "spec/r40/b39/",
+    "spec/r40/baseline.json",
+    "spec/r40/hbm_coverage.json",
+    "spec/r40/plan.json",
+    "spec/r40/suites/",
+    "spec/r40/v2/",
+    "spec/r41/",
+    "tools/models/",
+    "tools/performance_harness/",
+    "!tools/performance_harness/systemc/",
+    "tools/performance_harness/systemc/test_run_graphs.py",
+    "tools/r37/aot_run.py",
+    "tools/r37/upstream_cases.py",
+    "tools/r38/archbench/",
+    "tools/r38/dev_cases.py",
+    "tools/r38/tdesc_tests.py",
+    "tools/r38/triton_native_run.py",
+    "tools/r40/",
+    "tools/r41/",
+    "tutorial/11_running_on_the_u280.md"
+  ],
+  "instruction": "../r41-dp-formal/instruction.md",
+  "skills": [
+    "testcase-design"
+  ],
+  "islands": {
+    "count": 3,
+    "topology": "all",
+    "migration_interval": 1,
+    "migration_rate": 1.0,
+    "features": [
+      "layer"
+    ],
+    "max_idle_turns": 3,
+    "max_restarts": 2,
+    "roles": [
+      {
+        "name": "software",
+        "authors": [
+          "software"
+        ],
+        "flows": 0,
+        "board_runs": 0,
+        "fpga_quick_minutes": 0
+      },
+      {
+        "name": "hardware",
+        "authors": [
+          "hardware"
+        ],
+        "flows": 0,
+        "board_runs": 0,
+        "fpga_quick_minutes": 0
+      },
+      {
+        "name": "both",
+        "authors": [
+          "software",
+          "hardware",
+          "isa"
+        ],
+        "flows": 0,
+        "board_runs": 0,
+        "fpga_quick_minutes": 0
+      }
+    ]
+  },
+  "budget": {
+    "wall_seconds": 1800
+  },
+  "evaluation": {
+    "profile": "core-vrf-sync-v5-x8-g2c4-dp-board",
+    "device": "u280-3core-r41",
+    "validation": [
+      "op.scaled_mm/tiny/e4m3-to-bf16-m16-k64-n64",
+      "op.add/tiny/fp16-n1000"
+    ],
+    "final": [
+      "op.add/small/fp16-n16384"
+    ],
+    "jobs": 12,
+    "timeout_seconds": 10800,
+    "drain_cycles": 8,
+    "platform": {
+      "commit": "546d20ab9947e4565a06646fa4599e6ae0663784",
+      "paths": [
+        "python/tnca/backends/multicore_mmio.py",
+        "python/tnca/backends/multicore_mmio_sim.py",
+        "python/tnca/backends/u50_sim.py",
+        "python/tnca/devices.py",
+        "rtl/fpga/tnca_multicore_mmio.v",
+        "tb/common/tnca_axi_line_model.v",
+        "tb/fpga/tnca_mmio_journal.vh",
+        "tb/fpga/tnca_multicore_board_regs.v",
+        "tb/fpga/tnca_multicore_dma.vh",
+        "tb/fpga/tnca_multicore_shared_hbm.vh",
+        "tb/common/tnca_sparse_map.vh",
+        "tb/fpga/tnca_stage_probes.vh",
+        "python/tnca/hbm_layout.py",
+        "python/tnca/backend.py",
+        "python/tnca/backends/board_relay.py",
+        "archbench/platforms/tnca.py",
+        "archbench/run.py",
+        "archbench/generate.py",
+        "python/tnca/operating_clock.py",
+        "python/tnca/inductor_tuning.py"
+      ]
+    },
+    "certify": {
+      "commit": "5a4f8528e262ab5cb23e52762b404fa4cea95a2e",
+      "paths": [
+        "flow/fpga/",
+        "fpga/",
+        "rtl/board/",
+        "rtl/fpga/",
+        "tools/tritonchip_fpga_harness/"
+      ],
+      "target": "u280-multicore-r41",
+      "clock_mhz": 100,
+      "board_cycles": "record"
+    }
+  },
+  "services": {
+    "score": {
+      "requests": 3
+    }
+  },
+  "models": true
+}

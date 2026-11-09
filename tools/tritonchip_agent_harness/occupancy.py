@@ -126,3 +126,61 @@ def of_run(site, task, agent_result: dict, evaluated: Optional[tuple]) -> list:
 
 
 __all__ = ["BOARD_STEPS", "BUILD_STEPS", "entry", "of_run", "services", "stages"]
+
+
+class LoadSampler:
+    """The run host's load average, every `every` seconds, one JSON line each (decided 2026-11-09): what
+    explains a request that took longer than its work, when several islands' simulations and sandboxes
+    share one machine. A daemon thread; it ends with stop() or when its file cannot be written."""
+
+    def __init__(self, path, every: float = 60.0) -> None:
+        import threading
+        self.path, self.every = path, float(every)
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._loop, name="load-sampler", daemon=True)
+
+    def start(self) -> "LoadSampler":
+        self._thread.start()
+        return self
+
+    def stop(self) -> None:
+        self._stop.set()
+
+    def _sample(self) -> None:
+        import json
+        import os
+        import time
+        one, five, fifteen = os.getloadavg()
+        with open(self.path, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"at": round(time.time(), 1), "load": [one, five, fifteen]}) + "\n")
+
+    def _loop(self) -> None:
+        while True:
+            try:
+                self._sample()
+            except OSError:
+                return
+            if self._stop.wait(self.every):
+                return
+
+
+def load_summary(path) -> dict:
+    """What the sampler wrote, in short, for the run record: samples, the one-minute load's mean and maximum,
+    and the host's CPU count to read them against."""
+    import json
+    import os
+    rows = []
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    rows.append(json.loads(line)["load"][0])
+                except (ValueError, KeyError, IndexError, TypeError):
+                    continue
+    except OSError:
+        return {}
+    if not rows:
+        return {"samples": 0}
+    return {"file": os.path.basename(str(path)), "samples": len(rows), "load1_mean": round(sum(rows) / len(rows), 2),
+            "load1_max": round(max(rows), 2), "cpus": os.cpu_count()}
+

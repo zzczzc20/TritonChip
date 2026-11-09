@@ -62,7 +62,15 @@ def operator_signals():
             signal.signal(s, handler)
 
 
+# A run's load sampler (occupancy.LoadSampler), stopped by its last record.
+_SAMPLERS: dict = {}
+
+
 def _write(run_dir: Path, record: dict) -> None:
+    if (run_dir / "load.jsonl").exists():
+        record["host_load"] = occupancy.load_summary(run_dir / "load.jsonl")
+    if record.get("finished") and run_dir in _SAMPLERS:
+        _SAMPLERS.pop(run_dir).stop()
     (run_dir / "run.json").write_text(json.dumps(record, indent=2, sort_keys=True, default=str) + "\n",
                                       encoding="utf-8")
 
@@ -133,6 +141,9 @@ def _run_task(site: Site, task: Task, agent: str, mode: str, model: Optional[str
     label = f"patch-{Path(agent.split(':', 1)[1]).stem}" if agent.startswith("patch:") else agent
     run_dir = site.state_dir / "runs" / (f"{name}-{stamp}" if name else f"{task.task_id}-{label}-{stamp}")
     run_dir.mkdir(parents=True)
+    # The host's load through the run (2026-11-09), for the occupancy analysis; a pseudo-agent needs none.
+    if agent not in PSEUDO and not agent.startswith("patch:"):
+        _SAMPLERS[run_dir] = occupancy.LoadSampler(run_dir / "load.jsonl").start()
     workspace = run_dir / "workspace"
     island_run = bool(task.islands) and agent not in PSEUDO and not agent.startswith("patch:")
     # An island run's workspaces are its islands' own (islands.py); the run has none of its own.

@@ -220,3 +220,25 @@ class RunRecord(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HostLoad(unittest.TestCase):
+    """2026-11-09: the run host's load average, sampled through the run, summarised in its record."""
+
+    def test_the_sampler_writes_lines_and_the_record_gets_their_summary(self):
+        import json
+        import tempfile
+        from tritonchip_agent_harness import loop, occupancy
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            sampler = occupancy.LoadSampler(run_dir / "load.jsonl", every=0.05).start()
+            loop._SAMPLERS[run_dir] = sampler
+            import time
+            time.sleep(0.2)
+            loop._write(run_dir, {"run_id": "r", "finished": 1.0})
+            self.assertNotIn(run_dir, loop._SAMPLERS)
+            written = json.loads((run_dir / "run.json").read_text())
+            self.assertGreaterEqual(written["host_load"]["samples"], 2)
+            self.assertEqual(set(written["host_load"]), {"file", "samples", "load1_mean", "load1_max", "cpus"})
+            self.assertEqual(occupancy.load_summary(run_dir / "missing.jsonl"), {})
+

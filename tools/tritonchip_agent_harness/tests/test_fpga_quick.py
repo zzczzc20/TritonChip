@@ -129,3 +129,18 @@ class Sandboxes(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class NotApplied(unittest.TestCase):
+    """2026-11-09: a change the quick tier cannot see is listed, not measured as the base's."""
+
+    def test_the_uncore_and_parameters_the_top_does_not_take_are_listed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tree = Path(tmp)
+            (tree / "rtl/fpga").mkdir(parents=True)
+            (tree / "rtl/fpga" / f"{fpga_quick.TOP}.v").write_text(
+                "module tnca_fpga_top #(\n  parameter LSU_INFLIGHT = 1,\n  parameter FE_NOBUBBLE = 0\n) ();\nendmodule\n")
+            changed = {"profile": {"LSU_INFLIGHT": [1, 2], "MTX_VRF_REG": [1, 0], "CORE_ID": [0, 1]},
+                       "device": {"uncore.SETS": [32, 128]}}
+            self.assertEqual(fpga_quick.not_applied(tree, changed), ["MTX_VRF_REG", "uncore.SETS"])
+            self.assertEqual(fpga_quick.not_applied(tree, {"profile": {"LSU_INFLIGHT": [1, 2]}}), [])

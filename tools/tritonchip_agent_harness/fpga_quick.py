@@ -50,6 +50,15 @@ def effective_params(tree: Path, profile: str) -> dict:
             if k in top and k not in NOT_MACHINE and isinstance(v, int) and not isinstance(v, bool)}
 
 
+def not_applied(tree: Path, changed: dict) -> list:
+    """What of the machine's change this tier cannot see (2026-11-09): the scored profile's parameters the
+    synthesised top does not declare, and every field of the device description, which the top never reads
+    (the uncore's SETS among them). `changed`: evaluator.hardware_changed()."""
+    top = set(_PARAM.findall((tree / "rtl/fpga" / f"{TOP}.v").read_text()))
+    out = [k for k in sorted(changed.get("profile") or {}) if k not in top and k not in NOT_MACHINE]
+    return out + [str(k) for k in sorted(changed.get("device") or {})]
+
+
 def parse_summary(text: str) -> dict:
     lines = text.splitlines()
     for i, line in enumerate(lines):

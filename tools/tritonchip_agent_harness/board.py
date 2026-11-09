@@ -455,13 +455,19 @@ def ok(record: dict) -> bool:
     return status(record) == "ok"
 
 
+def baseline_key(task: Task) -> str:
+    """What the base's card cycles depend on: its image, the platform, the base commit, the profile, the points."""
+    sha = ((task.services or {}).get("fpga_slow") or {}).get("base_image_sha256")
+    return hashlib.sha256(json.dumps([sha, task.evaluation["platform"]["commit"], task.base_commit,
+                                      task.evaluation["profile"], board_points(task)]).encode()).hexdigest()[:16]
+
+
 def baseline(site: Site, repo: Path, task: Task) -> dict:
     """The base on its own image, the board's validation points only, once per image and platform: what an
     in-run board aggregate is against. No held-out set runs while an agent does."""
     image = base_image(site, task)
     points = board_points(task)
-    key = hashlib.sha256(json.dumps([image["sha256"], task.evaluation["platform"]["commit"], task.base_commit,
-                                     task.evaluation["profile"], points]).encode()).hexdigest()[:16]
+    key = baseline_key(task)
     root = site.state_dir / "board-baselines"
     cache = root / f"{key}.json"
     if cache.exists():

@@ -49,6 +49,7 @@ from .task import Task, render
 from .workspace import export, git
 
 CELLS = ("compiler-only", "hardware-only", "cross-layer")
+STOP_JOIN_SECONDS = 120    # how long an operator stop waits for each island to end its turn
 SOFTWARE = ("compiler/", "python/tnca/")
 # The layers an island role writes (2026-11-09), and the layer each label of layer_labels() belongs to.
 LAYERS = ("software", "hardware", "isa")
@@ -475,34 +476,43 @@ def run(site, task: Task, account, mode: str, run_dir: Path, repo: Path, names: 
     archive = Archive(repo, task)
     out = {"config": cfg, "islands": []}
     threads, results = [], [None] * cfg["count"]
+    # What each island has so far, kept as it is made: an operator stop writes the record from it when an
+    # island's thread has not ended in time (the stopped R41-F2 launch of 2026-11-09 left `islands: []`).
+    live: list = [{"broker": None, "turns": None, "exported": None, "prompt": "", "agent": {}}
+                  for _ in range(cfg["count"])]
+
+    def row(i: int, agent: dict) -> dict:
+        b, turns, prompt = live[i]["broker"], live[i]["turns"], live[i]["prompt"]
+        return {"island": i, "workspace": live[i]["exported"], "agent_result": agent, "broker": b,
+                "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest() if prompt else None,
+                "stop_reason": (turns.stop_reason if turns else None) or agent.get("stop_reason")
+                or ("crashed" if agent.get("error") else None),
+                "idle": turns.idle if turns else None, "restarts": turns.restarts if turns else None,
+                "resume_mode": turns.mode if turns else None,
+                "throttle_waits": turns.throttle_waits if turns else None,
+                "throttle_seconds": round(turns.throttle_seconds, 1) if turns else None,
+                "commits": archive.commits[i]}
 
     def one(i: int) -> None:
         idir = run_dir / f"island-{i}"
-        broker, turns, agent, exported, prompt = None, None, {}, None, ""
+        agent: dict = {}
         try:
             idir.mkdir(parents=True, exist_ok=True)
             workspace = idir / "workspace"
-            exported = export(repo, task.base_commit, task.hide, workspace)
+            live[i]["exported"] = export(repo, task.base_commit, task.hide, workspace)
             # The run's id in every container name: two runs on one host never share one (the review's H2).
-            broker = broker_cls(site, repo, task, workspace, idir, island=i, archive=archive, shared=shared,
-                                run_id=f"{run_dir.name}-i{i}")
-            prompt = render(task, mode, skills=names, island=i)
+            broker = live[i]["broker"] = broker_cls(site, repo, task, workspace, idir, island=i, archive=archive,
+                                                    shared=shared, run_id=f"{run_dir.name}-i{i}")
+            prompt = live[i]["prompt"] = render(task, mode, skills=names, island=i)
             (idir / "prompt.md").write_text(prompt, encoding="utf-8")
-            turns = Turns(i, task, broker, archive, prompt)
+            turns = live[i]["turns"] = Turns(i, task, broker, archive, prompt)
             agent = runner.run_agent(site, account, prompt, mode, idir, workspace, timeout=float(task.wall_seconds),
                                      services=broker, skills=names, turns=turns, name=f"{run_dir.name}-i{i}",
                                      **({"models": True} if task.models else {}))
         except Exception as exc:  # noqa: BLE001 -- one island failing ends that island, not the run (D7)
             agent = {**agent, "error": f"{type(exc).__name__}: {exc}"}
-        results[i] = {"island": i, "workspace": exported, "agent_result": agent, "broker": broker,
-                      "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest() if prompt else None,
-                      "stop_reason": (turns.stop_reason if turns else None) or agent.get("stop_reason")
-                      or ("crashed" if agent.get("error") else None),
-                      "idle": turns.idle if turns else None, "restarts": turns.restarts if turns else None,
-                      "resume_mode": turns.mode if turns else None,
-                      "throttle_waits": turns.throttle_waits if turns else None,
-                      "throttle_seconds": round(turns.throttle_seconds, 1) if turns else None,
-                      "commits": archive.commits[i]}
+        finally:
+            results[i] = row(i, agent)
 
     for i in range(cfg["count"]):
         t = threading.Thread(target=one, args=(i,), name=f"island-{i}")
@@ -527,7 +537,12 @@ def run(site, task: Task, account, mode: str, run_dir: Path, repo: Path, names: 
         archive.halt.set()
         _stop_agents(run_dir, cfg["count"], account.cli)
         for t in threads:
-            t.join(120)
+            t.join(STOP_JOIN_SECONDS)
+        for i, r in enumerate(results):
+            if r is None:
+                # Its thread had not ended: its requests, commits and turns as they are now.
+                results[i] = row(i, {"stop_reason": "operator",
+                                     "incomplete": "the island had not ended when the run's record was written"})
         out["islands"], out["archive"] = results, archive
         raise Stopped(out, getattr(exc, "how", None) or "SIGINT") from exc
     out["islands"] = results

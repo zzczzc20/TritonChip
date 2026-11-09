@@ -622,6 +622,12 @@ class Broker:
             export(self.repo, self.task.base_commit, (), tree)
         else:
             apply_candidate(self.repo, self.task.base_commit, candidate, tree, only=evaluator.HARDWARE)
+        try:
+            # What this tier cannot see of the change (the uncore, parameters its top does not take): said, not
+            # silently measured as the base's (2026-11-09).
+            missing = fpga_quick.not_applied(tree, evaluator.hardware_changed(self.repo, self.task, candidate))
+        except (OSError, ValueError, KeyError):
+            missing = []
         seconds = int(min(self.fpga_job, self.fpga_left))
         queued = time.time()
         self.shared.quick.acquire()   # one quick-tier job at a time on the shared worker; the wait is not charged
@@ -639,6 +645,8 @@ class Broker:
             with self.lock:
                 job["charged_seconds"] = round(charged, 1)
                 self.fpga_left = max(0.0, self.fpga_left - charged)
+        if missing:
+            r["not_applied"] = missing
         visible = {k: r[k] for k in FPGA_VISIBLE if k in r}
         visible["note"] = FPGA_NOTE
         return visible, r

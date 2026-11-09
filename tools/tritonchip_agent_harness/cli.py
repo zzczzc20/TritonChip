@@ -81,6 +81,11 @@ def main(argv=None) -> int:
                         "from the rows and board checks it stored (no build, no card); written to "
                         "certification-again.json beside run.json, which is left as it was")
     k.add_argument("--json", action="store_true")
+    cb = sub.add_parser("carry-baseline", help="copy the base's kept simulation and card results to the task's "
+                                               "platform commit, when it differs from FROM only in files no "
+                                               "measurement reads (carry.MEASUREMENT_NEUTRAL)")
+    cb.add_argument("task", type=Path, help="a task package directory or its task.json")
+    cb.add_argument("--from-platform", required=True, help="the platform commit the kept results were measured with")
     st = sub.add_parser("stats", help="runs, tokens and server occupancy per agent framework, as JSON "
                                       "(no point ids, no per-point results; no site configuration)")
     st.add_argument("paths", nargs="+", type=Path, help="run directories, or directories that hold them")
@@ -92,6 +97,17 @@ def main(argv=None) -> int:
             print(json.dumps(stats.summarise(args.paths), indent=2, sort_keys=True))
             return 0
         site = load_site(args.site)
+        if args.command == "carry-baseline":
+            from . import carry
+            if site.repository is None:
+                raise SiteError("site.json has no `repository`")
+            try:
+                value = carry.carry(site.state_dir, site.repository, load_task(args.task), args.from_platform)
+            except carry.CarryError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                return 2
+            print(json.dumps(value, indent=2, sort_keys=True))
+            return 0
         if args.command == "credentials":
             value = {"ok": None, "accounts": [credential_status(a) for a in site.accounts.values()]}
             value["ok"] = all(a["ok"] for a in value["accounts"])

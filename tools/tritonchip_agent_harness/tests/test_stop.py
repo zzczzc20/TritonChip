@@ -77,6 +77,34 @@ class OperatorStop(unittest.TestCase):
         self.assertEqual(partial["islands"][0]["agent_result"], {"stop_reason": "operator"})
         self.assertIsNotNone(partial["archive"])
 
+    def test_an_island_that_does_not_end_in_time_still_hands_up_its_requests(self):
+        # The stopped R41-F2 launch (2026-11-09): its island had not ended within the wait, and the record had
+        # `islands: []`. Its broker's requests and its turns are there all along.
+        def agent(*args, **kwargs):
+            threading.Event().wait(3)        # ignores the stop for longer than the stop waits
+            return {"stop_reason": "operator"}
+
+        with tempfile.TemporaryDirectory() as tmp, \
+                mock.patch.object(islands, "STOP_JOIN_SECONDS", 0.2), \
+                mock.patch.object(islands, "export", return_value={"files": 1}), \
+                mock.patch.object(islands, "render", return_value="prompt"), \
+                mock.patch.object(islands.runner, "run_agent", side_effect=agent), \
+                mock.patch.object(islands, "_stop_agents"):
+            # A real signal: it interrupts the main thread's wait on the island, as the operator's SIGTERM did.
+            timer = threading.Timer(0.3, os.kill, (os.getpid(), signal.SIGINT))
+            timer.start()
+            with self.assertRaises(islands.Stopped) as got:
+                islands.run(None, task(), types.SimpleNamespace(cli="codex"), "offline", Path(tmp), Path(tmp), [],
+                            FakeBroker, None)
+            timer.cancel()
+        row = got.exception.partial["islands"][0]
+        self.assertEqual(row["agent_result"]["stop_reason"], "operator")
+        self.assertIn("had not ended", row["agent_result"]["incomplete"])
+        self.assertIsInstance(row["broker"], FakeBroker)
+        self.assertEqual(row["workspace"], {"files": 1})
+        self.assertEqual([r["island"] for r in loop._island_rows(got.exception.partial["islands"])], [0])
+        self.assertEqual(loop._island_rows([row])[0]["agent_result"]["services"]["requests"][1]["id"], "s1")
+
     def test_a_stopped_island_run_writes_its_record_and_lists_the_flows_left_running(self):
         rows = [{"island": 0, "agent_result": {"stop_reason": "operator"}, "broker": FakeBroker(),
                  "commits": 0}]

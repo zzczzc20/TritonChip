@@ -147,6 +147,11 @@ it does not see `MTX_VRF_REG` or the uncore's `SETS` (nor anything else only
 the cores, the tiles or the device description set). Two machines that differ
 only there get the same quick result; only a flow sees the difference.
 
+**What earlier flows of this machine showed.** The base's home caches have 64
+sets. With 128 sets the routed design missed 100 MHz (worst setup slack
+-0.35 ns), so it could not be built; the parameters near the base's values are
+the ones earlier runs tried first.
+
 ## Measuring your own work
 
 **The simulation is cycle-accurate**, and it is the image's own top level,
@@ -191,7 +196,11 @@ simulator from the description as it is when the test starts.
 `python/tnca/triton_backend/driver.py` documents what `launch_log()` records for
 each launch (its `device_cycles` is the count the device reports, which the
 evaluator checks against its own), and `python/tnca/inductor.py` how Inductor
-is pointed at TNCA.
+is pointed at TNCA. That file is yours to change like the compiler: how
+Inductor lowers a program to TNCA -- its block caps, the matrix products'
+tiles, how attention is decomposed -- is kernel work. The check that nothing
+ran on the host is not taken from it: the evaluation runs its own copy, and a
+program any of which falls back to the host still fails.
 
 ## The performance models
 
@@ -222,10 +231,12 @@ with the model's hook first on `PYTHONPATH` and the model as the backend:
   read from the RTL; the few quantities the RTL does not fix (host time, the
   memory stand-ins' latency) were fitted on cases like your own. Against the
   simulation it is typically within about 5 % and off by up to about 17 % on
-  some kernels, more often counting too few cycles than too many. It follows
-  `LSU_INFLIGHT` and the cache's `SETS` in direction and size; it is blind to
-  the compiler's register-bank allocation, so a change of that kind needs the
-  CA Model or the simulator. A difference smaller than its error is not
+  some kernels, more often counting too few cycles than too many. A change to
+  a field its configuration is generated from (below) shows in it in
+  direction and size, as far as its error card has checked; a change to the
+  RTL's structure does not, until its source models it. It is blind to the
+  compiler's register-bank allocation, so a change of that kind needs the CA
+  Model or the simulator. A difference smaller than its error is not
   evidence. Run one case per process on it: the backend keeps one model for a
   whole Python process, so a case after the first starts on the caches the
   earlier one left and comes out short, by up to about a fifth, with no
@@ -296,3 +307,10 @@ with the model's hook first on `PYTHONPATH` and the model as the backend:
   source changes to match: after one, it describes the old machine. The trace
   gate in `tools/performance_harness/align/` compares the two cycle by cycle on
   a case of your own and names the first event where they part.
+
+  Its source is in your working directory, as the RTL is, and is yours to
+  change with it: a structural change to the hardware (a new path, a wider
+  unit, another queue) can be made in both, the trace gate shows on your own
+  cases whether the two agree, and a model that agrees gives such a change's
+  cycles in seconds per case. A flow gives them only after hours, and the
+  simulator at a few tens of cycles per second.

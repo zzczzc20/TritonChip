@@ -51,6 +51,33 @@ payload`, head JSON. Replies are `{"ok": true, ...}` or `{"ok": false,
     hbm_read     {offset, nbytes}   -> payload
     bye          {}                 -> nothing; the connection ends
 
+and, from a relay whose hello says `digest` (and `cache` for the first):
+
+    hbm_put      {offset, nbytes, digest} -> hit; on a hit the relay wrote
+                 its own copy of those bytes there, on a miss nothing
+    hbm_digest   {offset, nbytes}   -> digest of the bytes there now
+    hbm_write    may say `keep`: the relay then also keeps a copy
+
+THE CHUNK STORE (2026-11-11)
+
+Everything a client writes crosses the SSH tunnel, at tens of MB/s, while the
+card host writes the card's HBM at about 1.45 GB/s (the relay's own clearing
+of 8 GiB takes 6 s): R41-F3's llama decode step moved 4.9 GB each way, for
+381 s of a 487 s first call. Most of those bytes are the same every time --
+a point's weights and inputs come from the evaluator's own seeded registry,
+equal for every candidate -- and most of what comes back is unchanged. With
+--chunk-cache DIR the relay keeps a copy of each piece a client writes with
+`keep`, named by its BLAKE2b-256 digest, which the relay computes itself from
+the bytes it received; `hbm_put` names a digest and the relay writes its copy
+if it has one. Only this relay writes DIR (mode 0700), and a name is always
+the digest of the file's bytes, so a client can have the relay write only
+bytes whose digest it already knows, that is bytes it already has: it learns
+nothing from the store, and nothing on the card host runs but the relay. `hbm_digest` is what lets the client skip
+reading back a piece the device did not change: it compares the digest with
+the one of the bytes it wrote there. The device's cycles do not depend on any
+of this: the same bytes reach the same addresses before the same launches.
+The store is bounded (--chunk-cache-bytes); the least recently used pieces go.
+
 Any op may carry `writes: [[offset, value], ...]`, performed in order before
 the op itself. `RelayLink.write_reg` returns nothing to its caller, so the
 client holds its register writes and sends them with the next operation that
@@ -128,6 +155,7 @@ import signal
 import socket
 import struct
 import sys
+import tempfile
 import time
 
 from ..errors import (ALL_CODES, ArgumentError, DependencyFailed, DeviceLost,
@@ -160,6 +188,18 @@ MAX_HEAD = 1 << 20
 MAX_OFFSET = 0x200
 #: How long a connection that arrived during another may wait for it to end.
 BACKLOG_SECONDS = 10.0
+#: The content digest of the chunk store and of `hbm_digest`: BLAKE2b-256, the
+#: fastest strong hash on the card host's CPU (a Xeon E5-2620 v3 without SHA
+#: instructions: 450 MB/s, SHA-256 318 MB/s).
+DIGEST = 'blake2b-256'
+#: The smallest piece the client sends by digest or checks by digest: below it
+#: a round trip costs about what sending the bytes does.
+DIGEST_MIN = 1 << 18
+_HEX64 = re.compile(r'[0-9a-f]{64}')
+
+
+def _digest(data):
+    return hashlib.blake2b(data, digest_size=32).hexdigest()
 
 _LABEL = re.compile(r'[A-Za-z0-9_-]{1,32}')
 _M64 = (1 << 64) - 1
@@ -226,6 +266,84 @@ def _label(text):
 # ---------------------------------------------------------------------------
 # the server: trusted, on the card host
 # ---------------------------------------------------------------------------
+class ChunkStore:
+    """Copies of the pieces clients wrote, by their digest, in one directory of
+    the card host (see THE CHUNK STORE). Bounded: past `limit` bytes the least
+    recently used files go, down to nine tenths of it."""
+
+    def __init__(self, root, limit):
+        self.root, self.limit = os.fspath(root), int(limit)
+        os.makedirs(self.root, mode=0o700, exist_ok=True)
+        os.chmod(self.root, 0o700)
+        self.used = sum(e.stat().st_size for e in os.scandir(self.root)
+                        if e.is_file() and _HEX64.fullmatch(e.name))
+        self.counts = dict(hits=0, hit_bytes=0, misses=0, miss_bytes=0, kept=0, kept_bytes=0, evicted=0)
+
+    def _path(self, digest):
+        if not isinstance(digest, str) or not _HEX64.fullmatch(digest):
+            raise ArgumentError(f'digest {digest!r} is not 64 lowercase hex digits')
+        return os.path.join(self.root, digest)
+
+    def get(self, digest, nbytes):
+        """The piece, or None. Not hashed again: only keep() names a file, by the digest of its bytes."""
+        path = self._path(digest)
+        try:
+            with open(path, 'rb') as fh:
+                data = fh.read(nbytes + 1)
+            os.utime(path)
+        except OSError:
+            data = None
+        if data is None or len(data) != nbytes:
+            self.counts['misses'] += 1
+            self.counts['miss_bytes'] += nbytes
+            return None
+        self.counts['hits'] += 1
+        self.counts['hit_bytes'] += nbytes
+        return data
+
+    def keep(self, data):
+        """Keep `data` under its own digest (computed here); the digest."""
+        digest = _digest(data)
+        path = self._path(digest)
+        if os.path.exists(path):
+            os.utime(path)
+            return digest
+        fd, tmp = tempfile.mkstemp(dir=self.root, prefix='.tmp-')
+        try:
+            with os.fdopen(fd, 'wb') as fh:
+                fh.write(data)
+            os.replace(tmp, path)
+        except BaseException:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
+        self.used += len(data)
+        self.counts['kept'] += 1
+        self.counts['kept_bytes'] += len(data)
+        if self.used > self.limit:
+            self._evict()
+        return digest
+
+    def _evict(self):
+        files = sorted((e for e in os.scandir(self.root) if e.is_file() and _HEX64.fullmatch(e.name)),
+                       key=lambda e: e.stat().st_mtime)
+        for e in files:
+            if self.used <= 0.9 * self.limit:
+                break
+            try:
+                size = e.stat().st_size
+                os.unlink(e.path)
+            except OSError:
+                continue
+            self.used -= size
+            self.counts['evicted'] += 1
+
+    def summary(self):
+        return dict(self.counts, root=self.root, used=self.used, limit=self.limit, digest=DIGEST)
+
+
 class _Connection:
     def __init__(self, sock, number, label, log):
         self.sock, self.number, self.label, self.log = sock, number, label, log
@@ -251,12 +369,14 @@ class _Connection:
 class BoardRelay:
     """One open board link, served to one connection at a time."""
 
-    def __init__(self, link, observe_dir, image, *, label_file=None, drain_seconds=120.0):
+    def __init__(self, link, observe_dir, image, *, label_file=None, drain_seconds=120.0, store=None):
         self.link = link
         self.observe_dir = observe_dir
         self.image = image
         self.label_file = label_file
         self.drain_seconds = drain_seconds
+        self.store = store
+        self.digests = dict(count=0, bytes=0)
         self.hbm = None
         self.used_since_clear = False
         self.fatal = self.fatal_code = None
@@ -449,7 +569,8 @@ class BoardRelay:
                 raise ArgumentError('hello is the first operation of a connection')
             conn.client_label = _label(head.get('label'))
             return dict(ok=True, protocol=PROTOCOL, label=conn.label, client_label=conn.client_label,
-                        device=self.link.describe(), image=self.image), b'', True
+                        device=self.link.describe(), image=self.image, digest=DIGEST,
+                        cache=self.store is not None), b'', True
         if op == 'read':
             return dict(ok=True, value=self.link.read_reg(_offset(head.get('offset')))), b'', True
         if op == 'host_status':
@@ -459,8 +580,28 @@ class BoardRelay:
         if op == 'hbm_open':
             return dict(self.hbm_open(_int(head, 'nbytes', 1, 1 << 40)), ok=True), b'', True
         if op == 'hbm_write':
+            keep = head.get('keep', False)
+            if type(keep) is not bool:
+                raise ArgumentError(f'keep={keep!r} is not a boolean')
             self.link.hbm_write(_int(head, 'offset', 0, 1 << 40), payload)
+            if keep and self.store is not None and len(payload) >= DIGEST_MIN:
+                self.store.keep(payload)
             return dict(ok=True), b'', True
+        if op == 'hbm_put':
+            if self.store is None:
+                raise ArgumentError('this relay keeps no chunk store (--chunk-cache)')
+            offset, nbytes = _int(head, 'offset', 0, 1 << 40), _int(head, 'nbytes', 1, CHUNK + 1)
+            data = self.store.get(head.get('digest'), nbytes)
+            if data is None:
+                return dict(ok=True, hit=False), b'', True
+            self.link.hbm_write(offset, data)
+            return dict(ok=True, hit=True), b'', True
+        if op == 'hbm_digest':
+            nbytes = _int(head, 'nbytes', 1, CHUNK + 1)
+            data = self.link.hbm_read(_int(head, 'offset', 0, 1 << 40), nbytes)
+            self.digests['count'] += 1
+            self.digests['bytes'] += nbytes
+            return dict(ok=True, digest=_digest(data)), b'', True
         if op == 'hbm_read':
             data = self.link.hbm_read(_int(head, 'offset', 0, 1 << 40), _int(head, 'nbytes', 0, CHUNK + 1))
             return dict(ok=True), data, True
@@ -568,6 +709,8 @@ class BoardRelay:
                     anomalies=sum(c['anomalies'] for c in self.connections),
                     labels=sorted({c['label'] for c in self.connections}),
                     clears=len(self.clears), clear_seconds=round(sum(self.clears), 3),
+                    chunk_store=self.store.summary() if self.store is not None else None,
+                    digests=dict(self.digests),
                     connection_records=self.connections, fatal=self.fatal, fatal_code=self.fatal_code)
 
 
@@ -651,6 +794,9 @@ def main(argv=None):
     ap.add_argument('--hbm-bytes', type=int, default=0,
                     help='allocate and clear the HBM buffer at startup (the backend\'s hbm_bytes)')
     ap.add_argument('--summary', help='write the full summary (every connection) here as JSON')
+    ap.add_argument('--chunk-cache', help='keep the pieces clients write here, by digest (THE CHUNK STORE)')
+    ap.add_argument('--chunk-cache-bytes', type=int, default=64 << 30,
+                    help='the chunk store\'s bound in bytes (default 64 GiB)')
     ap.add_argument('--ip-name', default=IP_NAME)
     ap.add_argument('--words', type=int, default=DEFAULT_WORDS)
     args = ap.parse_args(argv)
@@ -683,9 +829,10 @@ def main(argv=None):
         # The node the link just checked the file against (u50._loaded_xclbin_uuid).
         with open(f'/sys/class/drm/renderD{128 + index}/device/xclbinuuid') as fh:
             uuid = fh.read().strip().lower()
+        store = ChunkStore(args.chunk_cache, args.chunk_cache_bytes) if args.chunk_cache else None
         relay = BoardRelay(link, args.observe_dir,
                            dict(xclbin_sha256=_sha256(args.xclbin), uuid=uuid, bdf=args.bdf, index=index),
-                           label_file=args.label_file, drain_seconds=args.drain_seconds)
+                           label_file=args.label_file, drain_seconds=args.drain_seconds, store=store)
         if args.hbm_bytes:
             relay.allocate(args.hbm_bytes)
         if os.path.exists(args.unix):
@@ -820,6 +967,50 @@ _ERRORS = {'DEVICE_LOST': DeviceLost, 'DEPENDENCY_FAILED': DependencyFailed,
 _IDENTITY = {}
 
 
+class _Kept:
+    """The pieces this link wrote and may read back unchanged: by start offset,
+    each its length, its bytes (immutable) and their digest; never two that
+    overlap; at most `budget` bytes, the least recently used dropped first."""
+
+    def __init__(self, budget):
+        import bisect
+        import collections
+        self._bisect, self.budget, self.size = bisect, int(budget), 0
+        self.starts = []
+        self.pieces = collections.OrderedDict()
+
+    def drop(self, offset, nbytes):
+        """Forget every piece that overlaps [offset, offset + nbytes)."""
+        i = max(0, self._bisect.bisect_left(self.starts, offset) - 1)
+        while i < len(self.starts) and self.starts[i] < offset + nbytes:
+            start = self.starts[i]
+            if start + self.pieces[start][0] > offset:
+                self.size -= self.pieces.pop(start)[0]
+                del self.starts[i]
+            else:
+                i += 1
+
+    def add(self, offset, piece, digest):
+        self.drop(offset, len(piece))
+        if len(piece) > self.budget:
+            return
+        self._bisect.insort(self.starts, offset)
+        self.pieces[offset] = (len(piece), piece, digest)
+        self.size += len(piece)
+        while self.size > self.budget:
+            start, (n, _, _) = self.pieces.popitem(last=False)
+            self.starts.remove(start)
+            self.size -= n
+
+    def get(self, offset, nbytes):
+        """(bytes, digest) of the piece written exactly there with this length, or None."""
+        got = self.pieces.get(offset)
+        if got is None or got[0] != nbytes:
+            return None
+        self.pieces.move_to_end(offset)
+        return got[1], got[2]
+
+
 class RelayLink(U50Link):
     """A board link whose registers and HBM are a relay's, over a Unix socket.
 
@@ -828,11 +1019,19 @@ class RelayLink(U50Link):
     image is a file on the card host, chosen there. `image_sha256` and
     `image_uuid` are what the relay says it serves (its hello), which is where
     a record's image identity comes from on this backend.
+
+    Against a relay that says `cache`, a piece of DIGEST_MIN bytes or more is
+    first named by its digest (`hbm_put`) and its bytes cross only when the
+    relay has none; against one that says `digest`, a piece read back from
+    where this link wrote it is first compared by digest (`hbm_digest`), and
+    this link's own copy is the answer when the device left it unchanged
+    (THE CHUNK STORE). `keep_bytes` bounds those copies. `stats` counts what
+    crossed and what did not.
     """
 
     xclbin = None
 
-    def __init__(self, address, label=None, *, words=DEFAULT_WORDS, timeout=600.0):
+    def __init__(self, address, label=None, *, words=DEFAULT_WORDS, timeout=600.0, keep_bytes=2 << 30):
         if label is not None and _label(label) is None:
             raise ArgumentError(f'relay label {label!r} is not [A-Za-z0-9_-]{{1,32}}')
         self.address = os.fspath(address)
@@ -844,6 +1043,16 @@ class RelayLink(U50Link):
         self.hbm_layout = None
         self._sock = None
         self._writes = []
+        self._kept = _Kept(keep_bytes)
+        self.stats = dict(sent=0, put_hits=0, read=0, read_unchanged=0)
+
+    @property
+    def _cache(self):
+        return bool((self.relay_info or {}).get('cache')) and self._digests
+
+    @property
+    def _digests(self):
+        return (self.relay_info or {}).get('digest') == DIGEST
 
     @property
     def image_sha256(self):
@@ -929,17 +1138,41 @@ class RelayLink(U50Link):
 
     def hbm_write(self, offset, data):
         view = memoryview(data).cast('B')
+        # A copy is kept only of bytes nobody can change under it.
+        immutable = isinstance(view.obj, bytes)
         for at in range(0, len(view), CHUNK):
-            self._call({'op': 'hbm_write', 'offset': int(offset) + at}, view[at:at + CHUNK])
+            piece, where = view[at:at + CHUNK], int(offset) + at
+            self._kept.drop(where, len(piece))
+            if len(piece) < DIGEST_MIN or not self._digests:
+                self._call({'op': 'hbm_write', 'offset': where}, piece)
+                self.stats['sent'] += len(piece)
+                continue
+            digest = _digest(piece)
+            hit = self._cache and self._call({'op': 'hbm_put', 'offset': where, 'nbytes': len(piece),
+                                              'digest': digest})[0].get('hit') is True
+            if hit:
+                self.stats['put_hits'] += len(piece)
+            else:
+                self._call({'op': 'hbm_write', 'offset': where, 'keep': self._cache}, piece)
+                self.stats['sent'] += len(piece)
+            self._kept.add(where, piece if immutable else bytes(piece), digest)
 
     def hbm_read(self, offset, nbytes):
         out = bytearray()
         for at in range(0, int(nbytes), CHUNK):
-            n = min(CHUNK, int(nbytes) - at)
-            _, data = self._call({'op': 'hbm_read', 'offset': int(offset) + at, 'nbytes': n})
+            n, where = min(CHUNK, int(nbytes) - at), int(offset) + at
+            kept = self._kept.get(where, n) if self._digests and n >= DIGEST_MIN else None
+            if kept is not None:
+                if self._call({'op': 'hbm_digest', 'offset': where, 'nbytes': n})[0].get('digest') == kept[1]:
+                    out += kept[0]
+                    self.stats['read_unchanged'] += n
+                    continue
+                self._kept.drop(where, n)
+            _, data = self._call({'op': 'hbm_read', 'offset': where, 'nbytes': n})
             if len(data) != n:
                 raise DeviceLost(f'the relay returned {len(data)} of {n} HBM bytes')
             out += data
+            self.stats['read'] += n
         return bytes(out)
 
     # -- the wire ------------------------------------------------------------
@@ -973,6 +1206,7 @@ class RelayLink(U50Link):
     def _drop(self):
         sock, self._sock = self._sock, None
         self._writes = []
+        self._kept = _Kept(self._kept.budget)       # another connection: nothing written is known
         if sock is not None:
             try:
                 sock.close()
@@ -1019,7 +1253,8 @@ def relay(**kwargs):
                             remedy='ready.json names the image the card host loaded')
     link = RelayLink(address, label=kwargs.pop('label', None),
                      words=kwargs.pop('words', DEFAULT_WORDS),
-                     timeout=kwargs.pop('relay_timeout', 600.0))
+                     timeout=kwargs.pop('relay_timeout', 600.0),
+                     keep_bytes=kwargs.pop('relay_keep_bytes', 2 << 30))
     backend = board(link=link, **kwargs)
     backend.name = 'fpga-u280-multicore-relay'
     return backend

@@ -224,6 +224,12 @@ def session(site: Site, repo: Path, task: Task, image: dict, tag: str, deadline_
         extra += f"--device {q(folder + '/device.json')} "
     if base_xclbin:
         extra += f"--base-xclbin {q(base_xclbin)} "
+    # The relay's chunk store (2026-11-11): what clients write is kept on the card host by digest, so a point's
+    # weights cross the SSH tunnel once, not at every launch of every session. Needs a platform that has it.
+    cache_gib = ((task.services or {}).get("fpga_slow") or {}).get("relay_cache_gib")
+    if cache_gib:
+        extra += (f"--chunk-cache {q(str(card.state_dir) + '/relay-cache')} "
+                  f"--chunk-cache-bytes {int(float(cache_gib) * (1 << 30))} ")
     # `mkdir .started` is the start's own lock: SSH's retry of a dropped connection cannot start it twice.
     script = (f"mkdir {q(folder + '/.started')} 2>/dev/null || exit 0; cd {q(checkout)} && "
               # The host's own PYTHONPATH (hosts.json `environment`: XRT's python bindings) stays behind ours.

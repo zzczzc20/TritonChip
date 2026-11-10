@@ -320,5 +320,49 @@ class HealthTree(unittest.TestCase):
             self.assertEqual([s for s, ok in seen if not ok], [])
 
 
+class RelayChunkStore(unittest.TestCase):
+    """services.fpga_slow.relay_cache_gib (2026-11-11): the card session's relay keeps what clients write on the
+    card host, by digest, in the card host's state directory; a task that does not say starts it as before."""
+
+    def start_script(self, fpga_slow_extra):
+        from tritonchip_agent_harness import board
+        card = types.SimpleNamespace(name="acf", python="/usr/bin/python3", state_dir="/home/u/fpga-state")
+        site = types.SimpleNamespace(fpga_pipeline={"card": {"bdf": "0000:04:00.1"}})
+        repo, base = make_repo()
+        t = board_task(repo, base, timeout_seconds=600)
+        t = Task(**{**t.__dict__, "services": {**t.services, "fpga_slow": {**t.services["fpga_slow"],
+                                                                             **fpga_slow_extra}}})
+        scripts = []
+
+        def remote(host, argv, **kw):
+            if argv[:2] == ["sh", "-c"]:
+                scripts.append(argv[2])
+
+        with mock.patch.object(board, "_card", return_value=({}, card)), \
+                mock.patch("tritonchip_fpga_harness.pipeline.sync", return_value={"checkout": "/co"}), \
+                mock.patch.object(board, "_remote", remote), \
+                mock.patch.object(board, "_cat", side_effect=lambda h, p: b'{"status": "ok"}'
+                                  if p.endswith("session.json") else None):
+            board.session(site, repo, t, {"path": "/x.xclbin", "sha256": "s" * 64}, "tag", 60.0,
+                          Path(tempfile.mkdtemp()), lambda s: {}, ["0"])
+        self.assertEqual(len(scripts), 1)
+        return scripts[0]
+
+    def test_the_task_turns_it_on_with_its_bound(self):
+        script = self.start_script({"relay_cache_gib": 48})
+        self.assertIn("--chunk-cache /home/u/fpga-state/relay-cache --chunk-cache-bytes 51539607552 ", script)
+
+    def test_without_it_the_relay_starts_as_before(self):
+        self.assertNotIn("--chunk-cache", self.start_script({}))
+
+    def test_the_bound_is_a_positive_number(self):
+        repo, base = make_repo()
+        t = board_task(repo, base)
+        for bad in (0, -1, "48", True):
+            with self.assertRaises(TaskError, msg=repr(bad)):
+                task_._check_board_score(Path("task.json"), {**t.services, "fpga_slow": {
+                    **t.services["fpga_slow"], "relay_cache_gib": bad}}, t.evaluation)
+
+
 if __name__ == "__main__":
     unittest.main()

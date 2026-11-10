@@ -180,6 +180,10 @@ def _check_board_score(path: Path, services: dict, ev: dict) -> None:
     health = ev.get("health_point")
     if health is not None and (not isinstance(health, str) or not health or health in held):
         raise TaskError(f"{path}: evaluation.health_point must be one point id outside the held-out sets")
+    cache = (services.get("fpga_slow") or {}).get("relay_cache_gib")
+    if cache is not None and (isinstance(cache, bool) or not isinstance(cache, (int, float)) or cache <= 0):
+        raise TaskError(f"{path}: services.fpga_slow.relay_cache_gib must be a positive number (GiB of the card "
+                        f"host's chunk store)")
     if on == "board":
         if (services.get("fpga_slow") or {}).get("mode") != "board":
             raise TaskError(f"{path}: services.score.on board needs services.fpga_slow in board mode (the card)")

@@ -481,6 +481,9 @@ def start_relay(a, image, env, paths, deadline, backend_args, record):
            '--idle-timeout', str(a.relay_idle_seconds), '--deadline-seconds', f'{remaining:.0f}',
            '--drain-seconds', str(a.drain_seconds), '--hbm-bytes', str(backend_args['hbm_bytes']),
            '--summary', str(paths['summary'])]
+    if getattr(a, 'chunk_cache', None):
+        cmd += ['--chunk-cache', str(Path(a.chunk_cache).expanduser().resolve()),
+                '--chunk-cache-bytes', str(a.chunk_cache_bytes)]
     relay_env = {k: v for k, v in env.items() if not k.startswith('TNCA_')}
     relay_env['PYTHONPATH'] = str(ROOT / 'python')
     log = paths['out'] / 'relay.log'
@@ -569,6 +572,9 @@ def main(argv=None):
     ap.add_argument('--label-file', help='the trusted label of the next relay connection (default DIR/label)')
     ap.add_argument('--drain-seconds', type=float, default=120.0,
                     help='how long the relay waits for a connection\'s last launch at its end')
+    ap.add_argument('--chunk-cache', help='the relay keeps the pieces clients write here, by digest, across '
+                                          'sessions (board_relay THE CHUNK STORE); none without it')
+    ap.add_argument('--chunk-cache-bytes', type=int, default=64 << 30, help='its bound in bytes')
     a = ap.parse_args(argv)
 
     out = Path(a.out).resolve()

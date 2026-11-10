@@ -71,6 +71,7 @@ def main(argv=None):
     import torch.nn.functional as F
     import triton                                            # noqa: F401  (before the driver)
     import tnca.inductor
+    import tnca.inductor_guard     # the evaluator's check, from the platform (2026-11-11)
     from tnca.triton_backend.driver import backend_choice, launch_log
     from torch._inductor.utils import run_and_get_code
 
@@ -143,7 +144,7 @@ def main(argv=None):
         cycles = sum(e['device_cycles'] or 0 for e in log)
         in_launch = sum(sum(e['host_seconds'].values()) for e in log)
         step = dict(kind=kind, position=pos, cache_len=0 if kind == 'prefill' else pos,
-                    launches=len(log), fallbacks=tnca.inductor.host_fallbacks(code),
+                    launches=len(log), fallbacks=tnca.inductor_guard.host_fallbacks(code),
                     device_cycles=cycles, device_seconds=(cycles / clock) if clock else None,
                     max_rel_err=cmp['max_rel_err'], ok=cmp['ok'] and bool(log), detail=cmp['detail'],
                     host=dict(wall_s=round(wall, 3), in_launches_s=round(in_launch, 3),

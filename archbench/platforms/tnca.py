@@ -142,6 +142,7 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
     # half-initialised module with no DriverBase subclass in it yet.
     import triton                                            # noqa: F401
     import tnca.inductor
+    import tnca.inductor_guard     # the evaluator's check, from the platform (2026-11-11)
     from tnca.triton_backend.driver import backend_choice, launch_log
     from torch._inductor.utils import run_and_get_code
 
@@ -217,8 +218,8 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
         return rec
     wall = time.monotonic() - t0
 
-    rec['fallbacks'] = tnca.inductor.host_fallbacks(code)
-    rec['kernels'] = tnca.inductor.triton_kernels(code)
+    rec['fallbacks'] = tnca.inductor_guard.host_fallbacks(code)
+    rec['kernels'] = tnca.inductor_guard.triton_kernels(code)
     # The launches the generated wrapper makes. Anything beyond them -- an
     # autotuner timing candidates by launching them -- is not the graph's
     # work, and a measurement that contains it is refused below.

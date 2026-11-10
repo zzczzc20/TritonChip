@@ -14,7 +14,7 @@ sandbox predicts how the hidden benchmark will see your change.
 
 ```text
 scripts/protocol.py   the evaluation's correctness protocol: reference, criterion, tolerances
-scripts/bound.py      the evaluation's roofline bound: demand, spec_peak, L, eta
+scripts/bound.py      the card's roofline bound: demand, the whole chip's capacity, L, eta
 scripts/tnca_case.py  measures a case file the evaluation's way (verdict, cycles, fallbacks, eta)
 benchmark_cases/      points of the benchmark itself, as the evaluation runs them (section 7)
 classes.json          the classes of workload you are given, and their dimensions (section 7)
@@ -77,6 +77,12 @@ Two things to know about the number:
   or to a compiler target, build again as the task text says, or you are
   timing the old machine.
 
+A case of several launches (a model, or one operator Inductor splits) is the
+sum of its kernels, nothing more: the script prints its launches grouped by
+kernel and grid, largest share of the cycles first (`--kernels N` rows, 0
+for all; every launch is in `--json`). The few kernels at the top are where
+the time goes, and a change that does not touch them cannot move the total.
+
 ## 3. Where you stand: the roofline bound
 
 Every program has a lower bound L in cycles that no program for this machine
@@ -97,26 +103,28 @@ whose work is elementwise pass `FP_OPS` and `SFU_OPS` yourself, or declare a
 η lower. Overcounting is not: η > 1 is an audit failure in the evaluation,
 never a good result.
 
-**Capacity** is `spec_peak`: what the profile's configuration can serve per
-cycle, read from its target file (vector length, issue width, whether it has
-an SFU) and from RTL facts (one memory port of 8 bytes per cycle, one SFU
-slice). Work several units can do is divided by their summed rate, so the
-bound assumes no algorithm. If your design changes a hardware fact that
-`scripts/bound.py` holds as a constant (`MEM_DW_BITS`, `SFU_SLICES`), change it there
-too; otherwise the bound you see is the base machine's.
+**Capacity** is the **whole chip's**, the same roof the card's η is
+against (`bound.chip_peak`): one core's rates from the profile's target file
+(vector length, issue width, whether it has an SFU, the matrix unit) times
+the device's cores, and memory through the device's outlets (MEM_PORTS of
+AXI_DATA_W bits each). Work several units can do is divided by their summed
+rate, so the bound assumes no algorithm. In a run the harness gives the
+script the base machine's roof (`TNCA_CHIP_ROOF`), computed by the card's own
+code, and it stays the base machine's whatever you change: a faster machine
+shows as fewer cycles against the same L, so η rises. Outside a run the
+script forms the roof from the device your `TNCA_BACKEND_ARGS` names.
 
-A profile is one core, so L and η are **one core's**, exactly as the
-evaluation's own bound is; the script says so beside every L. On a machine
-with several cores of the profile, η still compares cases with each other
-and a version with the one before, which is what you need it for; it is
-not how close that machine is to its own limit. How you stand against the
-base machine is the ratio of its cycles to yours on the same case, so
-measure the base before you change it and keep those numbers (`--json`).
+η for a case of yours and η in a card reply are therefore one quantity: the
+script prints η, the resource that binds, and what the case did per cycle
+against that resource's rate (bytes per cycle against the outlets, for a
+case bound by memory). How you stand against the base machine is still the
+ratio of its cycles to yours on the same case, so measure the base before
+you change it and keep those numbers (`--json`).
 
 Read the two regimes apart. A case bound by `fp_lane` has its arithmetic as
 the limit: the compiler's schedule, the matrix unit's utilisation, the
-pipeline. A case bound by `mem_bytes` has the memory port as the limit: how
-many bytes the program really moves against how many it must. A change that
+pipeline. A case bound by `mem_bytes` has the memory outlets as the limit: how
+many bytes the program really moves, and how fast, against how many it must. A change that
 helps one regime can do nothing for the other, and a benchmark built on this
 method has cases in both.
 

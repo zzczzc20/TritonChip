@@ -12,6 +12,11 @@ cycle = 19.2 GB/s). The base machine's for every commit, so a machine change sho
 
 What an agent is given (services.py, fpga_slow.py): one entry per point of the set it was measured on, in
 the set's fixed order and never named -- its number, the resource that binds, eta, and the base's eta.
+
+And, in its environment (`ENV`, runner.run_agent), the roof itself: the same chip rates per operand format,
+the machine and never a point, so the test-case skill's eta for a case of its own is against the card's roof
+(decided 2026-11-11: one eta, the whole chip's; the skill's one-core bound had a 64-bit memory port that R41's
+512-bit core ports no longer have).
 """
 
 from __future__ import annotations
@@ -23,28 +28,43 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-VERSION = "chip-roofline/1"
+VERSION = "chip-roofline/2"
 # How the bound's resources are named to an agent.
 NAMES = {"fp_lane": "compute", "mem_bytes": "memory", "int_lane": "integer", "sfu_lane": "special-function",
          "mma_mac": "matrix", "dependency": "dependency"}
+# The variable that carries the chip's roof into an agent's container (agent_roof), read by the test-case
+# skill's scripts/bound.py chip_peak.
+ENV = "TNCA_CHIP_ROOF"
 
+# The chip's rates come before any point, and the registry (torch) only when there are points, so the roof
+# alone can be computed -- and tested -- without torch.
 SCRIPT = r'''
 import json, sys
 sys.path[:0] = ["/work", "/work/python"]
-import archbench.registry as reg
 import archbench.bounds as b
 args = json.loads(sys.argv[1])
 dev = json.load(open("/work/" + args["device"]))
 cores = int(dev["platform"]["core_count"])
 mem = int(dev["uncore"]["MEM_PORTS"]) * int(dev["platform"]["AXI_DATA_W"]) // 8
-out = {"cores": cores, "mem_bytes_per_cycle": mem, "points": {}}
+
+
+def chip(dtype):
+    """One core's spec_peak for the operand format times the cores; memory through the outlets."""
+    peak = dict(b.tnca_peak(args["profile"], dtype))
+    rates = {k: v * cores for k, v in peak["rates"].items() if k != "mem_bytes"}
+    rates["mem_bytes"] = mem
+    peak["rates"] = rates
+    return peak
+
+
+out = {"cores": cores, "mem_bytes_per_cycle": mem, "points": {},
+       "chip": {f or "any": chip(f)["rates"] for f in [None, *sorted(b._r38_peaks.MMA_GROUP)]}}
+if args["points"]:
+    import archbench.registry as reg
 for pid in args["points"]:
     try:
         p = reg.get(pid)
-        peak = dict(b.tnca_peak(args["profile"], p.dtype))
-        rates = {k: v * cores for k, v in peak["rates"].items() if k != "mem_bytes"}
-        rates["mem_bytes"] = mem
-        peak["rates"] = rates
+        peak = chip(p.dtype)
         d = p.demand
         w = b._r38_bounds.Workload(p.id, p.family, p.kind, fp_ops=d.macs + d.fp_ops, macs=d.macs,
                                    sfu_ops=d.sfu_ops, read_bytes=d.read_bytes, write_bytes=d.write_bytes)
@@ -126,4 +146,14 @@ def view(bounds: Optional[dict], rows: list, order: list, family=None) -> Option
     return out
 
 
-__all__ = ["NAMES", "VERSION", "key", "scored_points", "table", "view"]
+def agent_roof(value: Optional[dict]) -> Optional[dict]:
+    """What an agent's environment gets as `ENV`: the base machine's whole-chip rates per operand format ("any":
+    no format, the matrix engine's generous end), the roof of every eta the card replies with. The machine only:
+    no point, no point's bound. None when the table has no chip rates (a table of chip-roofline/1)."""
+    if not value or not value.get("chip"):
+        return None
+    return {"version": value.get("version"), "profile": value.get("profile"), "cores": value.get("cores"),
+            "mem_bytes_per_cycle": value.get("mem_bytes_per_cycle"), "rates": value["chip"]}
+
+
+__all__ = ["ENV", "NAMES", "VERSION", "agent_roof", "key", "scored_points", "table", "view"]

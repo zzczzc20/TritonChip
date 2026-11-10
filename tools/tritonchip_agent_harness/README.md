@@ -283,8 +283,10 @@ point (§17). It is machine-independent, as ArchBench is: it defines
 what is measured (each launch's cycles from start to end, summed; the
 protocol; the bound), and the machine that is measured on is the
 environment's, selected by the backend settings the task text gives. The
-bound is the evaluation's per-profile one, so L and η are one core's on every
-machine, and the script says so (2026-10-28).
+bound is the card's whole-chip one (2026-11-11; it was one core's from
+2026-10-28): in a run, the base machine's roof from the harness
+(`TNCA_CHIP_ROOF`, `roofline.agent_roof`), elsewhere the device the backend
+settings name.
 
 ### 6.4 Three sets, and what flows back
 
@@ -1342,6 +1344,7 @@ service request's snapshot; each role's CPU time.
 | 2026-11-08 | An infrastructure failure of a flow is retried on another build machine, never on one that failed it (RSCL, missing its part's bitstream data, was given the 0-8 retry); with none left it is not retried. A flow that wrote no image keeps the routed design's timing (Design Timing Summary, the FPGA harness's reading) and the agent sees it. The FPGA harness doctor checks the part's bitstream data (`bitstream_data`). |
 | 2026-11-08 | The evaluator measures its points as a pool of `jobs` (`xargs -P`), not in waves that wait for their slowest point: about 10 minutes less per validation request of R41's formal task, about an hour less for its final set. |
 | 2026-11-08 | A task can ask for the performance models' environment (`models`): the site's SystemC installation (`systemc`) read-only at `/opt/systemc` and the model hook at `/opt/tnca-models`, put on `PYTHONPATH` only by the command that runs a model. A `!` hide entry shows a directory inside a hidden one, the longest entry deciding, so whatever is added later under the hidden directory stays hidden (R41's formal task shows `tools/performance_harness/systemc/` and hides the rest). |
+| 2026-11-11 | One η, the whole chip's (user, after R41-F3): the test-case skill's η for an agent's own case is against the card's roof, not one core's. Its one-core bound took memory as one 64-bit port per core (`MEM_DW_BITS = 64`), while R41's cores have 512-bit ports, so an elementwise add of the scored set read 0.897 locally and 0.046 on the card (8x the port, 3x the cores, the model's cycles 0.82x the card's). The run's roofline table now also holds the base machine's chip rates per operand format (`chip-roofline/2`); `roofline.agent_roof` gives them, and no point, to every agent as `TNCA_CHIP_ROOF`; `bound.chip_peak` uses them as given, and outside a run forms them from the device `TNCA_BACKEND_ARGS` names. `tnca_case.py` prints what the case did per cycle against the binding rate, and a case's launches grouped by kernel (a model is the sum of its kernels). `reports/r41_f3_stop_analysis_20261110.md` (main checkout). |
 
 **Open.**
 

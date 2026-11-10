@@ -105,12 +105,38 @@ def skill_text() -> str:
                      if f.is_file() and "__pycache__" not in f.parts and not f.name.startswith("."))
 
 
+def core_only(peak: dict) -> dict:
+    """The evaluator's one-core spec_peak without its memory port: the skill keeps one core's compute rates
+    only, and takes memory from the whole chip (2026-11-11)."""
+    out = dict(peak)
+    out["rates"] = {k: v for k, v in peak["rates"].items() if k != "mem_bytes"}
+    out["sources"] = {k: v for k, v in peak["sources"].items() if k != "mem_bytes"}
+    return out
+
+
+DEVICES = sorted(p.stem for p in (ROOT / "spec" / "devices").glob("*.json"))
+
+
+def card_roof(profile: str, device: str, points=()) -> dict:
+    """What the card's roofline code (roofline.SCRIPT, as the harness runs it in the toolchain container)
+    computes for this checkout: the whole chip's rates per operand format, and each point's bound."""
+    import subprocess
+    from tritonchip_agent_harness import roofline
+    with tempfile.TemporaryDirectory() as out:
+        script = roofline.SCRIPT.replace('"/work', f'"{ROOT}').replace('"/out/', f'"{out}/')
+        args = {"profile": profile, "device": f"spec/devices/{device}.json", "points": list(points)}
+        proc = subprocess.run([sys.executable, "-c", script, json.dumps(args)], capture_output=True, text=True)
+        if proc.returncode != 0:
+            raise AssertionError(proc.stderr[-2000:])
+        return json.loads(Path(out, "roofline.json").read_text())
+
+
 class BoundEquivalence(unittest.TestCase):
     def test_spec_peak_equals_the_evaluators(self):
         profiles = single_core_profiles()
         self.assertTrue(profiles)
         for p in profiles:
-            self.assertEqual(skill_bound.spec_peak(p), r38_peaks.spec_peak(p), p)
+            self.assertEqual(skill_bound.spec_peak(p), core_only(r38_peaks.spec_peak(p)), p)
         multi = set(PROFILES) - set(profiles)
         for p in multi:
             with self.assertRaises(ValueError):
@@ -134,7 +160,7 @@ class BoundEquivalence(unittest.TestCase):
     def test_hbm_profile_peak_equals_the_evaluators(self):
         """archbench/bounds.py tnca_peak: an `/hbm` profile is its base profile's core on another memory."""
         for p in single_core_profiles():
-            theirs = dict(r38_peaks.spec_peak(p), profile=p + "/hbm")
+            theirs = core_only(dict(r38_peaks.spec_peak(p), profile=p + "/hbm"))
             self.assertEqual(skill_bound.spec_peak(p + "/hbm"), theirs, p)
         try:
             sys.path.insert(0, str(ROOT / "python"))
@@ -142,7 +168,11 @@ class BoundEquivalence(unittest.TestCase):
         except Exception as exc:  # archbench needs torch or tnca here
             self.skipTest(f"archbench.bounds not importable here: {exc}")
         for p in single_core_profiles():
-            self.assertEqual(skill_bound.spec_peak(p + "/hbm"), live.tnca_peak(p + "/hbm"), p)
+            try:
+                theirs = live.tnca_peak(p + "/hbm")
+            except ImportError as exc:  # tnca.device, for the /hbm name, needs the toolchain
+                self.skipTest(f"archbench.bounds.tnca_peak of an /hbm profile not available here: {exc}")
+            self.assertEqual(skill_bound.spec_peak(p + "/hbm"), core_only(theirs), p)
 
     def test_lower_bound_equals_the_evaluators(self):
         for p in single_core_profiles():
@@ -160,14 +190,93 @@ class BoundEquivalence(unittest.TestCase):
         with self.assertRaises(skill_bound.BoundUnavailable):
             skill_bound.lower_bound(skill_bound.Workload("z", "x", "y"), peak)
 
-    def test_demand_bound_is_archbenchs_formula(self):
-        """A Demand goes to the bound the way archbench/bounds.py sends a point's: MACs count once as FP ops."""
+    def test_demand_bound_is_the_cards_formula(self):
+        """A Demand goes to the bound the way the card sends a point's (roofline.SCRIPT): MACs count once as FP
+        ops, against the whole chip's rates."""
         d = skill_bound.Demand(macs=24 * 40 * 48, fp_ops=24 * 48, sfu_ops=5, read_bytes=1000, write_bytes=500)
-        for p in single_core_profiles():
-            w = r38_bounds.Workload("x", "f", "k", fp_ops=d.macs + d.fp_ops, macs=d.macs, sfu_ops=d.sfu_ops,
-                                    read_bytes=d.read_bytes, write_bytes=d.write_bytes)
-            self.assertEqual(skill_bound.bound(d, p), r38_bounds.lower_bound(w, r38_peaks.spec_peak(p)), p)
+        w = r38_bounds.Workload("x", "f", "k", fp_ops=d.macs + d.fp_ops, macs=d.macs, sfu_ops=d.sfu_ops,
+                                read_bytes=d.read_bytes, write_bytes=d.write_bytes)
+        for dev in DEVICES:
+            for p in single_core_profiles()[:4]:
+                chip = card_roof(p, dev)["chip"]
+                self.assertEqual(skill_bound.bound(d, p, device=dev),
+                                 r38_bounds.lower_bound(w, {"rates": chip["any"]}), (p, dev))
+                self.assertEqual(skill_bound.bound(d, p, device=dev, mma_dtype="fp16"),
+                                 r38_bounds.lower_bound(w, {"rates": chip["fp16"]}), (p, dev))
         self.assertEqual(skill_bound.eta(50.0, 100), 0.5)
+
+
+class ChipRoof(unittest.TestCase):
+    """One eta (2026-11-11): the skill's L for a case is the card's L, the whole chip of the base machine.
+    The one-core bound it replaces took memory as a 64-bit port per core; R41's are 512 bits."""
+
+    def test_the_chip_rates_are_the_cards_for_every_device_and_format(self):
+        self.assertTrue(DEVICES)
+        for dev in DEVICES:
+            for p in single_core_profiles():
+                card = card_roof(p, dev)
+                for fmt in [None, *sorted(skill_bound.MMA_GROUP)]:
+                    mine = skill_bound.chip_peak(p, mma_dtype=fmt, device=dev)
+                    self.assertEqual(mine["rates"], card["chip"][fmt or "any"], (dev, p, fmt))
+                self.assertEqual(mine["cores"], card["cores"], (dev, p))
+
+    def test_r41_memory_is_three_512_bit_outlets(self):
+        card = card_roof("core-vrf-sync-v5-x8-g2c4-dp-board", "u280-3core-r41")
+        self.assertEqual((card["cores"], card["mem_bytes_per_cycle"]), (3, 192))
+        self.assertEqual(card["chip"]["fp16"]["mem_bytes"], 192)
+
+    def test_a_runs_roof_is_used_as_given(self):
+        """In a run the harness's TNCA_CHIP_ROOF wins over the profile and the device the shell names: the roof
+        stays the base machine's, whatever the agent changes."""
+        from unittest import mock
+        from tritonchip_agent_harness import roofline
+        table = card_roof("core-vrf-sync-v5-x8-g2c4-dp-board", "u280-3core-r41")
+        table.update(version=roofline.VERSION, profile="core-vrf-sync-v5-x8-g2c4-dp-board")
+        roof = json.dumps(roofline.agent_roof(table))
+        d = skill_bound.Demand(read_bytes=65536, write_bytes=32768, fp_ops=16384)
+        env = {skill_bound.ROOF_ENV: roof, "TNCA_BACKEND_ARGS": json.dumps({"device": "u280-3core-r40"})}
+        with mock.patch.dict("os.environ", env):
+            peak = skill_bound.chip_peak("core-sim", mma_dtype="fp16")
+            self.assertEqual(peak["rates"], table["chip"]["fp16"])
+            L, binding, _ = skill_bound.bound(d, "core-sim", mma_dtype="fp16")
+        self.assertEqual((L, binding), (98304 / 192, "mem_bytes"))
+        got = skill_bound.achieved(d, 11168, peak)["mem_bytes"]
+        self.assertAlmostEqual(got["per_cycle"], 98304 / 11168)
+        self.assertEqual(got["rate"], 192)
+
+    def test_no_roof_and_no_device_is_no_bound(self):
+        from unittest import mock
+        with mock.patch.dict("os.environ", {}, clear=True):
+            with self.assertRaises(skill_bound.BoundUnavailable):
+                skill_bound.chip_peak("core-sim")
+        with mock.patch.dict("os.environ", {"TNCA_BACKEND_ARGS": json.dumps({"device": "u280-3core-r41"})},
+                             clear=True):
+            self.assertEqual(skill_bound.chip_peak("core-sim")["rates"]["mem_bytes"], 192)
+
+    def test_no_one_core_memory_constant_is_left(self):
+        text = (SKILL / "scripts" / "bound.py").read_text(encoding="utf-8")
+        self.assertNotIn("MEM_DW_BITS", text)
+        self.assertNotIn("mem_bytes", skill_bound.spec_peak("core-sim")["rates"])
+
+    @unittest.skipUnless(HAVE_TORCH, "torch is not installed here; run where it is")
+    def test_every_scored_points_bound_is_the_cards(self):
+        """The R41 task's scored points: the skill's L from each point's own demand equals the card's table."""
+        from archbench import registry
+        task = load_task(HERE / "tasks" / "r41-dp-formal")
+        ev = task.evaluation
+        points = list(dict.fromkeys(list(ev["validation"]) + list(ev.get("board_validation") or [])))
+        card = card_roof(ev["profile"], ev["device"], points)["points"]
+        checked = 0
+        for pid in points:
+            if "error" in card[pid]:
+                continue
+            p = registry.get(pid)
+            d = skill_bound.Demand(macs=p.demand.macs, fp_ops=p.demand.fp_ops, sfu_ops=p.demand.sfu_ops,
+                                   read_bytes=p.demand.read_bytes, write_bytes=p.demand.write_bytes)
+            L, binding, _ = skill_bound.bound(d, ev["profile"], mma_dtype=p.dtype, device=ev["device"])
+            self.assertEqual((L, binding), (card[pid]["cycles"], card[pid]["binding"]), pid)
+            checked += 1
+        self.assertGreater(checked, 0)
 
 
 @unittest.skipUnless(HAVE_TORCH, "torch is not installed here; run where it is")
@@ -552,7 +661,35 @@ class ModelCasesOnePerProcess(unittest.TestCase):
         self.assertEqual([c.args[0][2] for c in run.call_args_list], ["a.py", "b.py"])
         for c in run.call_args_list:
             argv = c.args[0]
-            self.assertEqual(argv[3:], ["--profile", "p", "--opt-level", "2", "--json", "/tmp/out.jsonl"])
+            self.assertEqual(argv[3:], ["--profile", "p", "--opt-level", "2", "--kernels", "8",
+                                        "--json", "/tmp/out.jsonl"])
+
+    def test_a_case_of_several_launches_is_listed_by_kernel(self):
+        """A model is the sum of its kernels: grouped by (kernel, grid), largest first, shares adding to one;
+        the summary prints the top rows and what the rest add up to, and the binding rate beside eta."""
+        mod = self.runner_module()
+        per_launch = ([{"kernel": "attn", "grid": [1158, 1, 1], "cycles": 1300}] * 2
+                      + [{"kernel": "kv", "grid": [12, 1, 1], "cycles": 400}] * 2
+                      + [{"kernel": f"k{i}", "grid": [4, 1, 1], "cycles": 10} for i in range(10)])
+        rows = mod.kernels(per_launch)
+        self.assertEqual([(r["kernel"], r["launches"], r["cycles"]) for r in rows[:2]],
+                         [("attn", 2, 2600), ("kv", 2, 800)])
+        self.assertAlmostEqual(sum(r["share"] for r in rows), 1.0, places=3)
+        total = sum(e["cycles"] for e in per_launch)
+        rec = {"status": "pass", "case": "m.py", "tol": 0.05, "problems": [],
+               "correctness": {"max_rel_err": 1e-3},
+               "time": {"device_cycles": total, "launches": len(per_launch), "per_launch": per_launch,
+                        "kernels": rows},
+               "eta": 0.0015, "bound": {"cycles": 5.1, "binding": "mem_bytes"},
+               "achieved": {"mem_bytes": {"per_cycle": 0.25, "rate": 192}}}
+        text = mod.summary(rec, 3)
+        self.assertIn("memory binds: 0.25 of 192 B/cycle", text)
+        self.assertIn("whole chip", text)
+        self.assertIn("1158x1x1", text)
+        self.assertIn("... 9 more kernel(s)", text)
+        self.assertEqual(len(text.splitlines()), 6)       # the case, the header, three rows, the rest
+        one = dict(rec, time=dict(rec["time"], launches=1, per_launch=per_launch[:1], kernels=rows[:1]))
+        self.assertNotIn("share", mod.summary(one))
 
     def test_the_simulator_and_a_single_case_stay_in_process(self):
         for backend, cases in (("", ["a.py", "b.py"]), ("systemc-tlm-grid", ["a.py"])):

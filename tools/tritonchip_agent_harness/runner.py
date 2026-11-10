@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from . import adapters, doctor, provider
+from . import adapters, doctor, provider, roofline
 from . import skills as skills_
 from .provider import AGENT_HOME, AgentContainer, Mount
 from .siteconfig import Account, Site
@@ -218,6 +218,11 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
         if services is not None:
             extra += [Mount(services.start(), SERVICE_DIR), Mount(doctor.HERE / "service_cli.py", SERVICE_CLI)]
             env["TNCA_SERVICE"] = f"{SERVICE_DIR}/service.sock"
+            # The card's roof, for the test-case skill's eta (roofline.agent_roof: the machine, never a point).
+            roof = roofline.agent_roof(getattr(getattr(services, "shared", None), "roofline", None))
+            if roof:
+                env[roofline.ENV] = json.dumps(roof, sort_keys=True, separators=(",", ":"))
+                result["chip_roof"] = roof
         staged = skills_.stage(selected, run_dir / "skills") if selected else None
         mounts = agent_mounts(socket_dir, workspace, extra, skills=staged,
                               systemc=site.systemc if models else None)

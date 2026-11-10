@@ -34,6 +34,25 @@ class View(unittest.TestCase):
         self.assertIsNone(roofline.view(None, rows, ["op.add/tiny/y"]))
 
 
+class AgentRoof(unittest.TestCase):
+    """The roof every agent gets (2026-11-11): the base machine's chip rates, never a point."""
+
+    def test_the_machine_only(self):
+        table = dict(BOUNDS, version=roofline.VERSION, profile="p", base_commit="a" * 40,
+                     chip={"any": {"mem_bytes": 192, "fp_lane": 384}, "fp16": {"mem_bytes": 192, "fp_lane": 192}})
+        roof = roofline.agent_roof(table)
+        self.assertEqual(roof, {"version": roofline.VERSION, "profile": "p", "cores": 3, "mem_bytes_per_cycle": 192,
+                                "rates": table["chip"]})
+        text = json.dumps(roof)
+        for p in BOUNDS["points"]:
+            self.assertNotIn(p, text)
+        self.assertNotIn("points", text)
+
+    def test_none_without_chip_rates(self):
+        self.assertIsNone(roofline.agent_roof(None))
+        self.assertIsNone(roofline.agent_roof(BOUNDS))          # a chip-roofline/1 table
+
+
 class Table(unittest.TestCase):
     def test_the_table_is_computed_once_per_base_and_kept(self):
         task = Task(task_id="t", kind="cross-layer", base_commit="a" * 40, design=("compiler/",), evaluator_owned=(),

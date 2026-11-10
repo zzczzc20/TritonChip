@@ -106,9 +106,10 @@ most are bound by memory and below 2 %, the matrix products reach about 15 %.
 The reply to a scoring request lists every program of the scored set in a fixed
 order, numbered and never named: its family, the resource that binds it, its η
 and the base's η. The test-case
-skill's `tnca_case.py` prints η and the binding resource for a case of your own,
-against one core's limit (the evaluation's per-core bound): it compares your
-cases with each other, and a version with the one before.
+skill's `tnca_case.py` prints the same η for a case of your own, against the
+same whole-chip limit of the base machine, with the resource that binds and
+what the case did per cycle against that resource's rate; for a case of
+several launches it lists them by kernel, largest share of the cycles first.
 
 Work from the bottleneck. Before you change something, find where the time of
 the programs furthest from their limit goes: which resource binds them, and why

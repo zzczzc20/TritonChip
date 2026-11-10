@@ -14,21 +14,24 @@ written once. Undercounting is safe (the bound only gets looser, eta lower);
 overcounting lets a program beat its own bound, which the evaluation refuses
 rather than clips.
 
-Capacities are spec_peak: what the configuration can serve per cycle, read
-from the profile's target file and from RTL facts, never from a measurement.
-Work that several units can execute is divided by their SUMMED rate (a MAC can
-run on the matrix unit or on the vector lanes), and a transcendental counts as
-at least one FP operation, so the strict bound assumes no algorithm.
+Capacities are the WHOLE CHIP's (chip_peak), the roof the card's eta is
+against, never a measurement: one core's spec_peak (the profile's target file
+and RTL facts) times the device's cores, and memory through the device's
+MEM_PORTS outlets of AXI_DATA_W bits. In a run the harness gives the base
+machine's chip rates in TNCA_CHIP_ROOF, computed by the card's own code, and
+those are used as they are; elsewhere they are formed from the device that
+TNCA_BACKEND_ARGS names. Work that several units can execute is divided by
+their SUMMED rate (a MAC can run on the matrix unit or on the vector lanes),
+and a transcendental counts as at least one FP operation, so the strict bound
+assumes no algorithm.
 
-What the copied constants assume: one core of the profile; MEM_DW_BITS = 64
-(one memory port of 8 bytes per cycle, rtl/core/tnca_core.v); one SFU slice.
-If your design changes those, change them here too, or the bound is the base
-machine's, not yours. L is one core's on every machine, as the evaluation's
-own bound is.
+The roof is the base machine's in a run, whatever you change: a faster
+machine shows as fewer cycles T against the same L, so eta rises.
 """
 from dataclasses import dataclass, field
 import json
 import math
+import os
 from pathlib import Path
 
 
@@ -93,20 +96,21 @@ class Demand:
 
 
 # ---------------------------------------------------------------------------
-# spec_peak: per-cycle service rates of one single-core profile.
+# spec_peak: one core's compute rates; chip_peak: the whole chip's, memory too.
 # ---------------------------------------------------------------------------
 
-MEM_DW_BITS = 64         # rtl/core/tnca_core.v parameter MEM_DW
 SFU_SLICES = 1           # rtl/core/tnca_sfu.v: a single four-function slice
+ROOF_ENV = 'TNCA_CHIP_ROOF'   # the harness's roof for a run (its roofline.agent_roof)
 
 SOURCES = {
     'fp_lane': 'rtl/core/tnca_vector_fpu.v (VLEN lanes) + rtl/core/tnca_matrix.v (VLEN MACs)',
     'mma_mac': 'rtl/core/tnca_matrix.v: 16 MACs, one k per 16 cycles',
     'int_lane': 'rtl/core/tnca_vector_alu.v: VLEN lanes, single cycle',
     'sfu_lane': 'rtl/core/tnca_sfu.v: one slice, one lane per cycle',
-    'mem_bytes': 'rtl/core/tnca_mem_mux.v: LSU and transfer engine share one MEM_DW port',
     'issue': 'target file issue.width',
 }
+MEM_SOURCE = ('the device description: MEM_PORTS outlets of AXI_DATA_W bits '
+              '(a core\'s port is as wide on a HYBRID_LSU core, rtl/tile/tnca_tile.v CORE_DW)')
 
 
 def target_for(profile):
@@ -148,13 +152,13 @@ def mma_rate(target, mma_dtype=None):
 
 
 def spec_peak(profile='core-sim', *, target=None, overrides=None, mma_dtype=None):
-    """Per-cycle service rates for one single-core profile. `mma_dtype` is the
-    matrix operand format of the case being bounded; it matters only on a
-    profile with the matrix_dp capability (mma_rate)."""
+    """One core's compute rates for a single-core profile, as the evaluation's
+    spec_peak has them, without memory: memory is the chip's (chip_peak).
+    `mma_dtype` is the matrix operand format of the case being bounded; it
+    matters only on a profile with the matrix_dp capability (mma_rate)."""
     if profile.endswith('/hbm') and target is None:
         # As the evaluation has it (archbench/bounds.py tnca_peak): HBM changes the
-        # backing memory, while this profile still has the same single core and its
-        # shared 64-bit memory ingress.
+        # backing memory, while this profile still has the same single core.
         peak = spec_peak(base_profile(profile), overrides=overrides, mma_dtype=mma_dtype)
         peak['profile'] = profile
         return peak
@@ -169,7 +173,6 @@ def spec_peak(profile='core-sim', *, target=None, overrides=None, mma_dtype=None
         mma_mac=mma,
         int_lane=vlen,
         sfu_lane=SFU_SLICES if has_sfu else 0,
-        mem_bytes=MEM_DW_BITS // 8,
         issue=t['issue']['width'],
     )
     peak.update(overrides or {})
@@ -178,6 +181,45 @@ def spec_peak(profile='core-sim', *, target=None, overrides=None, mma_dtype=None
     if t['capabilities'].get('matrix_dp'):
         out.update(mma_dtype=mma_dtype, sources=dict(SOURCES, **MMA_DP_SOURCES))
     return out
+
+
+def device_named():
+    """The device the environment measures on: TNCA_BACKEND_ARGS' `device`, or None."""
+    try:
+        return json.loads(os.environ.get('TNCA_BACKEND_ARGS') or '{}').get('device')
+    except (ValueError, AttributeError):
+        return None
+
+
+def chip_peak(profile='core-sim', *, mma_dtype=None, device=None):
+    """The whole chip's per-cycle rates: the roof of the card's eta.
+
+    In a run (TNCA_CHIP_ROOF set, and no `device` asked for) the base machine's,
+    as the harness computed them with the card's own code: used as given, the
+    profile argument aside. Otherwise one core's spec_peak times the device's
+    core_count, and memory MEM_PORTS x AXI_DATA_W / 8 bytes per cycle, from
+    spec/devices/<device>.json (`device`, else the one TNCA_BACKEND_ARGS names).
+    """
+    roof = os.environ.get(ROOF_ENV)
+    if roof and device is None:
+        r = json.loads(roof)
+        key = mma_dtype or 'any'
+        if key not in r['rates']:
+            raise ValueError(f'no chip rate for operand format {mma_dtype!r}')
+        return dict(profile=r.get('profile'), unit='per-cycle', rates=dict(r['rates'][key]), kind='chip',
+                    cores=r.get('cores'), mma_dtype=mma_dtype,
+                    source=f'{ROOF_ENV}: the base machine\'s whole chip, as the card\'s eta')
+    device = device or device_named()
+    if not device:
+        raise BoundUnavailable('no device for the whole chip\'s roof: a run sets TNCA_CHIP_ROOF; elsewhere '
+                               'TNCA_BACKEND_ARGS must name a device of spec/devices/')
+    dev = json.loads((repo_root() / 'spec' / 'devices' / f'{device}.json').read_text())
+    cores = int(dev['platform']['core_count'])
+    core = spec_peak(profile, mma_dtype=mma_dtype)
+    rates = {k: v * cores for k, v in core['rates'].items()}
+    rates['mem_bytes'] = int(dev['uncore']['MEM_PORTS']) * int(dev['platform']['AXI_DATA_W']) // 8
+    return dict(profile=profile, unit='per-cycle', rates=rates, kind='chip', cores=cores, mma_dtype=mma_dtype,
+                source=f'spec/devices/{device}.json x the profile\'s core; memory: {MEM_SOURCE}')
 
 
 # ---------------------------------------------------------------------------
@@ -255,11 +297,22 @@ def workload(demand, id='case', operator='case', category='case'):
                     sfu_ops=demand.sfu_ops, read_bytes=demand.read_bytes, write_bytes=demand.write_bytes)
 
 
-def bound(demand, profile, *, scoped=False, mma_dtype=None):
-    """(cycles, binding resource, terms) for a Demand on a profile. `mma_dtype`
-    is the case's matrix operand format (its dtype), as the evaluation passes a
-    point's; it only matters on a profile with the matrix_dp capability."""
-    return lower_bound(workload(demand), spec_peak(profile, mma_dtype=mma_dtype), scoped=scoped)
+def bound(demand, profile, *, scoped=False, mma_dtype=None, device=None):
+    """(cycles, binding resource, terms) for a Demand against the whole chip
+    (chip_peak), as the card bounds a point. `mma_dtype` is the case's matrix
+    operand format (its dtype), as the evaluation passes a point's; it only
+    matters on a profile with the matrix_dp capability."""
+    return lower_bound(workload(demand), chip_peak(profile, mma_dtype=mma_dtype, device=device), scoped=scoped)
+
+
+def achieved(demand, cycles, peak):
+    """What a run of `cycles` did per cycle against each rate it is bounded by:
+    {resource: {per_cycle, rate}} -- memory bytes, FP lane operations (a
+    transcendental counts as one), matrix MACs."""
+    w, rates = workload(demand), peak['rates']
+    done = {'mem_bytes': w.required_bytes, 'fp_lane': w.fp_ops + w.sfu_ops, 'mma_mac': w.macs}
+    return {k: dict(per_cycle=v / cycles, rate=rates[k])
+            for k, v in done.items() if v and cycles and rates.get(k)}
 
 
 def eta(L, cycles):

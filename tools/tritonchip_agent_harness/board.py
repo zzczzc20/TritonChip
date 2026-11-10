@@ -322,10 +322,11 @@ def health_tree(site: Site, repo: Path, task: Task) -> Path:
         if (root / "staged").exists():
             return host
         host, _dev = evaluator._trees(repo, task, None, root)
-        out = root / "stage"
-        out.mkdir(exist_ok=True)
-        out.chmod(0o777)
-        status = evaluator._run(_container(site, f"tnca-health-stage-{key}", host, out, root / "caches", None, {}),
+        out, caches = root / "stage", root / "caches"
+        for d in (out, caches):  # a bind mount's source must exist, or docker refuses the run (exit 125)
+            d.mkdir(exist_ok=True)
+            d.chmod(0o777)
+        status = evaluator._run(_container(site, f"tnca-health-stage-{key}", host, out, caches, None, {}),
                                 ["sh", "-c", "cd /work && make -s python/tnca/data/.staged > /out/stage.log 2>&1"],
                                 1800)
         if status != 0:

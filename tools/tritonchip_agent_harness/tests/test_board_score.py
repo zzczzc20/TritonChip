@@ -295,5 +295,30 @@ class OnCardGuards(unittest.TestCase):
         self.assertIn("health check", got["visible"]["why"])
 
 
+class HealthTree(unittest.TestCase):
+    def test_every_bind_mount_source_exists_when_the_stage_runs(self):
+        # docker refuses a bind mount whose source is missing (exit 125): R41-F3's card smoke, 2026-11-10.
+        from tritonchip_agent_harness import board, evaluator
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            site = types.SimpleNamespace(state_dir=root / "state", images={"toolchain": "img"}, cpus=2,
+                                         memory="4g", pids=256)
+            t = types.SimpleNamespace(base_commit="b" * 40, evaluation={"platform": {"commit": "p" * 40}})
+            seen = []
+
+            def trees(repo, task, candidate, where):
+                (where / "host-tree").mkdir(parents=True)
+                return where / "host-tree", where / "device-tree"
+
+            def run(c, command, timeout):
+                seen.extend((m.source, m.source.is_dir()) for m in c.mounts)
+                return 0
+            with mock.patch.object(evaluator, "_trees", trees), mock.patch.object(evaluator, "_run", run):
+                host = board.health_tree(site, root, t)
+                self.assertEqual(board.health_tree(site, root, t), host)   # staged once, then kept
+            self.assertTrue(seen)
+            self.assertEqual([s for s, ok in seen if not ok], [])
+
+
 if __name__ == "__main__":
     unittest.main()

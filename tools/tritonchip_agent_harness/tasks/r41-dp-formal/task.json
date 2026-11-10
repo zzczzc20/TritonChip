@@ -339,6 +339,7 @@
    "mode": "board",
    "flows": 4,
    "flows_at_once": 2,
+   "flows_at_once_per_island": 1,
    "board_runs": 0,
    "flow_minutes": 480,
    "board_minutes": 120,

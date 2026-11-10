@@ -648,6 +648,8 @@ def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir
         outcome = classify(pipe, (task.evaluation.get("certify") or {}).get("clock_mhz"))
         attempts.append({"remote_id": remote_id, "status": pipe.get("status"), "outcome": outcome,
                          "build_host": host, **({"shared_slot": slot} if slot else {})})
+        # What the status shows while the next attempt waits or runs: each attempt's end, never its machine.
+        job["flow_attempts"] = [{"status": a.get("status"), "outcome": a.get("outcome")} for a in attempts]
         if outcome in ("infra", "timeout"):
             # No image, but the design may have been routed: what its timing came to is kept.
             summary = routed_timing(site, pipe.get("run_id") or remote_id, host)
@@ -694,14 +696,25 @@ def _cycles_view(points: list, got: dict, sim_rows: dict) -> dict:
 
 def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image: dict, sim: dict,
             job_dir: Path, job: dict, seconds: int, base_xclbin: Optional[str] = None,
-            roofline: Optional[dict] = None, health: Optional[dict] = None) -> dict:
+            roofline: Optional[dict] = None, health: Optional[dict] = None, from_base: bool = False) -> dict:
     """The board's validation points (and the task's board checks) on `image`, tried again on an infrastructure
     failure; the agent's view against the base on the card. outcome: ok, candidate (charged) or infra.
     `health`: the known-answer check after the points ({point, tree}; board.judge_health): a card that fails
-    it makes this an infrastructure failure, and the result is not the candidate's."""
+    it makes this an infrastructure failure, and the result is not the candidate's.
+
+    `from_base`: the snapshot is the base itself (nothing taken, the base's image), so its card measurement IS
+    the run's base measurement (board.baseline): no card session (2026-11-11; in R41-F3 every island's first
+    scoring request was the unchanged base, and one of them spent 35 minutes of card measuring it again).
+    Raises when there is no base measurement to answer from."""
     points = board_points(task)
     fams = (task.evaluation or {}).get("families")
     deadlines, base = None, None
+    if from_base:
+        base = board.baseline(site, repo, task)
+        rec = {"points": base["points"], "session": {"status": "ok", "from_base": True}}
+        return _card_view(site, task, points, fams, rec, "ok", [], base, roofline, sim,
+                          note="this snapshot is the base: its card measurement is the run's base measurement, "
+                               "not a new card session")
     try:
         # Each point's deadline from the base's cycles on the card (2026-11-10); the base measures first.
         base = board.baseline(site, repo, task)
@@ -737,10 +750,20 @@ def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image
         return {"outcome": "candidate", "record": rec, "attempts": attempts,
                 "visible": {"status": "the card did not take the image",
                             "session": (rec.get("session") or {}).get("status"), "why": detail}}
+    return _card_view(site, task, points, fams, rec, outcome, attempts, base, roofline, sim,
+                      note=("the card session ran out of time before every point ran"
+                            if (rec.get("measured") or {}).get("stopped") else None), repo=repo, job=job)
+
+
+def _card_view(site: Site, task: Task, points: list, fams, rec: dict, outcome: str, attempts: list,
+               base: Optional[dict], roofline: Optional[dict], sim: Optional[dict], note: Optional[str] = None,
+               repo: Optional[Path] = None, job: Optional[dict] = None) -> dict:
+    """A card measurement (`rec["points"]`) as the agent's view against the base on the card."""
+    job = job if job is not None else {}
     got = rec["points"]
     visible: dict = {"status": "measured"}
-    if (rec.get("measured") or {}).get("stopped"):
-        visible["note"] = "the card session ran out of time before every point ran"
+    if note:
+        visible["note"] = note
     try:
         base = base or board.baseline(site, repo, task)
         full = evaluator.score(base["points"], got, points,

@@ -305,7 +305,7 @@ def _check_slow(path: Path, slow, ev: dict) -> None:
     """services.fpga_slow (report section 8.9): counts, not minutes, for the run; caps for one request."""
     required = {"mode", "flows", "board_runs", "flow_minutes", "board_minutes"}
     optional = {"base_image_sha256", "board_checks", "certify_after_run", "flows_at_once", "board_faster_than",
-                "relay_cache_gib"}
+                "relay_cache_gib", "flows_at_once_per_island"}
     if not isinstance(slow, dict) or not required <= set(slow) or set(slow) - required - optional:
         raise TaskError(f"{path}: services.fpga_slow needs {', '.join(sorted(required))} "
                         f"(and may have {', '.join(sorted(optional))})")
@@ -325,6 +325,10 @@ def _check_slow(path: Path, slow, ev: dict) -> None:
     at_once = slow.get("flows_at_once", 1)
     if not isinstance(at_once, int) or isinstance(at_once, bool) or at_once < 1:
         raise TaskError(f"{path}: services.fpga_slow.flows_at_once must be an integer >= 1")
+    per = slow.get("flows_at_once_per_island")
+    if per is not None and (not isinstance(per, int) or isinstance(per, bool) or not 1 <= per <= at_once):
+        raise TaskError(f"{path}: services.fpga_slow.flows_at_once_per_island must be an integer from 1 to "
+                        f"flows_at_once")
     faster = slow.get("board_faster_than", 1.0)
     if not isinstance(faster, (int, float)) or isinstance(faster, bool) or not 1.0 <= faster < 2.0:
         raise TaskError(f"{path}: services.fpga_slow.board_faster_than must be in [1, 2)")

@@ -125,14 +125,35 @@ class BoardBroker(unittest.TestCase):
                                  cand and (cand / "files" / "rtl").exists())})
         changed.start()
         self.addCleanup(changed.stop)
-        self.calls = []
+        self.calls, self.from_base, self.no_base = [], [], False
 
     def tearDown(self):
         self.broker.stop()
 
+    def test_the_unchanged_base_is_answered_from_the_base_measurement(self):
+        with self.card():
+            got = self.broker.submit("score")
+            r = self.wait(got["id"])
+        self.assertEqual(self.from_base, [None])
+        self.assertEqual(len(self.calls), 1)            # the one answer, from the base
+        self.assertTrue(self.broker.jobs[got["id"]].get("from_base"))
+        self.assertEqual(r["result"]["validation"]["score"], 1.25)
+
+    def test_with_no_base_measured_the_unchanged_base_goes_to_the_card(self):
+        self.no_base = True
+        with self.card():
+            r = self.wait(self.broker.submit("score")["id"])
+        self.assertEqual(self.from_base, [None])
+        self.assertEqual(len(self.calls), 1)            # the card session it fell back to
+        self.assertEqual(r["state"], "done")
+
     def card(self, outcome="ok", score=1.25, health=None):
         def on_card(site, repo, task, candidate, image, sim, job_dir, job, seconds, base_xclbin=None, roofline=None,
                     health_=None, **kw):
+            if kw.get("from_base"):
+                self.from_base.append(candidate)
+                if self.no_base:
+                    raise board_error("no base measured yet")
             self.calls.append(image)
             visible = {"status": "measured", "validation": {"n": 3, "passed": 3, "speedup_geomean": 1.2,
                                                             "fast_1": 0.67, "score": score},
@@ -293,6 +314,34 @@ class OnCardGuards(unittest.TestCase):
         self.assertEqual(seen["health"]["expect"], 1000)
         self.assertEqual(got["outcome"], "infra")
         self.assertIn("health check", got["visible"]["why"])
+
+    def test_the_base_itself_is_its_base_measurement_with_no_card_session(self):
+        """R41-F3: every island's first scoring request was the unchanged base; one of them took 35 minutes of
+        card to measure it again (2026-11-11)."""
+        repo, base = make_repo()
+        t = board_task(repo, base)
+        site = types.SimpleNamespace(fpga_pipeline={"card": {}})
+        cycles = {"op.add/small/a": 1000, "op.matmul/large/b": 50000, "model.llama_decode/large/c": 70000}
+        baseline = {"points": {p: {"cycles": c, "status": "pass"} for p, c in cycles.items()}}
+        with mock.patch("tritonchip_agent_harness.fpga_slow.board.baseline", return_value=baseline), \
+                mock.patch("tritonchip_agent_harness.fpga_slow.board.measure",
+                           side_effect=AssertionError("no card session for the base")):
+            got = fpga_slow.on_card(site, repo, t, None, {"kind": "base"}, None, Path(tempfile.mkdtemp()),
+                                    {"containers": "c", "remote_id": "r"}, 60, from_base=True)
+        self.assertEqual(got["outcome"], "ok")
+        self.assertEqual(got["visible"]["validation"]["passed"], 3)
+        self.assertAlmostEqual(got["visible"]["validation"]["speedup_geomean"], 1.0)
+        self.assertIn("is the base", got["visible"]["note"])
+        with mock.patch("tritonchip_agent_harness.fpga_slow.board.baseline",
+                        side_effect=board_error("no base yet")):
+            with self.assertRaises(Exception):
+                fpga_slow.on_card(site, repo, t, None, {"kind": "base"}, None, Path(tempfile.mkdtemp()),
+                                  {"containers": "c", "remote_id": "r"}, 60, from_base=True)
+
+
+def board_error(why):
+    from tritonchip_agent_harness.board import BoardError
+    return BoardError(why)
 
 
 class HealthTree(unittest.TestCase):

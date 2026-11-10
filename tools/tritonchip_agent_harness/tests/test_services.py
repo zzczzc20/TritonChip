@@ -191,6 +191,50 @@ class Services(unittest.TestCase):
                 time.sleep(0.05)
         self.assertEqual((broker.shared.flows, broker.busy), (set(), {}))
 
+    def test_a_flow_retrying_after_an_infrastructure_failure_says_so_and_never_where(self):
+        """R41-F3's b5 failed its link on one build machine and waited 55 minutes for the other; its status said
+        only "running" (2026-11-11)."""
+        job = {"id": "b5", "service": "flow", "state": "running", "submitted": time.time() - 60,
+               "waiting_for_build_host": True, "build_hosts_busy": {"x86vivado": "b3"},
+               "flow_attempts": [{"status": "BUILD_FAIL", "outcome": "infra"}]}
+        got = self.broker._summary(job)
+        self.assertTrue(got["waiting_for_a_build_machine"])
+        self.assertEqual(got["earlier_attempts"], [{"status": "BUILD_FAIL", "outcome": "infra"}])
+        self.assertIn("tried again on another build machine", got["note"])
+        self.assertNotIn("x86vivado", json.dumps(got))
+
+    def test_one_island_holds_at_most_its_own_flows_of_the_run(self):
+        """flows_at_once_per_island (2026-11-11): two flows for the run, one per island -- an island's second
+        hardware request is refused while its first runs, and another island's still starts."""
+        import dataclasses
+        slow = {**self.task.services["fpga_slow"], "flows_at_once": 2, "flows_at_once_per_island": 1}
+        task = dataclasses.replace(self.task, services={**self.task.services, "fpga_slow": slow})
+        first = Broker(self.broker.site, self.repo, task, self.ws, Path(tempfile.mkdtemp()) / "run",
+                       runners=self.broker.runners, run_id="run-i0")
+        self.addCleanup(first.stop)
+        other_ws = Path(tempfile.mkdtemp()) / "ws"
+        export(self.repo, self.task.base_commit, (), other_ws)
+        second = Broker(self.broker.site, self.repo, task, other_ws, Path(tempfile.mkdtemp()) / "run",
+                        runners=self.broker.runners, shared=first.shared, run_id="run-i1")
+        self.addCleanup(second.stop)
+        (self.ws / "rtl/core/x.v").write_text("module x; wire a; endmodule\n")
+        with mock.patch.object(Broker, "_timing_met", return_value=True):
+            self.assertEqual(first.submit("fpga-slow")["id"], "l1")
+            (self.ws / "rtl/core/x.v").write_text("module x; wire b; endmodule\n")
+            refused = first.submit("fpga-slow")["refused"]
+            self.assertTrue("at most 1" in refused or "one at a time" in refused, refused)
+            (other_ws / "rtl/core/x.v").parent.mkdir(parents=True, exist_ok=True)
+            (other_ws / "rtl/core/x.v").write_text("module x; wire c; endmodule\n")
+            self.assertEqual(second.submit("fpga-slow")["id"], "l1")
+        self.assertEqual(len(first.shared.flows), 2)
+        self.gate_open.set()
+        for broker in (first, second):
+            for _ in range(100):
+                if broker.handle({"op": "result", "id": "l1"})["state"] == "done":
+                    break
+                time.sleep(0.05)
+        self.assertEqual(first.shared.flows, set())
+
     def test_a_flow_waiting_for_a_build_machine_when_the_agent_stops_is_cancelled_and_not_charged(self):
         broker = self.two_at_once(runners=False)
         waiting = threading.Event()

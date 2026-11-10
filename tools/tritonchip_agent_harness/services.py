@@ -182,6 +182,10 @@ class Shared:
         # the card host anyway (its lease and idle wait).
         self.flows: set = set()
         self.flows_at_once = int(fs.get("flows_at_once", 1))
+        # And at most this many of them one island's (2026-11-11: in R41-F3 one island held both flows of the run
+        # 14 minutes in and the other hardware-writing island was refused nine times). None: no island limit.
+        per = fs.get("flows_at_once_per_island")
+        self.flows_per_island = int(per) if per else None
         # The quick tier's worker is one shared machine: one job at a time across islands (D8a), queued.
         self.quick = threading.BoundedSemaphore(1)
         self.lock = threading.Lock()
@@ -302,7 +306,8 @@ class Broker:
             for job in self.jobs.values():
                 if job["state"] not in ("queued", "running"):
                     continue
-                if job["service"] == "fpga-slow" and job["state"] == "running" and job.get("waiting_for_build_host"):
+                if (job["service"] in ("fpga-slow", "flow") and job["state"] == "running"
+                        and job.get("waiting_for_build_host")):
                     # It never got a build machine: cancelled as a queued one is; its charge goes back when its
                     # thread ends (the flow did not run).
                     job["_cancel_requested"] = True
@@ -434,8 +439,12 @@ class Broker:
             self.busy.pop(service, None)
 
     def _at_once(self, service: str) -> int:
-        """How many of a service's requests may run at once: the run's flows at once for the slow tier, else one."""
-        return max(1, self.shared.flows_at_once) if service in ("fpga-slow", "flow") else 1
+        """How many of a service's requests may run at once: the run's flows at once for the slow tier (no more than
+        an island's own limit), else one."""
+        if service not in ("fpga-slow", "flow"):
+            return 1
+        n, per = max(1, self.shared.flows_at_once), self.shared.flows_per_island
+        return min(n, per) if per else n
 
     def _memo(self) -> "Simulations":
         """Where a snapshot's one measurement lives: the card's runs on the board, else the simulations."""
@@ -527,8 +536,14 @@ class Broker:
         with self.lock:
             if service in ("fpga-slow", "flow") and job["kind"] == "hardware":
                 at_once = max(1, self.shared.flows_at_once)
+                per = self.shared.flows_per_island
+                mine = sorted(f.split(":", 1)[1] for f in self.shared.flows if f.startswith(f"{self.run_id}:"))
                 refused = None
-                if len(self.shared.flows) >= at_once:
+                if per and len(mine) >= per:
+                    refused = (f"this island's Vivado flow{'s' if len(mine) > 1 else ''} ({', '.join(mine)}) "
+                               f"{'are' if len(mine) > 1 else 'is'} running: at most {per} per island at once, "
+                               f"{at_once} for the run")
+                elif len(self.shared.flows) >= at_once:
                     refused = ("another Vivado flow of this run is running; one at a time per run" if at_once == 1
                                else f"{at_once} Vivado flows of this run are running; at most {at_once} at once")
                 elif any(j.get("hardware") == job["hardware"] and j.get("kind") == "hardware"
@@ -739,7 +754,17 @@ class Broker:
 
     def _on_card(self, job: dict, candidate: Optional[Path], job_dir: Path) -> dict:
         """One card session for the snapshot, the card one session at a time for every island; the time it
-        waited for the card is the agent's (decided 2026-11-10)."""
+        waited for the card is the agent's (decided 2026-11-10). The base itself (nothing taken, the base's
+        image) is answered from the run's base measurement, with no card session and no wait (2026-11-11)."""
+        if candidate is None and self.images.get(job.get("hardware")) is None:
+            try:
+                got = fpga_slow.on_card(self.site, self.repo, self.task, None, board.base_image(self.site, self.task),
+                                        None, job_dir, job, self.board_seconds, roofline=self.shared.roofline,
+                                        from_base=True)
+                job["from_base"] = True
+                return got
+            except Exception as exc:  # noqa: BLE001 -- no base measurement to answer from: the card measures it
+                job["from_base_error"] = f"{type(exc).__name__}: {exc}"
         queued = time.time()
         held = False
         while not held:
@@ -948,11 +973,19 @@ class Broker:
     def _summary(self, job: dict) -> dict:
         out = {"id": job["id"], "service": job["service"], "state": job["state"],
                "seconds": round((job.get("finished") or time.time()) - job["submitted"], 1)}
-        if job["service"] == "fpga-slow" and job["state"] == "running":
+        if job["service"] in ("fpga-slow", "flow") and job["state"] == "running":
             # Never which machine: whether the flow waits for one, and once it runs, within how many minutes
-            # from now the request ends at the latest (the flow's cap, then the card's in board mode).
+            # from now the request ends at the latest (the flow's cap, then the card's in board mode). A `flow`
+            # too (2026-11-11: R41-F3's b5 failed its link on one machine, waited 55 minutes for the other to try
+            # again, and said only "running").
             if job.get("waiting_for_build_host"):
                 out["waiting_for_a_build_machine"] = True
+            tried = job.get("flow_attempts") or []
+            if tried:
+                out["earlier_attempts"] = tried
+                if any(a.get("outcome") == "infra" for a in tried):
+                    out["note"] = ("an earlier attempt ended on the build machine's side, not the design's (not "
+                                   "charged); the flow is tried again on another build machine")
             board_s = self.board_seconds if self.slow_mode == "board" else 0
             if job.get("flow_started") and not job.get("flow_finished"):
                 end = job["flow_started"] + self.flow_seconds + board_s

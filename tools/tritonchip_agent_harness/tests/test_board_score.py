@@ -358,10 +358,15 @@ class RelayChunkStore(unittest.TestCase):
     def test_the_bound_is_a_positive_number(self):
         repo, base = make_repo()
         t = board_task(repo, base)
+        task_._check_slow(Path("task.json"), {**t.services["fpga_slow"], "relay_cache_gib": 64}, t.evaluation)
         for bad in (0, -1, "48", True):
             with self.assertRaises(TaskError, msg=repr(bad)):
-                task_._check_board_score(Path("task.json"), {**t.services, "fpga_slow": {
-                    **t.services["fpga_slow"], "relay_cache_gib": bad}}, t.evaluation)
+                task_._check_slow(Path("task.json"), {**t.services["fpga_slow"], "relay_cache_gib": bad},
+                                  t.evaluation)
+
+    def test_the_r41_task_loads_with_it(self):
+        t = task_.load_task(HERE / "tasks" / "r41-dp-formal")
+        self.assertGreater(t.services["fpga_slow"].get("relay_cache_gib", 0), 0)
 
 
 if __name__ == "__main__":

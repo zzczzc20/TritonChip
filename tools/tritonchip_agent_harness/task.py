@@ -180,10 +180,6 @@ def _check_board_score(path: Path, services: dict, ev: dict) -> None:
     health = ev.get("health_point")
     if health is not None and (not isinstance(health, str) or not health or health in held):
         raise TaskError(f"{path}: evaluation.health_point must be one point id outside the held-out sets")
-    cache = (services.get("fpga_slow") or {}).get("relay_cache_gib")
-    if cache is not None and (isinstance(cache, bool) or not isinstance(cache, (int, float)) or cache <= 0):
-        raise TaskError(f"{path}: services.fpga_slow.relay_cache_gib must be a positive number (GiB of the card "
-                        f"host's chunk store)")
     if on == "board":
         if (services.get("fpga_slow") or {}).get("mode") != "board":
             raise TaskError(f"{path}: services.score.on board needs services.fpga_slow in board mode (the card)")
@@ -308,10 +304,15 @@ _CHECK_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,30}$")
 def _check_slow(path: Path, slow, ev: dict) -> None:
     """services.fpga_slow (report section 8.9): counts, not minutes, for the run; caps for one request."""
     required = {"mode", "flows", "board_runs", "flow_minutes", "board_minutes"}
-    optional = {"base_image_sha256", "board_checks", "certify_after_run", "flows_at_once", "board_faster_than"}
+    optional = {"base_image_sha256", "board_checks", "certify_after_run", "flows_at_once", "board_faster_than",
+                "relay_cache_gib"}
     if not isinstance(slow, dict) or not required <= set(slow) or set(slow) - required - optional:
         raise TaskError(f"{path}: services.fpga_slow needs {', '.join(sorted(required))} "
                         f"(and may have {', '.join(sorted(optional))})")
+    cache = slow.get("relay_cache_gib")
+    if cache is not None and (isinstance(cache, bool) or not isinstance(cache, (int, float)) or cache <= 0):
+        raise TaskError(f"{path}: services.fpga_slow.relay_cache_gib must be a positive number (GiB of the card "
+                        f"host's chunk store, board_relay.py)")
     if slow["mode"] not in ("build", "board"):
         raise TaskError(f"{path}: services.fpga_slow.mode must be build or board")
     for key in ("flows", "board_runs"):

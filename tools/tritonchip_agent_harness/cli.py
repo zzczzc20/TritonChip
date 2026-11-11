@@ -53,6 +53,9 @@ def main(argv=None) -> int:
     t.add_argument("--name", help="the run's own name (e.g. R41-F2): the run id becomes NAME-<stamp> and the "
                                   "record's `name` says it")
     t.add_argument("--budget-seconds", type=int, help="override the task's wall-clock budget (the prompt says it too)")
+    t.add_argument("--known-busy", action="append", default=[], metavar="BUILD_MACHINE",
+                   help="a build machine the operator knows is busy with a job of their own: the run starts anyway, "
+                        "its record says so, and its flows wait for that machine as for any busy one")
     which_skills = t.add_mutually_exclusive_group()
     which_skills.add_argument("--skills", metavar="NAME[,NAME...]",
                               help="the skills this run gets, instead of the task's own set (the record says so)")
@@ -125,7 +128,8 @@ def main(argv=None) -> int:
             if args.budget_seconds:
                 task = dataclasses.replace(task, wall_seconds=args.budget_seconds)
             chosen = [] if args.no_skills else ([s for s in args.skills.split(",") if s] if args.skills else None)
-            value = loop.run_task(site, task, args.agent, args.mode, args.model, skills=chosen, name=args.name)
+            value = loop.run_task(site, task, args.agent, args.mode, args.model, skills=chosen, name=args.name,
+                                  known_busy=args.known_busy)
             value["ok"] = value.get("validity") == "valid"
             if not args.json and value.get("islands"):
                 print(f"{value['run_id']}: validity={value['validity']} islands={len(value['islands']['islands'])}")

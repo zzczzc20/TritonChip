@@ -113,21 +113,22 @@ RUN_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,39}")
 
 
 def run_task(site: Site, task: Task, agent: str, mode: str = "offline", model: Optional[str] = None,
-             skills: Optional[list] = None, name: Optional[str] = None) -> dict:
+             skills: Optional[list] = None, name: Optional[str] = None, known_busy=()) -> dict:
     """`skills`: the names of the skills this run provides; None takes the task's own set (`task.json`
     `skills`), a list overrides it -- [] runs without any, a pilot's control arm. The record says which.
     `name`: the operator's name for the run (e.g. R41-F2), so that its records line up by it: the run id
     becomes `<name>-<stamp>` and the record's `name` says it; without one the id is `<task>-<agent>-<stamp>`.
+    `known_busy`: build machines the operator knows to be busy (fpga_slow.preflight).
     A run the operator stops (SIGINT or SIGTERM) writes its record before it ends (validity "stopped")."""
     if name is not None and not RUN_NAME.fullmatch(name):
         raise ValueError(f"run name {name!r}: letters, digits, '-' and '_', starting with a letter or digit, "
                          "at most 40")
     with operator_signals():
-        return _run_task(site, task, agent, mode, model, skills, name)
+        return _run_task(site, task, agent, mode, model, skills, name, tuple(known_busy))
 
 
 def _run_task(site: Site, task: Task, agent: str, mode: str, model: Optional[str],
-              skills: Optional[list], name: Optional[str] = None) -> dict:
+              skills: Optional[list], name: Optional[str] = None, known_busy: tuple = ()) -> dict:
     if site.repository is None:
         raise SiteError("site.json has no `repository`: the clone workspaces are exported from")
     repo = site.repository
@@ -139,7 +140,7 @@ def _run_task(site: Site, task: Task, agent: str, mode: str, model: Optional[str
             and agent not in PSEUDO and not agent.startswith("patch:")):
         from . import fpga_slow
         # Before anything starts: the task's flows at once fit the build machines, and every one is idle.
-        preflight = fpga_slow.preflight(site, task)
+        preflight = fpga_slow.preflight(site, task, known_busy)
         fit = preflight["budget"]
         if not fit["fits"]:
             print(f"warning: {slow['flows']} flows, {fit['rounds']} round(s) of up to "

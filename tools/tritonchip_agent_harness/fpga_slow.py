@@ -267,10 +267,13 @@ def budget_fit(task: Task) -> dict:
     return {"rounds": rounds, "minutes_needed": need, "minutes_of_run": wall, "fits": need <= wall}
 
 
-def preflight(site: Site, task: Task) -> dict:
+def preflight(site: Site, task: Task, known_busy=()) -> dict:
     """Before a run that may ask for flows: the task's flows at once fit the site's build machines, and every
     one is idle -- no lock held, no Vivado of the account running (a flow that outlived an earlier run, the
-    owner's own job). Raises SlowError when the run should not start. Also how the flows fit the run's time."""
+    owner's own job). Raises SlowError when the run should not start. Also how the flows fit the run's time.
+    `known_busy`: build machines the operator names as busy with a job of their own (R41-F5's b8 rebuilt by
+    hand while R41-F5b started, 2026-11-11): the run starts, says so in `known_busy`, and its flows wait for
+    them as for any busy machine."""
     from tritonchip_fpga_harness.hosts import host_for, load_hosts
     slow = (task.services or {}).get("fpga_slow") or {}
     cfg = site.fpga_pipeline
@@ -279,10 +282,14 @@ def preflight(site: Site, task: Task) -> dict:
     if at_once > len(names):
         raise SlowError(f"the task runs up to {at_once} flows at once and the site has {len(names)} build "
                         f"machine(s): one flow on each at a time")
+    unknown = sorted(set(known_busy) - set(names))
+    if unknown:
+        raise SlowError(f"not a build machine of this site: {', '.join(unknown)}")
     loaded = load_hosts(cfg["hosts"])
     seen = {n: busy(cfg, host_for(loaded, n, "build"), processes=True) for n in names}
-    out = {"build_hosts": names, "flows_at_once": at_once, "busy": {n: w for n, w in seen.items() if w},
-           "budget": budget_fit(task)}
+    out = {"build_hosts": names, "flows_at_once": at_once,
+           "busy": {n: w for n, w in seen.items() if w and n not in known_busy},
+           "known_busy": {n: seen[n] for n in known_busy}, "budget": budget_fit(task)}
     if out["busy"]:
         raise SlowError("build machines not idle: " + "; ".join(f"{n}: {', '.join(w)}" for n, w in out["busy"].items()))
     return out

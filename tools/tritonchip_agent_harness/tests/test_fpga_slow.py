@@ -505,6 +505,17 @@ class Placement(unittest.TestCase):
         got = fpga_slow.preflight(self.site, slow_task(flows_at_once=2))
         self.assertEqual((got["build_hosts"], got["busy"], got["budget"]["fits"]), (["a", "b"], {}, True))
 
+    def test_preflight_starts_beside_a_machine_the_operator_names_as_busy(self):
+        # R41-F5b (2026-11-11): R41-F5's b8 rebuilt by hand on one machine while the next run started.
+        self.busy["a"] = ["Vivado is running there"]
+        got = fpga_slow.preflight(self.site, slow_task(flows_at_once=2), known_busy=("a",))
+        self.assertEqual((got["busy"], got["known_busy"]), ({}, {"a": ["Vivado is running there"]}))
+        self.busy["b"] = ["full.lock is held"]
+        with self.assertRaisesRegex(fpga_slow.SlowError, "b: full.lock is held"):
+            fpga_slow.preflight(self.site, slow_task(flows_at_once=2), known_busy=("a",))
+        with self.assertRaisesRegex(fpga_slow.SlowError, "not a build machine of this site: c"):
+            fpga_slow.preflight(self.site, slow_task(flows_at_once=2), known_busy=("c",))
+
     def test_a_retry_after_an_infrastructure_failure_takes_a_machine_again(self):
         places = iter([("a", "connection"), ("b", None)])
         records = iter([{"status": "BUILD_FAIL", "build": {"status": "BUILD_FAIL", "preflight_failed": True}},

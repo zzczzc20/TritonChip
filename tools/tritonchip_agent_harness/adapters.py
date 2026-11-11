@@ -191,6 +191,9 @@ def tokens(cli: str, usage: Optional[dict], model_usage: Optional[dict] = None) 
     thinkingTokens adds nothing to the total's reasoning, and a thinking count of
     0 can mean the model gave no breakdown. A run stopped before its `result`
     event (at its budget) reports no usage at all.
+    The counts are the session's so far, a resumed session's included
+    (2.1.311, R41-F5's smoke): run_agent takes a turn's share as the difference
+    from the same session's last count.
 
     Codex (codex-rs at rust-v0.162.1: exec_events.rs, codex-api sse/responses.rs):
     the fields are the Responses API's, whose input_tokens holds the cached reads
@@ -343,15 +346,34 @@ def codex_rollouts(run_dir: Path) -> tuple:
 
 
 def token_delta(now: Optional[dict], before: Optional[dict]) -> Optional[dict]:
-    """One turn's share of two running totals in tokens()'s schema: each count's difference (None stays None)."""
+    """One turn's share of two running totals in tokens()'s schema: each count's difference (None stays None),
+    model by model where both name their models."""
     if now is None:
         return None
     before = before or {}
     out = {}
     for k, v in now.items():
         b = before.get(k)
-        out[k] = (v - b if isinstance(b, (int, float)) else v) if isinstance(v, (int, float)) else (None if k == "by_model" else v)
+        if k == "by_model":
+            prior = b if isinstance(b, dict) else {}
+            out[k] = {m: token_delta(c, prior.get(m)) for m, c in v.items()} if isinstance(v, dict) else None
+            continue
+        out[k] = (v - b if isinstance(b, (int, float)) else v) if isinstance(v, (int, float)) else v
     return out
+
+
+def token_sum(parts) -> dict:
+    """Usages in tokens()'s schema added up, model by model too ({} for none)."""
+    total: dict = {}
+    for t in parts:
+        for k, v in (t or {}).items():
+            if isinstance(v, (int, float)):
+                total[k] = total.get(k, 0) + v
+            elif k == "by_model" and isinstance(v, dict):
+                models = total.setdefault("by_model", {})
+                for m, c in v.items():
+                    models[m] = token_sum([models.get(m), c])
+    return total
 
 
 def parse(account: Account, out: str, run_dir: Path, export_session=None) -> dict:
@@ -413,5 +435,5 @@ def _read(account: Account, out: str, run_dir: Path, export_session=None) -> dic
     return r
 
 
-__all__ = ["codex_rollouts", "token_delta", "CODEX_HOME", "Launch", "MODES", "SKILLS_DIR", "TOKEN_FIELDS", "WORKDIR", "codex_config", "launch",
+__all__ = ["codex_rollouts", "token_delta", "token_sum", "CODEX_HOME", "Launch", "MODES", "SKILLS_DIR", "TOKEN_FIELDS", "WORKDIR", "codex_config", "launch",
            "opencode_config", "parse", "session_id", "throttle", "tokens", "tool_calls"]

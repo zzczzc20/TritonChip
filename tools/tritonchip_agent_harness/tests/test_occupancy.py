@@ -164,6 +164,44 @@ class Sandbox(unittest.TestCase):
         self.assertNotIn("id", e)
 
 
+    def test_a_resumed_claude_session_counts_each_turn_once(self):
+        # R41-F5's smoke (2026-11-11): Claude Code's result counts its whole session so far, a resumed one too.
+        run_dir = Path(tempfile.mkdtemp()) / "t-claude-2"
+        run_dir.mkdir()
+        account = Account(label="claude", cli="claude-code", auth="subscription", credential=Path("/c.env"),
+                          hosts=("api.anthropic.com",), models={"main": "claude-fable-5-2[1m]"}, options={})
+        sessions = iter([("s1", 1000, 10), ("s1", 1600, 15), ("s2", 300, 4)])
+
+        def result(sid, read, out):
+            usage = {"inputTokens": 1, "outputTokens": out, "cacheReadInputTokens": read,
+                     "cacheCreationInputTokens": 0}
+            return json.dumps({"type": "result", "subtype": "success", "is_error": False, "result": "OK",
+                               "session_id": sid, "modelUsage": {"claude-fable-5-2[1m]": usage}}) + "\n"
+
+        def docker(*args, **kw):
+            if args[:1] == ("exec",) and "--version" in args:
+                return types.SimpleNamespace(returncode=0, stdout="2.1.311 (Claude Code)\n", stderr="")
+            if args[:1] == ("exec",) and "-p" in args:
+                return types.SimpleNamespace(returncode=0, stdout=result(*next(sessions)), stderr="")
+            return types.SimpleNamespace(returncode=1, stdout="" if kw.get("text", True) else b"", stderr="")
+
+        nexts = iter(["go on", ("start again", True), None])
+        with mock.patch.object(runner.provider, "docker", side_effect=docker), \
+                mock.patch.object(runner.provider, "remove"), \
+                mock.patch.object(runner.provider, "image_id", return_value="sha256:1"), \
+                mock.patch.object(runner.doctor, "start_gateway", return_value=(run_dir, run_dir)), \
+                mock.patch.object(runner.doctor, "stop_gateway"), \
+                mock.patch.object(runner.doctor, "read_log", return_value=[]), \
+                mock.patch.object(runner.time, "sleep"):
+            got = runner.run_agent(SITE, account, "prompt", "offline", run_dir, None, timeout=600,
+                                   turns=lambda record, left: next(nexts))
+        self.assertEqual([t["tokens"]["cache_read"] for t in got["turns"]], [1000, 600, 300])
+        self.assertEqual([t["tokens"]["output"] for t in got["turns"]], [10, 5, 4])
+        self.assertEqual(got["turns"][1]["tokens"]["by_model"]["claude-fable-5-2[1m]"]["cache_read"], 600)
+        self.assertEqual((got["tokens"]["cache_read"], got["tokens"]["output"]), (1900, 19))
+        self.assertEqual(got["tokens"]["by_model"]["claude-fable-5-2[1m]"]["cache_read"], 1900)
+
+
 class RunRecord(unittest.TestCase):
     def setUp(self):
         self.repo, base = make_repo()

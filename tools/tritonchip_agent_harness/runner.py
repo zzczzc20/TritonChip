@@ -242,6 +242,7 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
         start = time.time()
         command, turn, session, turns_log, total = launch.command, 0, None, [], {}
         running = None       # Codex: the run's usage so far, after the last turn
+        by_session: dict = {}  # Claude Code: each session's usage so far, after its last turn
         while True:
             left = timeout - (time.time() - start)
             stdout, stderr, record = _turn(agent, account, command, left)
@@ -257,6 +258,16 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
                 turn_tokens = adapters.token_delta(parsed.get("tokens"), running)
                 running = parsed.get("tokens") or running
                 total = dict(running or {})
+            elif account.cli == "claude-code":
+                # Claude Code's result counts its session so far, a resumed one included (R41-F5's smoke,
+                # 2026-11-11: a 4-second resumed turn reported its session's 4.1M tokens): a turn's share is the
+                # difference from the same session's last count, and the run's is each session's last, added up.
+                sid = adapters.session_id(account, stdout or "")
+                now = parsed.get("tokens")
+                turn_tokens = adapters.token_delta(now, by_session.get(sid)) if sid else now
+                if now is not None:
+                    by_session[sid or f"turn-{turn}"] = now
+                total = adapters.token_sum(by_session.values())
             else:
                 turn_tokens = parsed.get("tokens")
                 for k, v in (turn_tokens or {}).items():

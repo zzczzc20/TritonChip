@@ -860,7 +860,9 @@ class Broker:
             g = visible.pop("validation")
             visible["gate"] = {"n": g.get("n"), "passed": g.get("passed")}
             if job.get("outcome") == "refused":
-                visible["why"] = "the RTL gate's points do not pass in simulation; the flow was stopped, not charged"
+                visible["why"] = ("the device description does not build (device_build_errors says why); the flow "
+                                  "was stopped, not charged" if visible.get("device_build_errors") else
+                                  "the RTL gate's points do not pass in simulation; the flow was stopped, not charged")
         if job.get("outcome") == "ok":
             visible["next"] = "built: `tnca-service submit score` with this snapshot runs it on the card"
         return visible, full

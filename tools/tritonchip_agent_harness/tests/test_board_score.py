@@ -275,6 +275,21 @@ class BoardBroker(unittest.TestCase):
         self.assertNotIn("validation", r["result"])
         self.assertEqual(self.broker.flows_left, 2)
 
+    def test_a_device_the_gate_will_not_build_says_so_and_gives_the_flow_back(self):
+        (self.ws / "rtl/core/x.v").write_text("module y; endmodule\n")
+        errors = ["the device did not build: uncore.NOC_LINK_STAGES=1 is below 2"]
+
+        def run(site, repo, task, candidate, job_dir, job, **kw):
+            job["outcome"] = "refused"
+            return {"status": "refused", "charged": None, "why": "x", "device_build_errors": errors,
+                    "validation": {"n": 1, "passed": 0, "speedup_geomean": None, "fast_1": 0.0}}, {}
+        with mock.patch.object(self.broker, "_timing_met", return_value=True), \
+                mock.patch("tritonchip_agent_harness.services.fpga_slow.run", side_effect=run):
+            r = self.wait(self.broker.submit("flow")["id"])
+        self.assertIn("device description does not build", r["result"]["why"])
+        self.assertEqual(r["result"]["device_build_errors"], errors)
+        self.assertEqual(self.broker.flows_left, 2)
+
     def test_the_flow_gate_runs_the_gate_points_only(self):
         seen = {}
 

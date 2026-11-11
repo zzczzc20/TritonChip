@@ -57,8 +57,13 @@ DRC_ROWS = 10
 # Vivado's own messages for a design that does not place, route, fit, synthesise or pass DRC. Generic ids
 # (`Common 17-69`, a VPL step's failure) also follow licence and disk failures, so they are not here.
 _DESIGN_ERROR = re.compile(r"ERROR: \[(?:Place|Route|Synth|DRC|Opt|Phys|Timing|Constraints) \d+-\d+\]")
-_STAGES = (("write_bitstream", "bitstream"), ("route_design", "route"), ("phys_opt", "phys_opt"),
-           ("place_design", "place"), ("opt_design", "opt"), ("synth", "synthesis"))
+# The three-tile U280 binding's place_design pre-hook (flow/fpga/place_r40_multicore.tcl) refusing the design:
+# Vivado reports it as a VPL error, but it is the candidate's machine that the binding cannot place (R41-F4's b4
+# and b9: NOC_LINK_STAGES 1, no g_stage[1] to put on the next SLR), not the build machine's fault.
+_HOOK_REFUSAL = re.compile(r"R40 placement: ")
+_STAGES = (("R40 placement: ", "place"), ("write_bitstream", "bitstream"), ("route_design", "route"),
+           ("phys_opt", "phys_opt"), ("place_design", "place"), ("opt_design", "opt"), ("synth", "synthesis"))
+ERROR_LINES = 20
 
 
 class SlowError(RuntimeError):
@@ -348,8 +353,40 @@ def classify(pipe: dict, clock_mhz: Optional[float] = None) -> str:
         return "design"
     if clock_mhz is not None and build.get("observed_clock_mhz") not in (None, clock_mhz):
         return "design"   # the link lowered the clock
-    text = "\n".join([str(build.get("error") or "")] + [str(x) for x in (build.get("log_tail") or [])])
-    return "design" if _DESIGN_ERROR.search(text) else "infra"
+    text = _build_text(build)
+    return "design" if _DESIGN_ERROR.search(text) or _HOOK_REFUSAL.search(text) else "infra"
+
+
+def _build_text(build: dict) -> str:
+    """What a build record says of its failure: its error, its log's tail and the ERROR lines read from its
+    build machine (log_errors, build_errors)."""
+    return "\n".join([str(build.get("error") or "")] + [str(x) for x in (build.get("log_tail") or [])]
+                     + [str(x) for x in (build.get("log_errors") or [])])
+
+
+def build_errors(site: Site, run_id: str, build_host: Optional[str]) -> list:
+    """The ERROR lines of a failed flow's logs on its build machine, each once, at most ERROR_LINES. The FPGA
+    harness keeps a log tail only for a flow that did not start, so a Vivado run that failed says nothing of why
+    in its record without these; [] when the machine cannot be read."""
+    if not build_host:
+        return []
+    try:
+        from tritonchip_fpga_harness.hosts import host_for, load_hosts
+        from tritonchip_fpga_harness.pipeline import remote
+        cfg = site.fpga_pipeline
+        host = host_for(load_hosts(cfg["hosts"]), build_host, "build")
+        done = remote(host, ["grep", "-rh", "-m", str(ERROR_LINES), "--include=*.log", "^ERROR:",
+                             f"{host.state_dir}/runs/{run_id}/artifacts"], check=False, timeout=180)
+        if done.returncode not in (0, 1):
+            return []
+        lines = []
+        for line in done.stdout.decode(errors="replace").splitlines():
+            line = line.strip()[:400]
+            if line and line not in lines:
+                lines.append(line)
+        return lines[:ERROR_LINES]
+    except Exception:  # noqa: BLE001 -- the flow's outcome stands without them
+        return []
 
 
 def _host_words(site: Site) -> list:
@@ -471,8 +508,7 @@ def drc_rules(text: str) -> list:
 
 
 def failing_stage(pipe: dict) -> Optional[str]:
-    build = pipe.get("build") or {}
-    text = "\n".join([str(build.get("error") or "")] + [str(x) for x in (build.get("log_tail") or [])])
+    text = _build_text(pipe.get("build") or {})
     for needle, stage in _STAGES:
         if needle in text:
             return stage
@@ -575,7 +611,8 @@ def _build_visible(site: Site, pipe: dict, outcome: str, routed: dict) -> dict:
                     row[key] = _scrub(row[key], site, words)[:160]
         if build.get("error"):
             visible["error"] = _scrub(build["error"], site, words)
-        tail = [_scrub(x, site, words) for x in (build.get("log_tail") or []) if "ERROR" in str(x) or "CRITICAL" in str(x)]
+        tail = [_scrub(x, site, words) for x in [*(build.get("log_tail") or []), *(build.get("log_errors") or [])]
+                if "ERROR" in str(x) or "CRITICAL" in str(x)]
         if tail:
             visible["errors"] = tail[-10:]
     return visible
@@ -646,6 +683,13 @@ def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir
         if timed_out:
             pipe["status"] = "TIMEOUT"
         outcome = classify(pipe, (task.evaluation.get("certify") or {}).get("clock_mhz"))
+        build_rec = pipe.get("build") if isinstance(pipe.get("build"), dict) else None
+        if (outcome == "infra" and build_rec is not None and build_rec.get("status") == "BUILD_FAIL"
+                and not build_rec.get("preflight_failed") and "ERROR" not in _build_text(build_rec)):
+            # A Vivado run that failed with nothing said: its own logs say whether it was the design (the
+            # placement hook's refusal, a Place/Route error) before a second machine is taken for it.
+            build_rec["log_errors"] = build_errors(site, pipe.get("run_id") or remote_id, host)
+            outcome = classify(pipe, (task.evaluation.get("certify") or {}).get("clock_mhz"))
         attempts.append({"remote_id": remote_id, "status": pipe.get("status"), "outcome": outcome,
                          "build_host": host, **({"shared_slot": slot} if slot else {})})
         # What the status shows while the next attempt waits or runs: each attempt's end, never its machine.
@@ -821,8 +865,11 @@ def base_xclbin(site: Site, repo: Path, task: Task, candidate: Optional[Path], i
 
 def _refused(sim: dict, why: str) -> dict:
     visible = {"status": "refused", "charged": None, "why": why, "validation": sim["aggregate"]}
-    if sim.get("failures"):
-        visible["failures"] = sim["failures"]
+    # What failed before any point ran, as a scoring request shows it (README section 6.4): a device description
+    # the platform's generator would not build says its own reasons (the evaluator scrubbed them).
+    for key in ("failures", "device_build_errors", "stage_errors"):
+        if sim.get(key):
+            visible[key] = sim[key]
     return visible
 
 

@@ -101,6 +101,16 @@ UNCORE_OPTIONAL = {
 }
 DERIVED = ('SET_W', 'WAY_W', 'AXI_ID_W', 'PHYS_VREGS', 'PHYS_W')
 
+# The three-tile U280 binding (flow/fpga/place_r40_multicore.tcl, the place_design pre-hook) puts stage 0
+# and stage 1 of every link that crosses an SLR on different SLRs: the code channel (CODE_LINK_STAGES), the
+# dispatch (DISPATCH_STAGES), the home links and cache handoff (MEM_HOME_STAGES), the mesh (NOC_LINK_STAGES)
+# and the HBM outlets (LINK_STAGES). With one stage there is no stage 1 to place, and the hook stops the
+# flow after synthesis ("R40 placement: expected one .../g_stage[1].queue, found 0": R41-F4's b4 and b9,
+# NOC_LINK_STAGES 1, 2026-11-11). The RTL itself takes 0..4; this binding needs 2 or more.
+SLR_BINDING = {'board': 'u280', 'core_count': 3}
+SLR_LINKS = ('CODE_LINK_STAGES', 'DISPATCH_STAGES', 'MEM_HOME_STAGES', 'NOC_LINK_STAGES', 'LINK_STAGES')
+SLR_MIN_STAGES = 2
+
 # The image parameters a multicore description sets from its platform.
 _PLATFORM_PARAMS = ('AXI_DATA_W', 'MEMORY_CONTROLS', 'CACHE_MAINTENANCE')
 
@@ -233,6 +243,12 @@ def validate(desc):
     cores = platform.get('core_count')
     if isinstance(cores, int) and isinstance(uncore.get('MEM_PORTS'), int) and uncore['MEM_PORTS'] > cores:
         problems.append(f'uncore.MEM_PORTS={uncore["MEM_PORTS"]} exceeds platform.core_count={cores}')
+    if all(platform.get(k) == v for k, v in SLR_BINDING.items()):
+        for key in SLR_LINKS:
+            v = uncore.get(key)
+            if type(v) is int and v in UNCORE[key] and v < SLR_MIN_STAGES:
+                problems.append(f'uncore.{key}={v} is below {SLR_MIN_STAGES}: the three-core U280 binding places '
+                                'stage 0 and stage 1 of this link on different SLRs')
     if problems:
         raise DeviceError('\n'.join(problems))
     return desc

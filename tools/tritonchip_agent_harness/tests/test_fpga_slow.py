@@ -304,6 +304,24 @@ class SlowService(unittest.TestCase):
         self.assertEqual(fpga_slow.classify({"status": "PIPELINE_FAIL"}), "infra")
         self.assertEqual(fpga_slow.classify({"status": "TIMEOUT", "build": {}}), "timeout")
 
+    def test_the_placement_hooks_refusal_is_the_designs(self):
+        # R41-F4's b4 and b9 (2026-11-11): NOC_LINK_STAGES 1, refused by the U280 binding's place_design hook.
+        line = ("ERROR: [VPL 101-2] R40 placement: expected one u_system/u_mesh/g_y\\[0\\].g_x\\[0\\].g_v\\[0\\]"
+                ".g_e.link/g_stage\\[1\\].queue, found 0")
+        pipe = {"status": "BUILD_FAIL", "build": {"status": "BUILD_FAIL", "log_errors": [line]}}
+        self.assertEqual(fpga_slow.classify(pipe), "design")
+        self.assertEqual(fpga_slow.failing_stage(pipe), "place")
+        # Another VPL error is not, by itself, the design's.
+        self.assertEqual(fpga_slow.classify({"status": "BUILD_FAIL", "build": {
+            "status": "BUILD_FAIL", "log_errors": ["ERROR: [VPL 60-806] Failed to finish platform linker"]}}), "infra")
+
+    def test_a_gate_refusing_the_device_says_why(self):
+        sim = {"aggregate": {"n": 2, "passed": 0}, "failures": {"device-build": 2},
+               "device_build_errors": ["the device did not build: uncore.NOC_LINK_STAGES=1 is below 2"]}
+        visible = fpga_slow._refused(sim, "stopped")
+        self.assertEqual(visible["device_build_errors"], sim["device_build_errors"])
+        self.assertNotIn("stage_errors", visible)
+
     def test_a_launch_the_relay_could_not_count_rejects_the_point(self):
         with tempfile.TemporaryDirectory() as tmp:
             observe = Path(tmp)
@@ -554,6 +572,51 @@ class Placement(unittest.TestCase):
         self.assertEqual(got["attempts"][0]["routed_timing"]["wns_ns"], 0.007)
         self.assertTrue(got["visible"]["routed_timing"]["clean"])
         self.assertEqual(got["visible"]["routed_timing"]["wns_ns"], 0.007)
+
+    def test_a_silent_build_failure_reads_its_errors_and_a_placement_refusal_is_not_tried_again(self):
+        # The FPGA harness's record of b4 had no error and no log tail: the build machine's logs said why.
+        places = iter([("a", None), ("b", None)])
+        silent = {"status": "BUILD_FAIL", "run_id": "tnca-x", "build": {"status": "BUILD_FAIL", "error": None}}
+        line = ("ERROR: [VPL 101-2] R40 placement: expected one u_system/u_mesh/g_y\\[0\\].g_x\\[0\\].g_v\\[0\\]"
+                ".g_e.link/g_stage\\[1\\].queue, found 0")
+        asked = []
+
+        class Proc:
+            def __init__(self, argv, **kw):
+                Path(argv[argv.index("--output") + 1]).write_text(json.dumps(silent))
+
+            def wait(self, timeout=None):
+                return 0
+
+        with tempfile.TemporaryDirectory() as tmp, \
+                mock.patch.object(fpga_slow.certify, "build_tree", return_value="c" * 40), \
+                mock.patch.object(fpga_slow, "place", side_effect=lambda s, j, sec, avoid=(): (
+                    j.__setitem__("build_host", (p := next(places))[0]) or p)), \
+                mock.patch.object(fpga_slow, "build_errors", side_effect=lambda s, run_id, host: (
+                    asked.append((run_id, host)) or [line, line.replace("VPL 101-2", "VPL_TCL 101-2")])), \
+                mock.patch.object(fpga_slow, "routed_report", return_value={}), \
+                mock.patch.object(fpga_slow, "routed_timing", return_value={}), \
+                mock.patch.object(fpga_slow, "_drop_slot", return_value=None), \
+                mock.patch.object(fpga_slow.subprocess, "Popen", side_effect=Proc):
+            got = fpga_slow.build(self.site, Path(tmp), task(), None, Path(tmp), {"id": "l1", "remote_id": "x"}, 600)
+        self.assertEqual(asked, [("tnca-x", "a")])
+        self.assertEqual([(a["build_host"], a["outcome"]) for a in got["attempts"]], [("a", "design")])
+        self.assertEqual(got["outcome"], "design")
+        self.assertEqual(got["visible"]["stage"], "place")
+        self.assertEqual(len(got["visible"]["errors"]), 2)
+        self.assertIn("R40 placement: expected one", got["visible"]["errors"][0])
+
+    def test_build_errors_are_the_logs_error_lines_once_each(self):
+        done = types.SimpleNamespace(returncode=0, stdout=b"ERROR: [VPL 101-2] x\nERROR: [VPL 101-2] x\n\nERROR: y\n")
+        from tritonchip_fpga_harness import pipeline
+        with mock.patch.object(pipeline, "remote", return_value=done) as remote:
+            got = fpga_slow.build_errors(self.site, "tnca-x", "a")
+        self.assertEqual(got, ["ERROR: [VPL 101-2] x", "ERROR: y"])
+        argv = remote.call_args[0][1]
+        self.assertEqual((argv[0], argv[-1]), ("grep", "/state/a/runs/tnca-x/artifacts"))
+        self.assertEqual(fpga_slow.build_errors(self.site, "tnca-x", None), [])
+        with mock.patch.object(pipeline, "remote", side_effect=OSError("gone")):
+            self.assertEqual(fpga_slow.build_errors(self.site, "tnca-x", "a"), [])
 
     def test_the_routed_design_timing_summary_is_read_as_the_fpga_harness_reads_it(self):
         cols = ("    WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)"

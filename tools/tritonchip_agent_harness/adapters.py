@@ -172,7 +172,7 @@ def tokens(cli: str, usage: Optional[dict], model_usage: Optional[dict] = None) 
     was; total = input_uncached + cache_write + cache_read + output, so nothing
     is counted twice. The raw `usage` is kept beside this, untouched.
 
-      field           Claude Code 2.1.287        Codex 0.162.1                    opencode 1.19.0
+      field           Claude Code 2.1.311        Codex 0.162.1                    opencode 1.19.0
                       `result`, per model        `turn.completed`                 `step_finish` parts, summed
       input_uncached  inputTokens                input_tokens minus the next two  input
       cache_write     cacheCreationInputTokens   cache_write_input_tokens         cache.write

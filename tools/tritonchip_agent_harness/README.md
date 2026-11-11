@@ -1476,8 +1476,13 @@ you create, mode 0600:
 `--build-arg UID=1000`:
 
 ```bash
-docker build --target agent -t tritonchip-agent:dev -f tools/tritonchip_agent_harness/image/Containerfile tools/tritonchip_agent_harness/image --build-arg TORCH_VERSION=2.14.0 --build-arg TRITON_VERSION=3.8.0 --build-arg TILEBENCH_COMMIT=6e2cf155dfe01f4660540d187c81b09eb55f394f --build-arg UID=1000 --build-arg SYSTEMC_COMMIT=70b0fc8e4a74acc677b0fc73cea08f940c2115d5 --build-arg NODE_VERSION=22.23.1 --build-arg NODE_SHA256=9749e988f437343b7fa832c69ded82a312e41a03116d766797ac14f6f9eee578 --build-arg CLAUDE_CODE_VERSION=2.1.287 --build-arg CODEX_VERSION=0.162.1 --build-arg OPENCODE_VERSION=1.19.0
+docker build --target agent -t tritonchip-agent:dev -f tools/tritonchip_agent_harness/image/Containerfile tools/tritonchip_agent_harness/image --build-arg TORCH_VERSION=2.14.0 --build-arg TRITON_VERSION=3.8.0 --build-arg TILEBENCH_COMMIT=6e2cf155dfe01f4660540d187c81b09eb55f394f --build-arg UID=1000 --build-arg SYSTEMC_COMMIT=70b0fc8e4a74acc677b0fc73cea08f940c2115d5 --build-arg NODE_VERSION=22.23.1 --build-arg NODE_SHA256=9749e988f437343b7fa832c69ded82a312e41a03116d766797ac14f6f9eee578 --build-arg CLAUDE_CODE_VERSION=2.1.311 --build-arg CODEX_VERSION=0.162.1 --build-arg OPENCODE_VERSION=1.19.0
 ```
+
+Claude Code was 2.1.287 until 2026-11-11: Claude Fable 5.2 (`claude-fable-5-2`) needs 2.1.290 or newer (the API
+refuses older clients with a 400). 2.1.311 is npm's `stable` of that day; the smoke runs (offline, `--probe skills`,
+and `claude-fable-5-2[1m]`, whose `[1m]` gives Claude Code a 1M-token context window on a subscription) pass.
+`modelUsage` keys carry that suffix: a price lookup strips it.
 
 Build `--target toolchain -t tritonchip-toolchain:dev` the same way.
 

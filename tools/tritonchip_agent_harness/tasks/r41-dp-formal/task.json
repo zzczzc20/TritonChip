@@ -271,7 +271,7 @@
   "timeout_seconds": 10800,
   "drain_cycles": 8,
   "platform": {
-   "commit": "8c51270d24ad3cb3be821c8479cd3dd7a0a27a58",
+   "commit": "f5dabfcfaf468669b09f5b35482eba1750436ed6",
    "paths": [
     "python/tnca/backends/multicore_mmio.py",
     "python/tnca/backends/multicore_mmio_sim.py",

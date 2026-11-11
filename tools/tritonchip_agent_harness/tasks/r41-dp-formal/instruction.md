@@ -130,7 +130,10 @@ run's result is certified on the card afterwards with programs you are not
 shown; if any of them counts other cycles on the card than in simulation beyond
 the tolerance the base machine shows, every program fails. The three cores sit in three SLRs: a path that crosses
 between them is the hardest to close, and the base machine already fills most
-of SLR0; the second load/store unit it gave up costs about 36k LUTs.
+of SLR0; the second load/store unit it gave up costs about 36k LUTs. The flow
+places stage 0 and stage 1 of each link that crosses SLRs (the code channel,
+the dispatch, the home path, the mesh, the memory outlets) on different SLRs,
+so each of those stage counts must be at least 2; `devices.py` refuses fewer.
 
 **A flow takes hours, and you do not choose the machine.** R41's links have
 taken from 4 h 40 min to more than 8 h on one build machine (31 GB of memory;

@@ -330,6 +330,39 @@ class OnCardGuards(unittest.TestCase):
         self.assertEqual(got["outcome"], "infra")
         self.assertIn("health check", got["visible"]["why"])
 
+    def test_on_another_image_the_health_check_does_not_hold_it_to_the_bases_cycles(self):
+        """R41-F4's b10 (2026-11-11): the built image ran the known-answer point in 2017 cycles, the base's image in
+        2621, and its measured result was dropped as an unhealthy card."""
+        repo, base = make_repo()
+        t = board_task(repo, base, health_point="op.add/small/a")
+        site = types.SimpleNamespace(fpga_pipeline={"card": {}})
+        baseline = {"points": {"op.add/small/a": {"cycles": 2621, "status": "pass"}}}
+        seen = []
+
+        def measure(site, repo, task, candidate, image, points, job_dir, name, tag, seconds, **kw):
+            seen.append(kw["health"])
+            return {"points": {}, "session": {"status": "COMPLETE"}, "measured": {}, "health": {"ok": True}}
+        built = {"build_run": "r", "sha256": "f" * 64, "path": "/images/f.xclbin"}
+        on_base = {"kind": "base", "sha256": "e" * 64, "path": "/images/e.xclbin"}
+        with mock.patch("tritonchip_agent_harness.fpga_slow.board.baseline", return_value=baseline), \
+                mock.patch("tritonchip_agent_harness.fpga_slow.board.measure", side_effect=measure), \
+                mock.patch("tritonchip_agent_harness.fpga_slow.board.status", return_value="ok"), \
+                mock.patch("tritonchip_agent_harness.fpga_slow._card_view", return_value={"outcome": "ok"}):
+            for image in (built, on_base):
+                fpga_slow.on_card(site, repo, t, None, image, None, Path(tempfile.mkdtemp()),
+                                  {"containers": "c", "remote_id": "r"}, 60,
+                                  health={"point": "op.add/small/a", "tree": "/t"})
+        self.assertEqual([h["expect"] for h in seen], [None, 2621])
+        # Without an expected count, cycles alone fail nothing; a point that did not pass still does.
+        obs = Path(tempfile.mkdtemp())
+        rec = {"measured": {"health_record": {}}}
+        board = fpga_slow.board
+        with mock.patch.object(board, "read_board_observer", return_value={"anomalies": []}), \
+                mock.patch.object(board.evaluator, "observed_multicore_point",
+                                  side_effect=[{"status": "pass", "cycles": 2017}, {"status": "fail", "cycles": 2017}]):
+            self.assertTrue(board.judge_health(rec, obs, {"point": "p", "expect": None})["ok"])
+            self.assertFalse(board.judge_health(rec, obs, {"point": "p", "expect": None})["ok"])
+
     def test_the_base_itself_is_its_base_measurement_with_no_card_session(self):
         """R41-F3: every island's first scoring request was the unchanged base; one of them took 35 minutes of
         card to measure it again (2026-11-11)."""

@@ -767,7 +767,13 @@ def on_card(site: Site, repo: Path, task: Task, candidate: Optional[Path], image
     except Exception as exc:  # noqa: BLE001 -- no base yet: the global bound, and the aggregate says so below
         job["baseline_error"] = f"{type(exc).__name__}: {exc}"
     if health and base is not None:
-        health = {**health, "expect": (base["points"].get(health["point"]) or {}).get("cycles")}
+        # The base's cycles are the known answer only on the base's image. Another image is another machine, whose
+        # known-answer point takes its own cycles (R41-F4's b10, 2026-11-11: 2017 against the base's 2621, and a
+        # measured result was dropped as an unhealthy card): there the check is that the point passes and the relay
+        # counted every launch.
+        base_sha = ((task.services or {}).get("fpga_slow") or {}).get("base_image_sha256")
+        on_base = (image or {}).get("kind") == "base" or bool(base_sha and (image or {}).get("sha256") == base_sha)
+        health = {**health, "expect": (base["points"].get(health["point"]) or {}).get("cycles") if on_base else None}
     rec, attempts = None, []
     for attempt in range(RETRIES + 1):
         try:

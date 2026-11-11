@@ -308,9 +308,12 @@ def _env(task: Task, cores: int, timeout: float, deadline: Optional[int] = None)
 # A point's launches may take this many times the base's cycles for the whole point before the device gives
 # up on one (decided 2026-11-10): a runaway program ends in seconds, not in DEADLINE_CYCLES' 2000 s.
 DEADLINE_FACTOR = 20
-# The health check's tolerance on the card's cycles of its known-answer point (the card repeats a program to
-# within about half a percent).
-HEALTH_TOLERANCE = 0.02
+# The health check's tolerance on the card's cycles of its known-answer point. Within one session the card
+# repeats a program to about half a percent; across sessions, and after another image was on the card, the
+# known-answer point (op.add/tiny, about 2600 cycles) took 2596 (R41-F5's base), 2621 (R41-F4's base) and 2656
+# (R41-F5g's s3 on the base image, 2026-11-11: +2.3 %, its 47 measured points dropped and the card closed for half
+# an hour at the old 2 %). A broken card -- a wrong clock, a stalled memory path -- is far outside 5 %.
+HEALTH_TOLERANCE = 0.05
 
 
 def health_tree(site: Site, repo: Path, task: Task) -> Path:

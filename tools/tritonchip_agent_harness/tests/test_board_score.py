@@ -363,6 +363,18 @@ class OnCardGuards(unittest.TestCase):
             self.assertTrue(board.judge_health(rec, obs, {"point": "p", "expect": None})["ok"])
             self.assertFalse(board.judge_health(rec, obs, {"point": "p", "expect": None})["ok"])
 
+    def test_the_health_check_takes_the_cards_drift_between_sessions(self):
+        """R41-F5g (2026-11-11): the known-answer point took 2656 cycles on the base image against the run's base 2596
+        (+2.3 %); at 2 % its 47 measured points were dropped and the card closed for half an hour."""
+        board = fpga_slow.board
+        obs = Path(tempfile.mkdtemp())
+        rec = {"measured": {"health_record": {}}}
+        rows = [{"status": "pass", "cycles": 2656}, {"status": "pass", "cycles": 2596 * 1.06}]
+        with mock.patch.object(board, "read_board_observer", return_value={"anomalies": []}), \
+                mock.patch.object(board.evaluator, "observed_multicore_point", side_effect=rows):
+            self.assertTrue(board.judge_health(rec, obs, {"point": "p", "expect": 2596})["ok"])
+            self.assertFalse(board.judge_health(rec, obs, {"point": "p", "expect": 2596})["ok"])
+
     def test_the_base_itself_is_its_base_measurement_with_no_card_session(self):
         """R41-F3: every island's first scoring request was the unchanged base; one of them took 35 minutes of
         card to measure it again (2026-11-11)."""

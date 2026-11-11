@@ -236,9 +236,12 @@ def tokens(cli: str, usage: Optional[dict], model_usage: Optional[dict] = None) 
 # text, which may well talk about rate limits. Most specific first. The
 # patterns are the providers' documented error texts (HTTP 429/529, Anthropic's
 # rate_limit_error and overloaded_error, OpenAI's insufficient_quota, GLM's codes
-# 1113/1302/1305); no throttled run of the pinned CLIs has been recorded yet.
+# 1113/1302/1305). Recorded: Claude Code 2.1.311 on a subscription answers a spent five-hour window with
+# a failed result "You've hit your session limit · resets 3pm (UTC)" (R41-F5, 2026-11-11: three islands
+# read it as a crash, ended after their restarts, and the hardware island's flow was stopped with them).
 _THROTTLE = (
     ("usage-limit", re.compile(r"(?i)usage limit|(?:5-hour|weekly|daily|session) limit reached"
+                               r"|hit your (?:session|weekly|daily|5-hour|opus|fable) limit"
                                r"|insufficient[_ ]quota|exceeded your current quota"
                                r"|\\?\"code\\?\"\s*:\s*\\?\"?1113\b|余额不足")),
     ("overloaded", re.compile(r"(?i)\b529\b|overloaded")),

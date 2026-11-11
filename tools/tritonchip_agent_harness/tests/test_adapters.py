@@ -157,6 +157,14 @@ class Throttle(unittest.TestCase):
         self.assertEqual(throttle(account("codex"), lines({"type": "turn.failed", "error": {
             "message": "You've hit your usage limit. Try again later."}}), "")["kind"], "usage-limit")
 
+    def test_claude_codes_spent_session_window_is_a_usage_limit(self):
+        # R41-F5 (2026-11-11): Claude Code 2.1.311, subscription, the five-hour window spent.
+        final = {"type": "result", "subtype": "success", "is_error": True,
+                 "result": "You've hit your session limit \u00b7 resets 3pm (UTC)"}
+        t = throttle(account("claude-code"), lines({"type": "system", "subtype": "init"}, final), "")
+        self.assertEqual(t["kind"], "usage-limit")
+        self.assertIn("session limit", t["evidence"])
+
     def test_glms_codes_through_opencode(self):
         err = {"type": "error", "error": {"name": "APIError", "data": {
             "message": '{"error":{"code":"1302","message":"您的账户已达到速率限制"}}'}}}

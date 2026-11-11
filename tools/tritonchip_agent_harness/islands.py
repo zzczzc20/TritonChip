@@ -45,7 +45,7 @@ from pathlib import Path
 from typing import Optional
 
 from . import evaluator, runner
-from .task import Task, render
+from .task import OP_GROUPS, Task, render
 from .workspace import export, git
 
 CELLS = ("compiler-only", "hardware-only", "cross-layer")
@@ -140,7 +140,7 @@ def layer_digests(task: Task, candidate: Optional[Path]) -> dict:
 
 
 def layer_cell(labels: list) -> Optional[str]:
-    """The grid's one axis in the first version: compiler only, hardware only, or both (section 8.7)."""
+    """The grid's layer axis: compiler only, hardware only, or both (section 8.7)."""
     if not labels:
         return None
     if set(labels) <= {"compiler"}:
@@ -148,6 +148,46 @@ def layer_cell(labels: list) -> Optional[str]:
     if set(labels) <= {"rtl", "profile", "device"}:
         return "hardware-only"
     return "cross-layer"
+
+
+def op_group(point: str, groups: dict) -> str:
+    """The group of programs a point belongs to (task.OP_GROUPS), by its id's prefix."""
+    for name in ("model", "attention", "matrix"):
+        if any(point.startswith(prefix) for prefix in groups.get(name, ())):
+            return name
+    return "elementwise"
+
+
+def gain_group(full: Optional[dict], cfg: dict) -> Optional[str]:
+    """The group whose passing points sped up most, by the geometric mean of their speedups against the base
+    (the score's own rows) -- None when even that group gained less than `min_gain` (2026-11-11: a commit that
+    moved nothing beyond the card's repeat noise has no direction, and takes no cell)."""
+    by: dict = {}
+    for row in (full or {}).get("points") or ():
+        if row.get("failure") is None and row.get("speedup"):
+            by.setdefault(op_group(row["point"], cfg.get("op_groups") or {}), []).append(math.log(row["speedup"]))
+    if not by:
+        return None
+    best = max(sorted(by), key=lambda g: sum(by[g]) / len(by[g]))
+    gain = math.exp(sum(by[best]) / len(by[best]))
+    return best if gain >= cfg.get("min_gain", 1.02) else None
+
+
+def grid_cells(cfg: dict) -> tuple:
+    """Every cell of an island's grid, in a fixed order."""
+    if "op_group" not in cfg.get("features", ()):
+        return CELLS
+    return tuple(f"{g}:{layer}" for g in OP_GROUPS for layer in CELLS)
+
+
+def grid_cell(labels: list, full: Optional[dict], cfg: dict) -> Optional[str]:
+    """A commit's cell: its layer, and with the `op_group` axis the group that gained most -- both computed
+    here, after scoring, from what the snapshot changed and what the score measured."""
+    layer = layer_cell(labels)
+    if layer is None or "op_group" not in cfg.get("features", ()):
+        return layer
+    group = gain_group(full, cfg)
+    return f"{group}:{layer}" if group else None
 
 
 def fitness(agg: Optional[dict]) -> tuple:
@@ -194,6 +234,41 @@ class Archive:
         self.started = time.time()
         self.target_hit = threading.Event()
         self.halt = threading.Event()      # the target, or the operator: every island stops
+        self.cells = grid_cells(self.cfg)
+        self.clock = time.time             # tests set it
+
+    # -- who sees a commit, and from when (2026-11-11, R41-F5) --------------------------------------------
+    def visible_at(self, labels: list, at: float) -> float:
+        """When another island may see a commit: at once if it changed hardware (a flow is hours: no island
+        should wait for it or build it again), at the next software exchange -- every
+        `software_exchange_seconds` of the run, the same moment for every island -- if it changed software
+        only. Without exchanges, at once."""
+        every = self.cfg.get("software_exchange_seconds")
+        if not every or layer_cell(labels) != "compiler-only":
+            return at
+        return self.started + math.ceil((at - self.started) / every) * every
+
+    def _seen(self, island: int, e: dict, now: float) -> bool:
+        """Whether `island` may see entry `e` now: its own always; another's when the topology connects them,
+        the commit is listed, and its time has come. The archive view, read-commit, migration and adoption
+        all ask this."""
+        if e["island"] == island:
+            return True
+        return (e["island"] in visible(self.cfg, island) and e["listed"]
+                and e.get("visible_at", e["at"]) <= now)
+
+    def _visible_elites(self, j: int, island: int, now: float) -> dict:
+        """Island j's grid as `island` may see it now: its own grid, or for another island the best entry of
+        each cell among those visible -- a newer elite not visible yet leaves the last visible one in place."""
+        if j == island:
+            return dict(self.elites[j])
+        out: dict = {}
+        for e in self.entries:
+            if e["island"] == j and e["cell"] and self._seen(island, e, now):
+                cur = self.by_id.get(out.get(e["cell"]))
+                if cur is None or fitness(e["validation"]) > fitness(cur["validation"]):
+                    out[e["cell"]] = e["id"]
+        return out
 
     def _summary(self, e: dict) -> dict:
         out = {"id": e["id"], "island": e["island"], "labels": e["labels"], "cell": e["cell"],
@@ -212,9 +287,9 @@ class Archive:
         # profile's compiler fields: the layer is its files (the review of 2026-11-09).
         changed = {layer for layer, d in digests.items() if d != "base"}
         writes = set(role["authors"]) if role else set(LAYERS)
-        seen = {island, *visible(self.cfg, island)}
         with self.lock:
-            sources = [e for e in self.entries if e["island"] in seen and (e["listed"] or e["island"] == island)]
+            now = self.clock()
+            sources = [e for e in self.entries if self._seen(island, e, now)]
         adopted = {}
         for layer in sorted(changed - writes):
             src = next((e for e in reversed(sources) if (e.get("layers") or {}).get(layer) == digests[layer]), None)
@@ -234,16 +309,18 @@ class Archive:
         who = job.get("authorship") or {}
         layers = who.get("layers") or layer_digests(self.task, candidate)
         authored = who.get("authored", sorted({LABEL_LAYER[label] for label in labels}))
+        cell = grid_cell(labels, result.get("full"), self.cfg)
         with self.lock:
             self.commits[island] += 1
             seq = self.commits[island]
+            at = self.clock()
             e = {"id": f"{island}-{seq}", "island": island, "seq": seq, "job": job["id"], "labels": labels,
-                 "cell": layer_cell(labels), "validation": agg, "message": (job.get("message") or "")[:200],
+                 "cell": cell, "validation": agg, "message": (job.get("message") or "")[:200],
                  "listed": bool(agg.get("passed")) and not result.get("device_build_errors")
                  and not result.get("stage_errors"),
                  "candidate": str(candidate) if candidate else None, "digest": job.get("digest"),
                  "hardware": job.get("hardware"), "layers": layers, "authored": authored,
-                 "adopted": dict(who.get("adopted") or {}), "at": time.time()}
+                 "adopted": dict(who.get("adopted") or {}), "at": at, "visible_at": self.visible_at(labels, at)}
             self.entries.append(e)
             self.by_id[e["id"]] = e
             if e["listed"] and e["cell"]:
@@ -270,7 +347,9 @@ class Archive:
         """What a commit's result adds: the commit in the archive, the island's best and grid, migration."""
         with self.lock:
             best = self._best([x for x in self.entries if x["island"] == island])
-            grid = {cell: self._summary(self.by_id[cid]) for cell, cid in self.elites[island].items()}
+            # Every cell, empty ones included (2026-11-11): what nobody has reached yet is a fact of the archive.
+            own = self.elites[island]
+            grid = {cell: (self._summary(self.by_id[own[cell]]) if cell in own else "empty") for cell in self.cells}
             out = {"commit": {"id": e["id"], "labels": e["labels"], "cell": e["cell"], "listed": e["listed"]},
                    "island_best": self._summary(best) if best else None, "grid": grid}
             if e["seq"] % self.cfg["migration_interval"] == 0:
@@ -278,8 +357,11 @@ class Archive:
         return out
 
     def _migration(self, island: int) -> list:
-        """The top `migration_rate` of the connected islands' current elites, each given to an island once."""
-        pool = [self.by_id[cid] for j in visible(self.cfg, island) for cid in self.elites[j].values()]
+        """The top `migration_rate` of the connected islands' elites `island` may see now, each given to an
+        island once."""
+        now = self.clock()
+        pool = [self.by_id[cid] for j in visible(self.cfg, island)
+                for cid in self._visible_elites(j, island, now).values()]
         # The ones not given yet, then the top share of them: cutting first could keep a lower-ranked elite
         # from ever being given while a higher one, already given, stays on top (2026-11-09).
         fresh = sorted((x for x in pool if x["id"] not in self.given[island]),
@@ -292,18 +374,23 @@ class Archive:
         """The listed commits of this island and the islands it sees; a failed commit only to its own island."""
         seen = {island, *visible(self.cfg, island)}
         with self.lock:
-            rows = [self._summary(e) for e in self.entries if e["island"] in seen and (e["listed"] or e["island"] == island)]
-            elites = {j: {cell: cid for cell, cid in self.elites[j].items()} for j in sorted(seen)}
-        return {"commits": rows, "elites": elites, "you": island, "visible_islands": sorted(seen - {island})}
+            now = self.clock()
+            rows = [self._summary(e) for e in self.entries if self._seen(island, e, now)]
+            elites = {j: self._visible_elites(j, island, now) for j in sorted(seen)}
+        out = {"commits": rows, "elites": elites, "you": island, "visible_islands": sorted(seen - {island})}
+        every = self.cfg.get("software_exchange_seconds")
+        if every:
+            nxt = self.started + (math.floor((now - self.started) / every) + 1) * every
+            out["next_software_exchange_in_minutes"] = max(0, round((nxt - now) / 60))
+        return out
 
     def read(self, island: int, cid: str) -> dict:
         """One commit as a patch against the base commit -- its design overlay only, never an island's notes,
-        scripts or cases -- if `island` may see it."""
+        scripts or cases -- if `island` may see it (now: a software commit waits for its exchange)."""
         with self.lock:
             e = self.by_id.get(str(cid))
-        if e is None or e["island"] not in {island, *visible(self.cfg, island)}:
-            return {"error": f"no commit {cid!r} you can see"}
-        if not e["listed"] and e["island"] != island:
+            ok = e is not None and self._seen(island, e, self.clock())
+        if not ok:
             return {"error": f"no commit {cid!r} you can see"}
         if not e["candidate"]:
             return {"id": e["id"], "patch": "", "note": "the commit changed nothing"}
@@ -557,4 +644,5 @@ def run(site, task: Task, account, mode: str, run_dir: Path, repo: Path, names: 
     return out
 
 
-__all__ = ["Archive", "CELLS", "Stopped", "Turns", "fitness", "layer_cell", "layer_labels", "overlay_patch", "run", "visible"]
+__all__ = ["Archive", "CELLS", "Stopped", "Turns", "fitness", "gain_group", "grid_cell", "grid_cells", "layer_cell", "layer_labels", "op_group",
+           "overlay_patch", "run", "visible"]

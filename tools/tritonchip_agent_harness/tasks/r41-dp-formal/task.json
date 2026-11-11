@@ -108,9 +108,8 @@
   "topology": "all",
   "migration_interval": 1,
   "migration_rate": 1.0,
-  "features": [
-   "layer"
-  ],
+  "features": ["op_group", "layer"],
+  "software_exchange_seconds": 7200,
   "max_idle_turns": 3,
   "max_restarts": 2,
   "roles": [

@@ -199,8 +199,16 @@ def board_points(task: Task) -> list:
     return list(ev.get("board_validation") or ev["validation"])
 
 
-# The descriptors an island grid may use (islands.py); the first version has the change's layer only.
-FEATURES = ("layer",)
+# The descriptors an island grid may use (islands.py): the change's layer, and (2026-11-11, for R41-F5) the
+# group of programs whose speedup was largest -- a result of the commit, not where it changed.
+FEATURES = ("layer", "op_group")
+# The groups `op_group` sorts points into, by point-id prefix; every other point is "elementwise" (element-wise
+# operations, reductions and normalisations, data movement).
+OP_GROUPS = ("elementwise", "matrix", "attention", "model")
+DEFAULT_OP_GROUPS = {"matrix": ["op.matmul/", "op.bmm/", "op.linear/", "op.gemv/", "op.scaled_mm/",
+                                "op.w8a8_block_linear/"],
+                     "attention": ["op.attention"],
+                     "model": ["model."]}
 # The layers an island role may write (islands.LAYERS), and how the task text names them.
 ROLE_LAYERS = {"software": "software (`compiler/`, `python/tnca/`)",
                "hardware": "hardware (`rtl/`, the scored profile in `spec/r1_profiles.json`, the device "
@@ -247,7 +255,7 @@ def _check_islands(path: Path, value, services: dict) -> Optional[dict]:
     if value is None:
         return None
     known = {"count", "topology", "migration_interval", "migration_rate", "features", "max_idle_turns",
-             "max_restarts", "target", "roles"}
+             "max_restarts", "target", "roles", "op_groups", "min_gain", "software_exchange_seconds"}
     if not isinstance(value, dict) or set(value) - known or "count" not in value:
         raise TaskError(f"{path}: islands needs count (and may have {', '.join(sorted(known - {'count'}))})")
     n = value["count"]
@@ -271,6 +279,18 @@ def _check_islands(path: Path, value, services: dict) -> Optional[dict]:
     features = value.get("features", ["layer"])
     if not isinstance(features, list) or not features or any(f not in FEATURES for f in features):
         raise TaskError(f"{path}: islands.features: known axes are {', '.join(FEATURES)}")
+    groups = value.get("op_groups", DEFAULT_OP_GROUPS)
+    if not isinstance(groups, dict) or set(groups) - set(OP_GROUPS[1:]) or not all(
+            isinstance(v, list) and all(isinstance(x, str) and x for x in v) for v in groups.values()):
+        raise TaskError(f"{path}: islands.op_groups maps {', '.join(OP_GROUPS[1:])} to point-id prefixes "
+                        f"(every other point is elementwise)")
+    gain = value.get("min_gain", 1.02)
+    if not isinstance(gain, (int, float)) or isinstance(gain, bool) or not 1.0 <= gain < 2.0:
+        raise TaskError(f"{path}: islands.min_gain (a group's geometric-mean speedup a commit needs for a cell) "
+                        f"must be in [1, 2)")
+    exchange = value.get("software_exchange_seconds")
+    if exchange is not None and (not isinstance(exchange, int) or isinstance(exchange, bool) or exchange < 60):
+        raise TaskError(f"{path}: islands.software_exchange_seconds must be an integer >= 60")
     target = value.get("target")
     if target is not None and (not isinstance(target, dict) or set(target) - {"speedup_geomean", "fast_1"}
                                or not all(isinstance(x, (int, float)) for x in target.values())):
@@ -280,6 +300,8 @@ def _check_islands(path: Path, value, services: dict) -> Optional[dict]:
     roles = _check_roles(path, value.get("roles"), n, services)
     return {"count": n, "topology": topo, "migration_interval": int(value.get("migration_interval", 3)),
             "migration_rate": float(rate), "features": list(features),
+            "op_groups": {k: list(v) for k, v in groups.items()}, "min_gain": float(gain),
+            "software_exchange_seconds": exchange,
             "max_idle_turns": int(value.get("max_idle_turns", 3)), "max_restarts": int(value.get("max_restarts", 2)),
             "target": target, **({"roles": roles} if roles else {})}
 
@@ -432,15 +454,40 @@ def _ending(task: Task, island: Optional[int]) -> str:
             f"- `tnca-service submit score --message \"one line on what this commit changes\"` commits a snapshot: "
             f"it is scored as the score service scores it and kept in the archive with your message (shown to other "
             f"islands as yours, unverified). Its reply, once done, also gives your best commit, your island's grid "
-            f"(one elite per cell; cells are what a commit changed: compiler only, hardware only, or both), and "
+            f"({_cells_text(cfg)}), and "
             + ("with every commit the elites of connected islands you have not been given yet"
                if cfg["migration_interval"] == 1 else
                f"every {cfg['migration_interval']} commits some elites of connected islands")
             + " to consider.\n"
             f"- `tnca-service archive` lists the commits you can see; `tnca-service read-commit ID` prints one as a "
             f"patch against the base commit (`git apply` it on a clean tree to continue from it).\n"
-            f"- If you stop, you are asked to continue; a turn that calls no tool counts as idle, and "
+            + _exchange_text(cfg)
+            + f"- If you stop, you are asked to continue; a turn that calls no tool counts as idle, and "
             f"{cfg['max_idle_turns']} idle turns in a row end your island.\n")
+
+
+def _cells_text(cfg: dict) -> str:
+    """How the task text says what a cell of the island grid is."""
+    if "op_group" not in cfg.get("features", ()):
+        return "one elite per cell; cells are what a commit changed: compiler only, hardware only, or both"
+    return (f"one elite per cell, every cell listed, empty ones included; a cell is the group of the scored "
+            f"programs that sped up most -- element-wise, reduction and data-movement programs, matrix products, "
+            f"attention, or whole models, by the geometric mean of their speedups -- and what the commit changed: "
+            f"compiler only, hardware only, or both. A commit whose best group gained less than "
+            f"{(cfg.get('min_gain', 1.02) - 1) * 100:.0f} % takes no cell; it stays in the archive")
+
+
+def _exchange_text(cfg: dict) -> str:
+    """When another island's commit becomes visible (2026-11-11, R41-F5)."""
+    every = cfg.get("software_exchange_seconds")
+    if not every:
+        return ""
+    hours = every / 3600
+    when = f"{hours:g} hours" if hours >= 1 else f"{every // 60} minutes"
+    return (f"- A commit of another island that changed hardware is visible to you (in the archive, to read, and "
+            f"as an elite you are given) as soon as it is scored; one that changed only software becomes visible "
+            f"at the next exchange, every {when} of the run, for every island at once. Your own commits are always "
+            f"visible to you.\n")
 
 
 def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, board_cycles: str = "equal",

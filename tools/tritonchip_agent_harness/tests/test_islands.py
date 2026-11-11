@@ -296,3 +296,113 @@ class Roles(unittest.TestCase):
         self.assertIn("`ends_within_minutes`", texts[2])
         self.assertIn("with every commit the elites of connected islands you have not been given yet", texts[2])
         self.assertNotIn("shared by every island", "".join(texts))
+
+
+# -- R41-F5's grid and exchange (decided 2026-11-11) ---------------------------------------------------------
+
+def f5_task(count=3, exchange=7200) -> Task:
+    t = task(count, "all", 1)
+    cfg = dict(t.islands, features=["op_group", "layer"], migration_rate=1.0, min_gain=1.02,
+               software_exchange_seconds=exchange,
+               op_groups={"matrix": ["op.matmul/", "op.linear/"], "attention": ["op.attention"], "model": ["model."]})
+    import dataclasses
+    return dataclasses.replace(t, islands=cfg)
+
+
+def scored(archive, island, root, name, speedups: dict, path="compiler/a.py", score=1.1):
+    rows = [{"point": p, "failure": None, "speedup": s} for p, s in speedups.items()]
+    job = {"id": name, "message": name}
+    return archive.add(island, job, candidate(root, name, path),
+                       {"aggregate": {"n": len(rows), "passed": len(rows), "score": score, "fast_1": 0.5},
+                        "full": {"points": rows}})
+
+
+ELEM = {"op.add/small/x": 1.2, "op.softmax/small/y": 1.3, "op.matmul/small/z": 1.0, "op.attention_decode/s/w": 1.0}
+MATRIX = {"op.add/small/x": 1.0, "op.matmul/small/z": 1.25, "op.linear/medium/q": 1.15}
+
+
+class F5Grid(unittest.TestCase):
+    def test_a_cell_is_the_group_that_gained_most_and_the_layer_changed(self):
+        cfg = f5_task().islands
+        self.assertEqual(islands.op_group("op.linear/medium/q", cfg["op_groups"]), "matrix")
+        self.assertEqual(islands.op_group("model.llama_decode/large/x", cfg["op_groups"]), "model")
+        self.assertEqual(islands.op_group("op.embedding/hbm/x", cfg["op_groups"]), "elementwise")
+        full = {"points": [{"point": p, "failure": None, "speedup": s} for p, s in ELEM.items()]}
+        self.assertEqual(islands.gain_group(full, cfg), "elementwise")
+        self.assertEqual(islands.grid_cell(["compiler"], full, cfg), "elementwise:compiler-only")
+        self.assertEqual(islands.grid_cell(["rtl", "compiler"], full, cfg), "elementwise:cross-layer")
+        flat = {"points": [{"point": "op.add/s/x", "failure": None, "speedup": 1.015},
+                           {"point": "op.matmul/s/z", "failure": "numeric-error", "speedup": None}]}
+        self.assertIsNone(islands.gain_group(flat, cfg))             # under 1.02: no direction, no cell
+        self.assertIsNone(islands.grid_cell(["compiler"], flat, cfg))
+        self.assertEqual(len(islands.grid_cells(cfg)), 12)
+        self.assertEqual(islands.grid_cells(task().islands), islands.CELLS)   # a layer-only task as before
+
+    def test_every_reply_lists_all_twelve_cells(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, a = Path(tmp), islands.Archive(Path(tmp), f5_task())
+            grid = a.reply(0, scored(a, 0, root, "m", MATRIX))["grid"]
+            self.assertEqual(len(grid), 12)
+            self.assertEqual(grid["matrix:compiler-only"]["id"], "0-1")
+            self.assertEqual(grid["elementwise:compiler-only"], "empty")
+            flat = scored(a, 0, root, "flat", {"op.add/small/x": 1.01}, score=1.3)
+            self.assertIsNone(flat["cell"])                          # kept in the archive, not an elite
+            self.assertIn("0-2", [c["id"] for c in a.view(0)["commits"]])
+
+    def test_software_waits_for_the_exchange_hardware_does_not(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, a = Path(tmp), islands.Archive(Path(tmp), f5_task())
+            now = {"t": a.started + 1800}
+            a.clock = lambda: now["t"]
+            sw = scored(a, 0, root, "sw", ELEM)
+            hw = scored(a, 2, root, "hw", MATRIX, path="rtl/core/x.v")
+            self.assertEqual(sw["visible_at"], a.started + 7200)
+            self.assertEqual(hw["visible_at"], a.started + 1800)
+            now["t"] = a.started + 3600
+            view = a.view(1)
+            self.assertEqual([c["id"] for c in view["commits"]], ["2-1"])       # the hardware commit only
+            self.assertEqual(view["elites"][0], {})
+            self.assertIn("error", a.read(1, "0-1"))
+            self.assertEqual(view["next_software_exchange_in_minutes"], 60)
+            mine = a.reply(1, scored(a, 1, root, "own", ELEM))
+            self.assertEqual([m["id"] for m in mine["migration"]], ["2-1"])
+            self.assertIn("0-1", [c["id"] for c in a.view(0)["commits"]])        # an island sees its own at once
+            now["t"] = a.started + 7200
+            from unittest import mock
+            with mock.patch.object(islands, "overlay_patch", return_value="diff"):
+                self.assertEqual(a.read(1, "0-1")["patch"], "diff")
+            again = a.reply(1, scored(a, 1, root, "own2", ELEM))
+            self.assertEqual([m["id"] for m in again["migration"]], ["0-1"])     # each elite given once
+            self.assertEqual(a.view(2)["elites"][0], {"elementwise:compiler-only": "0-1"})
+
+    def test_a_newer_elite_not_visible_yet_leaves_the_last_visible_one(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, a = Path(tmp), islands.Archive(Path(tmp), f5_task())
+            now = {"t": a.started + 1800}
+            a.clock = lambda: now["t"]
+            scored(a, 0, root, "first", ELEM, score=1.1)
+            now["t"] = a.started + 7300
+            scored(a, 0, root, "better", ELEM, score=1.2)
+            self.assertEqual(a.elites[0]["elementwise:compiler-only"], "0-2")    # island 0's own grid
+            now["t"] = a.started + 8000
+            self.assertEqual(a.view(1)["elites"][0]["elementwise:compiler-only"], "0-1")
+            now["t"] = a.started + 14400
+            self.assertEqual(a.view(1)["elites"][0]["elementwise:compiler-only"], "0-2")
+
+    def test_the_task_check_and_text(self):
+        from tritonchip_agent_harness import task as task_
+        ok = {"count": 3, "topology": "all", "features": ["op_group", "layer"], "software_exchange_seconds": 7200,
+              "min_gain": 1.02}
+        services = {"score": {"requests": 5}}
+        cfg = task_._check_islands(Path("t.json"), ok, services)
+        self.assertEqual((cfg["min_gain"], cfg["software_exchange_seconds"]), (1.02, 7200))
+        self.assertIn("matrix", cfg["op_groups"])
+        for bad in ({"min_gain": 2.5}, {"software_exchange_seconds": 10}, {"op_groups": {"vector": ["op."]}},
+                    {"features": ["op_group", "nope"]}):
+            with self.assertRaises(task_.TaskError, msg=repr(bad)):
+                task_._check_islands(Path("t.json"), dict(ok, **bad), services)
+        text = task_._cells_text(cfg) + task_._exchange_text(cfg)
+        self.assertIn("every cell listed, empty ones included", text)
+        self.assertIn("less than 2 % takes no cell", text)
+        self.assertIn("every 2 hours of the run", text)
+        self.assertEqual(task_._exchange_text(dict(cfg, software_exchange_seconds=None)), "")

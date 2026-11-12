@@ -93,6 +93,7 @@ Then run a test case of your own with the three-core device:
     export TNCA_BACKEND=fpga-multicore-sim TNCA_ACTIVE_CORES=3
     export TNCA_BACKEND_ARGS='{"board_top": true, "device": "u280-3core-r40", "memory_bytes": 16777216, "hbm_dma": true}'
 
+<!-- without-skill -->
 ```python
 import os
 os.environ.setdefault("TNCA_PROFILE", "core-vrf-sync-v5")
@@ -114,6 +115,7 @@ print("host fallbacks:", tnca.inductor.host_fallbacks(code))   # must be empty
 print("device cycles:", sum(e["device_cycles"] or 0 for e in log))
 torch.testing.assert_close(got, expected)
 ```
+<!-- /without-skill -->
 
 The simulator elaborates the whole three-core machine with its caches and
 memory outlets, so it is slow: a few tens of device cycles per second of wall

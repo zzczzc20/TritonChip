@@ -9,8 +9,27 @@ import time
 
 from .. import devices
 from ..errors import ArgumentError, DependencyFailed
+from ..hbm_layout import DEVICE_RESERVED_RANGES, STRIPED_BYTES, StripedHBMLayout
 from .multicore_mmio import MulticoreMMIOBackend
 from .u50_sim import SimLink, _repo_root, _tools
+
+# The runtime's code region: its heap begins above it (tnca.runtime heap_base),
+# so a striped window backs this much before the memory budget.
+_CODE_BYTES = 0x20000
+
+
+class _Accessor:
+    """What StripedHBMLayout writes and reads through: the stand-in's DMA model,
+    addressed by physical window offset, as XRT's BO is on the board."""
+
+    def __init__(self, link):
+        self._link = link
+
+    def bo_write(self, offset, data):
+        self._link._dma_commands(offset, len(data), data)
+
+    def bo_read(self, offset, nbytes):
+        return self._link._dma_commands(offset, nbytes)
 
 
 # A mailbox is two directories, one per direction: the host writes its
@@ -50,7 +69,17 @@ class _ExternalDevice:
 
 class MulticoreMMIOLink(SimLink):
     def __init__(self, *, core_count=3, memory_ports=3,
-                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, memory_controls=False, journal=False, hybrid_lsu=False, sfu_lanes=1, home_background_reads=False, cache_sets=None, rtl_params=None, stage_probes=False, device=None, inbox=None, outbox=None, **kwargs):
+                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, memory_controls=False, journal=False, hybrid_lsu=False, sfu_lanes=1, home_background_reads=False, cache_sets=None, rtl_params=None, stage_probes=False, device=None, inbox=None, outbox=None, observe=None, **kwargs):
+        # Observation builds only (tools/performance_harness/align/record_rtl.py): further
+        # tops, sources and defines elaborated with this very bench -- a monitor that reads
+        # the device through hierarchical references. None is the product's bench.
+        self.observe = None
+        if observe is not None:
+            if (not isinstance(observe, dict) or set(observe) - {'tops', 'sources', 'defines'}
+                    or not all(isinstance(v, (list, tuple)) and all(isinstance(x, str) for x in v)
+                               for v in observe.values())):
+                raise ArgumentError('observe takes lists of tops, sources and defines')
+            self.observe = {k: list(observe.get(k, ())) for k in ('tops', 'sources', 'defines')}
         if type(journal) is not bool or (journal and not board_top):
             raise ArgumentError('journal requires a boolean and the board-top stand-in')
         if type(hybrid_lsu) is not bool or type(home_background_reads) is not bool or sfu_lanes not in (1, 2, 3, 4, 8):
@@ -112,6 +141,19 @@ class MulticoreMMIOLink(SimLink):
             raise ArgumentError('maintenance must be 0 or 1')
         self.core_count = operator.index(core_count)
         self.memory_ports = operator.index(memory_ports)
+        # A striped-HBM machine (R41: HBM_STRIPED, python/tnca/hbm_layout.py) is
+        # a base-zero 8 GiB window the host addresses through the 32-PC page
+        # layout, as the board's BO is. The stand-in simulates that window
+        # sparsely (tb/common/tnca_sparse_map.vh): it backs the runtime's code
+        # region and `memory_bytes` of heap above it, the memory budget of the
+        # dense stand-in, and the device's reserved range; a line outside them
+        # stops the simulator with the address. The dense stand-in is unchanged.
+        self.striped = bool(self.device and self.device['uncore'].get('HBM_STRIPED'))
+        self.hbm_layout = None
+        self.backed_bytes = None
+        if self.striped:
+            self.backed_bytes = _CODE_BYTES + operator.index(memory_bytes)
+            memory_bytes = STRIPED_BYTES
         self.memory_bytes = operator.index(memory_bytes)
         self.link_stages = operator.index(link_stages)
         self.noc_link_stages = operator.index(noc_link_stages)
@@ -182,7 +224,29 @@ class MulticoreMMIOLink(SimLink):
         size = min(operator.index(nbytes), self.memory_bytes)
         if size <= 0 or size % 64:
             raise ArgumentError('simulated AXI allocation must contain complete lines')
+        if self.striped:
+            if size != STRIPED_BYTES:
+                raise ArgumentError(f'a striped-HBM machine exposes its whole 8 GiB window; {nbytes} B were asked')
+            self.hbm_layout = StripedHBMLayout(0, STRIPED_BYTES)
+            return 0, STRIPED_BYTES
         return 0x100000000, size
+
+    def sparse_ranges(self):
+        """The physical window ranges the striped stand-in backs: the pages of
+        the code region and the heap budget, round-robin over the 32 PCs, and
+        the device's reserved range; sorted, disjoint, line aligned."""
+        spans = []
+        for logical, nbytes in ((0, self.backed_bytes),) + tuple((lo, hi - lo) for lo, hi in DEVICE_RESERVED_RANGES):
+            spans += [(physical, size) for _, physical, size in StripedHBMLayout.pc_ranges(logical, nbytes)]
+        spans.sort()
+        merged = []
+        for lo, size in spans:
+            lo, hi = lo // 64 * 64, -(-(lo + size) // 64) * 64
+            if merged and lo <= merged[-1][1]:
+                merged[-1] = (merged[-1][0], max(merged[-1][1], hi))
+            else:
+                merged.append((lo, hi))
+        return [(lo, hi - lo) for lo, hi in merged]
 
     def _dma_commands(self, offset, count, data=None):
         offset,count=operator.index(offset),operator.index(count)
@@ -208,9 +272,19 @@ class MulticoreMMIOLink(SimLink):
 
     def hbm_write(self, offset, data):
         data=bytes(data)
+        if self.striped:
+            # Logical offsets from the runtime; the layout scatters them over
+            # the PCs exactly as the image's address path does (ISA/R41 hbm8).
+            if self.hbm_layout is None:
+                raise DependencyFailed('striped HBM window not opened')
+            return self.hbm_layout.write(_Accessor(self), offset, data)
         self._dma_commands(offset,len(data),data)
 
     def hbm_read(self, offset, nbytes):
+        if self.striped:
+            if self.hbm_layout is None:
+                raise DependencyFailed('striped HBM window not opened')
+            return bytes(self.hbm_layout.read(_Accessor(self), offset, nbytes))
         return self._dma_commands(offset,nbytes)
 
     def _build(self):
@@ -228,9 +302,18 @@ class MulticoreMMIOLink(SimLink):
         if self.device is not None:
             bench['AXI_ID_W'] = devices.derived(self.device['uncore'])['AXI_ID_W']
             bench['AXI_OUT_N'] = self.device['uncore']['AXI_OUT_N']
-            bench['AXI_DATA_W'] = self.device['uncore'].get('AXI_DATA_W', 256)
+            # The outlet width is a platform field (devices.PLATFORM_FIELDS), not
+            # an uncore one: R41's description says 512, and the stand-in's own
+            # AXI side must be as wide as the image's.
+            bench['AXI_DATA_W'] = self.device['platform'].get('AXI_DATA_W', 256)
             header = Path(self.dir) / 'tnca_image_params.vh'
             header.write_text(self.image_header(), encoding='utf-8')
+        if self.striped:
+            ranges = self.sparse_ranges()
+            sparse_map = Path(self.dir) / 'sparse_map.txt'
+            sparse_map.write_text(''.join(f'{off:x} {size:x}\n' for off, size in ranges), encoding='utf-8')
+            bench.update(WIN_BASE=0, SPARSE=1, SPARSE_LINES=sum(size for _, size in ranges) // 64)
+            command += [f'-P{top}.SPARSE_MAP="{sparse_map.resolve()}"']
         for name, value in bench.items():
             command += [f'-P{top}.{name}={value}']
         for name, value in sorted(self.rtl_params.items()):
@@ -243,6 +326,11 @@ class MulticoreMMIOLink(SimLink):
         if header is not None:
             command += [str(header)]
         command += [f'tb/fpga/{top}.v']
+        if self.observe:
+            for extra in self.observe['tops']:
+                command[command.index('-o'):command.index('-o')] = ['-s', extra]
+            command[1:1] = [f'-D{d}' for d in self.observe['defines']]
+            command += self.observe['sources']
         result = subprocess.run(command, cwd=root, capture_output=True, text=True, timeout=1800)
         if result.returncode:
             raise DependencyFailed('multicore MMIO harness did not elaborate',
@@ -262,6 +350,9 @@ def stand_in(**kwargs):
         kwargs.setdefault('image_profile', desc['per_core_profile'])
         kwargs.setdefault('core_count', desc['platform']['core_count'])
         kwargs.setdefault('memory_ports', desc['uncore']['MEM_PORTS'])
+        # The HBM the runtime opens is the described machine's, as on the board
+        # (devices.backend_args): a striped machine must open its whole window.
+        kwargs.setdefault('hbm_bytes', desc['platform']['hbm_bytes'])
         device = desc
     core_count = kwargs.pop('core_count', 3)
     memory_ports = kwargs.pop('memory_ports', min(3, core_count))
@@ -285,6 +376,7 @@ def stand_in(**kwargs):
                             trace=kwargs.pop('trace', False),
                             device=device, _explicit=explicit, inbox=kwargs.pop('inbox', None),
                             outbox=kwargs.pop('outbox', None),
+                            harness=kwargs.pop('harness', None),   # a prebuilt bench (an observation build), else _build()
                             host_timeout=kwargs.get('host_timeout', 30.0))
     return MulticoreMMIOBackend(link, core_count=core_count,
                                memory_ports=memory_ports, **kwargs)

@@ -1,6 +1,7 @@
 """Board certification, on a throwaway repository: the tree, the comparison, the verdicts, the score."""
 from __future__ import annotations
 
+import dataclasses
 import json
 import sys
 import tempfile
@@ -206,13 +207,68 @@ class Certify(unittest.TestCase):
                                board_host="c", yes=yes, pipeline=self.pipeline(pipe),
                                fetch=lambda hosts, host, run_id: board(SIM) if records is None else records, **kw)
 
-    def test_the_base_machine_needs_nothing(self):
+    def certified_base(self, pipe=None) -> Path:
+        """The base certified on card server c, as a software-only candidate's image."""
+        cache = Path(tempfile.mkdtemp()) / "base.json"
+        cache.write_text(json.dumps({"points": {p: {"status": "pass", "cycles": c + 7, "record_cycles": c}
+                                                for p, c in SIM.items()}, "missing": []}))
+        built = pipe or {"status": "PASS", "run_id": "base-run", "build": {"status": "PASS", "xclbin_sha256": "f" * 64},
+                         "board": {"status": "PASS", "host": "c"}}
+        certify.certify(self.repo, self.task, baseline=cache, hosts=Path("/h"), build_host="b", board_host="c",
+                        yes=True, pipeline=self.pipeline(built), fetch=lambda *a: board(SIM))
+        return cache.with_name("base.certification.json")
+
+    def measured(self, value: dict):
+        def run(tree, manifest, record_path, hosts, board_host, run_id, xclbin):
+            self.calls.append({"manifest": manifest, "board_host": board_host, "run_id": run_id, "xclbin": xclbin})
+            return value
+        return run
+
+    def test_software_alone_still_runs_on_the_card_on_the_bases_image(self):
+        # A compiler-only candidate is not built again, but its points run on the card:
+        # the base's image, its own compiler driving it (user, 2026-11-06).
+        image = self.certified_base()
+        self.calls.clear()
         run_dir = make_run(self.repo, self.task, {"compiler/a.py": "a = 2\n"})
-        value = self.certify(run_dir)
-        self.assertEqual(value["verdict"], "not-needed")
-        self.assertEqual(self.calls, [])
-        saved = json.loads((run_dir / "certification.json").read_text())
-        self.assertEqual(saved["score"]["final"]["passed"], 1)
+        value = self.certify(run_dir, base_image_record=image, measure=self.measured(
+            {"status": "PASS", "run_id": "base-run", "build": {"status": "PASS", "reused": True},
+             "board": {"status": "PASS", "host": "c"}}))
+        self.assertEqual(value["verdict"], "certified")
+        self.assertEqual(len(self.calls), 1)
+        call = self.calls[0]
+        self.assertEqual((call["run_id"], call["xclbin"], call["board_host"]), ("base-run", "f" * 64, "c"))
+        self.assertEqual(call["manifest"]["candidate_id"], "certify-t-base")
+        self.assertEqual(call["manifest"]["board"]["archbench"]["points"], ["a", "b", "c"])
+        self.assertEqual(value["image"], {"record": str(image), "run_id": "base-run", "xclbin_sha256": "f" * 64})
+        self.assertEqual(value["card_runs_candidate_code"], ["compiler/a.py"])
+        self.assertEqual(value["score"]["final"]["passed"], 1)
+
+    def test_software_alone_without_the_bases_image_is_refused(self):
+        run_dir = make_run(self.repo, self.task, {"compiler/a.py": "a = 2\n"})
+        with self.assertRaisesRegex(certify.CertifyError, "--base-image"):
+            self.certify(run_dir)
+        self.assertFalse((run_dir / "certification.json").exists())
+
+    def test_on_the_bases_image_cycles_that_differ_still_fail_every_point(self):
+        image = self.certified_base()
+        run_dir = make_run(self.repo, self.task, {"compiler/a.py": "a = 2\n"})
+        value = self.certify(run_dir, base_image_record=image, records=board({"a": 100, "b": 201, "c": 300}),
+                             measure=self.measured({"status": "PASS", "run_id": "base-run",
+                                                    "build": {"status": "PASS"}, "board": {"status": "PASS"}}))
+        self.assertEqual(value["verdict"], "board-disagrees")
+        self.assertEqual(value["score"]["validation"]["passed"], 0)
+
+    def test_only_a_certified_base_on_this_card_is_an_image(self):
+        run_dir = make_run(self.repo, self.task, {"compiler/a.py": "a = 2\n"})
+        failed = self.certified_base({"status": "PASS", "run_id": "base-run",
+                                      "build": {"status": "TIMING_FAIL", "xclbin_sha256": "f" * 64},
+                                      "board": {"status": "PASS", "host": "c"}})
+        with self.assertRaisesRegex(certify.CertifyError, "not certified"):
+            self.certify(run_dir, base_image_record=failed, measure=self.measured({}))
+        image = self.certified_base()
+        with self.assertRaisesRegex(certify.CertifyError, "is on 'c', not 'elsewhere'"):
+            certify.certify(self.repo, self.task, run_dir=run_dir, hosts=Path("/h"), board_host="elsewhere",
+                            yes=True, base_image_record=image, measure=self.measured({}))
 
     def test_without_yes_the_tree_is_built_and_nothing_runs(self):
         run_dir = make_run(self.repo, self.task, {"compiler/a.py": "a = 2\n", "rtl/core/x.v": "module x; endmodule\n"})
@@ -240,6 +296,34 @@ class Certify(unittest.TestCase):
             s = value["score"][name]
             self.assertEqual((s["passed"], s["speedup_geomean"], s["fast_1"]), (0, None, 0.0))
             self.assertEqual({r["failure"] for r in s["points"]}, {"hardware-board-disagrees"})
+
+    def test_a_task_that_records_board_cycles_certifies_on_passing_points(self):
+        # R41: simulation's HBM is a stand-in and the card counts fewer cycles (user's decision of 2026-11-07).
+        self.task.evaluation["certify"]["board_cycles"] = "record"
+        run_dir = make_run(self.repo, self.task, {"rtl/core/x.v": "module x; endmodule\n"})
+        value = self.certify(run_dir, records=board({"a": 90, "b": 201, "c": 250}))
+        self.assertEqual(value["verdict"], "certified")
+        self.assertEqual([r["problem"] for r in value["points"]], [None, None, None])
+        self.assertEqual([r["board_cycles"] for r in value["points"]], [90, 201, 250])
+
+    def test_recording_board_cycles_still_fails_a_fallback(self):
+        self.task.evaluation["certify"]["board_cycles"] = "record"
+        run_dir = make_run(self.repo, self.task, {"rtl/core/x.v": "module x; endmodule\n"})
+        value = self.certify(run_dir, records=board({"a": 90, "b": 201, "c": 250}, fallbacks=["host"]))
+        self.assertEqual(value["verdict"], "board-disagrees")
+        self.assertIn("part of it ran on the host", value["why"])
+
+    def test_an_unknown_board_cycles_rule_is_refused(self):
+        self.task.evaluation["certify"]["board_cycles"] = "close"
+        with self.assertRaisesRegex(certify.CertifyError, "board_cycles"):
+            certify.config(self.task)
+
+    def test_the_card_sessions_rows_follow_the_same_rule(self):
+        sim = {"p": {"passed": True, "done_cycles": 100}}
+        got = {"p": {"status": "pass", "fallbacks": [], "observer": {"done_cycles": 90}}}
+        self.assertEqual(certify._board_rows(sim, got)[0]["problem"], "cycles differ")
+        row = certify._board_rows(sim, got, "record")[0]
+        self.assertEqual((row["problem"], row["sim_cycles"], row["board_cycles"]), (None, 100, 90))
 
     def test_a_fallback_or_a_failed_point_on_the_card_disagrees(self):
         run_dir = make_run(self.repo, self.task, {"rtl/core/x.v": "module x; endmodule\n"})
@@ -313,8 +397,16 @@ class Certify(unittest.TestCase):
         self.assertEqual((e["role"], e["host"], e["reserved"]), ("certify", None, None))
         self.assertIn("link and board stage together", e["covers"])
         self.assertTrue(value["started"] <= e["started"] <= e["finished"] <= value["finished"])
+        # Software alone runs on the base's image: the card is held, no build server is.
+        image = self.certified_base()
         unchanged = make_run(self.repo, self.task, {"compiler/a.py": "a = 2\n"})
-        self.assertEqual(self.certify(unchanged)["occupancy"], [])
+        steps = [{"name": n, "started_at": 2000.0 + 10 * i, "ok": True, "elapsed_s": 5.0}
+                 for i, n in enumerate(("sync:c", "doctor:c", "board:measure", "board"))]
+        value = self.certify(unchanged, base_image_record=image, measure=self.measured(
+            {"status": "PASS", "run_id": "base-run", "build": {"status": "PASS"}, "board": {"status": "PASS"},
+             "steps": steps}))
+        self.assertEqual([(e["role"], e["host"], e["started"], e["finished"]) for e in value["occupancy"]],
+                         [("certify-board", "c", 2020.0, 2035.0)])
 
     def test_the_base_is_certified_against_the_evaluators_baseline(self):
         cache = Path(tempfile.mkdtemp()) / "base.json"
@@ -334,6 +426,96 @@ class Certify(unittest.TestCase):
         (run_dir / "run.json").write_text(json.dumps(run))
         with self.assertRaisesRegex(certify.CertifyError, "another version"):
             self.certify(run_dir)
+
+
+def stored(problems: list, checks=None, **extra) -> dict:
+    """An after-run certification as a run record holds it: rows of sim 100 against the card's 90."""
+    rows = [{"point": f"p{i}", "sim_cycles": 100, "board_cycles": 90, "problem": p} for i, p in enumerate(problems)]
+    cert = {"verdict": "board-disagrees", "why": "...", "rows": rows,
+            "card": {"measured": {"checks": checks if checks is not None else {"fp8": {"exit": 0}}}}}
+    return {**cert, **extra}
+
+
+def island_run(*certs, requests=()) -> dict:
+    return {"run_id": "r", "task": {"id": "t", "sha256": "o" * 64},
+            "islands": {"islands": [{"agent_result": {"services": {"requests": list(requests)}}}]},
+            "champions": [{"rank": i, "id": f"c{i}", "certification": c} for i, c in enumerate(certs, 1)]}
+
+
+class Again(unittest.TestCase):
+    """A finished run's certifications judged again from what they stored (the user's decision of 2026-11-07)."""
+
+    def test_cycles_that_only_differ_certify_under_record(self):
+        value = certify.rejudge(island_run(stored(["cycles differ", "cycles differ"])), "record")
+        c = value["certifications"][0]
+        self.assertEqual((c["was"], c["verdict"], c["judged_again"]), ("board-disagrees", "certified", True))
+        self.assertEqual(c["cycles_on_card"], {"points": 2, "board_over_simulation_geomean": 0.9,
+                                               "board_over_simulation_range": [0.9, 0.9]})
+        self.assertEqual(value["result"], {"rank": 1, "id": "c1"})
+
+    def test_a_fallback_or_a_failed_board_check_still_disagrees(self):
+        value = certify.rejudge(island_run(stored(["cycles differ", "part of it ran on the host"]),
+                                           stored(["cycles differ"], checks={"fp8": {"exit": 1}})), "record")
+        self.assertEqual([c["verdict"] for c in value["certifications"]], ["board-disagrees", "board-disagrees"])
+        self.assertIn("part of it ran on the host", value["certifications"][0]["why"])
+        self.assertIn("board check fp8 did not pass", value["certifications"][1]["why"])
+        self.assertIsNone(value["result"])
+
+    def test_under_equal_differing_cycles_still_disagree(self):
+        value = certify.rejudge(island_run(stored([None])), "equal")
+        self.assertEqual(value["certifications"][0]["verdict"], "board-disagrees")
+
+    def test_a_point_failed_in_simulation_stays_as_it_was(self):
+        cert = stored(["cycles differ"])
+        cert["rows"].append({"point": "q", "sim_cycles": None, "board_cycles": None, "problem": None,
+                             "note": "failed in simulation"})
+        c = certify.rejudge(island_run(cert), "record")["certifications"][0]
+        self.assertEqual(c["verdict"], "certified")
+        self.assertEqual(c["cycles_on_card"]["points"], 1)
+
+    def test_a_verdict_before_the_card_ran_is_kept_and_the_next_champion_can_be_the_result(self):
+        value = certify.rejudge(island_run({"verdict": "infeasible", "why": "build TIMING_FAIL"},
+                                           stored(["cycles differ"])), "record")
+        first = value["certifications"][0]
+        self.assertEqual((first["verdict"], first["judged_again"]), ("infeasible", False))
+        self.assertEqual(value["result"], {"rank": 2, "id": "c2"})
+
+    def test_a_reused_requests_board_checks_come_from_the_run_record(self):
+        cert = stored(["cycles differ"], checks={}, reused={"request": "l13", "points": ["p0"]})
+        ok = {"id": "l13", "full": {"card": {"outcome": "ok", "record": {"measured": {"checks": {"fp8": {"exit": 1}}}}}}}
+        c = certify.rejudge(island_run(cert, requests=[ok]), "record")["certifications"][0]
+        self.assertEqual(c["verdict"], "board-disagrees")
+        self.assertEqual(c["checks"], {"fp8": {"exit": 1}})
+        c = certify.rejudge(island_run(cert, requests=[]), "record")["certifications"][0]
+        self.assertEqual((c["verdict"], c["judged_again"]), ("board-disagrees", False))
+        self.assertIn("l13", c["note"])
+
+    def test_checks_the_record_kept_are_used_as_they_are(self):
+        cert = stored(["cycles differ"], checks={"fp8": {"exit": 1}})
+        cert["checks"] = {"fp8": {"exit": 0}}
+        self.assertEqual(certify.rejudge(island_run(cert), "record")["certifications"][0]["verdict"], "certified")
+
+    def test_a_single_run_is_judged_too_and_a_pending_one_is_refused(self):
+        run = {"run_id": "r", "task": {"id": "t"}, "certification": stored(["cycles differ"])}
+        self.assertEqual(certify.rejudge(run, "record")["result"], {"rank": 1, "id": "r"})
+        with self.assertRaisesRegex(certify.CertifyError, "nothing to judge again"):
+            certify.rejudge({"run_id": "r", "certification": "pending"}, "record")
+
+    def test_the_run_dir_gets_its_own_record_and_run_json_is_left_as_it_was(self):
+        task = make_task("b", "p")
+        task.evaluation["certify"]["board_cycles"] = "record"
+        run_dir = Path(tempfile.mkdtemp())
+        raw = json.dumps(island_run(stored(["cycles differ"]))).encode()
+        (run_dir / "run.json").write_bytes(raw)
+        value = certify.rejudge_run(task, run_dir)
+        self.assertEqual((run_dir / "run.json").read_bytes(), raw)
+        written = json.loads((run_dir / "certification-again.json").read_text())
+        self.assertEqual((written["board_cycles"], written["result"]), ("record", {"rank": 1, "id": "c1"}))
+        self.assertEqual(written["task_at_run"]["sha256"], "o" * 64)
+        self.assertEqual(value["task"]["sha256"], task.sha256)
+        other = dataclasses.replace(task, task_id="u")
+        with self.assertRaisesRegex(certify.CertifyError, "not 'u'"):
+            certify.rejudge_run(other, run_dir)
 
 
 if __name__ == "__main__":

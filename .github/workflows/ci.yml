@@ -251,9 +251,12 @@ jobs:
           make tnca-opt
           make sim/build/tb_core.vvp sim/build/tb_top.vvp
 
+      # The option-identity test checks R40's switches with all of them off.
+      # R41-F3's base turns tiled_pointwise on by default (mode 3); the test
+      # file is recorded in R40 evidence, so the switch is pinned here instead.
       - name: R40 compile option identity and explicit overrides
         run: |
-          python3 tools/r40/packed_window_options_tests.py
+          TNCA_TILED_POINTWISE=0 python3 tools/r40/packed_window_options_tests.py
           $HOME/tritonenv/bin/python tools/r40/compile_switch_tests.py
           $HOME/tritonenv/bin/python tools/r40/pipeline_stage_options_tests.py
           python3 tools/r40/child_exec_tests.py
@@ -298,8 +301,11 @@ jobs:
       # than an influence: a dump must not change the cache key or the
       # artifact, or turning one on hands you a different kernel than the
       # one you were trying to look at.
+      # DUMP-02 compares the recorded options with none set; R41-F3's base
+      # records tiled_pointwise 3 by default, and dump_tests.py is recorded in
+      # R40 evidence, so the switch is pinned off here.
       - name: R2 IR and assembly dumps
-        run: make r2-dump-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
+        run: TNCA_TILED_POINTWISE=0 make r2-dump-tests TRITON_PYTHON=$HOME/tritonenv/bin/python
 
       # The persistent device: 32 launches in one session, eight tasks held
       # and a ninth refused, and an A->B->C chain whose middle result never

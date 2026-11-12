@@ -65,6 +65,12 @@ class Site:
     fpga_worker: Optional[dict] = None
     # Optional split-host full FPGA pipeline for the in-run fpga-slow service.
     fpga_pipeline: Optional[dict] = None
+    # How many evaluations may run at once on this host (islands share it; report section 8.8 P10).
+    evaluations: Optional[int] = None
+    # A SystemC installation (include/, lib/, lib/cmake/SystemCLanguage) the performance models in
+    # tools/performance_harness/systemc build against: mounted read-only at runner.SYSTEMC_DIR for a
+    # task that asks for the models (`models`, 2026-11-08). None: this site cannot run such a task.
+    systemc: Optional[Path] = None
 
     def account(self, label: str) -> Account:
         if label not in self.accounts:
@@ -96,7 +102,7 @@ def load_site(path: Optional[Path] = None) -> Site:
     except (OSError, json.JSONDecodeError) as exc:
         raise SiteError(f"cannot read site configuration {path}: {exc}") from exc
     _keys(str(path), value, {"schema", "provider", "images", "resources", "state_dir", "network", "accounts"},
-          {"repository", "fpga_worker", "fpga_pipeline"})
+          {"repository", "fpga_worker", "fpga_pipeline", "systemc"})
     if value["schema"] != SCHEMA:
         raise SiteError(f"{path}: schema must be {SCHEMA}")
     if value["provider"] != "docker":
@@ -108,7 +114,10 @@ def load_site(path: Optional[Path] = None) -> Site:
         raise SiteError("images: each must be an image reference")
 
     res = value["resources"]
-    _keys("resources", res, {"cpus", "memory", "pids"})
+    _keys("resources", res, {"cpus", "memory", "pids"}, {"evaluations"})
+    if "evaluations" in res and (not isinstance(res["evaluations"], int) or isinstance(res["evaluations"], bool)
+                                 or res["evaluations"] < 1):
+        raise SiteError("resources.evaluations must be a positive integer")
     if not isinstance(res["cpus"], (int, float)) or isinstance(res["cpus"], bool) or res["cpus"] <= 0:
         raise SiteError("resources.cpus must be a positive number")
     if not isinstance(res["memory"], str) or not _MEMORY.match(res["memory"]):
@@ -165,27 +174,57 @@ def load_site(path: Optional[Path] = None) -> Site:
 
     worker = value.get("fpga_worker")
     if worker is not None:
-        _keys("fpga_worker", worker, {"ssh", "workdir", "vivado_settings"}, {"ro_binds", "threads", "part"})
+        _keys("fpga_worker", worker, {"ssh", "workdir", "vivado_settings"}, {"ro_binds", "threads", "part", "sandbox"})
         if not all(isinstance(worker[k], str) and worker[k] for k in ("ssh", "workdir", "vivado_settings")):
             raise SiteError("fpga_worker: ssh, workdir and vivado_settings must be strings")
         if not isinstance(worker.get("ro_binds", []), list):
             raise SiteError("fpga_worker.ro_binds must be a list of paths")
+        if worker.get("sandbox", "bwrap") not in ("bwrap", "unshare"):
+            raise SiteError("fpga_worker.sandbox must be bwrap (default) or unshare (a worker without bubblewrap)")
 
     pipeline = value.get("fpga_pipeline")
     if pipeline is not None:
-        _keys("fpga_pipeline", pipeline, {"hosts", "build_host"},
-              {"board_host", "allow_candidate_host_code"})
+        _keys("fpga_pipeline", pipeline, {"hosts"},
+              {"build_host", "build_hosts", "shared_slots", "board_host", "allow_candidate_host_code", "card"})
+        card = pipeline.get("card")
+        if card is not None:
+            # The card host's board sessions (board.py): the card's PCI function, how long it must have been
+            # idle, where the card host keeps the images tasks name by hash, and what a board check reads here.
+            _keys("fpga_pipeline.card", card, {"bdf"}, {"idle_seconds", "max_wait_seconds", "images", "check_mounts"})
+            if not re.fullmatch(r"[0-9a-fA-F]{4}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-7]", str(card["bdf"])):
+                raise SiteError("fpga_pipeline.card.bdf must be a PCI address")
+            if not isinstance(card.get("idle_seconds", 900), int) or card.get("idle_seconds", 900) < 60:
+                raise SiteError("fpga_pipeline.card.idle_seconds must be at least 60")
+            for key in ("images", "check_mounts"):
+                if not isinstance(card.get(key, {}), dict) or not all(
+                        isinstance(k, str) and isinstance(v, str) and v.startswith("/")
+                        for k, v in card.get(key, {}).items()):
+                    raise SiteError(f"fpga_pipeline.card.{key} must map names to absolute paths")
         hosts = _path(pipeline["hosts"], "fpga_pipeline.hosts")
-        if not all(isinstance(pipeline[k], str) and pipeline[k] for k in ("build_host",)):
-            raise SiteError("fpga_pipeline.build_host must be a non-empty name")
+        # The machines a Vivado flow may run on, in the order they are tried (fpga_slow.place): one flow on
+        # each at a time. `build_host` is the one-machine form.
+        if ("build_host" in pipeline) == ("build_hosts" in pipeline):
+            raise SiteError("fpga_pipeline needs build_host (one machine) or build_hosts (a list), not both")
+        builders = pipeline["build_hosts"] if "build_hosts" in pipeline else [pipeline["build_host"]]
+        if (not isinstance(builders, list) or not builders or len(set(map(str, builders))) != len(builders)
+                or not all(isinstance(b, str) and b for b in builders)):
+            raise SiteError("fpga_pipeline.build_host must be a non-empty name, build_hosts a list of distinct names")
+        # Lock files another user's own Vivado jobs take on a build machine (flock): the machine counts as
+        # free only when every one is, and a flow of ours holds one while it runs, so theirs see it.
+        slots = pipeline.get("shared_slots", {})
+        if (not isinstance(slots, dict) or set(slots) - set(builders)
+                or not all(isinstance(v, list) and v and all(isinstance(p, str) and p.startswith("/") for p in v)
+                           for v in slots.values())):
+            raise SiteError("fpga_pipeline.shared_slots must map build hosts to lists of absolute lock-file paths")
         board_host = pipeline.get("board_host")
         if board_host is not None and (not isinstance(board_host, str) or not board_host):
             raise SiteError("fpga_pipeline.board_host must be a non-empty name")
         allow_code = pipeline.get("allow_candidate_host_code", False)
         if not isinstance(allow_code, bool):
             raise SiteError("fpga_pipeline.allow_candidate_host_code must be boolean")
-        pipeline = {"hosts": hosts, "build_host": pipeline["build_host"],
-                    "board_host": board_host, "allow_candidate_host_code": allow_code}
+        pipeline = {"hosts": hosts, "build_host": builders[0], "build_hosts": list(builders),
+                    "shared_slots": {k: list(v) for k, v in slots.items()},
+                    "board_host": board_host, "allow_candidate_host_code": allow_code, "card": card}
 
     return Site(
         path=path, provider=value["provider"], images=dict(images),
@@ -196,7 +235,19 @@ def load_site(path: Optional[Path] = None) -> Site:
         repository=_path(value["repository"], "repository") if value.get("repository") else None,
         fpga_worker=dict(worker) if worker else None,
         fpga_pipeline=pipeline,
+        evaluations=res.get("evaluations"),
+        systemc=_systemc(value.get("systemc")),
     )
+
+
+def _systemc(value: Any) -> Optional[Path]:
+    """The site's SystemC installation, checked for what CMake's find_package(SystemCLanguage) reads."""
+    if value is None:
+        return None
+    root = _path(value, "systemc")
+    if not (root / "lib" / "cmake" / "SystemCLanguage").is_dir() or not (root / "include" / "systemc.h").is_file():
+        raise SiteError(f"systemc: {root} is not a SystemC installation (lib/cmake/SystemCLanguage, include/systemc.h)")
+    return root
 
 
 def _private(path: Path) -> list[str]:

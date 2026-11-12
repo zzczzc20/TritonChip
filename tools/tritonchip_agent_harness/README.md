@@ -198,11 +198,26 @@ review covers that remaining result path (§10.5); P2.2 could automate it (§11)
 the agent** (decided 2026-10-15). The agent sees no point and none of the code
 that defines one: not a point's id, shape, code or result, and nothing a point
 could be derived from. The agent writes its own test cases. By design, the
-task's syllabus states the class of workloads and the scoring rules (§6.3);
-how specific it may be is O15.
+task's syllabus states the class of workloads and the scoring rules (§6.3).
+How specific it may be was decided on 2026-10-27 (§16): the method, and the
+dimensions inside the class the syllabus names, never a family list or a
+tier size. A test-case skill carries that method into every run's container
+(§16, 2026-10-27).
 
 Nothing of the final set ever reaches the agent. Of the validation set it gets
 only budgeted aggregates (§6.4): a channel that is narrowed, not closed.
+
+**A visible set, from the next R41 round (decided 2026-11-08).** The agent is
+given some of the benchmark's own points, as the evaluation runs them, in the
+test-case skill (`skills/testcase-design/benchmark_cases/`, §6.3), together with
+the classes it is given (`classes.json`). Every other point stays hidden: other
+shapes of those classes, and seven classes held out entirely, which appear in no
+visible file and only in the held-out sets, so that a gain built on the given
+modules rather than the machine shows as a gap there. The validation set is
+still scored in aggregate only, and nothing of the final set reaches the agent.
+The split (visible, validation and held-out, in simulation and on the card) is
+the operator's (`reports/archbench_point_split_20261108.md` in the developers'
+checkout, outside every workspace).
 
 The reason is generality. A method that is only good on the points it was shown
 is not a result (§10.3). An agent that cannot see a single point can only make
@@ -229,6 +244,50 @@ enough for the RTL simulator, in the floating-point types TNCA's compiler
 supports. It also shows how to compile and measure a test case of the agent's
 own (`tasks/replay-mzero/instruction.md`).
 
+**The test-case skill** (`skills/testcase-design/`, decided 2026-10-27, §16)
+carries the method into every run: how a case is defined, judged and timed,
+the roofline bound, the dimensions a class varies in, and a script that
+measures a case with copies of the evaluation's own `compare` and bound code.
+It is an Agent Skill (`SKILL.md` with a name and a description, scripts
+beside it), the format all three CLIs read.
+
+**Which skills a run gets** is decided in three layers (`skills.py`, decided
+2026-11-03), each with one job. The **catalog** is the directory: every skill
+the harness can provide, each self-describing through its front matter, and
+the hash over all of it is the skills' environment version. A **task**
+declares its default set (`task.json` `skills`, by name); a task that
+declares none gets none. A **run** may override the task: `run-task --skills
+a,b`, or `--no-skills` for a pilot's control arm. The runner stages the
+selected skills into the run's directory, mounts that directory alone,
+read-only, at `/opt/tnca-skills`, and links only those into the CLI's own
+skills directory, so each CLI discovers them as its vendor intended and the
+agent invokes them on its own. The prompt names the selected skills from
+their front matter (no task text knows a skill by heart) and leaves out the
+syllabus's own measuring example when any skill is given. The run record
+names the selected set, where it came from (the task or the run), each
+skill's hash and the catalog's version. Adding a skill is adding a directory
+under `skills/` and naming it in the tasks that want it; no task's base
+commit is involved. Tools travel inside a skill (`scripts/`); what needs a
+mount of its own is the environment's, not a skill. The skill gives the
+visible set's points (`benchmark_cases/`, written by `skill_cases.py`: each
+point's module and `make()` copied from archbench as code only, without the
+benchmark's docstrings, comments or notes, whose free text can name other
+points' shapes; seed 0, the registry's tolerance and declared demand, and
+checked bit for bit against the point) and
+the classes in `classes.json`, with a rule for covering them (measure every
+class before asking for a hardware flow, before treating a snapshot as the
+best, after changing the machine; not enforced). It names no other point, no
+class it does not list and no tier size; harness tests check that against the
+live registry, and that no task giving the skill by default hides a given
+point (§17). It is machine-independent, as ArchBench is: it defines
+what is measured (each launch's cycles from start to end, summed; the
+protocol; the bound), and the machine that is measured on is the
+environment's, selected by the backend settings the task text gives. The
+bound is the card's whole-chip one (2026-11-11; it was one core's from
+2026-10-28): in a run, the base machine's roof from the harness
+(`TNCA_CHIP_ROOF`, `roofline.agent_roof`), elsewhere the device the backend
+settings name.
+
 ### 6.4 Three sets, and what flows back
 
 *Proposed, 2026-10-15; the split into two hidden sets is not yet decided (O18).
@@ -247,12 +306,52 @@ compiler can encode what it saw into its timing. Budgets and aggregates narrow
 that channel; only a set that runs after the agent has stopped closes it. That
 is the final set.
 
+**The card's own sets** (decided 2026-11-08). A task with the card may give
+the card points of its own, too slow to simulate (more than about 300,000
+cycles), in two more task fields:
+
+| Field | What it is | Measured by |
+|---|---|---|
+| `evaluation.board_validation` | the board's hidden-scored set: aggregate only, as the validation set | every in-run board request (`fpga_slow.manifest`, `on_card`), against the base on the card (`board.baseline`) |
+| `evaluation.board_final` | the board's held-out set | once, after the run, on the result's image, with the 113-point board run |
+
+`task.board_points` picks what a board request measures: `board_validation`,
+or `validation` for a task without it, as before. The loader keeps the four
+sets disjoint (a point is scored in one place or held out), and
+`board_validation` needs `services.fpga_slow` in board mode. With a board set,
+the board reply has no card-against-simulation comparison: simulation never
+ran those points. Certification still runs the simulated sets on the card,
+so the sim-to-board rows of the task's simulated points are kept. Every point
+name of the four sets is scrubbed from the log lines an agent sees. R41's
+formal task is the first to use them (validation 18, final 25,
+board_validation 18, board_final 40; `reports/archbench_point_split_20261108`
+in the main checkout, untracked, names them).
+
 **An aggregate is:** the number of points, the number that passed, the
 geometric-mean speedup over the points that passed, and `fast_1` (§10.2). It
 never contains a point's name, shape, cycles or error text: an error such as
 "unsupported shape 64×128" names the question. Because a wrong point fails
 alone, an aggregate still says how many points a request broke; the size of
 the validation set bounds what that teaches (O17).
+
+**When points fail** (decided 2026-11-06), the reply says why as far as it
+can without naming the question:
+
+- **Failed points, counted by kind**: `failures`, for example
+  `{"numeric-error": 1, "timeout": 1}`. Never which point. A kind is one of a
+  fixed list (`evaluator.FAILURE_NAMES`); anything else is reported as
+  `other`, because the candidate's compiler runs in the process that writes a
+  point's record and could otherwise spell a shape in a status. The
+  anti-tamper checks' verdicts (`record-disagrees`, `activity-outside-launch`,
+  `not-drained`) are all `measurement-rejected`: the agent learns that a
+  measurement was rejected, not which check rejected it.
+- **What failed before any point ran**, with its log's last lines: a device
+  that did not build (`device_build_errors`; for a multicore task, each device
+  container elaborates the candidate's RTL before it serves a point) and
+  staging that stopped the host before its first point (`stage_errors`).
+  Those logs come from before the hidden points were handed over, and every
+  point name is still scrubbed out of them. A point's own log is never
+  returned.
 
 ### 6.5 Leak audit (2026-10-15)
 
@@ -393,7 +492,10 @@ they are refused and logged, and the CLIs work without them.
 **Adapters keep the agent system's own capabilities** (subagents, compaction,
 reasoning) and switch off what leaks the environment: user config, instruction
 files, memory, MCP, plugins and skills fetched from the network, telemetry,
-auto-update, and web tools in offline mode (`adapters.py`).
+auto-update, and web tools in offline mode (`adapters.py`). The one thing
+switched on, identically for every CLI, is the harness's own skills (§6.3):
+each adapter names the directory its CLI reads user skills from, and the
+runner links the mounted skills there.
 
 **Rate limits and model identity.** The model is pinned (`--model`) and the
 served model is recorded from the CLI's report. `smoke` fails on a mismatch;
@@ -409,6 +511,7 @@ experiments at scale use dedicated accounts or API keys.
 ## 9. The workspace and the gate
 
 **A task package** (`tasks/<id>/`): `task.json` (base commit, design paths,
+the skills a run of it gets by default (§6.3),
 evaluator-owned paths, hidden paths, budget, the validation and final sets),
 `instruction.md` (the syllabus) and an optional `reference.patch` (the known
 answer, for validating the loop). The prompt is the syllabus with the run's
@@ -538,7 +641,8 @@ taken.
 
 `certify` (`certify.py`) shows that a candidate's machine is real: that it
 fits the U280, closes 100 MHz, and counts on the card the cycles simulation
-counted. It runs on the **controller**, the one machine that reaches both FPGA
+counted. Every final candidate runs on the card, a software-only one too
+(below). It runs on the **controller**, the one machine that reaches both FPGA
 servers; the servers never connect to each other, and the evaluation host does
 not reach the card server. It needs no site configuration, only the FPGA
 harness's hosts file and a clone with the task's commits.
@@ -562,14 +666,49 @@ harness's hosts file and a clone with the task's commits.
    device's own count that simulation recorded (`done_cycles` in the run's
    score rows; the observer checks that count against the record, §11).
 
+**A candidate that kept the base's machine** (it changed only software: the
+compiler, the runtime) is not linked again, and still runs on the card
+(decided 2026-11-06: the FPGA score always comes from the card). Its points
+run on the base's own image, the one the base's certification left on the
+card server, with the candidate's tree driving the card. `--base-image` names
+the base's certification record; it must be `certified`, for this task's base
+commit, platform, target, clock and profile, and the candidate's image
+parameters must equal the base's. Step 2 becomes the FPGA harness's
+measure-only pipeline (`pipeline --measure-run`, its README): no build server,
+the card server measures the base's run with `--allow-source-mismatch`
+(recorded), and the image it measures must hash to the base's. Step 3 is the
+same. Without `--base-image` such a candidate is refused, not passed.
+
 | Verdict | When | The score |
 |---|---|---|
-| `not-needed` | the machine is the base's | stands |
+| `not-needed` | only in records from before 2026-11-06: the machine was the base's | stood |
 | `certified` | 1-3 held | stands |
 | `infeasible` | the build failed: it does not fit or does not close 100 MHz, or the profile cannot be built as the image | every point fails |
 | `board-fail` | the image did not load, or the board stage did not reach the points | every point fails |
-| `board-disagrees` | a point failed on the card, fell back to the host, or counted other cycles | every point fails |
+| `board-disagrees` | a point failed on the card, fell back to the host, or counted other cycles (where the task compares them) | every point fails |
 | `no-verdict` | the pipeline or a server failed | re-run |
+
+**Cycles that are recorded, not compared** (`evaluation.certify.board_cycles`:
+`"record"`; the default `"equal"` compares). R41's simulation models its HBM
+with a stand-in, and the card counts 1-20 % fewer cycles than simulation on
+every point, the unchanged base included: the island pilot's two champions
+came back `board-disagrees` on that alone (2026-11-07). The user's decision of
+2026-11-07: for R41 a point is certified when it passes on the card with no
+fallback and the board checks pass; each point's two counts are kept in the
+record, and an in-run board reply gives the agent their ratio in aggregate
+(`cycles_on_card`: the geometric mean and range of board over simulation)
+instead of `counted_as_in_simulation`. The R41 tasks set it.
+
+A run that started before its task set the rule (R41's first formal run)
+is judged again from its record, with no build and no card time:
+`certify TASK --run RUN_DIR --again` re-applies the task's `board_cycles` to
+the rows and board checks each after-run certification stored, takes the
+champions in rank order (the first certified one is the run's result), and
+writes `certification-again.json` beside `run.json`, which is left as it
+was. A verdict reached before the card ran the points (`infeasible`,
+`board-fail`, `no-verdict`) is kept. On the island pilot's record both
+champions become `certified`, the card counting 0.91 and 0.92 of
+simulation's cycles in geometric mean.
 
 The record, `certification.json` beside `run.json`, keeps the verdict and its
 reason, the tree's commit, the image's parameters, the build's timing, each
@@ -581,7 +720,8 @@ machine every candidate is compared with must itself fit, close and agree.
 candidate's compiler, and its sandbox is not built yet (§12.5). Until it is,
 that is code the operator runs having read it: `certify` without `--yes`
 builds the tree, lists the candidate's files that run on the card server, and
-builds nothing. A hardware-only candidate, and the base, run none.
+builds nothing. A hardware-only candidate, and the base, run none; a
+software-only one runs only its own code there, on the base's image.
 
 ### 10.5 Final human review before accepting a score
 
@@ -761,9 +901,13 @@ side: `budget`, `submit score`, `submit fpga-quick`, `submit fpga-slow`, `status
 
 Measures the validation set the final evaluator's way, P2.1 included
 (`evaluator.measure_validation`), and returns the aggregate of §6.4: points,
-passed, `speedup_geomean`, `fast_1`. If the candidate's device does not build,
-the build's last lines come back, since they concern only its own RTL. A
-request is charged when it is accepted.
+passed, `speedup_geomean`, `fast_1`. When points fail, it adds what §6.4
+allows: the failed points counted by kind, and the last lines of a device
+build or staging that failed before any point ran (for a multicore task too:
+until 2026-11-06 a device that did not elaborate came back only as
+`passed 0/n`). A request is charged when it is accepted. The base it is
+compared with is measured once per `baseline_key` and kept; two runs that ask
+for it at once take a lock, and the second reads the first one's result.
 
 ### 12.4 The FPGA service
 
@@ -782,7 +926,10 @@ candidate's profile to it as `NAME=VALUE`: the defaults in
 `rtl/common/tnca_uarch_defaults.vh`, then the profile's own values, limited to
 parameters the top has. It calls the Tcl script directly, into a short output
 directory: `vivado_ooc.sh` names its output after every pair, and a whole
-profile's worth is longer than a file name may be.
+profile's worth is longer than a file name may be. Each result records which
+worker ran it (`worker`, `vivado_settings`) and the Vivado release its log's
+banner names (`vivado_version`): estimates from two releases, or two workers,
+are not one series. The agent is not shown them.
 
 **Enforcement (built).**
 
@@ -793,48 +940,85 @@ profile's worth is longer than a file name may be.
 - A job still running when the agent stops is stopped (`pkill` on the worker, with a pattern that cannot match its own command line) and charged.
 - Queue waits are not charged; the run's wall clock goes on.
 
-**Enable the slow tier.** `tasks/r39-v5-main-pilot/task.json` keeps its current
-45-minute agent budget and does not enable this hours-long service. For a task
-that can wait for full implementation, set its wall budget to at least one
-slow request and add, for example:
+**Enable the slow tier** (report section 8.9, decided 2026-11-06/07). The
+agent asks for the card; the request is asynchronous and the agent keeps
+iterating. A snapshot that changed the machine and whose hardware this run has
+not built is a *hardware* request: one Vivado flow on the build host, then, in
+board mode, the board's points (`board_validation`, else the validation set;
+§6.4) on the card on the image it built. Any other
+(software only, or hardware this run already built) is a *software* request: the
+card only, on the base's image or that one. Each kind has its own count for the
+run:
 
 ```json
-"budget": {"wall_seconds": 14400},
 "services": {
-  "fpga_slow": {"mode": "build", "minutes": 180, "job_minutes": 180}
+  "fpga_slow": {"mode": "board", "flows": 3, "board_runs": 6, "flow_minutes": 480, "board_minutes": 120,
+                "base_image_sha256": "<the base image's sha256>",
+                "board_checks": [{"name": "fp8", "command": ["/opt/torchenv/bin/python",
+                                  "tools/performance_harness/fp8_cases.py", "--out", "/out/checks/fp8", "--quick"]}],
+                "certify_after_run": true}
 }
 ```
 
-`mode: "build"` returns the full-link result without touching the card.
-`mode: "board"` also runs conformance and hidden validation points on the
-card. Add this block to the operator's private `site.json` (the host names
-must exist in the FPGA harness's separate `hosts.json`):
+- **Gate**, before anything is charged: the validation set passes in
+  simulation; a hardware request also needs an `fpga-quick` result of this run
+  on exactly that hardware that met timing. A refused request is not charged.
+- **Charging**: a flow that failed on the candidate's design (timing or
+  place-and-route did not converge, it does not fit, DRC, a lowered clock, the
+  card refused the image) counts; one that failed on the infrastructure does
+  not and is retried (`fpga_slow.classify`, from the build record, never the
+  agent's account).
+- **One slow request at a time** (one Vivado flow, one card). The quick tier
+  stays open while a slow request runs.
+- **What the agent sees**: for a failed flow, the quick tier's fields plus the
+  routed design's (failing stage, hold slack, per-SLR utilisation, SLR
+  crossings on the worst paths, failing DRC rules), host paths, names and
+  addresses scrubbed; on the card, the board's points' aggregate against the
+  base on the card (the base measured on its image, those points only: no
+  held-out set runs while an agent does), how many points counted what
+  simulation counted (or their ratio, for a task that records board cycles;
+  neither for a board set simulation never ran), and which board checks did not pass (pass or fail only:
+  a check's log is the container's). Point names, cycles, logs and records stay
+  in the run record. A failed request's error text stays there too.
+- **At the run's end** a slow request still running runs to its end, unseen by
+  the agent; with `certify_after_run` the harness then certifies the run's
+  candidate on the card itself (`certify.after_run`: all validation and final
+  points and the board checks; an in-run image of the same hardware is reused).
+
+**No candidate code on the card host** (`board.py`). The card host runs only
+the platform's code, from a clean checkout of `evaluation.platform.commit`
+(synced the FPGA harness's way): `tritonchip_fpga_harness.board_session` waits
+for the card to be continuously idle, takes the shared lease, loads the image
+unless its UUID is already loaded (a measured image stays; the next session
+overwrites it), and runs the board relay (`tnca.backends.board_relay`), which
+owns the card and executes link operations only. The candidate's compiler and
+runtime run in the evaluator's container here, with no network, and reach the
+relay through an SSH-forwarded Unix socket. The relay logs every launch the
+device admitted (read from the control block's `served` register after each
+doorbell, so an aliased one is seen too) with the control block's own launch
+timestamps and done count, to a log on the card host: that log is the score, as
+the bench's observer is in simulation, and a point whose log shows a launch it
+could not count is rejected (`unobserved-launch`). Each point, and each board
+check, runs in a container of its own; before it starts, the harness writes its
+label into the session over SSH, and the relay files the launches under that
+label whatever the client says, zeroing the card's memory between labels.
+Files the containers wrote are read without following links and bounded; of a
+board check the agent learns only whether it passed. The card has no drain
+observation, so `not-drained` stays simulation's. The site names the card:
 
 ```json
 "fpga_pipeline": {
   "hosts": "/absolute/path/to/hosts.json",
   "build_host": "builder",
   "board_host": "card",
-  "allow_candidate_host_code": false
+  "card": {"bdf": "0000:04:00.1", "idle_seconds": 900,
+           "images": {"<sha256>": "/path/on/the/card/host/base.xclbin"},
+           "check_mounts": {}}
 }
 ```
 
-The agent sees `tnca-service submit fpga-slow` in its task instructions and
-chooses whether to call it. The broker gates a snapshot, runs one FPGA
-request across both tiers at a time, charges elapsed time against the slow
-budget, and cancels detached remote work if the agent stops or the request
-times out. A build failure and routed timing concern the candidate's own
-design. Board point names, cycles, records and logs remain in the private run
-record; the agent gets only a verdict and pass count. The final point set is
-never sent to the in-loop board stage.
-
-The card host currently lacks the planned isolation for candidate compiler
-code. A board request with candidate host-code changes is refused by default;
-an operator may set `allow_candidate_host_code: true` only on a host prepared
-to run that code. Hardware-only snapshots can use board mode with the pinned
-base compiler. The shared card still needs a scheduled slot and cleanup
-between owners (§12.5). This service has mock split-host tests; it has not
-yet completed an in-loop run on the actual FPGA hosts.
+Not yet run against the real hosts: the relay and the session are written
+against the U280's link and control block but have not touched a card.
 
 **Synthesis estimates are optimistic.** Before routing, delays leave out most
 of the wire: on this design the routed worst path was about 1.6 times the
@@ -854,6 +1038,100 @@ Vivado settings script, read-only binds, threads, part).
 - **The card host (planned).** The candidate's compiler compiles the benchmark there, so it runs in a sandbox with no network, a read-only system, only the card's device nodes, and no home directory, harness state or compiler cache of anyone's. The card is shared, so board stages happen in agreed windows (O14), and between owners the card is reprogrammed or its memory cleared. Until the sandbox is built, certification (§10.4) runs the candidate's compiler there only when the operator, having read what it lists, passes `--yes`.
 - **Versions (decided 2026-10-17, was O13).** The Vivado flow runs on the build worker with its Vitis 2022.2; the card host only loads and measures. Validated once: `b5c606d` linked on the build worker in 103 minutes (213 on the card host with 2023.2, an earlier link), closed 100 MHz with ap_clk WNS +0.138 ns (2023.2: +0.177), and its XCLBIN loaded on the card's 2023.2/XRT 2.16 shell, whose gates check only the platform's interface UUID. The U280 target accepts images from 2022.2 and 2023.2, and the build worker's installation overrides the target's default path.
 - **How a candidate crosses (built, FPGA harness).** `pipeline` in `tools/tritonchip_fpga_harness` (its README §11.2) runs one candidate across the two: a clean checkout of the commit on each from a git bundle, the build detached on the build worker, a light packet of the image and records streamed through the controller into the card host, where every file's hash is checked before the run is installed, and the board stage there. The servers never connect to each other. A real candidate ran through it on 2026-10-17: the base hardware linked on the build worker in 105 minutes (ap_clk WNS +0.138 ns), loaded on the card, conformance 5 of 5, ArchBench tiny 27 of 27 with every point's cycles equal to the same design built with 2023.2 on the card host. (Both board stages compiled with the card host's installed `tnca`, an older tree, not the checkout's; found and fixed on 2026-10-18, `969201b`, §19.)
+
+### 12.5b Several build machines (2026-11-07)
+
+A site may name more than one build machine; a task says how many of its flows may run at once.
+
+```json
+"fpga_pipeline": {
+  "hosts": "/absolute/path/to/hosts.json",
+  "build_hosts": ["x86vivado", "rscl"],
+  "shared_slots": {"x86vivado": ["/home/vivado/.r41s2int_slot.0", "/home/vivado/.r41s2int_slot.1"]},
+  ...
+}
+```
+
+- **One flow on each machine at a time.** `services.fpga_slow.flows_at_once` (default 1) caps a run's flows
+  running at once, and may not exceed the site's build machines: a run that asks for more does not start.
+  Over the cap a hardware request is refused, as one was when a flow ran; `flows` stays the run's count. A
+  hardware request for exactly the hardware a running flow builds is refused too (it would build one image
+  twice). One machine (`build_host`, the old form) and one at a time is what every task had before.
+- **Which machine (`fpga_slow.place`).** Before each attempt of a flow, the first machine, in the site's
+  order, that no flow of this process holds and whose locks are free: the FPGA harness's full lease there
+  (`<state_dir>/leases/full.lock`, which the harness itself takes and, when held, fails on at once) and the
+  machine's `shared_slots`. The harness on the machine is the task's pinned platform code, so the choice is
+  made here, before the link starts, and a retry after an infrastructure failure chooses again.
+- **Another user's jobs.** `shared_slots` are the lock files another user's own Vivado jobs take on that
+  machine (on x86vivado, the author's `slot.sh`: at most two Vivado jobs). The machine counts as free only
+  when every one is; while our flow runs, an SSH connection of its own holds one of them, so their jobs see
+  it. If that connection ends early the attempt records `shared_slot: "lost"`.
+- **Every machine busy.** The request waits, looking again every minute, never longer than its flow's cap;
+  the agent's `status` says `waiting_for_a_build_machine`, never which machine. The wait is recorded as
+  the request's `outside_wait_seconds`, apart from its own time, so whether the run stays comparable can be
+  judged afterwards. A request still waiting when the agent stops is cancelled and not charged, as a queued
+  one is; a flow already running runs to its end, unseen.
+- **Before the run.** `run_task` checks every build machine is idle: no lock held, and no Vivado or `v++`
+  running under the account (a flow that outlived an earlier run, the owner's own job outside the slots).
+  If one is not, the run does not start. The result, and whether the flows fit the run's time (rounds of
+  `flows_at_once` flows at `flow_minutes` each, then the card once), go in `run.json` as
+  `fpga_build_hosts`; a run whose flows cannot fit is warned about.
+- **The record.** Each request and certification names its `build_host`, each attempt its machine; an image
+  names the machine that built it, and the card host fetches it from there. `cancel` reconciles on that
+  machine. A running flow's `status` says within how many minutes it ends at the latest (its caps).
+
+### 12.5a Early-exit resume for a plain run (2026-11-07)
+
+A plain run (no `islands`) whose task has `"resume": {"max_idle_turns": 3, "max_restarts": 2}` is kept going
+the way an island is (`islands.Turns` without an archive): when the CLI stops before the time is up, the same
+session is resumed with "continue"; a CLI whose resume never works falls back to new sessions (with the task
+again and a NOTES.md hand-over); `max_idle_turns` turns without a tool call in a row end the run; a crash is
+restarted at most `max_restarts` times; a throttled turn waits uncounted. The prompt then says to keep
+improving until the time runs out (the working directory then is the submission) instead of "when you are
+done, stop". `agent_result` records every turn, the stop reason, idle and restart counts and `resume_mode`.
+Without the block a plain run is as before.
+
+### 12.6 Islands: persistent agents, an archive, MAP-Elites, migration (first version, 2026-11-07)
+
+`islands.py`, decided in the population-search report (section 8, D1-D8). A task with an `islands` block runs
+that many agents at once, each in its own sandbox and workspace, for the task's budgets read as the island's
+(wall clock; scoring requests, which are its commits; quick-tier minutes). The slow tier's counts and images,
+one slow request at a time, and the site's cap on evaluations at once (`resources.evaluations`) are the run's.
+One island and N islands take the same path; without the block a run is as before.
+
+```json
+"islands": {"count": 3, "topology": "ring", "migration_interval": 3, "migration_rate": 0.3,
+            "features": ["layer"], "max_idle_turns": 3, "max_restarts": 2, "target": {"speedup_geomean": 1.5}}
+```
+
+- **Commit.** `tnca-service submit score --message "..."`: scored as the score service scores it, then kept in
+  the archive with the layers it changed (`compiler`, `isa`, `rtl` with comments and whitespace removed,
+  `profile`, `device`; computed by the controller, never from the message) and its cell: compiler only,
+  hardware only, or cross-layer (`features: ["layer"]`, the first and only axis so far; section 8.7). The reply
+  adds the island's best commit, its grid (one elite per cell, by fast_1 then the geometric-mean speedup), and
+  every `migration_interval` commits the top `migration_rate` of the connected islands' elites not given before.
+- **Seeing.** One function of `topology` (ring: the previous island, as AgenticEvolve; `all`; `none`; or a map
+  island -> islands it sees) decides migration, `tnca-service archive` and `tnca-service read-commit ID`, which
+  refuses an id the island cannot see and returns only the design overlay as a patch against the base commit.
+  A failed commit is listed to its own island only. The message is shown as unverified.
+- **Keeping the agent going.** When the CLI stops, the controller resumes the same session with "continue"
+  (`claude -p --resume`, `codex exec resume`, `opencode run --session`: not yet verified on the pinned
+  versions; a failed resume falls back to a new session with the task again). A turn with no tool call is idle;
+  `max_idle_turns` idle turns in a row end the island. A resume that fails before resuming ever worked switches
+  the island to new sessions for the rest of the run (`resume_mode` in the record; not a crash). A CLI failure
+  of a session that had started, not a provider's throttling, is a crash, restarted at most `max_restarts`
+  times. A throttled turn waits and is not counted (its wait is recorded). An island also ends
+  when its time or commits run out, or when any commit reaches `target`. The agent saying it is done is not an end.
+- **After the run.** The base was measured before any island started. Every commit has finished before the
+  archive is ranked. The best commit by the validation aggregate gets the final evaluation and is the run's
+  result; with `fpga_slow.certify_after_run`, the top 3 distinct snapshots go, in order, to the final
+  evaluation and the card (`certify.after_run`, an in-run board record of the same snapshot reused) until
+  one is certified. A target reached, or an operator's interrupt, stops every island's current turn. The run
+  record has the configuration, every island's turns, stop reason, idle and restart counts, the archive, the
+  best-so-far trajectory (per commit: time, island, fitness, island best, run best) and the champions.
+
+Not yet: a sandbox that died cannot be recreated (its island ends as crashed); queue waits for an evaluation
+are recorded but do not extend an island's clock; axes other than the layer; a judge-model descriptor.
 
 ## 13. Fair comparison and statistics
 
@@ -885,9 +1163,16 @@ the totals and means of its tokens and occupancy.
 
 **Equalised CLI conditions.** Off for every CLI: instruction files, web tools
 (offline), memory, MCP, hooks, network-fetched plugins and skills, telemetry,
-auto-update. CLI versions pinned. Task text byte-identical. Differences that
-cannot be equalised are recorded: reasoning-effort scales, compaction, where
-the system prompt sits.
+auto-update. On for every CLI, from one read-only source: the harness's
+skills a task declares or a run selects (§6.3), linked into each CLI's skills
+directory and listed by name, hash and catalog version in the run record,
+so two runs are comparable only when their skill sets are equal: the cell
+is (scaffold, model, auth mode, task, skill set). Each CLI's own bundled
+skills stay, as its vendor ships them
+(Claude Code 2.1.287 lists 14, Codex 0.162.1 four, opencode 1.19.0 one); they
+are a recorded difference, read from `smoke --probe skills`. CLI versions pinned. Task text byte-identical. Differences
+that cannot be equalised are recorded: reasoning-effort scales, compaction,
+where the system prompt sits.
 
 **Repetition and reporting.** At least 5 independent runs per cell,
 interleaved in time; paired comparisons on the same task and start; means with
@@ -921,7 +1206,8 @@ One JSON per run (`run.json`), written outside the sandbox:
 - **services:** every request with its times, snapshot, charge, the result the agent saw and the full result it did not (`agent_result.services`, §12.2);
 - **candidate:** the gate's verdict, the files taken, dropped, evaluator-owned changes, rejections;
 - **evaluation:** both sets, point by point (with the device's own count, `done_cycles`) and in aggregate; machine changes; the validity class;
-- **hardware:** whether the candidate changed the machine (the RTL files, the profile's changed parameters), and `certification`: `not-needed` or `pending`. Certification writes its own record, `certification.json`, beside this one (§10.4).
+- **hardware:** whether the candidate changed the machine (the RTL files, the profile's changed parameters), and `certification`: `pending` (it was `not-needed` for an unchanged machine before 2026-11-06; now every candidate runs on the card, an unchanged machine on the base's image). Certification writes its own record, `certification.json`, beside this one (§10.4);
+- **throttling:** `agent_result.throttled`, when the provider refused the run's requests for rate (`rate-limit`), load (`overloaded`) or quota (`usage-limit`): the kind, a short excerpt and how many retry events the CLI printed; null otherwise. Matched only where a CLI reports errors (error events, a failed result, text outside its JSON stream, stderr), never in the agent's own messages, so a run the provider cut short is not read as an agent that gave up. The patterns are the providers' documented errors; no throttled run of the pinned CLIs has been recorded yet.
 
 **Tokens in one schema** (`agent_result.tokens`, `adapters.tokens`):
 `input_uncached`, `cache_write`, `cache_read`, `output`, `reasoning` and
@@ -954,8 +1240,8 @@ one entry per segment of the run.
 | `score` | one scoring request, on the evaluation containers | null | the host container's CPUs, plus one per validation point's device container |
 | `final-evaluation` | the evaluation after the agent stops, both sets together | null | the same, with every point |
 | `fpga-quick` | one quick-tier request | `fpga_worker.ssh` | `{"cpus": fpga_worker.threads}` (default 4) |
-| `fpga-slow-build` | a slow-tier request's link: its pipeline's `build:submit` and `build` steps | `fpga_pipeline.build_host` | null |
-| `fpga-slow-board` | its board stage: `board:measure` and `board` | `fpga_pipeline.board_host` | `{"cards": 1}` |
+| `fpga-slow-build` | a slow-tier request's link: its pipeline's `build:submit` and `build` steps | the build machine its flow ran on (the request's `build_host`; older records: `fpga_pipeline.build_host`) | null |
+| `fpga-slow-board` | its card session (`board.py`), the wait for an idle card included; older records: `board:measure` and `board` | `fpga_pipeline.board_host` | `{"cards": 1}` |
 | `certify-link` | certification's link, the same steps of its own pipeline (in `certification.json`) | `--build-host` | null |
 | `certify-board` | certification's board stage (in `certification.json`) | `--board-host` | `{"cards": 1}` |
 
@@ -1039,7 +1325,28 @@ service request's snapshot; each role's CPU time.
 | 2026-10-27 | *Multicore, in the implementation.* The bench's memory models stall at random from a generator that advances every cycle, so a launch's cycles depended on the host's wall-clock pace (one point: 3559 or 3504 from run to run); with a description the bench reseeds them as each launch starts, and a point counts the same cycles whatever the host does. A mailbox is two directories, one per direction, so the device writes nothing the host can write; the host container sees neither the observers nor the device's build |
 | 2026-10-27 | *Multicore, found by the known-answer submissions; open.* One outlet (`MEM_PORTS` 3→1) makes every pilot point faster in simulation (1.04–1.15), because the bench gives the outlets latencies of 25, 44 and 63 cycles; on the card R40 measured three outlets 1.007× one. The two disagree; until the bench is calibrated against the card, or the field is fixed for the task, an agent could be paid for a bench artefact that certification would reject |
 | 2026-10-27 | *Multicore, found by the review; open.* The drain check cannot fail as built: the control block admits a completion only when the whole device is idle, so the bench always sees it drained. What the candidate's shell does after reporting done is not observed. A real check needs the traffic between a launch's end and the host's next command, which the evaluator-owned outlets can count -- the multicore counterpart of the single-core observer's activity outside a launch |
+| 2026-10-27 | O15: a task's syllabus, and the test-case skill below, go as far as the method (how a case is defined, judged and timed; the roofline bound; which dimensions a class has) and the dimensions inside the class the syllabus names (for the matrix-multiply class: bias, batch, M = 1, FP32). They name no ArchBench family list and no tier size. Decided by the user; closes O15 |
+| 2026-10-27 | A test-case skill for the agent's own iteration, independent of any task: a method document (`SKILL.md`, the Agent Skills format every CLI reads) and a point-free measurement script, kept in the harness directory (`skills/testcase-design/`) and provided at the environment level. The runner mounts the harness's `skills/` read-only at `/opt/tnca-skills` in every run's container and links each skill into the CLI's own skills directory, so Claude Code, Codex and opencode each discover it the way their vendor made them discover skills, from one byte-identical source, and the agent can invoke it on its own; `task.render` names it in one line. The syllabus names the class; the skill teaches how to expand it into dimensions and how to measure a case the evaluator's way. It replaces the syllabus's measuring example, whose `assert_close` is not the protocol's criterion and whose cycle sum is the shell's count, not the platform's: a run with the skill leaves that example out of the task text, a run without it (`--no-skills`, a pilot's control arm) gets today's text. The run record lists the skills provided, by name and directory hash. Amended the same day from a repository directory exported with every workspace, which would have tied the skill to each task's base commit, differed in form from what the CLIs load on their own, and been noticed only through the prompt |
+| 2026-10-27 | The script's shared code (the protocol's `compare` and upcast, `Demand`, `lower_bound`, `spec_peak`, the demand derived from the FLOP counter and the real tensors) is copied into the skill directory; a test in the harness's `tests/` runs it and ArchBench's own on the same fixtures and fails on any difference. ArchBench and the hide list do not change. When O21 splits the package, the skill imports the public half and the copy retires |
+| 2026-10-27 | The skill directory is leak-checked by a harness test against the live registry: point ids and their parameter strings, every point's actual input shapes and dtypes in their common spellings, the tier constants; a worked example may not be a point's workload (same operator, shape and dtype). It is the first instance of the export-time leak check (§17). The user reads the directory once as well |
+| 2026-10-27 | The skill goes on its own branch and PR from `fpga-harness`; PR #9 does not grow. No task's base changes: the skill reaches the container by mount, whatever the base commit, so `replay-mzero`, `r39-v5-main-pilot` and the formal tasks get it alike. Amended the same day from re-cutting `replay-mzero`'s base with the skill directory in it |
+| 2026-10-27 | Acceptance: pilot 3 on `replay-mzero`, Claude Code and Codex once each with and once each without the skill. Recorded from the transcripts: the distinct (operator, shape, dtype) cases the agent ran, which of the class's dimensions they covered, whether the script was used, the time used. The score is recorded and is not the criterion. The skill text is then frozen as part of the environment version; a later change is a new version |
 | 2026-10-28 | Server occupancy is wall-clock time, per role and per machine: which machine (the operator's label from the site configuration, never a name looked up at run time), start, end and seconds; the queue wait apart; the resources the harness reserved for the role (container CPU limits, the job's threads, one card). CPU use comes later; no cgroup accounting now. Seven segments, one entry per instance: the sandbox, each scoring request, the final evaluation (both sets together), each quick-tier request, each slow-tier request's build on the build worker and its board stage on the card host (one entry for the whole request where no split is recorded), and certification's link and board stage, in `certification.json` (§14). Decided by the user |
+| 2026-10-28 | The skill is machine-independent, as ArchBench is. It defines what is measured (each launch's cycles from start to end, summed; the correctness protocol; the roofline bound), and the machine that is measured on is the environment's: the task text names the machine and the backend settings that select it, and the script takes them from the shell as the agent's own Python would, setting only the profile and the optimisation level. The bound stays the evaluation's per-profile `spec_peak`, so L and η are one core's on every machine and the script says so beside every L; how a candidate stands against the base machine is the ratio of their cycles on the same case, which the skill tells the agent to measure first and keep. The evaluation's `/hbm` branch of `tnca_peak` is copied, with its test. `r40-multicore-pilot`'s instruction marks only its Python example as the skill's to replace; the environment settings above it stay in both arms, and a test holds that for every task. This corrects the skill's wording, which had taken the single-core machine's way of running a grid (`serial-grid`, PROTOCOL.md) for part of the definition; nothing in the delivery changes. Decided by the user after the branch was checked against PR #9's head (3e54d3c3, merged into `testcase-skill`) |
+| 2026-11-03 | Which skills a run gets: three layers (§6.3). The catalog is the `skills/` directory, each skill self-describing by its front matter, the hash over all of it the skills' environment version; a task declares its default set in `task.json` (`skills`; none declared, none given); a run may override it (`--skills a,b`, `--no-skills`). Only the selected skills are staged, mounted and linked; the prompt names them from their front matter; the record names the set, its source, each hash and the catalog version. Tools travel inside skills; what needs its own mount is the environment's. The skills mechanism goes to main as one pull request. Decided by the user |
+| 2026-11-07 | Build machines as a pool (§12.5b): a site may list several (`build_hosts`), one flow on each at a time; a task caps its flows at once (`flows_at_once`, default 1, at most the machines); a busy machine is skipped and, with all busy, the request waits and the wait is recorded apart; every machine must be idle before a run starts; another user's lock files (`shared_slots`) count, and our flow holds one. For now one run at a time; parallel runs later, and another run's waits must not count against a run. R41's formal task: 24 h, 3 flows, 2 at once. The quick tier may move to RSCL by site configuration. Decided by the user |
+| 2026-11-08 | The test-case skill carries a visible set: points of the benchmark itself (`benchmark_cases/`, 18 for the next R41 round, one an unfrozen FP8 draft), exported by `skill_cases.py` and checked bit for bit, and the classes the agent is given (`classes.json`) with a rule for covering them at milestones. Seven classes are held out entirely (none of their points or names in the skill). The leak tests now forbid every point the skill does not give and every class it does not list, derived from its own index. The test tasks `replay-mzero` and `r39-v5-main-pilot` no longer default to the skill. Decided by the user (§6.1) |
+| 2026-11-08 | R41's formal task takes the new split: simulation validation 18 (the 10 kept), final 25 (the 7 kept, 11 of them from the seven held-out classes), and the card's own sets, `board_validation` 18 (one per visible class, its largest shape under a minute of device time) and `board_final` 40 (after the run, with the 113-point board run). An in-run board request measures `board_validation`. The two FP8 block-scaled drafts wait for the base commit's registry. Decided by the user (§6.4) |
+| 2026-11-08 | The skill's protocol keeps OCP FP8 operands FP8 in the reference, as ArchBench's has since 089ba6db (2026-11-06): its copy still upcast them, so `torch._scaled_mm` refused every FP8 case in the skill. Its equivalence test now compares the reference on every registered FP8 point, not only an fp16 module. The visible cases are re-exported from the FP8 branch's tip dc80a07c (still a draft) as code only. Found by running benchmark cases the agent's way on R41 (user: "Do both", §6.3) |
+| 2026-11-08 | R41's formal task hides `spec/r40/` file by file and leaves its four interface contracts visible (`multicore_mmio_v2`, `line_axi_contract`, `grid_transport_extension`, `physical_grid_transport_extension`; no point, shape, class or tier constant in them). The data staging the task text starts with (`make -s python/tnca/data/.staged`) copies `spec/r40/*.json`; with the whole directory hidden it deleted the staged data and stopped there, every time, as run 6180's agent saw. `tests/test_workspace.py` holds the tasks of runs to come to it: every source the base Makefile's staging copies is in the agent's tree. The pilots' tasks are left as their runs saw them (user: "Fix staging first"). The island task `r41-dp-island1` takes the same hide entries on its own base b476f3fb (spec/r40/ byte-identical there), its one deliberate difference from `r41-dp-pilot` (user: fix the island task too) |
+| 2026-11-08 | R41's second formal run (user's decisions Q1-Q6, `reports/r41_second_formal_run_plan_20261108.md`): 12 h and two Vivado flows, two at once, the rest as run 6180; the performance models (Event Model, CA model, `tools/performance_harness/systemc/`) are the agent's tools, each with an error card in one format; the block FP8 decode points join validation and final with the base that merges both models. The task text says how long a flow takes (4 h 40 min to over 8 h on one build machine, about 6 h on the other), that a flow submitted after about 4 h most likely returns after the agent's time, and what the quick tier cannot see. |
+| 2026-11-08 | A run the operator stops (SIGINT or SIGTERM) writes `run.json` with validity `stopped`, its stage, every request's record and the slow requests left running; no final evaluation or certification follows. Run 6180 was stopped and left none. |
+| 2026-11-08 | An infrastructure failure of a flow is retried on another build machine, never on one that failed it (RSCL, missing its part's bitstream data, was given the 0-8 retry); with none left it is not retried. A flow that wrote no image keeps the routed design's timing (Design Timing Summary, the FPGA harness's reading) and the agent sees it. The FPGA harness doctor checks the part's bitstream data (`bitstream_data`). |
+| 2026-11-08 | The evaluator measures its points as a pool of `jobs` (`xargs -P`), not in waves that wait for their slowest point: about 10 minutes less per validation request of R41's formal task, about an hour less for its final set. |
+| 2026-11-08 | A task can ask for the performance models' environment (`models`): the site's SystemC installation (`systemc`) read-only at `/opt/systemc` and the model hook at `/opt/tnca-models`, put on `PYTHONPATH` only by the command that runs a model. A `!` hide entry shows a directory inside a hidden one, the longest entry deciding, so whatever is added later under the hidden directory stays hidden (R41's formal task shows `tools/performance_harness/systemc/` and hides the rest). |
+| 2026-11-11 | One η, the whole chip's (user, after R41-F3): the test-case skill's η for an agent's own case is against the card's roof, not one core's. Its one-core bound took memory as one 64-bit port per core (`MEM_DW_BITS = 64`), while R41's cores have 512-bit ports, so an elementwise add of the scored set read 0.897 locally and 0.046 on the card (8x the port, 3x the cores, the model's cycles 0.82x the card's). The run's roofline table now also holds the base machine's chip rates per operand format (`chip-roofline/2`); `roofline.agent_roof` gives them, and no point, to every agent as `TNCA_CHIP_ROOF`; `bound.chip_peak` uses them as given, and outside a run forms them from the device `TNCA_BACKEND_ARGS` names. `tnca_case.py` prints what the case did per cycle against the binding rate, and a case's launches grouped by kernel (a model is the sum of its kernels). `reports/r41_f3_stop_analysis_20261110.md` (main checkout). |
+| 2026-11-11 | The board relay keeps what clients write (user, after R41-F3): a card session spent 36 % of its time moving data over the SSH tunnel to the card host (the llama decode step 4.9 GB each way, 381 s of a 487 s first call), at ~26 MB/s, while the card host writes the card's HBM at ~1.45 GB/s. With `services.fpga_slow.relay_cache_gib` the relay keeps each piece a client writes, by its BLAKE2b-256 digest, in the card host's state directory (`relay-cache`, bounded, least recently used out); the client names a piece by digest first and sends it only on a miss, and reads back by digest a piece it wrote, taking its own copy when the device left it unchanged. The same bytes reach the same addresses, so device cycles do not change; the kernels are the CPU path's (the native `tnca` device was tried and compiles other kernels). The relay is platform code: the task's platform commit moves with it. |
+| 2026-11-11 | R41-F5's islands (user, after R41-F4, grilled one question at a time): in F4 the two software islands converged (0-7 1.1713, 2-6 1.1712) and every commit gained mainly on element-wise and reduction programs, matrix programs staying at 1.00-1.02x. The grid gets a result axis: `features: [op_group, layer]` is 4 x 3 cells, the group of scored programs whose geometric-mean speedup was largest (elementwise, matrix, attention, model; `op_groups` by point-id prefix) by the layer the snapshot changed; a commit whose best group gains under `min_gain` (1.02, the card's repeat noise) takes no cell but stays in the archive. Every reply lists all cells, empty ones included. `software_exchange_seconds` (7200): a commit that changed hardware is visible to other islands at once (a flow is hours), one that changed software only at the next exchange, the same moment for every island; the archive view, read-commit, migration and adoption all follow one rule (`Archive._seen`), and migration then gives every newly visible elite once. Roles stay software / hardware / both. |
 
 **Open.**
 
@@ -1050,7 +1357,6 @@ service request's snapshot; each role's CPU time.
 | O8 | Whether a CLI switches models automatically under subscription limits | to verify |
 | O10 | When and how dedicated accounts are obtained; each account's training setting; each provider's data policy and plan terms | user |
 | O14 | Windows for the shared card | user, lab |
-| O15 | How specific a task's syllabus may be | user |
 | O17 | The size of the hidden sets. Of the 27 tiny points, each matrix-multiply family has a single shape (matmul in two dtypes), so "same operation, unseen shape" needs new tiny-scale points | collaborator |
 | O21 | How ArchBench splits into a public and a hidden package for delivery: by family, or by shape tables made data | collaborator |
 | O22 | Who migrates P1's remainder (the FPGA top first, then the core benches and `tnca_shell_tb`) | collaborator |
@@ -1091,6 +1397,10 @@ Status: **done** (built and verified), **in progress** (being built now),
 | Tasks | Main-line v5 pilot with a remotely available base | done | `tasks/r39-v5-main-pilot/VALIDATION.md`: fresh export; observer-backed noop 3/3 validation and 2/2 final, each at 1.000 |
 | Tasks | Formal tasks and wider hidden sets | planned | O6/O17/O21; `replay-mzero` remains a local framework regression whose base `083b57d` was not published |
 | Visibility | TileBench in the image checked against ArchBench | planned | — |
+| Visibility | Test-case skill: an Agent Skill in the harness (`skills/testcase-design/`), mounted read-only into every run's container and linked into each CLI's skills directory; named by `task.render`, which then drops the syllabus's measuring example; listed by hash in the run record | done | branch `testcase-skill`: the six example cases pass end to end in the toolchain container on core-vrf-sync-v5 (2026-10-27); `smoke --probe skills` on Myserver the same day: Claude Code 2.1.287, Codex 0.162.1 and opencode 1.19.0 each link `testcase-design` into their skills directory and name it when asked to list their skills, all three records carrying the same directory hash; merged with PR #9's head 3e54d3c3 and its wording made machine-independent, the per-core L labelled (2026-10-28) |
+| Visibility | Equivalence test of the skill's copied code against ArchBench's; leak check of the skill directory against the live registry; delivery checks (never in a workspace, mounted read-only at the path the prompt names, every CLI has a skills directory, manifest, both arms of every task's prompt, the `/hbm` peak) | done | `tests/test_testcase_skill.py`: 22 tests, the 6 that need torch run on the U280 host |
+| Visibility | Which skills a run gets: the catalog, the task's default set, the run's override; staged, mounted and linked per run; named in the prompt from the front matter; in the record with hashes and the catalog version | done | `skills.py`; `tests/test_skills.py`; every R41 formal task declares `testcase-design`; `r41-dp-pilot` and `r41-dp-island1` declare none (the skill arm: `--skills testcase-design`, user 2026-11-06), and the test tasks `replay-mzero` and `r39-v5-main-pilot` declare none since 2026-11-08 (two of their hidden points are in the visible set) |
+| Pilots | Pilot 3: `replay-mzero` with and without the skill, Claude Code and Codex, test behaviour recorded | planned | — |
 | Evaluator | CHIA-level evaluator: base plus overlay, own copies | done | noop 1.000; reference 1.016 / 1.010 |
 | Evaluator | The evaluator's platform from a pinned commit, laid over every tree | done | `task.json` `evaluation.platform` |
 | Evaluator | Each point judged alone; validation and final sets | done | `tests/test_evaluator.py` |
@@ -1105,7 +1415,7 @@ Status: **done** (built and verified), **in progress** (being built now),
 | Services | Scoring service | done | §19: 48 s, the aggregate equal to the reference's validation numbers |
 | Services | FPGA quick tier: license and isolation feasibility | done | OOC synthesis with no license and no network, with a control (§12.5) |
 | Services | FPGA quick tier service: bubblewrap on the build worker, the agent's configuration, an enforced budget | done | §19: `ok` in 11.8 min, +2.313 ns at 10 ns |
-| Services | FPGA slow tier | built, opt-in | `fpga_slow.py`, `services.py`, split-host tests; build-only or validation-board mode; actual in-loop FPGA run pending a configured site and card slot |
+| Services | FPGA slow tier: agent-requested flows and card runs (report section 8.9) | built, opt-in | `fpga_slow.py`, `board.py`, `services.py`; counts per run, gate, design/infrastructure charging, routed failure report, card through the relay, run-end certification; not yet run on the real hosts |
 | FPGA harness | The Vivado flow on the build worker, the board stage on the card host (`pipeline`, `sync`, `import`, host tool roots) | done | `tools/tritonchip_fpga_harness/tests/test_split_hosts.py`; between the two servers with a played build and no load; a 2022.2 build loaded on the card by hand (§12.5) |
 | FPGA harness | `pipeline` between the two servers, a real candidate | done | 2026-10-17: the base hardware (v2, 100 MHz) linked on the build worker in 105 min, ap_clk WNS +0.138 ns; loaded on the card, conformance 5/5, ArchBench tiny 27/27, every point's cycles equal to the 2023.2 build's (both compiled with the card host's installed tree) |
 | FPGA harness | The board stage compiles with the checkout's runtime and compiler, and refuses an interpreter that imports them from elsewhere | done | `969201b`; found by the v5 base certification (§19) |
@@ -1166,8 +1476,13 @@ you create, mode 0600:
 `--build-arg UID=1000`:
 
 ```bash
-docker build --target agent -t tritonchip-agent:dev -f tools/tritonchip_agent_harness/image/Containerfile tools/tritonchip_agent_harness/image --build-arg TORCH_VERSION=2.14.0 --build-arg TRITON_VERSION=3.8.0 --build-arg TILEBENCH_COMMIT=6e2cf155dfe01f4660540d187c81b09eb55f394f --build-arg UID=1000 --build-arg SYSTEMC_COMMIT=70b0fc8e4a74acc677b0fc73cea08f940c2115d5 --build-arg NODE_VERSION=22.23.1 --build-arg NODE_SHA256=9749e988f437343b7fa832c69ded82a312e41a03116d766797ac14f6f9eee578 --build-arg CLAUDE_CODE_VERSION=2.1.287 --build-arg CODEX_VERSION=0.162.1 --build-arg OPENCODE_VERSION=1.19.0
+docker build --target agent -t tritonchip-agent:dev -f tools/tritonchip_agent_harness/image/Containerfile tools/tritonchip_agent_harness/image --build-arg TORCH_VERSION=2.14.0 --build-arg TRITON_VERSION=3.8.0 --build-arg TILEBENCH_COMMIT=6e2cf155dfe01f4660540d187c81b09eb55f394f --build-arg UID=1000 --build-arg SYSTEMC_COMMIT=70b0fc8e4a74acc677b0fc73cea08f940c2115d5 --build-arg NODE_VERSION=22.23.1 --build-arg NODE_SHA256=9749e988f437343b7fa832c69ded82a312e41a03116d766797ac14f6f9eee578 --build-arg CLAUDE_CODE_VERSION=2.1.311 --build-arg CODEX_VERSION=0.162.1 --build-arg OPENCODE_VERSION=1.19.0
 ```
+
+Claude Code was 2.1.287 until 2026-11-11: Claude Fable 5.2 (`claude-fable-5-2`) needs 2.1.290 or newer (the API
+refuses older clients with a 400). 2.1.311 is npm's `stable` of that day; the smoke runs (offline, `--probe skills`,
+and `claude-fable-5-2[1m]`, whose `[1m]` gives Claude Code a 1M-token context window on a subscription) pass.
+`modelUsage` keys carry that suffix: a price lookup strips it.
 
 Build `--target toolchain -t tritonchip-toolchain:dev` the same way.
 
@@ -1185,6 +1500,12 @@ PYTHONPATH=tools python3 -m tritonchip_agent_harness smoke
 
 ```bash
 PYTHONPATH=tools python3 -m tritonchip_agent_harness run-task tools/tritonchip_agent_harness/tasks/r39-v5-main-pilot --agent noop
+```
+
+A run gets the skills its task declares; `--skills a,b` picks others, `--no-skills` none (§6.3):
+
+```bash
+PYTHONPATH=tools python3 -m tritonchip_agent_harness run-task tools/tritonchip_agent_harness/tasks/r39-v5-main-pilot --agent noop --no-skills
 ```
 
 ```bash
@@ -1225,6 +1546,13 @@ PYTHONPATH=tools python3 -m tritonchip_agent_harness certify tools/tritonchip_ag
 The verdict and the score after certification are in
 `runs/<run_id>/certification.json`. `--base <baseline json>` (from
 `<state_dir>/baselines/` on the evaluation host) certifies the base instead.
+A candidate that changed only software runs on the base's image: certify the
+base first, then name its record (no build host; the board host must be the
+one that holds the base's image):
+
+```bash
+PYTHONPATH=tools python3 -m tritonchip_agent_harness certify tools/tritonchip_agent_harness/tasks/r39-v5-main-pilot --run runs/<run_id> --base-image <state_dir>/baselines/<key>.certification.json --hosts ~/.config/tritonchip-fpga-harness/hosts.json --board-host <card host> --yes
+```
 
 **6. Summarise runs per agent framework:** the run count, and the totals and
 means of tokens and of each role's occupancy, as JSON, with no point ids or

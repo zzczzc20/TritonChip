@@ -1,0 +1,1530 @@
+{
+ "aggregates": {
+  "aligned": 0,
+  "diverged": 4,
+  "median_abs_cycle_error": 0.04838842634572583,
+  "missing": 0,
+  "p95_abs_cycle_error": 0.09206349206349207,
+  "points": 4
+ },
+ "options": {
+  "data": false,
+  "order_only": false
+ },
+ "points": {
+  "op.add_tiny_fp16-n1000": {
+   "aligned_launches": 10,
+   "cycle_error": 0.012533388124101088,
+   "cycles_a": 24335,
+   "cycles_b": 24640,
+   "divergences": [
+    {
+     "launch": 1,
+     "length": {
+      "a": 488,
+      "b": 486
+     },
+     "response": {
+      "a": {
+       "latency": 102,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 100,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 433,
+       "pc": "00000000000008d8",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 431,
+       "pc": "00000000000008d8",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 304
+     },
+     "launch": 2,
+     "length": {
+      "a": 547,
+      "b": 543
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021140",
+       "amo": 0,
+       "be": "0f",
+       "cycle": 435,
+       "wdata": "0000000040000000",
+       "we": 1
+      },
+      "b": {
+       "addr": "0000000000021140",
+       "amo": 0,
+       "be": "0f",
+       "cycle": 433,
+       "wdata": "0000000040000000",
+       "we": 1
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     },
+     "response": {
+      "a": {
+       "latency": 102,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 100,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 444,
+       "pc": "00000000000008d8",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 437,
+       "pc": "00000000000008d8",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 304
+     },
+     "launch": 3,
+     "length": {
+      "a": 547,
+      "b": 537
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000021180",
+       "amo": 0,
+       "be": "0f",
+       "cycle": 446,
+       "wdata": "0000000040000000",
+       "we": 1
+      },
+      "b": {
+       "addr": "0000000000021180",
+       "amo": 0,
+       "be": "0f",
+       "cycle": 439,
+       "wdata": "0000000040000000",
+       "we": 1
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     },
+     "response": {
+      "a": {
+       "latency": 113,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 106,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 427,
+       "pc": "00000000000008d8",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 425,
+       "pc": "00000000000008d8",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 304
+     },
+     "launch": 4,
+     "length": {
+      "a": 535,
+      "b": 531
+     },
+     "request": {
+      "a": {
+       "addr": "00000000000211c0",
+       "amo": 0,
+       "be": "0f",
+       "cycle": 429,
+       "wdata": "0000000040000000",
+       "we": 1
+      },
+      "b": {
+       "addr": "00000000000211c0",
+       "amo": 0,
+       "be": "0f",
+       "cycle": 427,
+       "wdata": "0000000040000000",
+       "we": 1
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     },
+     "response": {
+      "a": {
+       "latency": 96,
+       "rdata": "0000000040000000"
+      },
+      "b": {
+       "latency": 94,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "launch": 9,
+     "length": {
+      "a": 499,
+      "b": 495
+     },
+     "response": {
+      "a": {
+       "latency": 110,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 106,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 37,
+   "launches_a": 37,
+   "launches_b": 38,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 433,
+      "pc": "00000000000008d8",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 431,
+      "pc": "00000000000008d8",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 304,
+     "launch": 2
+    },
+    "length": {
+     "a": 488,
+     "b": 486,
+     "launch": 1
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000021140",
+      "amo": 0,
+      "be": "0f",
+      "cycle": 435,
+      "wdata": "0000000040000000",
+      "we": 1
+     },
+     "b": {
+      "addr": "0000000000021140",
+      "amo": 0,
+      "be": "0f",
+      "cycle": 433,
+      "wdata": "0000000040000000",
+      "we": 1
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 2
+    },
+    "response": {
+     "a": {
+      "latency": 102,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 100,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.add_tiny_fp16-n1000.core1": {
+   "aligned_launches": 0,
+   "cycle_error": -0.09206349206349207,
+   "cycles_a": 11970,
+   "cycles_b": 10868,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 241,
+       "pc": "0000000000001398",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 238,
+       "pc": "0000000000001398",
+       "rctx": 0
+      },
+      "count_a": 112,
+      "count_b": 112,
+      "index": 72
+     },
+     "launch": 0,
+     "length": {
+      "a": 1468,
+      "b": 1430
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000022080",
+       "amo": 0,
+       "be": null,
+       "cycle": 243,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000022080",
+       "amo": 0,
+       "be": null,
+       "cycle": 240,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 16
+     },
+     "response": {
+      "a": {
+       "latency": 97,
+       "rdata": "3d293c713b5cb88e"
+      },
+      "b": {
+       "latency": 94,
+       "rdata": "3d293c713b5cb88e"
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 8
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 160,
+       "pc": "0000000000001340",
+       "rctx": 2
+      },
+      "b": {
+       "cycle": 156,
+       "pc": "0000000000001340",
+       "rctx": 2
+      },
+      "count_a": 112,
+      "count_b": 112,
+      "index": 34
+     },
+     "launch": 1,
+     "length": {
+      "a": 1246,
+      "b": 1217
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000023100",
+       "amo": 0,
+       "be": null,
+       "cycle": 162,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000023100",
+       "amo": 0,
+       "be": null,
+       "cycle": 158,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 2
+     },
+     "response": {
+      "a": {
+       "latency": 116,
+       "rdata": "0000000000021800"
+      },
+      "b": {
+       "latency": 112,
+       "rdata": "0000000000021800"
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 114,
+       "pc": "0000000000001378",
+       "rctx": 3
+      },
+      "b": {
+       "cycle": 183,
+       "pc": "0000000000001378",
+       "rctx": 3
+      },
+      "count_a": 112,
+      "count_b": 112,
+      "index": 63
+     },
+     "launch": 2,
+     "length": {
+      "a": 1085,
+      "b": 930
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000023108",
+       "amo": 0,
+       "be": null,
+       "cycle": 116,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000023108",
+       "amo": 0,
+       "be": null,
+       "cycle": 185,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 7
+     },
+     "response": {
+      "a": {
+       "latency": 13,
+       "rdata": "0000000000022000"
+      },
+      "b": {
+       "latency": 82,
+       "rdata": "0000000000022000"
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 5
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 215,
+       "pc": "0000000000001398",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 250,
+       "pc": "0000000000001398",
+       "rctx": 0
+      },
+      "count_a": 112,
+      "count_b": 112,
+      "index": 72
+     },
+     "launch": 3,
+     "length": {
+      "a": 877,
+      "b": 794
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000022500",
+       "amo": 0,
+       "be": null,
+       "cycle": 217,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000022500",
+       "amo": 0,
+       "be": null,
+       "cycle": 252,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 16
+     },
+     "response": {
+      "a": {
+       "latency": 73,
+       "rdata": "b59d3278bb953853"
+      },
+      "b": {
+       "latency": 108,
+       "rdata": "b59d3278bb953853"
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 8
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 82,
+       "pc": "0000000000001368",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 81,
+       "pc": "0000000000001368",
+       "rctx": 1
+      },
+      "count_a": 112,
+      "count_b": 112,
+      "index": 53
+     },
+     "launch": 4,
+     "length": {
+      "a": 1246,
+      "b": 1063
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000023108",
+       "amo": 0,
+       "be": null,
+       "cycle": 91,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000023108",
+       "amo": 0,
+       "be": null,
+       "cycle": 90,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 4
+     },
+     "response": {
+      "a": {
+       "latency": 13,
+       "rdata": "0000000000021800"
+      },
+      "b": {
+       "latency": 29,
+       "rdata": "0000000000021800"
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 10,
+   "launches_a": 11,
+   "launches_b": 10,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 241,
+      "pc": "0000000000001398",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 238,
+      "pc": "0000000000001398",
+      "rctx": 0
+     },
+     "count_a": 112,
+     "count_b": 112,
+     "index": 72,
+     "launch": 0
+    },
+    "length": {
+     "a": 1468,
+     "b": 1430,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000022080",
+      "amo": 0,
+      "be": null,
+      "cycle": 243,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000022080",
+      "amo": 0,
+      "be": null,
+      "cycle": 240,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 60,
+     "count_b": 60,
+     "index": 16,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 97,
+      "rdata": "3d293c713b5cb88e"
+     },
+     "b": {
+      "latency": 94,
+      "rdata": "3d293c713b5cb88e"
+     },
+     "count_a": 60,
+     "count_b": 60,
+     "index": 8,
+     "launch": 0
+    }
+   }
+  },
+  "op.add_tiny_fp16-n1000.core2": {
+   "aligned_launches": 0,
+   "cycle_error": -0.04838842634572583,
+   "cycles_a": 12131,
+   "cycles_b": 11544,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 395,
+       "pc": "0000000000001398",
+       "rctx": 0
+      },
+      "b": {
+       "cycle": 389,
+       "pc": "0000000000001398",
+       "rctx": 0
+      },
+      "count_a": 112,
+      "count_b": 112,
+      "index": 72
+     },
+     "launch": 0,
+     "length": {
+      "a": 1614,
+      "b": 1572
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000022100",
+       "amo": 0,
+       "be": null,
+       "cycle": 397,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000022100",
+       "amo": 0,
+       "be": null,
+       "cycle": 391,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 16
+     },
+     "response": {
+      "a": {
+       "latency": 234,
+       "rdata": "3886ba70b6b4bb11"
+      },
+      "b": {
+       "latency": 228,
+       "rdata": "3886ba70b6b4bb11"
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 8
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 151,
+       "pc": "0000000000001340",
+       "rctx": 2
+      },
+      "b": {
+       "cycle": 150,
+       "pc": "0000000000001340",
+       "rctx": 2
+      },
+      "count_a": 112,
+      "count_b": 112,
+      "index": 34
+     },
+     "launch": 1,
+     "length": {
+      "a": 1131,
+      "b": 1106
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000023200",
+       "amo": 0,
+       "be": null,
+       "cycle": 153,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000023200",
+       "amo": 0,
+       "be": null,
+       "cycle": 152,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 2
+     },
+     "response": {
+      "a": {
+       "latency": 107,
+       "rdata": "0000000000021800"
+      },
+      "b": {
+       "latency": 106,
+       "rdata": "0000000000021800"
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 0
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 93,
+       "pc": "0000000000001370",
+       "rctx": 3
+      },
+      "b": {
+       "cycle": 92,
+       "pc": "0000000000001370",
+       "rctx": 3
+      },
+      "count_a": 112,
+      "count_b": 112,
+      "index": 59
+     },
+     "launch": 2,
+     "length": {
+      "a": 1157,
+      "b": 1103
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000023208",
+       "amo": 0,
+       "be": null,
+       "cycle": 96,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000023208",
+       "amo": 0,
+       "be": null,
+       "cycle": 186,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 4
+     },
+     "response": {
+      "a": {
+       "latency": 23,
+       "rdata": "0000000000021800"
+      },
+      "b": {
+       "latency": 114,
+       "rdata": "0000000000021800"
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 2
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 70,
+       "pc": "0000000000001340",
+       "rctx": 3
+      },
+      "b": {
+       "cycle": 73,
+       "pc": "0000000000001340",
+       "rctx": 3
+      },
+      "count_a": 112,
+      "count_b": 112,
+      "index": 35
+     },
+     "launch": 3,
+     "length": {
+      "a": 1139,
+      "b": 1072
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000023200",
+       "amo": 0,
+       "be": null,
+       "cycle": 72,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000023200",
+       "amo": 0,
+       "be": null,
+       "cycle": 75,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 3
+     },
+     "response": {
+      "a": {
+       "latency": 19,
+       "rdata": "0000000000021800"
+      },
+      "b": {
+       "latency": 24,
+       "rdata": "0000000000021800"
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 1
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 108,
+       "pc": "0000000000001340",
+       "rctx": 2
+      },
+      "b": {
+       "cycle": 63,
+       "pc": "0000000000001340",
+       "rctx": 2
+      },
+      "count_a": 112,
+      "count_b": 112,
+      "index": 34
+     },
+     "launch": 4,
+     "length": {
+      "a": 1087,
+      "b": 919
+     },
+     "request": {
+      "a": {
+       "addr": "0000000000023200",
+       "amo": 0,
+       "be": null,
+       "cycle": 110,
+       "wdata": null,
+       "we": 0
+      },
+      "b": {
+       "addr": "0000000000023200",
+       "amo": 0,
+       "be": null,
+       "cycle": 65,
+       "wdata": null,
+       "we": 0
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 2
+     },
+     "response": {
+      "a": {
+       "latency": 64,
+       "rdata": "0000000000021800"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000000021800"
+      },
+      "count_a": 60,
+      "count_b": 60,
+      "index": 0
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 10,
+   "launches_a": 10,
+   "launches_b": 10,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 395,
+      "pc": "0000000000001398",
+      "rctx": 0
+     },
+     "b": {
+      "cycle": 389,
+      "pc": "0000000000001398",
+      "rctx": 0
+     },
+     "count_a": 112,
+     "count_b": 112,
+     "index": 72,
+     "launch": 0
+    },
+    "length": {
+     "a": 1614,
+     "b": 1572,
+     "launch": 0
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000022100",
+      "amo": 0,
+      "be": null,
+      "cycle": 397,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000022100",
+      "amo": 0,
+      "be": null,
+      "cycle": 391,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 60,
+     "count_b": 60,
+     "index": 16,
+     "launch": 0
+    },
+    "response": {
+     "a": {
+      "latency": 234,
+      "rdata": "3886ba70b6b4bb11"
+     },
+     "b": {
+      "latency": 228,
+      "rdata": "3886ba70b6b4bb11"
+     },
+     "count_a": 60,
+     "count_b": 60,
+     "index": 8,
+     "launch": 0
+    }
+   }
+  },
+  "op.add_tiny_fp16-n1000.uncore": {
+   "aligned_launches": 16,
+   "cycles_a": 1679206,
+   "cycles_b": 11683650,
+   "divergences": [
+    {
+     "dram_req": {
+      "a": [
+       441,
+       0,
+       135424,
+       1
+      ],
+      "b": [
+       440,
+       0,
+       135424,
+       1
+      ],
+      "count_a": 2,
+      "count_b": 2,
+      "index": 1
+     },
+     "dram_rsp": {
+      "a": [
+       470,
+       1
+      ],
+      "b": [
+       468,
+       1
+      ],
+      "count_a": 1,
+      "count_b": 1,
+      "index": 0
+     },
+     "launch": 1,
+     "mem_rsp": {
+      "a": [
+       474,
+       1
+      ],
+      "b": [
+       472,
+       1
+      ],
+      "count_a": 1,
+      "count_b": 1,
+      "index": 0
+     },
+     "slice_rsp": {
+      "a": [
+       479,
+       1,
+       0
+      ],
+      "b": [
+       477,
+       1,
+       0
+      ],
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "dram_req": {
+      "a": [
+       452,
+       1,
+       135744,
+       2
+      ],
+      "b": [
+       450,
+       1,
+       135744,
+       2
+      ],
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     },
+     "dram_rsp": {
+      "a": [
+       413,
+       1
+      ],
+      "b": [
+       411,
+       1
+      ],
+      "count_a": 2,
+      "count_b": 2,
+      "index": 0
+     },
+     "launch": 2,
+     "mem_req": {
+      "a": [
+       448,
+       2,
+       1,
+       135744
+      ],
+      "b": [
+       446,
+       2,
+       1,
+       135744
+      ],
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     },
+     "mem_rsp": {
+      "a": [
+       417,
+       1
+      ],
+      "b": [
+       415,
+       1
+      ],
+      "count_a": 2,
+      "count_b": 2,
+      "index": 0
+     },
+     "slice_req": {
+      "a": [
+       442,
+       2,
+       0,
+       1,
+       135488
+      ],
+      "b": [
+       440,
+       2,
+       0,
+       1,
+       135488
+      ],
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     },
+     "slice_rsp": {
+      "a": [
+       422,
+       1,
+       0
+      ],
+      "b": [
+       420,
+       1,
+       0
+      ],
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "dram_req": {
+      "a": [
+       390,
+       0,
+       135488,
+       2
+      ],
+      "b": [
+       386,
+       0,
+       135488,
+       2
+      ],
+      "count_a": 4,
+      "count_b": 4,
+      "index": 1
+     },
+     "dram_rsp": {
+      "a": [
+       421,
+       2
+      ],
+      "b": [
+       414,
+       2
+      ],
+      "count_a": 2,
+      "count_b": 2,
+      "index": 0
+     },
+     "launch": 3,
+     "mem_req": {
+      "a": [
+       453,
+       0,
+       1,
+       135808
+      ],
+      "b": [
+       446,
+       0,
+       1,
+       135808
+      ],
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     },
+     "mem_rsp": {
+      "a": [
+       425,
+       2
+      ],
+      "b": [
+       418,
+       2
+      ],
+      "count_a": 2,
+      "count_b": 2,
+      "index": 0
+     },
+     "slice_req": {
+      "a": [
+       447,
+       0,
+       0,
+       1,
+       135552
+      ],
+      "b": [
+       440,
+       0,
+       0,
+       1,
+       135552
+      ],
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     },
+     "slice_rsp": {
+      "a": [
+       430,
+       2,
+       0
+      ],
+      "b": [
+       423,
+       2,
+       0
+      ],
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "dram_req": {
+      "a": [
+       443,
+       1,
+       135872,
+       1
+      ],
+      "b": [
+       441,
+       1,
+       135872,
+       1
+      ],
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     },
+     "dram_rsp": {
+      "a": [
+       410,
+       0
+      ],
+      "b": [
+       408,
+       0
+      ],
+      "count_a": 2,
+      "count_b": 2,
+      "index": 0
+     },
+     "launch": 4,
+     "mem_req": {
+      "a": [
+       439,
+       1,
+       1,
+       135872
+      ],
+      "b": [
+       437,
+       1,
+       1,
+       135872
+      ],
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     },
+     "mem_rsp": {
+      "a": [
+       414,
+       0
+      ],
+      "b": [
+       412,
+       0
+      ],
+      "count_a": 2,
+      "count_b": 2,
+      "index": 0
+     },
+     "slice_req": {
+      "a": [
+       433,
+       1,
+       0,
+       1,
+       135616
+      ],
+      "b": [
+       431,
+       1,
+       0,
+       1,
+       135616
+      ],
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     },
+     "slice_rsp": {
+      "a": [
+       419,
+       0,
+       0
+      ],
+      "b": [
+       417,
+       0,
+       0
+      ],
+      "count_a": 4,
+      "count_b": 4,
+      "index": 2
+     }
+    },
+    {
+     "dram_req": {
+      "a": [
+       449,
+       0,
+       135936,
+       2
+      ],
+      "b": [
+       446,
+       0,
+       135936,
+       2
+      ],
+      "count_a": 2,
+      "count_b": 2,
+      "index": 1
+     },
+     "dram_rsp": {
+      "a": [
+       478,
+       2
+      ],
+      "b": [
+       474,
+       2
+      ],
+      "count_a": 1,
+      "count_b": 1,
+      "index": 0
+     },
+     "launch": 9,
+     "mem_rsp": {
+      "a": [
+       482,
+       2
+      ],
+      "b": [
+       478,
+       2
+      ],
+      "count_a": 1,
+      "count_b": 1,
+      "index": 0
+     },
+     "slice_rsp": {
+      "a": [
+       487,
+       2,
+       0
+      ],
+      "b": [
+       483,
+       2,
+       0
+      ],
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 58,
+   "launches_a": 58,
+   "launches_b": 58,
+   "status": "diverged",
+   "streams": {
+    "dram_req": {
+     "a": [
+      441,
+      0,
+      135424,
+      1
+     ],
+     "b": [
+      440,
+      0,
+      135424,
+      1
+     ],
+     "count_a": 2,
+     "count_b": 2,
+     "index": 1,
+     "launch": 1
+    },
+    "dram_rsp": {
+     "a": [
+      470,
+      1
+     ],
+     "b": [
+      468,
+      1
+     ],
+     "count_a": 1,
+     "count_b": 1,
+     "index": 0,
+     "launch": 1
+    },
+    "mem_req": {
+     "a": [
+      448,
+      2,
+      1,
+      135744
+     ],
+     "b": [
+      446,
+      2,
+      1,
+      135744
+     ],
+     "count_a": 4,
+     "count_b": 4,
+     "index": 2,
+     "launch": 2
+    },
+    "mem_rsp": {
+     "a": [
+      474,
+      1
+     ],
+     "b": [
+      472,
+      1
+     ],
+     "count_a": 1,
+     "count_b": 1,
+     "index": 0,
+     "launch": 1
+    },
+    "slice_req": {
+     "a": [
+      442,
+      2,
+      0,
+      1,
+      135488
+     ],
+     "b": [
+      440,
+      2,
+      0,
+      1,
+      135488
+     ],
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 2
+    },
+    "slice_rsp": {
+     "a": [
+      479,
+      1,
+      0
+     ],
+     "b": [
+      477,
+      1,
+      0
+     ],
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  }
+ },
+ "reason": "4 of 4 point(s) diverge",
+ "schema": "tnca-core-alignment/1",
+ "verdict": "diverged"
+}

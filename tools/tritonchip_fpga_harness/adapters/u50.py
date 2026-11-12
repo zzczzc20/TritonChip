@@ -67,6 +67,11 @@ class U50Config:
     xo_name: str = "tnca_u50.xo"
     xclbin_name: str = "tnca_u50.xclbin"
     allowed_auto_frequency_rules: tuple[str, ...] = ()
+    # A target's declared timing exception: system clocks, by the name the
+    # routed timing summary's per-clock tables use, that may miss timing (and
+    # be moved by v++'s automatic frequency scaling) while every other clock
+    # must close. Empty is the design-wide rule. See validate_artifacts.
+    timing_exempt_clocks: tuple[str, ...] = ()
     # The Vitis versions the card accepts images from; empty means unchecked.
     accepted_vitis_versions: tuple[str, ...] = ()
     require_routed_timing: bool = False
@@ -94,6 +99,7 @@ class U50Config:
             xo_name=self.xo_name,
             xclbin_name=self.xclbin_name,
             allowed_auto_frequency_rules=tuple(self.allowed_auto_frequency_rules),
+            timing_exempt_clocks=tuple(self.timing_exempt_clocks),
             accepted_vitis_versions=tuple(self.accepted_vitis_versions),
             require_routed_timing=self.require_routed_timing,
             require_drc=self.require_drc,
@@ -152,6 +158,10 @@ class ArtifactValidation:
     observed_clock_mhz: int | None = None
     mapped_clock_name: str | None = None
     timing: dict[str, Any] = field(default_factory=dict)
+    # link.sh's own non-zero verdict, when the target's timing exception
+    # covers it (only `freq-moved`, only exempt clocks moved): the link
+    # stage's exit status is then not a build failure. None otherwise.
+    link_exit_accepted: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -161,6 +171,7 @@ class ArtifactValidation:
             "observed_clock_mhz": self.observed_clock_mhz,
             "mapped_clock_name": self.mapped_clock_name,
             "timing": self.timing,
+            "link_exit_accepted": self.link_exit_accepted,
         }
 
 
@@ -193,6 +204,30 @@ class U50Run:
 # link.sh's kernel clock: a fixed `EXPECT_MHZ=<n>`, or, since a target names
 # its own clock, `EXPECT_MHZ=${TNCA_KERNEL_MHZ:-<n>}` with <n> the default.
 _FLOW_CLOCK = re.compile(r"(?m)^EXPECT_MHZ=(?:\$\{TNCA_KERNEL_MHZ:-(\d+)\}|(\d+))\s*$")
+
+
+_BITSTREAM_DATA = ("devint/bsdata.cfg", "devint/bsoptions.cfg")
+
+
+def bitstream_device_data(vitis_root: Path, vivado: str, part: str | None) -> tuple[bool, str] | None:
+    """Whether the Vivado a link runs has the device data `part`'s bitstream is written from: (ok, where),
+    or None for a part this check does not know. Every Alveo UltraScale+ part (xcu*) writes its bitstream
+    from the virtexuplus family's devint data, even an HBM part whose own family is virtexuplusHBM; an
+    installation without that family routes the design and fails write_bitstream hours later (RSCL,
+    2026-11-08: "Bitstream generation is not supported for part xcu280-fsvh2892-2L-e"). The Vivado is the
+    one beside the Vitis root (AMD's layout, .../Vitis/2023.2 and .../Vivado/2023.2), else the one on PATH."""
+    if not part or not part.startswith("xcu"):
+        return None
+    roots = [vitis_root.parent.parent / "Vivado" / vitis_root.name]
+    found = shutil.which(vivado)
+    if found:
+        roots.append(Path(found).resolve().parent.parent)
+    for root in roots:
+        family = root / "data" / "parts" / "xilinx" / "virtexuplus"
+        if all((family / name).is_file() for name in _BITSTREAM_DATA):
+            return True, str(family)
+    return False, "no virtexuplus bitstream data under " + " or ".join(
+        str(r / "data" / "parts" / "xilinx") for r in roots)
 
 
 def flow_clock(link_text: str) -> tuple[int | None, bool]:
@@ -415,6 +450,23 @@ class U50Adapter:
                     warnings.append(f"{tool} unavailable before settings64 (planning mode)")
                 add(tool, bool(found) or dry_run or not require_vendor_tools, found or tool,
                     "warning" if (dry_run or not require_vendor_tools) and not found else "error")
+            # v++ --link unpacks the kernel .xo with the system's unzip, which
+            # settings64 does not provide: a build server without it passes
+            # every other check and fails hours later at the link (x86vivado,
+            # 2026-11-07, "command not found: unzip").
+            found = shutil.which("unzip")
+            if not found and (dry_run or not require_vendor_tools):
+                warnings.append("unzip unavailable (planning mode): v++ --link needs it to unpack the .xo")
+            add("unzip", bool(found) or dry_run or not require_vendor_tools, found or "unzip",
+                "warning" if (dry_run or not require_vendor_tools) and not found else "error")
+            # The part's bitstream data: without it the link routes and then fails write_bitstream.
+            data = bitstream_device_data(c.vitis_root, c.vivado, c.package_part)
+            if data is not None:
+                ok, where = data
+                if not ok and (dry_run or not require_vendor_tools):
+                    warnings.append(f"bitstream device data unavailable (planning mode): {where}")
+                add("bitstream_data", ok or dry_run or not require_vendor_tools, where,
+                    "warning" if (dry_run or not require_vendor_tools) and not ok else "error")
 
         if stage == "full":
             existing = _existing_vendor_processes()
@@ -532,6 +584,8 @@ class U50Adapter:
             add("xclbin", True, "not required for package stage")
 
         log_text = self._read_text(link_log)
+        link_exit_accepted = None
+        exempt_moves: list[dict[str, Any]] = []
         if require_xclbin and link_log.is_file():
             rc_match = re.findall(r"VPP_RC=(-?\d+)", log_text)
             if rc_match:
@@ -542,14 +596,35 @@ class U50Adapter:
                     add("missing_xclbin_after_zero_rc", False, "link.log says VPP_RC=0 but tnca_u50.xclbin is absent")
             else:
                 add("vpp_rc", False, "link.log has no VPP_RC marker")
-            add("link_ok_marker", "LINK_OK" in log_text, "LINK_OK" if "LINK_OK" in log_text else "missing LINK_OK")
             scaling_rules = sorted(set(re.findall(r"AUTO-FREQ-SCALING(?:-\d+)?", log_text)))
-            bad_scaling = [rule for rule in scaling_rules if rule not in c.allowed_auto_frequency_rules]
-            add(
-                "no_auto_frequency_scaling",
-                not bad_scaling,
-                "clean" if not scaling_rules else f"rules={scaling_rules}, rejected={bad_scaling}",
-            )
+            if not c.timing_exempt_clocks:
+                bad_scaling = [rule for rule in scaling_rules if rule not in c.allowed_auto_frequency_rules]
+                scaling_detail = "clean" if not scaling_rules else f"rules={scaling_rules}, rejected={bad_scaling}"
+            else:
+                bad_scaling, exempt_moves = self._exempt_scaling(log_text, c.allowed_auto_frequency_rules,
+                                                                 c.timing_exempt_clocks)
+                scaling_detail = ("clean" if not scaling_rules else
+                                  f"rules={scaling_rules}, rejected={bad_scaling}, moved exempt clocks="
+                                  + json.dumps(exempt_moves, sort_keys=True))
+            add("no_auto_frequency_scaling", not bad_scaling, scaling_detail)
+            # link.sh's verdict. Its `LINK_FAILED freq-moved` (exit 3) is the
+            # one a timing exception can cover: every clock the tool moved is
+            # exempt (no rejected rule). It is printed before link.sh reads the
+            # kernel clock back, so expected_clock below is what checks that.
+            failed = re.findall(r"(?m)^LINK_FAILED\s+\S+", log_text)
+            last = failed[-1] if failed else None
+            if "LINK_OK" in log_text:
+                add("link_ok_marker", True, "LINK_OK")
+            elif last == "LINK_FAILED freq-moved" and exempt_moves and not bad_scaling:
+                link_exit_accepted = dict(
+                    verdict=last, exception="timing_exempt_clocks",
+                    reason="link.sh refused a moved clock and every moved clock is exempt",
+                    moved=exempt_moves)
+                add("link_ok_marker", True, f"{last}: accepted under timing_exempt_clocks, moved only "
+                    + ", ".join(f"{m['clock']} {m['from_mhz']}->{m['to_mhz']} MHz" for m in exempt_moves))
+            else:
+                add("link_ok_marker", False, "missing LINK_OK"
+                    + (f" ({last}, not covered by timing_exempt_clocks)" if c.timing_exempt_clocks and last else ""))
         elif require_xclbin:
             add("link_log", False, f"missing {link_log}")
 
@@ -569,26 +644,45 @@ class U50Adapter:
                 for key in ("wns_ns", "tns_ns", "whs_ns", "ths_ns", "failing_endpoints"):
                     add(f"timing_{key}", key in metrics, f"{key}={metrics.get(key, 'missing')}")
                 if all(key in metrics for key in ("wns_ns", "tns_ns", "whs_ns", "ths_ns", "failing_endpoints")):
-                    add(
-                        "timing_clean",
-                        metrics["wns_ns"] >= 0 and metrics["tns_ns"] >= 0 and metrics["whs_ns"] >= 0
-                        and metrics["ths_ns"] >= 0 and metrics.get("wpws_ns", 0) >= 0
-                        and metrics["failing_endpoints"] == 0,
-                        json.dumps(metrics, sort_keys=True),
-                    )
+                    design_clean = (metrics["wns_ns"] >= 0 and metrics["tns_ns"] >= 0 and metrics["whs_ns"] >= 0
+                                    and metrics["ths_ns"] >= 0 and metrics.get("wpws_ns", 0) >= 0
+                                    and metrics["failing_endpoints"] == 0)
+                    tables = (self._clock_tables(self._read_text(Path(timing["report"])))
+                              if c.timing_exempt_clocks and timing.get("scope") == "design" else None)
+                    if tables is None:
+                        # No exception declared -- or no per-clock tables to
+                        # apply one to, and then the design-wide rule stands.
+                        detail = json.dumps(metrics, sort_keys=True)
+                        if c.timing_exempt_clocks:
+                            timing["exception"] = dict(target_key="timing_exempt_clocks",
+                                                       exempt_clocks=list(c.timing_exempt_clocks), applied=False,
+                                                       reason="the report has no per-clock tables; judged design-wide")
+                        add("timing_clean", design_clean, detail)
+                    else:
+                        verdict = self._exempt_timing(tables, metrics, c.timing_exempt_clocks)
+                        verdict["moved"] = exempt_moves
+                        timing["exception"] = verdict
+                        add("timing_clean", verdict["ok"], json.dumps(dict(
+                            rule=verdict["rule"], design=metrics, judged=verdict["judged"],
+                            exempt=verdict["exempt_failing"], applied=verdict["applied"],
+                            unaccounted=verdict["unaccounted"]), sort_keys=True))
         if require_xclbin and self.config.require_drc:
             drc = self._drc_report(b)
             add("drc_report", drc.get("report") is not None, str(drc.get("report") or "missing"))
             if drc.get("report") is not None:
                 add("drc_clean", drc.get("errors") == 0, f"errors={drc.get('errors', 'unknown')}")
 
+        ok = all(c.ok for c in checks)
         return ArtifactValidation(
-            ok=all(c.ok for c in checks),
+            ok=ok,
             checks=checks,
             artifacts=artifacts,
             observed_clock_mhz=observed,
             mapped_clock_name=mapped,
             timing=timing,
+            # Only a build that passes every other check, the kernel clock's
+            # readback included, has its link verdict excused.
+            link_exit_accepted=link_exit_accepted if ok else None,
         )
 
     # Vivado's "Design Timing Summary" row, by position.  The table is the
@@ -634,6 +728,178 @@ class U50Adapter:
                 return metrics
             return None
         return None
+
+    # v++'s rule text for a clock it moved (Vitis 2023.2 ocl_rules.cfg, rules
+    # 03/04/06/07): "The system clock hbm_aclk has an original frequency equal
+    # to 450 MHz. The frequency has been automatically changed to 433.4 MHz".
+    _MOVED_CLOCK = re.compile(
+        r"\[(AUTO-FREQ-SCALING-\d+)\][^\n]*?\bclock (\S+) has an original frequency equal to "
+        r"([\d.]+) MHz\. The frequency has been automatically changed to ([\d.]+) MHz")
+
+    @staticmethod
+    def _exempt_scaling(log_text: str, allowed: tuple[str, ...], exempt: tuple[str, ...]
+                        ) -> tuple[list[str], list[dict[str, Any]]]:
+        """(rejected rules, moves of exempt clocks), line by line.
+
+        A rule the target allows (08: nothing moved) passes as before. Any
+        other rule passes only on a line that says, in the tool's own words,
+        that it moved a clock the target exempts. Everything else -- a move
+        of any other clock (the kernel clock among them), the error rules,
+        a rule whose message names no clock -- is rejected.
+        """
+        rejected: list[str] = []
+        moves: list[dict[str, Any]] = []
+        for line in log_text.splitlines():
+            rules = re.findall(r"AUTO-FREQ-SCALING(?:-\d+)?", line)
+            if not rules or all(rule in allowed for rule in rules):
+                continue
+            moved = U50Adapter._MOVED_CLOCK.search(line)
+            if moved and moved.group(2) in exempt and len(set(rules)) == 1:
+                moves.append(dict(rule=moved.group(1), clock=moved.group(2),
+                                  from_mhz=float(moved.group(3)), to_mhz=float(moved.group(4))))
+            else:
+                rejected.extend(rule for rule in rules if rule not in allowed and rule not in rejected)
+        return rejected, moves
+
+    # Per-clock table headers, as report_timing_summary prints them.
+    _TABLE_COLUMNS = {
+        "Clock": "clock", "From Clock": "from_clock", "To Clock": "to_clock", "Path Group": "path_group",
+        "WNS(ns)": "wns_ns", "TNS(ns)": "tns_ns", "TNS Failing Endpoints": "tns_failing_endpoints",
+        "TNS Total Endpoints": "tns_total_endpoints", "WHS(ns)": "whs_ns", "THS(ns)": "ths_ns",
+        "THS Failing Endpoints": "ths_failing_endpoints", "THS Total Endpoints": "ths_total_endpoints",
+        "WPWS(ns)": "wpws_ns", "TPWS(ns)": "tpws_ns", "TPWS Failing Endpoints": "tpws_failing_endpoints",
+        "TPWS Total Endpoints": "tpws_total_endpoints",
+    }
+    _TABLES = {"Intra Clock Table": "intra", "Inter Clock Table": "inter", "Other Path Groups Table": "other"}
+
+    @staticmethod
+    def _clock_tables(text: str) -> dict[str, list[dict[str, Any]]] | None:
+        """The Intra Clock, Inter Clock and Other Path Groups tables, row by row.
+
+        The tables are fixed-width, and a cell is blank where a clock has no
+        path of that kind (a pulse-width-only clock, a crossing with no hold
+        check), so a value is placed by where it sits, never by its order in
+        the row. A name (clock, path group) is left-aligned in its column: it
+        belongs to the column it starts in. A number is right-aligned to the
+        end of its column's dash run and may start before the run when it is
+        wider than the heading (a TNS of -457.657 under `TNS(ns)`): it belongs
+        to the column its last character is in. Cutting at the dash runs
+        instead put that TNS's sign into the WNS cell (R41-F2's flow l8,
+        2026-11-09), and the whole table was lost. Clock names keep their
+        spelling; generated clocks lose only their indentation. None unless
+        the intra-clock table is there, and every table there has known
+        columns and numbers for values. A design with no crossings may print
+        no inter-clock table; that is not a gap a failure can hide in, since
+        _exempt_timing holds the rows to the design row's own totals.
+        """
+        lines = text.splitlines()
+        tables: dict[str, list[dict[str, Any]]] = {}
+        for index, line in enumerate(lines):
+            title = line[2:].strip() if line.startswith("| ") else None
+            if title not in U50Adapter._TABLES:
+                continue
+            at = index + 1
+            while at < len(lines) and (not lines[at].strip() or lines[at].startswith(("|", "---"))):
+                at += 1
+            if at + 1 >= len(lines):
+                return None
+            header, dashes = lines[at], lines[at + 1]
+            runs = [(m.start(), m.end()) for m in re.finditer(r"-+", dashes)]
+            if not runs or runs[0][0] != 0:
+                return None
+            starts = [a for a, _ in runs]
+            bounds = list(zip(starts, starts[1:] + [None]))
+            names = [header[a:b].strip() if b else header[a:].strip() for a, b in bounds]
+            if any(name not in U50Adapter._TABLE_COLUMNS for name in names):
+                return None
+            keys = [U50Adapter._TABLE_COLUMNS[name] for name in names]
+            text = ("clock", "from_clock", "to_clock", "path_group")
+            rows = []
+            for row in lines[at + 2:]:
+                if not row.strip():
+                    break
+                entry: dict[str, Any] = {}
+                for token in re.finditer(r"\S+", row):
+                    first, last = token.start(), token.end() - 1
+                    # A number: the column whose dash run its last character is in.
+                    column = next((i for i, (a, b) in enumerate(runs) if keys[i] not in text and a <= last < b), None)
+                    if column is None:
+                        # A name: the column it starts in.
+                        column = max((i for i, a in enumerate(starts) if a <= first), default=None)
+                        if column is None or keys[column] not in text:
+                            return None
+                    key, cell = keys[column], token.group()
+                    if key in text:
+                        entry[key] = f"{entry[key]} {cell}" if key in entry else cell
+                        continue
+                    if key in entry:
+                        return None
+                    try:
+                        entry[key] = int(cell) if key.endswith("_endpoints") else float(cell)
+                    except ValueError:
+                        return None
+                rows.append(entry)
+            tables[U50Adapter._TABLES[title]] = rows
+        if "intra" not in tables:
+            return None
+        return {name: tables.get(name, []) for name in U50Adapter._TABLES.values()}
+
+    _SLACKS = ("wns_ns", "tns_ns", "whs_ns", "ths_ns", "wpws_ns", "tpws_ns")
+    _FAILING = ("tns_failing_endpoints", "ths_failing_endpoints", "tpws_failing_endpoints")
+
+    @staticmethod
+    def _exempt_timing(tables: dict[str, list[dict[str, Any]]], design: dict[str, Any],
+                       exempt: tuple[str, ...]) -> dict[str, Any]:
+        """The timing verdict under a target's exempt clocks.
+
+        A row is judged by its destination: an intra-clock row by its clock,
+        a crossing or path group by its To Clock (a group with none is
+        judged). Every judged row must have no negative WNS, TNS, WHS, THS,
+        WPWS or TPWS and no failing endpoint. Rows into an exempt clock are
+        recorded with their figures, not judged. And the tables must account
+        for the design row: its worst negative slacks must appear in some
+        row, and its failing endpoints must not exceed the rows' sum -- a
+        failure the parser did not see is never passed.
+        """
+        rows = [(table, row) for table, entries in tables.items() for row in entries]
+
+        def destination(table: str, row: dict[str, Any]) -> str | None:
+            return row.get("clock") if table == "intra" else row.get("to_clock")
+
+        def failing(row: dict[str, Any]) -> bool:
+            return (any(row.get(k, 0) < 0 for k in U50Adapter._SLACKS)
+                    or any(row.get(k, 0) != 0 for k in U50Adapter._FAILING))
+
+        def named(table: str, row: dict[str, Any]) -> dict[str, Any]:
+            return dict(row, table=table)
+
+        judged = [(t, r) for t, r in rows if destination(t, r) not in exempt]
+        exempted = [(t, r) for t, r in rows if destination(t, r) in exempt]
+        violations = [named(t, r) for t, r in judged if failing(r)]
+        unaccounted = []
+        for key in ("wns_ns", "whs_ns", "wpws_ns"):
+            value = design.get(key)
+            if value is not None and value < 0 and not any(abs(r.get(key, 1e9) - value) < 5e-4 for _, r in rows):
+                unaccounted.append(f"design {key}={value} is in no per-clock row")
+        for key in U50Adapter._FAILING:
+            if sum(r.get(key, 0) for _, r in rows) < design.get(key, 0):
+                unaccounted.append(f"design {key}={design.get(key)} exceeds the per-clock rows' sum")
+
+        def worst(entries: list[tuple[str, dict[str, Any]]]) -> dict[str, Any]:
+            return {k: min((r[k] for _, r in entries if k in r), default=None) for k in ("wns_ns", "whs_ns", "wpws_ns")}
+
+        exempt_failing = [named(t, r) for t, r in exempted if failing(r)]
+        return dict(
+            target_key="timing_exempt_clocks", exempt_clocks=list(exempt),
+            rule="every row whose destination clock is not exempt meets setup, hold and pulse width "
+                 "with no failing endpoint; rows into an exempt clock are recorded, not judged",
+            ok=not violations and not unaccounted,
+            applied=bool(exempt_failing) and not violations and not unaccounted,
+            judged=dict(rows=len(judged), worst=worst(judged),
+                        failing_endpoints=sum(r.get(k, 0) for _, r in judged for k in U50Adapter._FAILING),
+                        violations=violations),
+            exempt_rows=[named(t, r) for t, r in exempted], exempt_failing=exempt_failing,
+            unaccounted=unaccounted, design=design)
 
     @staticmethod
     def _timing_reports(build_dir: Path) -> dict[str, Any]:

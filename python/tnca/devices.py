@@ -24,6 +24,9 @@ Three kinds of field:
               clock, the controls the runtime requires). A task or a target
               owns them: check_platform() refuses a description that differs.
     uncore    the machine's own design, open to change within RTL limits.
+              The fields R41's one-lane memory path added (UNCORE_OPTIONAL)
+              may be left out, and are then neither checked nor stated: the
+              image builds the RTL's defaults, as R40's did.
     derived   computed here, never written: SET_W, WAY_W, AXI_ID_W from the
               uncore, PHYS_VREGS and PHYS_W from the core's contexts.
 """
@@ -51,12 +54,13 @@ PLATFORM_FIELDS = ('board', 'variant', 'core_count', 'kernel_clock_mhz', 'AXI_DA
 # (TLW 0..2), tnca_elastic_link (stages >= 0), the set and way indices
 # ($clog2, so powers of two; at most 8 ways, as the NUCA's 8-bit victim key
 # {!dead, priority[3:0], ~age[WAY_W-1:0]} holds three bits of age), and the
-# outstanding slots the native line adapter takes (1..16,
-# tools/r40/image_profile.py).
+# outstanding slots the native line adapter takes (1..16 for R40's adapter,
+# tools/r40/image_profile.py; R41's LUTRAM-backed outlets took 32, and the
+# memory controls carry the count in a byte, rtl/fpga/tnca_multicore_mmio.v).
 _POW2 = lambda lo, hi: tuple(1 << i for i in range(lo.bit_length() - 1, hi.bit_length()) if lo <= 1 << i <= hi)
 UNCORE = {
     'MEM_PORTS': tuple(range(1, 4)),
-    'AXI_OUT_N': tuple(range(1, 17)),
+    'AXI_OUT_N': tuple(range(1, 65)),
     'SETS': _POW2(4, 512),
     'WAYS': _POW2(2, 8),
     'CODE_LINK_STAGES': tuple(range(0, 5)),
@@ -72,7 +76,40 @@ UNCORE = {
     'NUCA_REGISTER_VICTIM_RANK': (0, 1),
     'NUCA_REGISTER_VICTIM_SELECT': (0, 1),
 }
+# The uncore fields R41's one-lane memory path added (rtl/board/tnca_multicore_hbm_xo.v,
+# evidence/r41/hbm_bw/G4_DESIGN.md). A description may leave them out: the RTL's
+# defaults are then built, as R40's images were, and the image states nothing
+# about them (R40's image.tcl and its 41 parameters are unchanged). A description
+# that states one is checked against the RTL's own limits: the striped HBM
+# layout and the pipelined, LUTRAM-backed outlets are switches; the line LSU's
+# slots and the home's MSHRs are counted in LUTRAM (1..64, G4 built 64); the
+# home fill pipe has three depths (0..2, as tnca_tmu's TLW); the physical address
+# width must cover a 32-bit window and fits the 64-bit top.
+UNCORE_OPTIONAL = {
+    'HBM_STRIPED': (0, 1),
+    'AXI_PIPELINED_ISSUE': (0, 1),
+    'AXI_LINE_LUTRAM': (0, 1),
+    'NUCA_SHARED_DATA_READ': (0, 1, 2),
+    'HYBRID_LSU': (0, 1),
+    'TENSOR_LINE': (0, 1),
+    'LINE_SLOTS': tuple(range(1, 65)),
+    'HOME_MSHR_N': tuple(range(1, 65)),
+    'HOME_LINE_PIPE': (0, 1, 2),
+    'HOME_BACKGROUND_READS': (0, 1),
+    'HOME_LINE_WRITE_NOFILL': (0, 1),
+    'PHYS_ADDR_W': tuple(range(32, 65)),
+}
 DERIVED = ('SET_W', 'WAY_W', 'AXI_ID_W', 'PHYS_VREGS', 'PHYS_W')
+
+# The three-tile U280 binding (flow/fpga/place_r40_multicore.tcl, the place_design pre-hook) puts stage 0
+# and stage 1 of every link that crosses an SLR on different SLRs: the code channel (CODE_LINK_STAGES), the
+# dispatch (DISPATCH_STAGES), the home links and cache handoff (MEM_HOME_STAGES), the mesh (NOC_LINK_STAGES)
+# and the HBM outlets (LINK_STAGES). With one stage there is no stage 1 to place, and the hook stops the
+# flow after synthesis ("R40 placement: expected one .../g_stage[1].queue, found 0": R41-F4's b4 and b9,
+# NOC_LINK_STAGES 1, 2026-11-11). The RTL itself takes 0..4; this binding needs 2 or more.
+SLR_BINDING = {'board': 'u280', 'core_count': 3}
+SLR_LINKS = ('CODE_LINK_STAGES', 'DISPATCH_STAGES', 'MEM_HOME_STAGES', 'NOC_LINK_STAGES', 'LINK_STAGES')
+SLR_MIN_STAGES = 2
 
 # The image parameters a multicore description sets from its platform.
 _PLATFORM_PARAMS = ('AXI_DATA_W', 'MEMORY_CONTROLS', 'CACHE_MAINTENANCE')
@@ -189,14 +226,15 @@ def validate(desc):
     if not isinstance(uncore, dict):
         problems.append('uncore must be an object')
         uncore = {}
-    for key in sorted(set(uncore) - set(UNCORE)):
+    for key in sorted(set(uncore) - set(UNCORE) - set(UNCORE_OPTIONAL)):
         if key in DERIVED:
             problems.append(f'uncore.{key} is derived ({", ".join(DERIVED)} are computed), not written')
         else:
             problems.append(f'uncore.{key} is not an uncore field')
-    for key, legal in UNCORE.items():
+    for key, legal in list(UNCORE.items()) + list(UNCORE_OPTIONAL.items()):
         if key not in uncore:
-            problems.append(f'uncore.{key} is missing')
+            if key in UNCORE:
+                problems.append(f'uncore.{key} is missing')
             continue
         v = uncore[key]
         if type(v) is not int or v not in legal:
@@ -205,6 +243,12 @@ def validate(desc):
     cores = platform.get('core_count')
     if isinstance(cores, int) and isinstance(uncore.get('MEM_PORTS'), int) and uncore['MEM_PORTS'] > cores:
         problems.append(f'uncore.MEM_PORTS={uncore["MEM_PORTS"]} exceeds platform.core_count={cores}')
+    if all(platform.get(k) == v for k, v in SLR_BINDING.items()):
+        for key in SLR_LINKS:
+            v = uncore.get(key)
+            if type(v) is int and v in UNCORE[key] and v < SLR_MIN_STAGES:
+                problems.append(f'uncore.{key}={v} is below {SLR_MIN_STAGES}: the three-core U280 binding places '
+                                'stage 0 and stage 1 of this link on different SLRs')
     if problems:
         raise DeviceError('\n'.join(problems))
     return desc

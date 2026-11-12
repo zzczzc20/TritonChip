@@ -87,6 +87,19 @@ struct Config {
             "vrf_prefetch","fp_reduction_vector_extra","time_quantum",
             // M3: DRAM path (include/tnca_dram.hpp)
             "dram_path","dram_fixed_cycles","dram_clock_ratio","dram_max_passes","dram_tolerance_ppm"};
+        // core_model (optional, default 0): 1 selects the cycle-level core (src/cycle_core.inc).
+        u64 core_model=0;if(v.count("core_model")){core_model=v.at("core_model");v.erase("core_model");}
+        require(core_model<=1,"core_model is 0 (event-driven core) or 1 (cycle-level core)");
+        // uncore_model (optional, default 0): 1 selects the cycle-level uncore (src/cycle_uncore.inc); needs core_model=1.
+        u64 uncore_model=0;if(v.count("uncore_model")){uncore_model=v.at("uncore_model");v.erase("uncore_model");}
+        require(uncore_model<=1 && (uncore_model==0 || core_model==1),"uncore_model is 0 or 1 and needs core_model=1");
+        // uncore_board (optional, default 0): 1 = the board's memory side (home and outlet links, one port per
+        // home, tnca_line_axi adapters, dispatch link stages; align/UNCORE_TIMING_BOARD.md); 0 = the simulation
+        // bench's (PORTS=1, tnca_dram_model). With it, optional uncore_axi_latency (25), uncore_axi_latency_step
+        // (19 per port) and uncore_axi_write_delay (15) describe the AXI slave (the bench's line model by default).
+        u64 uncore_board=0;if(v.count("uncore_board")){uncore_board=v.at("uncore_board");v.erase("uncore_board");}
+        require(uncore_board<=1 && (uncore_board==0 || uncore_model==1),"uncore_board is 0 or 1 and needs uncore_model=1");
+        std::map<std::string,u64> axi;for(const char* k:{"uncore_axi_latency","uncore_axi_latency_step","uncore_axi_write_delay"})if(v.count(k)){axi[k]=v.at(k);v.erase(k);}
         // Optional what-if keys, absent from every shipped configuration; an
         // absent key takes its default and leaves the model unchanged.
         //   mtx_dp_group_16 / mtx_dp_group_8 (default 1): a hypothetical packed
@@ -110,6 +123,13 @@ struct Config {
         {auto n=get_or("tl_lsu_units",2);
          require(n==2 || n==4 || n==8 || n==16 || n==32 || n==64,"exploratory LSU units must be 2|4|8|16|32|64");
          require(n==2 || (get("memory_model")==1 && get("core_pipeline")==1),"LSU unit hypothesis needs timeline core pipeline");}
+        if(get_or("tl_hybrid_lsu",0)){
+            require(get("memory_model")==1 && get("core_pipeline")==1 && get_or("tl_core_beat_bytes",8)==64,
+                    "tl_hybrid_lsu needs timeline memory, the core pipeline and a 64-byte core beat");
+            auto w=get_or("tl_word_units",1),s=get_or("tl_line_slots",64);
+            require(w==1 || w==2,"tl_word_units is LSU_INFLIGHT's word-path unit count: 1|2");
+            require(s>=1 && s<=1024 && get_or("tl_mem_issue_gap",3)>=1,"tl_line_slots 1..1024, tl_mem_issue_gap >= 1");
+        }
         {auto n=get_or("tl_memory_lanes",1);
          require(n==1 || n==2 || n==4 || n==8,"exploratory NoC/home lanes must be 1|2|4|8");
          require(n==1 || get("memory_model")==1,"parallel memory lanes require timeline memory");}
@@ -134,6 +154,8 @@ struct Config {
         require(get("mtx_abuf")<=1 && get("lsu_slots")<=64 && get("lsu_beat_slots")<=64,"invalid core engine configuration");
         require(get("memory_model")<=1,"memory_model is 0 (detailed TLM) or 1 (timeline)");
         require(get("time_quantum")==0 || get("memory_model")==1,"time_quantum needs the timeline memory (memory_model=1)");
+        require(core_model==0 || get("memory_model")==1,"core_model=1 needs the timeline memory (memory_model=1)");
+        v["core_model"]=core_model;v["uncore_model"]=uncore_model;v["uncore_board"]=uncore_board;for(auto& kv:axi)v[kv.first]=kv.second;
         require(get("nx")*get("ny")<=16,"at most 16 homes");
         require(get("sets")<=65536 && (get("sets")&(get("sets")-1))==0,"sets must be power of two <=65536");
         require(get("ways")<=32 && get("mshrs")<=256 && get("targets")<=4096,"unreasonable cache geometry");
@@ -153,7 +175,43 @@ struct Config {
         static const std::vector<std::string> k={"mtx_dp","mtx_dp_extra_latency","mtx_dp_prefetch","mtx_dp_group_16","mtx_dp_group_8","mtx_dp_b_prefetch","tl_core_beat_bytes","tl_noc_payload_bytes","tl_lsu_units","tl_memory_lanes","tl_lsu_shared_issue","tl_pc_stripe_bytes","tl_prefetch_lines",
             // R41 G4 what-ifs (default off): full-line writes allocate without a memory read
             // (HOME_LINE_WRITE_NOFILL); the line-wide multi-command tensor engine.
-            "tl_full_line_nofill","tl_slice_install_occupancy","dma_line_engine","dma_line_buffers","dma_line_rf_cycles","dma_line_combine"};return k;}
+            "tl_full_line_nofill","tl_slice_install_occupancy","dma_line_engine","dma_line_buffers","dma_line_rf_cycles","dma_line_combine",
+            // The cycle core (core_model=1) on R41: the hybrid LSU (HYBRID_LSU, its line path's LINE_SLOTS) and the
+            // line-wide tensor engine's port priority (TENSOR_LINE: the LSU first, tnca_mem_mux A_FIRST).
+            "core_lsu_hybrid","core_lsu_line_slots","core_tensor_line",
+            // the transfer engine's registered coordinate product (tnca_tensor.v MUL_PIPE, R41 board builds)
+            "core_tensor_mul_pipe",
+            // R41 F04: the vector multiply family and the integer reductions write back one cycle after X (VALU_LATE)
+            "core_valu_late",
+            // the matrix engine's result pipeline (5 with R41's MAC_DP lanes) and its registered port-3 response (MTX_VRF_REG)
+            "core_mtx_pipe","core_mtx_vrf_reg",
+            // R41 F01: a context gives way (RCTX_SWITCH) unless X holds an instruction that may redirect
+            "core_switch_opcode",
+            // The cycle uncore (uncore_model=1) on R41 (UNCORE_TIMING 10, UNCORE_TIMING_BOARD 9): the
+            // pipelined home (HOME_LINE_PIPE with core_lsu_hybrid; 2 = chained fills), HOME_MSHR_N,
+            // HOME_LINE_WRITE_NOFILL; the line adapter's OUT_N slots, AXI_DATA_W and PIPELINED_ISSUE; the
+            // grid dispatcher's admission stages (R41 F06)
+            "uncore_home_line_pipe","uncore_home_mshr_n","uncore_home_line_write_nofill",
+            "uncore_axi_slots","uncore_axi_data_w","uncore_axi_pipelined_issue","uncore_dispatch_admission",
+            // the R41 runtime's HBM DMA: host transfers from LOCAL_LIMIT up hand the range off (write back,
+            // invalidate) instead of passing through the homes (UNCORE_TIMING 10.3)
+            "uncore_host_dma",
+            // The event model (core_model=0) on R41 (author-model-r41, configs/r41-sim.cfg):
+            // R41 HYBRID_LSU as built (default off): line path + LSU_INFLIGHT word units, a core-wide
+            // memory issue gap and a drain on every path switch (tnca_lsu_hybrid.v, tnca_core.v).
+            "tl_hybrid_lsu","tl_word_units","tl_line_slots","tl_mem_issue_gap","tl_word_setup_cycles",
+            // R41 launch boundaries (default off): grid admission cycles before the first program
+            // (tnca_grid_dispatch.v) and done waiting for every outlet write response (memory_drained).
+            "tl_grid_admission_cycles","tl_launch_drain",
+            // R41 line engine as built (default off): eligibility, setup after the previous issue, snapshot cost.
+            "dma_line_rtl",
+            // R41 RTL simulation's testbench HBM (default off): per-outlet latency and slot jitter.
+            "tl_tb_hbm","tl_tb_latency_base","tl_tb_latency_step","tl_tb_read_wait","tl_tb_write_wait",
+            // R41 FP-reduction fold occupancy (default off).
+            "tl_fp_fold","tl_fp_fold_fp_wait","tl_fp_fold_next",
+            // R41 stall_front (default off): a structural stall in R holds every context, including
+            // slots other contexts reserved before the stall began (tnca_core.v stall_front, rp_go).
+            "tl_stall_front"};return k;}
     u64 get_or(const std::string& k,u64 fallback)const{auto i=v.find(k);return i==v.end()?fallback:i->second;}
     // Hot-path copies of fixed geometry (set once by cache_hot()).
     u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;

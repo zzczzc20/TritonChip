@@ -1,0 +1,3102 @@
+{
+ "aggregates": {
+  "aligned": 0,
+  "diverged": 27,
+  "median_abs_cycle_error": 0.0,
+  "missing": 0,
+  "p95_abs_cycle_error": 1.6643603050562044,
+  "points": 27
+ },
+ "options": {
+  "data": true,
+  "order_only": true
+ },
+ "points": {
+  "model.gpt2_block_tiny_fp16-d64-h4-b1-s16": {
+   "aligned_launches": 1,
+   "cycle_error": 0.8031478358628443,
+   "cycles_a": 462540,
+   "cycles_b": 834028,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 155,
+   "launches_a": 155,
+   "launches_b": 270,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": null,
+     "b": {
+      "cycle": 3524,
+      "pc": "00000000000020c0",
+      "rctx": 1
+     },
+     "count_a": 513,
+     "count_b": 1220,
+     "index": 513,
+     "launch": 154
+    },
+    "length": {
+     "launch_count_a": 155,
+     "launch_count_b": 270
+    },
+    "request": {
+     "a": null,
+     "b": {
+      "addr": "000000000003d928",
+      "amo": 0,
+      "be": null,
+      "cycle": 3404,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 506,
+     "count_b": 1448,
+     "index": 506,
+     "launch": 154
+    },
+    "response": {
+     "a": {
+      "latency": 7,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 7,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "model.llama_decode_tiny_fp16-b1-p16": {
+   "aligned_launches": 4,
+   "cycle_error": 1.6643603050562044,
+   "cycles_a": 616411,
+   "cycles_b": 1642341,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 163,
+   "launches_a": 163,
+   "launches_b": 340,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": {
+     "launch_count_a": 163,
+     "launch_count_b": 340
+    },
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 11,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 11,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "model.llama_prefill_tiny_fp16-b1-s16": {
+   "aligned_launches": 1,
+   "cycle_error": 3.5453237781702804,
+   "cycles_a": 503323,
+   "cycles_b": 2287766,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 38,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 38,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 148,
+   "launches_a": 148,
+   "launches_b": 564,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": {
+     "launch_count_a": 148,
+     "launch_count_b": 564
+    },
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 11,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 11,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "model.mlp_tiny_fp16-t16-d64": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 337256,
+   "cycles_b": 337256,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 46,
+   "launches_a": 46,
+   "launches_b": 46,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 9,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 9,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "model.resnet_block_tiny_fp32-n1-c8-hw8": {
+   "aligned_launches": 1,
+   "cycle_error": 0.11627587635440292,
+   "cycles_a": 859327,
+   "cycles_b": 959246,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 29,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 29,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 39,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 39,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 54,
+   "launches_a": 54,
+   "launches_b": 54,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": null,
+     "b": {
+      "cycle": 5453,
+      "pc": "000000000000ee90",
+      "rctx": 0
+     },
+     "count_a": 1933,
+     "count_b": 51448,
+     "index": 1933,
+     "launch": 53
+    },
+    "length": "equal",
+    "request": {
+     "a": null,
+     "b": {
+      "addr": "0000000000025d00",
+      "amo": 0,
+      "be": null,
+      "cycle": 5455,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 1194,
+     "count_b": 19050,
+     "index": 1194,
+     "launch": 53
+    },
+    "response": {
+     "a": {
+      "latency": 29,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 29,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.add_tiny_fp16-n1000": {
+   "aligned_launches": 5,
+   "cycle_error": 0.0,
+   "cycles_a": 24954,
+   "cycles_b": 24954,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 30,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 33,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 29,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 29,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 37,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 37,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 58,
+   "launches_a": 58,
+   "launches_b": 58,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 30,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 30,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.add_tiny_fp32-n256": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 15198,
+   "cycles_b": 15198,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 36,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 36,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 29,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 29,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 37,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 37,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 34,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 36,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 36,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.argmax_tiny_fp16-r2-v256": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 17542,
+   "cycles_b": 17542,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 31,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 32,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 28,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 28,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 34,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 31,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 31,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.attention_decode_tiny_fp16-b1-h2-l16-d16": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 54448,
+   "cycles_b": 54448,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 28,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 28,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 31,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 33,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 76,
+   "launches_a": 76,
+   "launches_b": 76,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 28,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 28,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.attention_prefill_tiny_fp16-b1-h2-s16-d16": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 152454,
+   "cycles_b": 152454,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 30,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 31,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 35,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 35,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 30,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 118,
+   "launches_a": 118,
+   "launches_b": 118,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 30,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 30,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.bmm_tiny_fp16-b2-m16-k16-n16": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 20112,
+   "cycles_b": 20112,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 34,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 32,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 31,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 32,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 34,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 34,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.conv2d_tiny_fp32-n1-cin4-h8-w8-cout8": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 444430,
+   "cycles_b": 444430,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 30,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 34,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 38,
+   "launches_a": 38,
+   "launches_b": 38,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 30,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 30,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.cumsum_tiny_fp32-r4-c64": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 16462,
+   "cycles_b": 16462,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 31,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 32,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 28,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 28,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 34,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 31,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 31,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.embedding_tiny_fp16-v256-d64-t16": {
+   "aligned_launches": 5,
+   "cycle_error": 0.0,
+   "cycles_a": 117596,
+   "cycles_b": 117596,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 30,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 33,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 58,
+   "launches_a": 58,
+   "launches_b": 58,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 30,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 30,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.gelu_tanh_tiny_fp16-n256": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 16999,
+   "cycles_b": 16999,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 32,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 34,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 28,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 28,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 34,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 32,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 32,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.gemv_tiny_fp16-k64-n64": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 57271,
+   "cycles_b": 57271,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 36,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 36,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 35,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 35,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 36,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 36,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.layernorm_tiny_fp16-r4-d64": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 18276,
+   "cycles_b": 18276,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 30,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 7,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 7,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.linear_tiny_fp16-m16-k64-n64": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 47628,
+   "cycles_b": 47628,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 33,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 30,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 33,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 33,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.matmul_tiny_fp16-m16-k32-n16": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 17308,
+   "cycles_b": 17308,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 33,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 28,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 28,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 36,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 36,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 32,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 33,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 33,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.matmul_tiny_fp32-m16-k32-n16": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 25981,
+   "cycles_b": 25981,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 32,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 32,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 30,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 30,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 32,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 32,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.rmsnorm_tiny_fp16-r4-d64": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 16868,
+   "cycles_b": 16868,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 28,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 28,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 33,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 28,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 28,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.rope_tiny_fp16-b1-h2-s16-d16": {
+   "aligned_launches": 5,
+   "cycle_error": 0.0,
+   "cycles_a": 29320,
+   "cycles_b": 29320,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 33,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 31,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 31,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 32,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 11,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 58,
+   "launches_a": 58,
+   "launches_b": 58,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 33,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 33,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.silu_tiny_fp16-n256": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 15783,
+   "cycles_b": 15783,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 31,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 33,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 30,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 32,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 31,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 31,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.softmax_tiny_fp16-r4-c64": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 21046,
+   "cycles_b": 21046,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 31,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 33,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 30,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 34,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 31,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 31,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.softmax_tiny_fp32-r3-c37": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 15111,
+   "cycles_b": 15111,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 31,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 32,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 28,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 28,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 31,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 7,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 7,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.swiglu_tiny_fp16-n256": {
+   "aligned_launches": 1,
+   "cycle_error": 0.0,
+   "cycles_a": 16714,
+   "cycles_b": 16714,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 35,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 35,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 34,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 28,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 28,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 31,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 35,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 35,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.transpose_tiny_fp32-r32-c32": {
+   "aligned_launches": 2,
+   "cycle_error": 0.0,
+   "cycles_a": 25158,
+   "cycles_b": 25158,
+   "divergences": [
+    {
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 31,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 38,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 38,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 31,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 33,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "launch": 5,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 9,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "diverged",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": {
+     "a": {
+      "latency": 31,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 31,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  }
+ },
+ "reason": "27 of 27 point(s) diverge",
+ "schema": "tnca-core-alignment/1",
+ "verdict": "diverged"
+}

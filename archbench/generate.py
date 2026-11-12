@@ -71,13 +71,14 @@ def main(argv=None):
     import torch.nn.functional as F
     import triton                                            # noqa: F401  (before the driver)
     import tnca.inductor
+    import tnca.inductor_guard     # the evaluator's check, from the platform (2026-11-11)
     from tnca.triton_backend.driver import backend_choice, launch_log
     from torch._inductor.utils import run_and_get_code
 
     from .models import LLAMA, MODEL_TOL, LlamaDecode, LlamaPrefill
     from .ops import gen
     from .platforms.common import _to_fp32, compare, environment, flatten, ieee_fp32, now
-    from .platforms.tnca import BOARD_CLOCK_HZ, EVIDENCE
+    from .platforms.tnca import BOARD_CLOCK_HZ, EVIDENCE, device_id
 
     class PrefillKV(LlamaPrefill):
         """The prefill point's model, returning the prompt's K/V as well."""
@@ -122,7 +123,9 @@ def main(argv=None):
                               backend=backend, backend_args=backend_kwargs, opt_level=args.opt_level,
                               inductor=config),
                 evidence_level=EVIDENCE.get(backend, 'measured-rtl'), clock_hz=clock,
-                xclbin_sha256=_sha256(xclbin) if xclbin and os.path.isfile(xclbin) else None,
+                # A file named in the arguments, or the image a board relay serves.
+                xclbin_sha256=(_sha256(xclbin) if xclbin and os.path.isfile(xclbin)
+                               else device_id(args.profile, backend, backend_kwargs, full=True)),
                 command=' '.join([sys.executable, '-m', 'archbench.generate'] + (argv or sys.argv[1:])),
                 env=environment(), timestamp=now())
     print(f"generate: llama {args.tier} (dim {c.dim}, {c.n_layers} layers, vocab {c.vocab}), "
@@ -141,7 +144,7 @@ def main(argv=None):
         cycles = sum(e['device_cycles'] or 0 for e in log)
         in_launch = sum(sum(e['host_seconds'].values()) for e in log)
         step = dict(kind=kind, position=pos, cache_len=0 if kind == 'prefill' else pos,
-                    launches=len(log), fallbacks=tnca.inductor.host_fallbacks(code),
+                    launches=len(log), fallbacks=tnca.inductor_guard.host_fallbacks(code),
                     device_cycles=cycles, device_seconds=(cycles / clock) if clock else None,
                     max_rel_err=cmp['max_rel_err'], ok=cmp['ok'] and bool(log), detail=cmp['detail'],
                     host=dict(wall_s=round(wall, 3), in_launches_s=round(in_launch, 3),

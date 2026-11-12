@@ -6,6 +6,8 @@ import re
 from pathlib import Path
 
 
+BOARD_SESSION='board-session-counter-only'
+
 # A qualification name is a reviewed operating path, bound to its image where
 # the review was of one image. R40 v2: the user-authorized <=91 MHz path on
 # any reviewed image. R41 Stage 2 run 1: the 100 MHz routed image 30e79769...
@@ -18,6 +20,12 @@ QUALIFICATIONS={
     'r41-run2-100mhz-hbm441':dict(image_sha256='1bf769fdbfbeb93586be86561664d43e785af3a01a739d19a3882647132d2d13',
                                   max_hz=100_000_000,exact_hz=100_000_000),
     'r41-corrected-candidate-100mhz':dict(image_sha256=None,max_hz=100_000_000,exact_hz=100_000_000),
+    # An agent's candidate image in a card session (tools/tritonchip_fpga_harness/
+    # board_session.py): the clock is the board counter, sampled three times
+    # with the image's UUID loaded, and nothing more. No route, timing, CDC or
+    # placement review stands behind it (the card host has no routed
+    # checkpoint), and the name says so wherever a record carries it.
+    BOARD_SESSION:dict(image_sha256=None,max_hz=100_000_000,exact_hz=100_000_000),
 }
 
 RUN2_RAW={
@@ -124,6 +132,20 @@ def validate_candidate_clock(data,path,image_sha256,files):
         raise ValueError('candidate board counter capture differs')
 
 
+def validate_board_session_clock(data,hz):
+    """A card session's counter capture: three samples, each with the image's
+    UUID loaded and the kernel counter at the qualified clock."""
+    uuid=data.get('image_uuid')
+    if not isinstance(uuid,str) or not re.fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',uuid):
+        raise ValueError('board session clock evidence names no image UUID')
+    if data.get('clock_source')!='measured-board-counter':raise ValueError('actual board clock measurement required')
+    samples=data.get('counter_samples')
+    if (not isinstance(samples,list) or len(samples)!=3
+            or any(not isinstance(s,dict) or s.get('loaded_xclbin_uuid')!=uuid or not s.get('frequencies_mhz')
+                   or s['frequencies_mhz'][0]*1_000_000!=hz for s in samples)):
+        raise ValueError('board session counter capture differs from the image or the clock')
+
+
 def qualified_clock(path,image_sha256):
     path=Path(path).resolve();data=json.loads(path.read_text())
     if data.get('schema')!='tnca-qualified-operating-clock/1':raise ValueError('unknown clock evidence schema')
@@ -134,6 +156,12 @@ def qualified_clock(path,image_sha256):
     hz=data.get('clock_hz')
     if type(hz) is not int or not 0<hz<=rule['max_hz']:raise ValueError(f"conditional clock must be positive and <={rule['max_hz']//1_000_000} MHz")
     if rule.get('exact_hz') not in (None,hz):raise ValueError(f"this review qualifies exactly {rule['exact_hz']} Hz")
+    if data.get('qualification')==BOARD_SESSION:
+        validate_board_session_clock(data,hz)
+        return dict(clock_hz=hz,clock_policy=f'{hz}Hz-undivided-conditional',
+                    clock_qualification=BOARD_SESSION,
+                    operating_clock_evidence_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+                    operating_clock_evidence=data)
     run2=data.get('qualification')=='r41-run2-100mhz-hbm441'
     candidate=data.get('qualification')=='r41-corrected-candidate-100mhz'
     if run2 and (data.get('setup_scope')!='kernel-clock' or data.get('original_design_setup_wns_ns')!=-0.045

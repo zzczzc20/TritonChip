@@ -325,9 +325,28 @@ def run_pipeline(
     do_sync: bool = True,
     ssh_binary: str = "ssh",
     sleep: Callable[[float], None] = time.sleep,
+    measure_run: str | None = None,
+    expect_xclbin_sha256: str | None = None,
 ) -> dict[str, Any]:
+    """Build on one server, measure on another; or, with ``measure_run``, only measure.
+
+    ``measure_run`` names a run whose image the card server already holds (it
+    was measured there before), built from another commit: the board stage
+    runs that image with this commit's checkout driving the card -- its
+    runtime, its compiler, its ArchBench -- and no build server is involved.
+    It is how a candidate that changed only software is measured on the
+    machine it shares with the base. The card server records the source
+    mismatch it was allowed; the manifest must name the run's candidate,
+    target and mode; and the image measured must hash to
+    ``expect_xclbin_sha256`` when one is given. A measurement of that run
+    already in progress is never attached to: it is someone else's.
+    """
     validate_manifest(manifest)
-    builder = host_for(hosts, build_host, "build")
+    if measure_run and (build_run or run_id or skip_board):
+        raise PipelineError("measure_run measures an existing image: no build_run, run_id or skip_board with it")
+    if not measure_run and not build_host:
+        raise PipelineError("name a build host, or measure an existing run's image with measure_run")
+    builder = None if measure_run else host_for(hosts, build_host, "build")
     want_board = bool(manifest.get("board")) and manifest.get("mode") == "full" and not skip_board
     card = host_for(hosts, board_host, "board") if board_host and want_board else None
     if want_board and card is None:
@@ -344,7 +363,7 @@ def run_pipeline(
         "target": manifest["target"],
         "commit": commit,
         "adapter": adapter,
-        "hosts": {"build": builder.summary(), "board": card.summary() if card else None},
+        "hosts": {"build": builder.summary() if builder else None, "board": card.summary() if card else None},
         "started_at": time.time(),
         "steps": [],
         "status": "RUNNING",
@@ -386,8 +405,12 @@ def run_pipeline(
             check_run_id(run_id)
         if build_run:
             check_run_id(build_run)
-        same_state = bool(card and card.ssh == builder.ssh and card.state_dir == builder.state_dir)
-        servers = [builder] + ([card] if card and card.name != builder.name else [])
+        if measure_run:
+            check_run_id(measure_run)
+            if card is None:
+                raise PipelineError("measure_run needs a board block and a --board-host")
+        same_state = bool(card and builder and card.ssh == builder.ssh and card.state_dir == builder.state_dir)
+        servers = ([builder] if builder else []) + ([card] if card and (builder is None or card.name != builder.name) else [])
         if do_sync:
             for server in servers:
                 step(f"sync:{server.name}", lambda server=server: sync(server, commit, local_repo, ssh_binary=ssh_binary))
@@ -408,9 +431,14 @@ def run_pipeline(
 
         # Attaching to a build that may still be linking: a full doctor would
         # count its own Vivado against it, so only the checkout is checked.
-        step(f"doctor:{builder.name}", lambda: doctor(builder, "source" if build_run else "build"))
+        if builder:
+            step(f"doctor:{builder.name}", lambda: doctor(builder, "source" if build_run else "build"))
         if card:
             step(f"doctor:{card.name}", lambda: doctor(card, "board"))
+        if measure_run:
+            return _measure_only(record, step, finish, card, commit, base, manifest, measure_run,
+                                 expect_xclbin_sha256, timeout=timeout, poll_s=poll_s, ssh_binary=ssh_binary,
+                                 sleep=sleep, deadline_for=deadline_for)
 
         if build_run:
             run_id = build_run
@@ -468,6 +496,45 @@ def run_pipeline(
         return finish(str(measured.get("status")))
     except (PipelineError, OSError, subprocess.SubprocessError, ValueError) as exc:
         return finish("PIPELINE_FAIL", str(exc))
+
+
+def _measure_only(record, step, finish, card, commit, base, manifest, run_id, expect_xclbin_sha256, *,
+                  timeout, poll_s, ssh_binary, sleep, deadline_for) -> dict[str, Any]:
+    """run_pipeline's ``measure_run``: the board stage of an image built from another commit."""
+    record["run_id"] = run_id
+    # The image's build passed when that run was measured before; nothing is built here.
+    record["build"] = {"status": "PASS", "run_id": run_id, "reused": True, "host": None,
+                       "xclbin_sha256": expect_xclbin_sha256}
+    # The card server checks the manifest against the run it measures: the run's
+    # candidate, target and mode, and no source commit but the one it was built from.
+    measured_manifest = {k: v for k, v in manifest.items() if k != "source_commit"}
+    request = dict(base, manifest=measured_manifest, operation="measure", run_id=run_id, detach=True,
+                   allow_source_mismatch=True)
+    if timeout:
+        request["timeout"] = timeout
+    record["board_block_sha256"] = hashlib.sha256(json.dumps(manifest["board"], sort_keys=True).encode()).hexdigest()
+    asked = step("board:measure", lambda: _remote_value(
+        worker(card, commit, request, ssh_binary=ssh_binary), f"measure on {card.name}"))
+    if asked.get("attached"):
+        raise PipelineError(f"run {run_id} is already being measured on {card.name} (attempt {asked.get('attempt')}), "
+                            "by another request; measure again when it is done")
+    arch = manifest["board"].get("archbench")
+    arch_s = float(arch.get("timeout_s") or timeout or 0) if isinstance(arch, dict) else 0.0
+    measured = step("board", lambda: poll(card, commit, base, run_id, step="measure", poll_s=poll_s,
+                                          deadline=deadline_for(3, arch_s), ssh_binary=ssh_binary,
+                                          sleep=sleep, label="board"))
+    record["board"] = dict(_board_summary(measured), run_id=run_id, host=card.name,
+                           attempt=asked.get("attempt"), attached=False)
+    # A measurement that reached the points must say which image it ran and which
+    # checkout drove it, and they must be the ones asked for.
+    reached = measured.get("status") == "PASS" or record["board"].get("archbench")
+    got = record["board"].get("xclbin_sha256")
+    if expect_xclbin_sha256 and (got or reached) and got != expect_xclbin_sha256:
+        raise PipelineError(f"the card measured an image hashing {got}, not the expected {expect_xclbin_sha256}")
+    driven_by = (record["board"].get("software") or {}).get("commit")
+    if (driven_by or reached) and driven_by != commit:
+        raise PipelineError(f"the measurement was driven by {driven_by}, not this commit's checkout {commit}")
+    return finish(str(measured.get("status")))
 
 
 __all__ = ["PipelineError", "poll", "remote", "resolve_commit", "run_pipeline", "sync", "transfer", "worker"]

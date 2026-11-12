@@ -1816,7 +1816,7 @@ r40-residency: $(R2_DATA_STAMP) | dirs
 	@$(TORCH_PYTHON) tools/r40/batch_tests.py --calls 1000
 	@TNCA_BACKEND=sim-file $(TORCH_PYTHON) tools/r40/recovery_tests.py
 	@TNCA_BACKEND=sim-file $(TORCH_PYTHON) tools/r40/replay_tests.py --replays 1000
-	@$(TORCH_PYTHON) tools/r40/frozen_residency_tests.py --point op.attention_decode/tiny/fp16-b1-h2-l16-d16
+	@$(TORCH_PYTHON) tools/r40/frozen_residency_tests.py --point "$$(cat tools/r40/frozen_residency_point)"
 
 # Full frozen transfer-correctness inventory. RTL runs can take days; keep
 # each attempt in a fresh directory and run heavy suites on the jump host.

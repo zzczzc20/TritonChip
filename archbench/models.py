@@ -226,7 +226,11 @@ def model(family, tier, dtype, params, make, demand, *, track=('llm',), tol=None
 
 MODEL_TOL = {'fp16': 5e-2}
 
-for tier, (c, bsz, s, p) in LLAMA.items():
+# R41-F3 (2026-11-10): a medium decoder of two layers, its prompt and cache lengths outside every held-out set
+# (a point's id names b, s or p, not the configuration): the board score's middle size for the llama family.
+LLAMA_F3 = [('medium', (LlamaCfg(dim=192, n_layers=2, n_heads=6, n_kv_heads=2, ffn=512, vocab=640), 1, 96, 192))]
+
+for tier, (c, bsz, s, p) in list(LLAMA.items()) + LLAMA_F3:
     cfg = asdict(c)
 
     def mk_prefill(seed, c=c, bsz=bsz, s=s):

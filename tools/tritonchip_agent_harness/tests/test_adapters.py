@@ -10,7 +10,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE.parent))
 
-from tritonchip_agent_harness.adapters import parse, tokens  # noqa: E402
+from tritonchip_agent_harness.adapters import parse, throttle, tokens  # noqa: E402
 from tritonchip_agent_harness.siteconfig import Account  # noqa: E402
 
 
@@ -139,5 +139,96 @@ class Opencode(unittest.TestCase):
         self.assertEqual(set(t.values()), {None})
 
 
+
+class Throttle(unittest.TestCase):
+    """A run the provider refused (rate, load, quota) is told apart from one the agent ended."""
+
+    def test_claude_codes_failed_result_names_the_refusal(self):
+        final = {"type": "result", "subtype": "error_during_execution", "is_error": True,
+                 "result": 'API Error: 429 {"type":"error","error":{"type":"rate_limit_error"}}'}
+        t = throttle(account("claude-code"), lines({"type": "system", "subtype": "init"}, final), "")
+        self.assertEqual(t["kind"], "rate-limit")
+        self.assertIn("429", t["evidence"])
+
+    def test_overloaded_and_usage_limit_are_their_own_kinds(self):
+        over = {"type": "result", "subtype": "success", "is_error": True,
+                "result": 'API Error: 529 {"type":"error","error":{"type":"overloaded_error"}}'}
+        self.assertEqual(throttle(account("claude-code"), lines(over), "")["kind"], "overloaded")
+        self.assertEqual(throttle(account("codex"), lines({"type": "turn.failed", "error": {
+            "message": "You've hit your usage limit. Try again later."}}), "")["kind"], "usage-limit")
+
+    def test_claude_codes_spent_session_window_is_a_usage_limit(self):
+        # R41-F5 (2026-11-11): Claude Code 2.1.311, subscription, the five-hour window spent.
+        final = {"type": "result", "subtype": "success", "is_error": True,
+                 "result": "You've hit your session limit \u00b7 resets 3pm (UTC)"}
+        t = throttle(account("claude-code"), lines({"type": "system", "subtype": "init"}, final), "")
+        self.assertEqual(t["kind"], "usage-limit")
+        self.assertIn("session limit", t["evidence"])
+
+    def test_glms_codes_through_opencode(self):
+        err = {"type": "error", "error": {"name": "APIError", "data": {
+            "message": '{"error":{"code":"1302","message":"您的账户已达到速率限制"}}'}}}
+        self.assertEqual(throttle(account("opencode"), lines(err), "")["kind"], "rate-limit")
+        self.assertEqual(throttle(account("opencode"), "", 'error: {"code": 1113, "message": "余额不足"}')["kind"],
+                         "usage-limit")
+
+    def test_the_agents_own_words_are_not_a_refusal(self):
+        # The agent discussing rate limits, or a tool's output mentioning 429, is not throttling.
+        said = {"type": "assistant", "message": {"content": [{"type": "text", "text": "Rate limit? 429 cycles."}]}}
+        tool = {"type": "item.completed", "item": {"type": "command_execution", "aggregated_output": "HTTP 429"}}
+        ok = dict(CLAUDE_RESULT, result="I avoided the rate limit; 429 points pass.")
+        self.assertIsNone(throttle(account("claude-code"), lines(said, ok), ""))
+        self.assertIsNone(throttle(account("codex"), lines(tool, {"type": "turn.completed", "usage": {}}), ""))
+
+    def test_a_cli_that_gave_up_in_plain_text(self):
+        self.assertEqual(throttle(account("claude-code"), "Claude AI usage limit reached|1767225600\n", "")["kind"],
+                         "usage-limit")
+
+
 if __name__ == "__main__":
     unittest.main()
+
+
+def rollout(path: Path, totals: list, model: str = "gpt-6-luna") -> None:
+    """A Codex session log: its model, then one token_count per model call carrying the running total."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [json.dumps({"type": "turn_context", "payload": {"model": model}})]
+    for t in totals:
+        lines.append(json.dumps({"type": "event_msg", "payload": {"type": "token_count", "info": {
+            "total_token_usage": {"input_tokens": t, "cached_input_tokens": t - 100, "cache_write_input_tokens": 0,
+                                  "output_tokens": 10, "reasoning_output_tokens": 4, "total_tokens": t + 10},
+            "last_token_usage": {}}}}))
+    path.write_text("\n".join(lines) + "\n")
+
+
+class CodexUsage(unittest.TestCase):
+    """2026-11-09 (R41-F3 smoke): Codex's usage is a running total; the rollouts have it, cut-off turns included."""
+
+    def test_the_rollouts_last_total_is_the_runs_usage(self):
+        from tritonchip_agent_harness.adapters import codex_rollouts, token_delta
+        with tempfile.TemporaryDirectory() as tmp:
+            run = Path(tmp)
+            rollout(run / "codex-home/sessions/2026/11/09/rollout-a.jsonl", [1000, 3000, 5000])
+            # The stdout of a turn cut off at the time limit: no turn.completed at all.
+            got = parse(account("codex"), json.dumps({"type": "item.started", "item": {"type": "command_execution"}}),
+                        run)
+            self.assertEqual((got["tokens"]["cache_read"], got["tokens"]["input_uncached"], got["tokens"]["output"]),
+                             (4900, 100, 10))
+            self.assertIsNone(got["turn_usage"])
+            self.assertEqual(got["served_models"], ["gpt-6-luna"])
+            # A second session (the new-session fallback) adds its own last total.
+            rollout(run / "codex-home/sessions/2026/11/09/rollout-b.jsonl", [200, 700])
+            models, usage = codex_rollouts(run)
+            self.assertEqual(usage["input_tokens"], 5700)
+            later = parse(account("codex"), "", run)["tokens"]
+            self.assertEqual(token_delta(later, got["tokens"])["cache_read"], 600)
+
+    def test_a_turn_completed_is_a_running_total_too_not_a_turns_share(self):
+        # Without rollouts: the last turn.completed, never the sum of several.
+        events = [{"type": "turn.completed", "usage": {"input_tokens": 3000, "cached_input_tokens": 2900,
+                                                        "output_tokens": 5, "reasoning_output_tokens": 1}},
+                  {"type": "turn.completed", "usage": {"input_tokens": 8000, "cached_input_tokens": 7800,
+                                                        "output_tokens": 9, "reasoning_output_tokens": 2}}]
+        with tempfile.TemporaryDirectory() as tmp:
+            got = parse(account("codex"), "\n".join(json.dumps(e) for e in events), Path(tmp))
+        self.assertEqual(got["tokens"]["cache_read"], 7800)

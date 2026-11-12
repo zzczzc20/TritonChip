@@ -2,6 +2,7 @@
   "schema": "tritonchip-agent-task/1",
   "task_id": "r39-v5-main-pilot",
   "kind": "cross-layer",
+  "skills": [],
   "note": "Pilot starting from PR9 commit 0545699, whose merge base is main ac28ca1. That main includes the signed-off R39 v5 compiler and U280 profile, with no intentionally removed optimization. PR9 adds the profile-header, observer, and named-image platform needed by this harness. This task tests the new starting point before formal tasks and wider hidden suites are frozen.",
   "base_commit": "054569984293a03ceb55a46e1b63317f9b34af63",
   "design": [

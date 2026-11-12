@@ -2,8 +2,8 @@
 
 The score is simulated device cycles on the task's profile, and at the
 target's fixed clock (the U280 at 100 MHz) cycles are latency. A candidate
-that changed the machine -- an RTL file, or its profile's parameters -- keeps
-its score only once that machine is shown to be real:
+keeps its score only once it is shown on the card. One that changed the
+machine -- an RTL file, or its profile's parameters -- is built and run:
 
 1. Its tree is the base commit with nothing hidden, every file the gate took
    from the candidate on top (compiler and hardware alike: the code that was
@@ -16,14 +16,28 @@ its score only once that machine is shown to be real:
    the card server.
 3. Every point that passed in simulation must pass on the card, with no
    fallback, and the device's own count (`time.device`) equal to the one
-   simulation recorded for it.
+   simulation recorded for it. A task whose simulation is not cycle-exact with
+   its card sets `evaluation.certify.board_cycles` to "record" (R41, whose
+   simulation's HBM is a stand-in: the card counts 1-20 % fewer cycles, the
+   base included; user's decision of 2026-11-07): the card's counts are then
+   kept beside simulation's and reported, never compared, and the points
+   passing on the card with no fallback and the board checks are what is
+   certified. "equal", the default, compares them.
 
-    not-needed       the machine is the base's: the score stands
+One that kept the base's machine (it changed only software: the compiler, the
+runtime) is not built again: its points run on the base's own image, which the
+base's certification left on the card server, with the candidate's tree
+driving the card (`--base-image`, the base's certification record; step 2
+becomes the FPGA harness's measure-only pipeline). Step 3 is the same.
+
+    not-needed       an older record's verdict, from before software-only
+                     candidates were run on the card: the score stood
     certified        1-3 held: the score stands
     infeasible       the build failed -- it does not fit or does not close the
                      clock -- or the profile cannot be built as the image
     board-fail       the image did not load or the board stage did not reach the points
     board-disagrees  a point failed on the card, or counted other cycles
+                     (where the task compares them)
     no-verdict       the pipeline or a server failed: run it again
 
 Every other verdict fails every point of the candidate's score.
@@ -36,7 +50,9 @@ nothing without --yes.
 
 from __future__ import annotations
 
+import hashlib
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -49,8 +65,9 @@ from . import evaluator, occupancy
 from .task import Task
 from .workspace import apply_candidate, base_tree, export, git, under
 
-STANDS = ("not-needed", "certified")
-BOARD_BACKEND = {"u280": "fpga-u280"}
+STANDS = ("not-needed", "certified")   # not-needed: records written before 2026-11-06 only
+# The card backend of each FPGA harness target a task may certify on.
+BOARD_BACKEND = {"u280": "fpga-u280", "u280-multicore-r41": "fpga-u280-multicore"}
 # The FPGA harness's statuses for a build that ran and failed, as opposed to one that could not run.
 INFEASIBLE = ("BUILD_FAIL", "TIMING_FAIL")
 
@@ -68,7 +85,20 @@ def config(task: Task) -> dict:
         raise CertifyError(f"evaluation.certify is missing {', '.join(missing)}")
     if cert["target"] not in BOARD_BACKEND:
         raise CertifyError(f"evaluation.certify.target {cert['target']!r}: certify knows {sorted(BOARD_BACKEND)}")
+    board_cycles(task)
     return cert
+
+
+BOARD_CYCLES = ("equal", "record")
+
+
+def board_cycles(task: Task) -> str:
+    """How the card's cycle counts are judged: "equal" (the default), each must be simulation's exactly;
+    "record", they are kept beside simulation's and reported but never fail a point (module docstring, 3)."""
+    rule = (task.evaluation.get("certify") or {}).get("board_cycles", "equal")
+    if rule not in BOARD_CYCLES:
+        raise CertifyError(f"evaluation.certify.board_cycles {rule!r}: one of {', '.join(BOARD_CYCLES)}")
+    return rule
 
 
 def points(task: Task) -> list:
@@ -141,14 +171,23 @@ def manifest(task: Task, label: str, commit: str) -> dict:
         "clock_mhz": cert["clock_mhz"], "source_commit": commit,
         "hypothesis": f"{label} of {task.task_id}: its machine ({profile}) fits the {cert['target']}, closes "
                       f"{cert['clock_mhz']} MHz, and counts on the card the cycles simulation counted.",
-        "image": {"profile": profile},
+        # A multicore machine is its device description (spec/devices), whose per-core profile is the scored one.
+        "image": {"device": task.evaluation["device"]} if task.evaluation.get("device") else {"profile": profile},
         "board": {"backend": BOARD_BACKEND[cert["target"]], "profile": profile, "program": True, "conformance": True,
                   "archbench": {"points": points(task), "jobs": 1, "counters": True, "timeout_s": 7200}},
     }
 
 
-def compare(sim: dict, board: list) -> list:
-    """Every point simulation passed, against its board record."""
+def xclbin_name(repo: Path, task: Task) -> str:
+    """The image file the target's build leaves, as the pinned platform's target names it."""
+    cert = config(task)
+    target = json.loads(git("-C", str(repo), "show",
+                            f"{cert['commit']}:tools/tritonchip_fpga_harness/targets/{cert['target']}.json"))
+    return str(target.get("xclbin_name") or next(a for a in target["expected_artifacts"] if a.endswith(".xclbin")))
+
+
+def compare(sim: dict, board: list, rule: str = "equal") -> list:
+    """Every point simulation passed, against its board record (`rule`: board_cycles)."""
     got = {r.get("point_id"): r for r in board}
     rows = []
     for p, s in sim.items():
@@ -165,7 +204,7 @@ def compare(sim: dict, board: list) -> list:
             problem = f"board status {r.get('status')}"
         elif r.get("fallbacks"):
             problem = "part of it ran on the host"
-        elif cycles != s["done_cycles"]:
+        elif rule == "equal" and cycles != s["done_cycles"]:
             problem = "cycles differ"
         else:
             problem = None
@@ -230,6 +269,48 @@ def run_pipeline(tree: Path, manifest_path: Path, record_path: Path, hosts: Path
     return json.loads(record_path.read_text(encoding="utf-8"))
 
 
+def measure_on_image(tree: Path, manifest: dict, record_path: Path, hosts: Path, board_host: str,
+                     run_id: str, xclbin_sha256: str) -> dict:
+    """The board stage of the tree on an image already on the card server (the FPGA harness's
+    measure-only pipeline). The controller is this checkout's; the card server runs the tree's own
+    harness, as a full pipeline's would."""
+    from tritonchip_fpga_harness.hosts import load_hosts
+    from tritonchip_fpga_harness.pipeline import run_pipeline as fpga_pipeline
+    record = fpga_pipeline(local_repo=tree, hosts=load_hosts(hosts), manifest=manifest, build_host=None,
+                           board_host=board_host, measure_run=run_id, expect_xclbin_sha256=xclbin_sha256)
+    record_path.parent.mkdir(parents=True, exist_ok=True)
+    record_path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return record
+
+
+def base_image(path: Path, task: Task, cert: dict) -> dict:
+    """The base's certification record, as the image a software-only candidate runs on: certified, for
+    this task's base and platform, with the run and the image hash it was measured with."""
+    rec = json.loads(Path(path).read_text(encoding="utf-8"))
+    pipe = rec.get("pipeline") or {}
+    image = {"record": str(path), "run_id": pipe.get("run_id"),
+             "xclbin_sha256": (pipe.get("build") or {}).get("xclbin_sha256"),
+             "board_host": (pipe.get("board") or {}).get("host"),
+             "candidate_id": (rec.get("manifest") or {}).get("candidate_id"),
+             "image_parameters": rec.get("image_parameters")}
+    problems = []
+    if "baseline" not in rec:
+        problems.append("it is not the base's certification (certify --base)")
+    if rec.get("verdict") != "certified":
+        problems.append(f"its verdict is {rec.get('verdict')!r}, not certified")
+    if (rec.get("task") or {}).get("base_commit") != task.base_commit:
+        problems.append("it certified another base commit")
+    for key, want in (("platform_commit", cert["commit"]), ("target", cert["target"]),
+                      ("clock_mhz", cert["clock_mhz"]), ("profile", task.evaluation["profile"])):
+        if rec.get(key) != want:
+            problems.append(f"its {key} is {rec.get(key)!r}, not {want!r}")
+    problems += [f"it records no {k}" for k in ("run_id", "xclbin_sha256", "board_host", "candidate_id",
+                                                   "image_parameters") if not image[k]]
+    if problems:
+        raise CertifyError(f"{path} cannot be the base's image: " + "; ".join(problems))
+    return image
+
+
 def fetch_board_records(hosts: Path, board_host: str, run_id: str) -> list:
     """The board stage's ArchBench records, read from the card server's run."""
     from tritonchip_fpga_harness.hosts import host_for, load_hosts
@@ -244,10 +325,13 @@ def fetch_board_records(hosts: Path, board_host: str, run_id: str) -> list:
 def certify(repo: Path, task: Task, *, run_dir: Optional[Path] = None, baseline: Optional[Path] = None,
             hosts: Optional[Path] = None, build_host: Optional[str] = None, board_host: Optional[str] = None,
             work: Optional[Path] = None, out: Optional[Path] = None, yes: bool = False,
-            build_run: Optional[str] = None,
+            build_run: Optional[str] = None, base_image_record: Optional[Path] = None,
             pipeline: Callable[..., dict] = run_pipeline,
+            measure: Callable[..., dict] = measure_on_image,
             fetch: Callable[[Path, str, str], list] = fetch_board_records) -> dict:
-    """Certify one run's candidate (`run_dir`: its run.json and candidate/) or the base (`baseline`)."""
+    """Certify one run's candidate (`run_dir`: its run.json and candidate/) or the base (`baseline`).
+    A candidate that kept the base's machine runs on the base's image: `base_image_record` is the
+    base's certification record."""
     if (run_dir is None) == (baseline is None):
         raise CertifyError("certify a run (its directory) or the base (the evaluator's baseline), not both")
     cert = config(task)
@@ -283,8 +367,13 @@ def certify(repo: Path, task: Task, *, run_dir: Optional[Path] = None, baseline:
         out.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         return record
 
+    image = None
     if not hw["changed"]:
-        return finish("not-needed")
+        if base_image_record is None:
+            raise CertifyError("this candidate kept the base's machine, so it runs on the base's image: certify "
+                               "the base first (--base), then name that record with --base-image")
+        image = base_image(base_image_record, task, cert)
+        record["image"] = {k: image[k] for k in ("record", "run_id", "xclbin_sha256")}
     problems = evaluator.rtl_check(candidate, repo)
     if problems:
         raise CertifyError("the candidate's RTL does not pass the gate's check: " + "; ".join(problems[:3]))
@@ -292,6 +381,11 @@ def certify(repo: Path, task: Task, *, run_dir: Optional[Path] = None, baseline:
     tree = work / "tree"
     commit = build_tree(repo, task, candidate, tree)
     m = manifest(task, label, commit)
+    if image is not None:
+        # The card server measures the base's run, so the manifest names that run's candidate.
+        m = dict(m, candidate_id=image["candidate_id"],
+                 hypothesis=f"{label} of {task.task_id}: its software, on the base's image "
+                            f"({image['xclbin_sha256'][:12]}), counts on the card the cycles simulation counted.")
     work.mkdir(parents=True, exist_ok=True)
     (work / "manifest.json").write_text(json.dumps(m, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     taken = json.loads((candidate / "candidate.json").read_text(encoding="utf-8"))["taken"] if candidate else []
@@ -306,22 +400,240 @@ def certify(repo: Path, task: Task, *, run_dir: Optional[Path] = None, baseline:
         return finish("infeasible", f"the profile cannot be built as the image: {exc}")
     except (OSError, KeyError, ValueError) as exc:
         raise CertifyError(f"the tree has no image build to certify with: {exc}") from exc
+    if image is not None and record["image_parameters"] != image["image_parameters"]:
+        raise CertifyError("the candidate's image parameters are not the base's, though its machine was judged "
+                           "unchanged: it cannot run on the base's image")
     if not yes:
         record["dry_run"] = True
         return record
-    if not (hosts and build_host and board_host):
+    if image is not None:
+        if not (hosts and board_host):
+            raise CertifyError("name the FPGA hosts file and the board host")
+        if board_host != image["board_host"]:
+            raise CertifyError(f"the base's image is on {image['board_host']!r}, not {board_host!r}")
+        build_host = None
+    elif not (hosts and build_host and board_host):
         raise CertifyError("name the FPGA hosts file, the build host and the board host")
     started = time.time()
-    pipe = pipeline(tree, work / "manifest.json", work / "pipeline.json", hosts, build_host, board_host, build_run)
+    if image is not None:
+        pipe = measure(tree, m, work / "pipeline.json", hosts, board_host, image["run_id"], image["xclbin_sha256"])
+    else:
+        pipe = pipeline(tree, work / "manifest.json", work / "pipeline.json", hosts, build_host, board_host, build_run)
     record["occupancy"] = occupancy.stages(pipe, build_host, board_host, ("certify-link", "certify-board")) or [
         occupancy.entry("certify", None, started, time.time(), covers=occupancy.WHOLE_CERTIFY)]
     record["pipeline"] = {"status": pipe.get("status"), "run_id": pipe.get("run_id"), "error": pipe.get("error"),
                           "build": pipe.get("build"), "board": pipe.get("board"), "record": str(work / "pipeline.json")}
     board = fetch(hosts, board_host, pipe["run_id"]) if pipe.get("board") and pipe.get("run_id") else []
-    rows = compare(sim, board)
+    rows = compare(sim, board, board_cycles(task))
     record["points"] = rows
     return finish(*verdict(pipe, rows, board))
 
 
-__all__ = ["CertifyError", "build_tree", "certified_score", "certify", "compare", "config", "manifest",
+__all__ = ["CertifyError", "base_image", "board_cycles", "build_tree", "certified_score", "certify", "compare", "config",
+           "cycle_ratios", "manifest",
+           "measure_on_image", "rejudge", "rejudge_run",
            "simulated_from_baseline", "simulated_from_run", "verdict"]
+
+
+def _board_rows(sim: dict, got: dict, rule: str = "equal") -> list:
+    """Every point simulation passed, against the card's count of it (board.py: the relay's log; `rule`:
+    board_cycles)."""
+    rows = []
+    for p, s in sim.items():
+        if not s["passed"]:
+            rows.append({"point": p, "sim_cycles": s["done_cycles"], "board_cycles": None, "problem": None,
+                         "note": "failed in simulation"})
+            continue
+        r = got.get(p)
+        cycles = ((r or {}).get("observer") or {}).get("done_cycles")
+        if r is None:
+            problem = "no board record"
+        elif r.get("status") != "pass":
+            problem = f"board status {r.get('status')}"
+        elif r.get("fallbacks"):
+            problem = "part of it ran on the host"
+        elif rule == "equal" and cycles != s["done_cycles"]:
+            problem = "cycles differ"
+        else:
+            problem = None
+        rows.append({"point": p, "sim_cycles": s["done_cycles"], "board_cycles": cycles, "problem": problem})
+    return rows
+
+
+def after_run(site, repo: Path, task: Task, record: dict, run_dir: Path, broker=None) -> dict:
+    """The run's candidate on the card, by the harness, once the run is over (report section 8.9: B1, B10).
+
+    Selection is the run's: its final candidate (a run with islands will hand the top 3 by validation score
+    here, in order). Its machine is built unless this run already built exactly this hardware (an in-run slow
+    request's image is reused) or it kept the base's (the base's image). An in-run board record of exactly
+    this snapshot stands for the validation points and the board checks; the rest -- the final points, or all
+    of them -- run through the relay (board.py). Verdicts: certified, infeasible, board-fail (the card did not
+    take the image), board-disagrees (a point or a board check), no-verdict (the infrastructure: run again)."""
+    import secrets
+    from . import board, fpga_slow
+    cfg = (task.services or {}).get("fpga_slow") or {}
+    images = broker.images if broker is not None else {}
+    jobs = list(broker.jobs.values()) if broker is not None else []
+    candidate = run_dir / "candidate" if record["gate"]["taken"] else None
+    names = points(task)
+    sim = simulated_from_run(record, names)
+    job = {"id": "certify", "remote_id": f"tnca-{secrets.token_hex(8)}",
+           "containers": f"tnca-cert-{secrets.token_hex(6)}"}
+    work = run_dir / "certification"
+    out: dict = {"started": time.time(), "hardware_changed": record["hardware"]["changed"]}
+    digest = fpga_slow.snapshot_digest(candidate)
+    reused = next((j for j in jobs if j["service"] == "fpga-slow" and j.get("digest") == digest
+                   and j.get("state") == "done" and ((j.get("full") or {}).get("card") or {}).get("outcome") == "ok"),
+                  None)
+    if record["hardware"]["changed"]:
+        built = images.get(fpga_slow.hardware_digest(candidate))
+        if built:
+            out["image_from"] = "an in-run slow request"
+            image = built.get("card") or board.put_image(site, built["build_run"], built["sha256"], built["xclbin"],
+                                                         job["remote_id"], build_host=built.get("build_host"))
+        else:
+            b = fpga_slow.build(site, repo, task, candidate, work, job, int(float(cfg.get("flow_minutes", 480)) * 60))
+            out["build"] = {k: v for k, v in b.items() if k != "visible"}
+            out["build_host"] = b.get("build_host")
+            if b["outcome"] != "ok":
+                out.update(verdict="infeasible" if b["outcome"] == "design" else "no-verdict",
+                           why=f"build {b['pipeline'].get('status')}: {(b['pipeline'].get('build') or {}).get('error')}",
+                           finished=time.time())
+                return out
+            image = board.put_image(site, b["run_id"], b["pipeline"]["build"]["xclbin_sha256"],
+                                    xclbin_name(repo, task), job["remote_id"], build_host=b.get("build_host"))
+    else:
+        image = board.base_image(site, task)
+    out["image"] = image
+    got, checks = {}, {}
+    todo = names
+    if reused:
+        card = reused["full"]["card"]["record"]
+        got.update({p: r for p, r in (card.get("points") or {}).items() if p in task.evaluation["validation"]})
+        checks.update(((card.get("measured") or {}).get("checks")) or {})
+        todo = [p for p in names if p not in got]
+        out["reused"] = {"request": reused["id"], "points": sorted(got)}
+    if todo:
+        rec = board.measure(site, repo, task, candidate, image, todo, work / "card", job["containers"],
+                            job["remote_id"], float(cfg.get("board_minutes", 120)) * 60, with_checks=not reused,
+                            base_xclbin=fpga_slow.base_xclbin(site, repo, task, candidate, image))
+        out["card"] = rec
+        state = board.status(rec)
+        if state != "ok":
+            why = (rec.get("session") or {}).get("detail") or (rec.get("session") or {}).get("reason")
+            out.update(verdict="board-fail" if state == "candidate" and not (rec.get("measured") or {}).get("stopped")
+                       else "no-verdict", why=why or f"card session {(rec.get('session') or {}).get('status')}",
+                       finished=time.time())
+            return out
+        got.update(rec["points"])
+        checks.update(((rec.get("measured") or {}).get("checks")) or {})
+    rows = _board_rows(sim, got, board_cycles(task))
+    out["rows"] = rows
+    # Kept so that the run can be judged again from its record (rejudge).
+    out["checks"] = {n: {"exit": c.get("exit")} for n, c in checks.items()}
+    verdict_, why = _judge(rows, checks)
+    out.update(verdict=verdict_, why=why, finished=time.time())
+    return out
+
+
+def _judge(rows: list, checks: dict) -> tuple:
+    """(verdict, why) once the card ran the points: every row without a problem and every board check passed."""
+    failed_checks = sorted(n for n, c in checks.items() if c.get("exit") != 0)
+    bad = [r for r in rows if r["problem"]]
+    if not (bad or failed_checks):
+        return "certified", None
+    why = [f"{r['point']}: {r['problem']}" for r in bad[:5]] + [f"board check {n} did not pass" for n in failed_checks]
+    return "board-disagrees", "; ".join(why)
+
+
+def cycle_ratios(ratios: list) -> dict:
+    """Board over simulation, in aggregate: how many points, their geometric mean and range."""
+    ratios = sorted(r for r in ratios if r and r > 0)
+    if not ratios:
+        return {"points": 0}
+    return {"points": len(ratios),
+            "board_over_simulation_geomean": round(math.exp(sum(map(math.log, ratios)) / len(ratios)), 4),
+            "board_over_simulation_range": [round(ratios[0], 4), round(ratios[-1], 4)]}
+
+
+def _row_again(row: dict, rule: str) -> dict:
+    """One stored row under `rule`: only whether its cycles are a problem can change."""
+    if row.get("note") or row.get("problem") not in (None, "cycles differ"):
+        return row
+    differ = row.get("board_cycles") != row.get("sim_cycles")
+    return dict(row, problem="cycles differ" if rule == "equal" and differ else None)
+
+
+def _again(cert, rule: str, requests: dict) -> dict:
+    """One stored after-run certification judged again under `rule`, from what it stored."""
+    if not isinstance(cert, dict) or "rows" not in cert:
+        # Its verdict came before the card ran the points (the build, the card session): no rule changes it.
+        verdict_ = cert.get("verdict") if isinstance(cert, dict) else cert
+        return {"was": verdict_, "verdict": verdict_, "why": cert.get("why") if isinstance(cert, dict) else None,
+                "judged_again": False}
+    if "checks" in cert:
+        checks = dict(cert["checks"])
+    else:
+        # Written before after_run kept the checks: the reused request's, then the card session's, as after_run took them.
+        checks = {}
+        reused = cert.get("reused")
+        if reused:
+            found = [j for j in requests.get(reused["request"], [])
+                     if (((j.get("full") or {}).get("card") or {}).get("outcome")) == "ok"]
+            if len(found) != 1:
+                return {"was": cert.get("verdict"), "verdict": cert.get("verdict"), "why": cert.get("why"),
+                        "judged_again": False,
+                        "note": f"the reused request {reused['request']}'s board checks are not one record in the run"}
+            checks.update(((found[0]["full"]["card"].get("record") or {}).get("measured") or {}).get("checks") or {})
+        checks.update((((cert.get("card") or {}).get("measured") or {}).get("checks")) or {})
+    rows = [_row_again(r, rule) for r in cert["rows"]]
+    verdict_, why = _judge(rows, checks)
+    return {"was": cert.get("verdict"), "verdict": verdict_, "why": why, "judged_again": True, "rows": rows,
+            "checks": {n: {"exit": c.get("exit")} for n, c in checks.items()},
+            "cycles_on_card": cycle_ratios([r["board_cycles"] / r["sim_cycles"] for r in rows
+                                            if not r.get("note") and r.get("board_cycles") and r.get("sim_cycles")])}
+
+
+def rejudge(run: dict, rule: str) -> dict:
+    """A finished run's after-run certifications judged again under board_cycles `rule`, from the rows and
+    board checks they stored: no build and no card time. For a run that started before its task said how the
+    card's cycles are judged (R41's first formal run: user's decision of 2026-11-07). Champions are taken in
+    rank order and the first certified one is the run's result, as _champions would have stopped there."""
+    if rule not in BOARD_CYCLES:
+        raise CertifyError(f"board_cycles {rule!r}: one of {', '.join(BOARD_CYCLES)}")
+    requests: dict = {}
+    sources = [((r.get("agent_result") or {}).get("services") or {}) for r in (run.get("islands") or {}).get("islands") or []]
+    sources.append(((run.get("agent_result") or {}).get("services")) or {})
+    for s in sources:
+        for j in s.get("requests") or []:
+            requests.setdefault(j.get("id"), []).append(j)
+    out: dict = {"schema": "tritonchip-agent-certification-again/1", "run_id": run.get("run_id"), "board_cycles": rule,
+                 "task_at_run": run.get("task"), "judged": time.time(), "certifications": [], "result": None}
+    if run.get("champions") is not None:
+        certs = [({"rank": c["rank"], "id": c["id"]}, c.get("certification")) for c in run["champions"]
+                 if c.get("certification") is not None]
+    elif isinstance(run.get("certification"), dict):
+        certs = [({"rank": 1, "id": run.get("run_id")}, run["certification"])]
+    else:
+        raise CertifyError(f"the run's certification is {run.get('certification')!r}: there is nothing to judge again")
+    for who, cert in certs:
+        row = {**who, **_again(cert, rule, requests)}
+        out["certifications"].append(row)
+        if out["result"] is None and row["verdict"] == "certified":
+            out["result"] = who
+    return out
+
+
+def rejudge_run(task: Task, run_dir: Path, out: Optional[Path] = None) -> dict:
+    """rejudge on a run's directory under the task's board_cycles rule; written beside run.json, which is
+    left as the run wrote it."""
+    raw = (run_dir / "run.json").read_bytes()
+    run = json.loads(raw)
+    if (run.get("task") or {}).get("id") != task.task_id:
+        raise CertifyError(f"the run is of task {(run.get('task') or {}).get('id')!r}, not {task.task_id!r}")
+    value = rejudge(run, board_cycles(task))
+    value.update(task={"id": task.task_id, "sha256": task.sha256}, run_json_sha256=hashlib.sha256(raw).hexdigest())
+    out = out or run_dir / "certification-again.json"
+    value["output"] = str(out)
+    out.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return value

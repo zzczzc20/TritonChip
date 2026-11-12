@@ -242,30 +242,37 @@ def session(site: Site, repo: Path, task: Task, image: dict, tag: str, deadline_
               f"--relay-idle-seconds {int(float(task.evaluation['timeout_seconds']))} "
               f"> {q(folder + '/session.log')} 2>&1 < /dev/null &")
     _remote(card, ["sh", "-c", script])
-    job_dir.mkdir(parents=True, exist_ok=True)
-    record = {"host": card.name, "folder": folder, "platform_commit": platform, "sync": synced,
-              "image": image, "started_at": started}
-    ready = None
-    while time.time() - started < wait_cap + 600:
-        raw = _cat(card, f"{folder}/ready.json")
-        if raw:
-            ready = json.loads(raw)
-            break
-        ended = _cat(card, f"{folder}/session.json")
-        if ended:
-            record["session"] = json.loads(ended)
-            record["finished_at"] = time.time()
+    try:
+        job_dir.mkdir(parents=True, exist_ok=True)
+        record = {"host": card.name, "folder": folder, "platform_commit": platform, "sync": synced,
+                  "image": image, "started_at": started}
+        ready = None
+        while time.time() - started < wait_cap + 600:
+            raw = _cat(card, f"{folder}/ready.json")
+            if raw:
+                ready = json.loads(raw)
+                break
+            ended = _cat(card, f"{folder}/session.json")
+            if ended:
+                record["session"] = json.loads(ended)
+                record["finished_at"] = time.time()
+                return record
+            time.sleep(POLL_SECONDS)
+        if ready is None:
+            _remote(card, ["touch", f"{folder}/stop"], check=False)
+            record.update(session={"status": "busy-timeout", "cause": "infrastructure",
+                                   "detail": "the card host gave no session in time"}, finished_at=time.time())
             return record
-        time.sleep(POLL_SECONDS)
-    if ready is None:
+        record["ready"] = ready
+        record["ready_at"] = time.time()
+        local_dir = Path(tempfile.mkdtemp(prefix="tnca-board-"))
+        local_dir.chmod(0o755)
+    except BaseException:
+        # The session is started on the card host: whatever stops this side before the measurement holds it
+        # (R41-F5g, 2026-11-11: Myserver's full disk failed an attempt here, and its session kept the card from
+        # the next request until it was ended by hand) ends it as well.
         _remote(card, ["touch", f"{folder}/stop"], check=False)
-        record.update(session={"status": "busy-timeout", "cause": "infrastructure",
-                               "detail": "the card host gave no session in time"}, finished_at=time.time())
-        return record
-    record["ready"] = ready
-    record["ready_at"] = time.time()
-    local_dir = Path(tempfile.mkdtemp(prefix="tnca-board-"))
-    local_dir.chmod(0o755)
+        raise
     forward = None
     try:
         forward = _forward(card, local_dir / "relay.sock", sock, job_dir / "forward.log")

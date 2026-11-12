@@ -457,6 +457,26 @@ class RelayChunkStore(unittest.TestCase):
         self.assertEqual(len(scripts), 1)
         return scripts[0]
 
+    def test_a_client_that_fails_before_measuring_ends_the_session_it_started(self):
+        # R41-F5g (2026-11-11): the full disk failed an attempt between the session's start and its measurement;
+        # the session held the card until it was ended by hand.
+        from tritonchip_agent_harness import board
+        card = types.SimpleNamespace(name="acf", python="/usr/bin/python3", state_dir="/home/u/fpga-state")
+        site = types.SimpleNamespace(fpga_pipeline={"card": {"bdf": "0000:04:00.1"}})
+        repo, base = make_repo()
+        t = board_task(repo, base, timeout_seconds=600)
+        job_dir = Path(tempfile.mkdtemp())
+        calls = []
+        with mock.patch.object(board, "_card", return_value=({}, card)), \
+                mock.patch("tritonchip_fpga_harness.pipeline.sync", return_value={"checkout": "/co"}), \
+                mock.patch.object(board, "_remote", side_effect=lambda host, argv, **kw: calls.append(argv)), \
+                mock.patch.object(board, "_cat", side_effect=lambda h, p: b"{}" if p.endswith("ready.json") else None), \
+                mock.patch.object(board.tempfile, "mkdtemp", side_effect=OSError(28, "No space left on device")):
+            with self.assertRaises(OSError):
+                board.session(site, repo, t, {"path": "/x.xclbin", "sha256": "s" * 64}, "tag", 60.0,
+                              job_dir, lambda s: {}, ["0"])
+        self.assertEqual(calls[-1], ["touch", "/home/u/fpga-state/board-sessions/tag/stop"])
+
     def test_the_task_turns_it_on_with_its_bound(self):
         script = self.start_script({"relay_cache_gib": 48})
         self.assertIn("--chunk-cache /home/u/fpga-state/relay-cache --chunk-cache-bytes 51539607552 ", script)

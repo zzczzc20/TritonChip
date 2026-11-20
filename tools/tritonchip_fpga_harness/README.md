@@ -894,6 +894,44 @@ the stage can be attached to again.
 (§3.4): a build on the build server and a board stage on the card server can
 overlap, two links on one build server cannot.
 
+### 11.3 A build host that is a batch cluster (LSF)
+
+A cluster is reached through a login node that must not run Vivado; the link
+goes to whichever node the scheduler picks. A build host with an `lsf` block
+says so (`hosts.py`, `lsf.py`):
+
+```json
+"hpc-1": {"ssh": "hpc-login", "roles": ["build"], "python": "/path/python3",
+          "workspace": "/shared/tnca/slot-1/fpga", "state_dir": "/shared/tnca/slot-1/fpga-state",
+          "vitis_root": "/shared/Xilinx/Vitis/2023.2", "platforms_root": "/shared/xilinx/platforms",
+          "lsf": {"profile": "/opt/lsf/conf/profile.lsf", "queue": "cpu", "slots": 8}}
+```
+
+| Step | Plain host | LSF host |
+|---|---|---|
+| `build:submit` | the worker starts `submit --skip-board` detached | the manifest and a job script are written to `<state_dir>/requests/<run>.lsf.*`; `bsub -q <queue> -n <slots> -R span[hosts=1] -J <run>` |
+| waiting | `status` on that machine, every poll | `build:lsf`: `bjobs -J <run>` until the job is DONE, EXIT or no longer listed |
+| `build` | the last `status` | one `status` on the login node, after the job has ended |
+| stopping | `reconcile --terminate` there | `bkill -J <run>`; the job script traps it and runs `reconcile --terminate` on its node |
+
+The checkout on the cluster is the candidate's own and is not changed. It
+judges a run alive by the process and boot identity of the machine it is asked
+on, so the controller never asks `status` while the job lives: on the login
+node that would declare the run lost. Sync, doctor, export and the packet's
+transfer are file work on the login node; `workspace` and `state_dir` must be
+on the file system the nodes share. The pipeline record's `build.lsf` names
+the job, its node, and how long it was pending and running.
+
+One such host is one link at a time (the harness's lease, §3.4). A cluster
+that should run several at once is listed as several hosts with their own
+`workspace` and `state_dir`; the scheduler decides where each runs and makes
+the ones it has no room for wait.
+
+Checked on a real cluster 2026-11-20 with the mock adapter (IBM Spectrum LSF
+10.1, git 2.9.5, Python 3.12 in the user's home): the job ran on a compute
+node and the verdict was read on the login node. A Vivado link there has not
+been run yet.
+
 ## 12. Running a real candidate
 
 1. **Check out the candidate's commit on the FPGA host**, in a clean tree.

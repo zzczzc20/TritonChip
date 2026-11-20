@@ -37,6 +37,19 @@ and what it does::
   variables (an ArchBench interpreter, ``XILINX_XRT``, a ``PATH``) to every
   command the controller runs there.
 
+A build host may be a batch cluster instead of one machine: with an ``lsf``
+block the link itself is an LSF job, submitted from the host ``ssh`` names (the
+cluster's login node) and run on whichever node LSF picks; everything else --
+the checkout, the status once the job has ended, the packet -- is read on the
+login node, from the file system the nodes share (lsf.py)::
+
+        "lsf": {"profile": "/opt/lsf/conf/profile.lsf", "queue": "cpu", "slots": 8}
+
+``profile`` is the file that puts ``bsub`` on the PATH, ``slots`` the cores the
+job asks for on one node. One such host is one link at a time (the harness's
+own lease); a cluster that should run several links at once is listed as
+several hosts, each with its own ``workspace`` and ``state_dir``.
+
 Every value is checked to be one shell-safe token that does not start with
 '-': OpenSSH runs the remote command through the login shell, and reads
 options after the destination unless they follow '--' (which the harness
@@ -58,7 +71,8 @@ _SAFE = re.compile(r"^[A-Za-z0-9_./:@%+=,-]+$")
 _NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 _ENV_NAME = re.compile(r"^[A-Z_][A-Z0-9_]*$")
 _FIELDS = {"ssh", "roles", "python", "workspace", "state_dir", "vitis_root", "platforms_root",
-           "environment", "port", "identity_file", "description"}
+           "environment", "port", "identity_file", "description", "lsf"}
+_LSF_FIELDS = {"profile", "queue", "slots"}
 
 
 @dataclass(frozen=True)
@@ -74,6 +88,8 @@ class Host:
     environment: dict[str, str] = field(default_factory=dict)
     port: int | None = None
     identity_file: str | None = None
+    # {"profile", "queue", "slots"} when the link runs as an LSF job (lsf.py); None for a plain machine.
+    lsf: dict[str, Any] | None = None
 
     @property
     def mirror(self) -> str:
@@ -102,7 +118,8 @@ class Host:
         """What a pipeline record says about the host (no paths beyond the harness's own)."""
         return {"name": self.name, "ssh": self.ssh, "roles": list(self.roles),
                 "vitis_root": self.vitis_root, "platforms_root": self.platforms_root,
-                "environment": sorted(self.environment)}
+                "environment": sorted(self.environment),
+                **({"lsf": {"queue": self.lsf["queue"], "slots": self.lsf["slots"]}} if self.lsf else {})}
 
 
 def _token(value: Any, where: str) -> str:
@@ -154,6 +171,17 @@ def parse_hosts(value: Mapping[str, Any]) -> dict[str, Host]:
         if port is not None and (isinstance(port, bool) or not isinstance(port, int) or not 1 <= port <= 65535):
             raise SchemaError(f"{where}.port must be between 1 and 65535")
         python = _token(entry.get("python", "python3"), f"{where}.python")
+        lsf = entry.get("lsf")
+        if lsf is not None:
+            if not isinstance(lsf, Mapping) or set(lsf) - _LSF_FIELDS or not {"profile", "queue"} <= set(lsf):
+                raise SchemaError(f"{where}.lsf must be an object with profile and queue, and optionally slots")
+            if "build" not in roles or "board" in roles:
+                raise SchemaError(f"{where}.lsf: only a build host can be a batch cluster")
+            slots = lsf.get("slots", 8)
+            if isinstance(slots, bool) or not isinstance(slots, int) or not 1 <= slots <= 256:
+                raise SchemaError(f"{where}.lsf.slots must be between 1 and 256")
+            lsf = {"profile": _absolute(lsf["profile"], f"{where}.lsf.profile"),
+                   "queue": _token(lsf["queue"], f"{where}.lsf.queue"), "slots": slots}
         hosts[str(name)] = Host(
             name=str(name),
             ssh=_token(entry.get("ssh"), f"{where}.ssh"),
@@ -166,6 +194,7 @@ def parse_hosts(value: Mapping[str, Any]) -> dict[str, Host]:
             environment=env,
             port=port,
             identity_file=_token(entry["identity_file"], f"{where}.identity_file") if entry.get("identity_file") else None,
+            lsf=lsf,
         )
     return hosts
 

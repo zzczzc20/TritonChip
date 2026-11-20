@@ -17,6 +17,11 @@ remote. Each step is recorded with its timing and outcome; the record is the
 result. A build or measurement survives the controller: ``--build-run`` picks
 up a build that is running or done, and a failed transfer or board stage can be
 repeated without building again.
+
+A build host that is a batch cluster (an ``lsf`` block in the hosts file) runs
+the link as a job: ``build:submit`` queues it, ``build:lsf`` waits for LSF to
+say it has ended, and ``build`` then reads the verdict as for any host (lsf.py
+says why the run is not asked while the job lives).
 """
 
 from __future__ import annotations
@@ -31,6 +36,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
+from . import lsf
 from .hosts import Host, host_for
 from .schema import validate_manifest
 from .worker import LIVE_STATUSES, _board_for_target, build_ssh_argv, call_worker, check_run_id, ssh_prefix
@@ -144,7 +150,8 @@ def sync(host: Host, commit: str, local_repo: Path, *, ssh_binary: str = "ssh") 
         finally:
             remote(host, ["rm", "-f", path], ssh_binary=ssh_binary, check=False)
         sent = len(bundle)
-    remote(host, ["git", "-C", host.mirror, "worktree", "add", "-q", "--detach", checkout, commit],
+    # No -q: a cluster's git may be older than the option (2.9 has worktrees but not their -q).
+    remote(host, ["git", "-C", host.mirror, "worktree", "add", "--detach", checkout, commit],
            ssh_binary=ssh_binary)
     head = _out(remote(host, ["git", "-C", checkout, "rev-parse", "HEAD"], ssh_binary=ssh_binary))
     if head != commit:
@@ -440,8 +447,15 @@ def run_pipeline(
                                  expect_xclbin_sha256, timeout=timeout, poll_s=poll_s, ssh_binary=ssh_binary,
                                  sleep=sleep, deadline_for=deadline_for)
 
+        batch = bool(getattr(builder, "lsf", None))
         if build_run:
             run_id = build_run
+        elif batch:
+            # The same name on the cluster and in the harness: a submit repeated
+            # after a lost answer finds the job the first one queued.
+            run_id = run_id or time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + uuid.uuid4().hex[:8]
+            step("build:submit", lambda: lsf.submit(builder, commit, base, run_id, timeout=timeout,
+                                                    ssh_binary=ssh_binary))
         else:
             # The controller names the run, so a submit repeated after a lost
             # answer attaches to the build the first one started.
@@ -453,7 +467,14 @@ def run_pipeline(
                 worker(builder, commit, request, ssh_binary=ssh_binary), f"submit on {builder.name}"))
             run_id = started["run_id"]
         record["run_id"] = run_id
-        built = step("build", lambda: poll(builder, commit, base, run_id, poll_s=poll_s, deadline=deadline_for(2),
+        queued = None
+        if batch:
+            queued = step("build:lsf", lambda: lsf.wait(builder, run_id, poll_s=poll_s, deadline=deadline_for(2),
+                                                        ssh_binary=ssh_binary, sleep=sleep, log=_log))
+        # After a job has ended its record cannot be live for long: a run still
+        # RUNNING is declared ORPHANED by the first status asked.
+        built = step("build", lambda: poll(builder, commit, base, run_id, poll_s=poll_s,
+                                           deadline=time.time() + 600 if batch else deadline_for(2),
                                            ssh_binary=ssh_binary, sleep=sleep, label="build"))
         seen = built.get("run") or {}
         wanted = {"candidate_id": manifest["candidate_id"], "target": manifest["target"], "mode": manifest["mode"],
@@ -463,6 +484,11 @@ def run_pipeline(
             raise PipelineError(f"run {run_id} on {builder.name} is not this candidate: "
                                 + ", ".join(f"{key} {got!r}, not {want!r}" for key, (got, want) in differs.items()))
         record["build"] = dict(_build_summary(built), run_id=run_id, host=builder.name)
+        if queued is not None:
+            record["build"]["lsf"] = queued
+            if built.get("status") != "PASS" and not record["build"].get("log_tail"):
+                # A job that ended before the run had a record, or was killed under it: its own output.
+                record["build"]["log_tail"] = lsf.log_tail(builder, run_id, ssh_binary=ssh_binary)
         if built.get("status") != "PASS":
             return finish(str(built.get("status")), "the build did not pass")
         if not want_board:
@@ -494,7 +520,7 @@ def run_pipeline(
         record["board"] = dict(_board_summary(measured), run_id=run_id, host=card.name,
                                attempt=asked.get("attempt"), attached=asked.get("attached"))
         return finish(str(measured.get("status")))
-    except (PipelineError, OSError, subprocess.SubprocessError, ValueError) as exc:
+    except (PipelineError, lsf.LsfError, OSError, subprocess.SubprocessError, ValueError) as exc:
         return finish("PIPELINE_FAIL", str(exc))
 
 

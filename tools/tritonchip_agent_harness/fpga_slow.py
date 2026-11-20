@@ -329,11 +329,21 @@ def cancel(job: dict, cfg: dict) -> dict:
     try:
         # The machine the request's flow ran on, not the site's first.
         host = host_for(load_hosts(cfg["hosts"]), name, "build")
+        current = job.get("current_remote_id") or job["remote_id"]
+        killed = None
+        if getattr(host, "lsf", None):
+            # A batch cluster: the link is a job on some node. The job is ended first (its script stops the
+            # vendor tools where they run); the reconcile below, on the login node, then marks the run lost.
+            from tritonchip_fpga_harness import lsf
+            try:
+                killed = lsf.kill(host, current)
+            except lsf.LsfError as exc:
+                killed = {"error": str(exc)}
         argv = [host.python, host.cli(commit), "--repo", host.checkout(commit),
-                "reconcile", job.get("current_remote_id") or job["remote_id"], "--state-dir", host.state_dir,
-                "--terminate"]
+                "reconcile", current, "--state-dir", host.state_dir, "--terminate"]
         reply = remote(host, argv, check=False, timeout=90)
-        return {"build": {"exit": reply.returncode, "detail": reply.stdout.decode(errors="replace")[-500:]}}
+        return {"build": {"exit": reply.returncode, "detail": reply.stdout.decode(errors="replace")[-500:],
+                          **({"lsf": killed} if killed is not None else {})}}
     except (OSError, ValueError, subprocess.SubprocessError) as exc:
         return {"build": {"error": f"{type(exc).__name__}: {exc}"}}
 

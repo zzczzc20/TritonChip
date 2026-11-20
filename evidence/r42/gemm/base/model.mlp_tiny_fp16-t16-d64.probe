@@ -1,0 +1,4 @@
+L 29500
+S end=98790 run=69290 mtx=13072 mma_busy=10752 txf=11435 both=8199 none=52982 n_mma=64 n_txf=128 x_valid=21148
+L 145755
+S end=161377 run=15622 mtx=10820 mma_busy=10752 txf=11404 both=9534 none=2932 n_mma=64 n_txf=128 x_valid=3132

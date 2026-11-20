@@ -26,14 +26,14 @@ through the standard path with default knobs.
 
 **Candidate.** The `R42` head as a three-core instance of the same shell, default knobs.
 
-**Domains.** Each number is labelled with one of:
-1. *board*: the 113 points on the U280. The baseline records exist. A candidate board number needs a new image,
-   which needs the author's approval and one full link; until then no candidate board number is claimed.
-2. *RTL simulation of the three-core image* (`fpga-multicore-sim`, board top, image geometry of both sides): the
-   tiers the simulator can finish (tiny at least), baseline and candidate measured the same way.
-3. *SystemC/TLM model* configured as each instance: all 113 points. It is a prediction. The model's error is
-   reported from the baseline, where board records exist, before a candidate prediction is quoted.
-4. *single-core RTL simulation*: diagnostic only.
+**Domain.** Board measurements are the only basis of a result (author, chat, 2026-11-20: "以上板测试数据为唯一可靠基准").
+The R42 result is the 113 points measured on the U280 with an R42 three-core image, against the board records of
+the R41 images above, same harness and boundary. That needs a full link and a card load; the load is requested from
+the author when a candidate image has passed its gates.
+
+RTL simulation of the three-core image (`fpga-multicore-sim`, board top, image geometry), the SystemC/TLM model and
+single-core RTL simulation are screens: they decide what goes into the image, they are labelled as such, and they
+never stand in for a board number.
 
 **Metric.** `S_geo = exp(mean_i log(T_B41,i / T_R42,i))` over the points of a domain, `T` the serial-grid device
 time at equal clock (cycles); the per-tier and per-family geometric means and the per-point table are reported

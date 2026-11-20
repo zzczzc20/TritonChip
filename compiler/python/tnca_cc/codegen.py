@@ -27,7 +27,7 @@ from .asm import AsmBuilder, RegisterAllocator
 from .diagnostics import Diagnostic, ResourceError
 from .footprints import (OwnershipChecker, RegRange, fragment_registers,
                          mma_dp_group, mma_shape_of)
-from .ir import EVENT, PRED, SCALAR, TOKEN, VECTOR
+from .ir import EVENT, PRED, SCALAR, TOKEN, VECTOR, Value
 from .protocol import ProtocolModel
 
 # IR op -> mnemonic, for the plain arithmetic cases.
@@ -120,6 +120,7 @@ class CodeGen:
         self._issued_ops = {}   # barrier index -> operations emitted
         self._mma_pending = {}  # barrier index -> fragment holds to release
         self._dead_tokens = []  # scalar registers of tokens past their last use
+        self._coalesced = set()  # ids of values computed into an assigned register (R42)
 
     # ---- whole-program resources (sec 10.1) -------------------------------
     def assign_shared(self):
@@ -370,6 +371,8 @@ class CodeGen:
                     # if the scalars run out (_alloc), so a kernel that fits
                     # keeps exactly the assignment it always had.
                     self._dead_tokens.append(v.reg)
+                if id(v) in self._coalesced:
+                    continue                  # shares the register of a live value
                 if v.kind in (VECTOR, SCALAR, PRED) and v.reg is not None \
                         and self._last_use.get(id(v)) == position:
                     kindc = {VECTOR: 'v', SCALAR: 's', PRED: 'p'}[v.kind]
@@ -378,6 +381,100 @@ class CodeGen:
                     except Diagnostic:
                         pass                  # part of a reserved window
                     v.reg = None
+
+    # Lowerings that are exactly one instruction, which reads its operands
+    # before it writes its destination: their result may share a register
+    # with an operand.
+    _ONE_INSTRUCTION = frozenset({'sbin', 'sbini', 'vbin', 'vfma', 'vfms', 'vselect', 'vun'})
+
+    @staticmethod
+    def _sink_scalar_updates(ops):
+        """`n = s + c; ...; assign(s, n)` in one basic block, with the assign
+        n's only reader: the scheduler issues the cheap add early, among
+        readers of s, where it cannot be computed in place. It is moved
+        down to its assign (nothing in between writes its operands: they are
+        s, which only that assign writes there, or never written), so that
+        _coalescable makes the pair one `s.addi s, s, #c`."""
+        uses, written = {}, {}
+        for i, op in enumerate(ops):
+            for v in list(op.operands) + [a for a in op.attrs.values() if isinstance(a, Value)]:
+                if isinstance(v, Value):
+                    uses.setdefault(id(v), []).append(i)
+            if op.kind in ('assign', 'vinsert') and op.operands:
+                written.setdefault(id(op.operands[0]), []).append(i)
+        defined = {}
+        for i, op in enumerate(ops):
+            for r in op.results:
+                defined.setdefault(id(r), []).append(i)
+        move = {}
+        for a, op in enumerate(ops):
+            if op.kind != 'assign':
+                continue
+            dst, src = op.operands
+            if not isinstance(src, Value) or src.kind != SCALAR or dst.kind != SCALAR:
+                continue
+            if id(src) in written or len(defined.get(id(src), ())) != 1 or uses.get(id(src)) != [a]:
+                continue
+            d = defined[id(src)][0]
+            if d >= a - 1 or ops[d].kind not in ('sbin', 'sbini'):
+                continue
+            if any(o.kind in ('label', 'branch_nz', 'exit') for o in ops[d + 1:a]):
+                continue
+            if any(d < w < a for v in ops[d].operands if isinstance(v, Value)
+                   for w in written.get(id(v), ())):
+                continue
+            move[d] = a
+        if not move:
+            return ops
+        at = {}
+        for d, a in move.items():
+            at.setdefault(a, []).append(ops[d])
+        out = []
+        for i, op in enumerate(ops):
+            if i in move:
+                continue
+            out.extend(at.get(i, ()))
+            out.append(op)
+        return out
+
+    def _coalescable(self, ops):
+        """{position of a definition: the register value it can be computed into}.
+
+        `v = op(...); ...; assign(K, v)` in one basic block, where the assign
+        is v's only reader, nothing between the two names K, and op is a
+        single instruction: v takes K's register and the `mov` disappears.
+        Only for kernels the loop optimiser marked (kernel.coalesce_assigns),
+        so every other kernel keeps the registers it always had."""
+        defined, uses, written = {}, {}, set()
+        for i, op in enumerate(ops):
+            for r in op.results:
+                defined.setdefault(id(r), []).append(i)
+            for v in list(op.operands) + [a for a in op.attrs.values() if isinstance(a, Value)]:
+                if isinstance(v, Value):
+                    uses.setdefault(id(v), []).append(i)
+            if op.kind in ('assign', 'vinsert') and op.operands:
+                written.add(id(op.operands[0]))
+        out = {}
+        for a, op in enumerate(ops):
+            if op.kind != 'assign':
+                continue
+            dst, src = op.operands
+            if not isinstance(src, Value) or src.kind != dst.kind or src.kind not in (VECTOR, SCALAR):
+                continue
+            if id(src) in written or len(defined.get(id(src), ())) != 1 or uses.get(id(src)) != [a]:
+                continue
+            d = defined[id(src)][0]
+            if d >= a or ops[d].kind not in self._ONE_INSTRUCTION or len(ops[d].results) != 1 or d in out:
+                continue
+            between = ops[d + 1:a]
+            if any(o.kind in ('label', 'branch_nz', 'exit') for o in between):
+                continue
+            if any(dst is v for o in between
+                   for v in list(o.operands) + list(o.results)
+                   + [x for x in o.attrs.values() if isinstance(x, Value)]):
+                continue
+            out[d] = dst
+        return out
 
     @staticmethod
     def _n(v, prefix):
@@ -394,7 +491,6 @@ class CodeGen:
         self._role_index = role_index
         role = self.kernel.role(role_index)
         ops = role.region.ops
-        self._compute_last_uses(ops)
         if self.bank_banks:
             edges = {}
             for op in ops:
@@ -407,7 +503,17 @@ class CodeGen:
                             old = neighbors.get(other_key, (other, 0))
                             neighbors[other_key] = (other, old[1] + 1)
             self._bank_reads = {key: tuple(values.values()) for key, values in edges.items()}
+        if getattr(self.kernel, 'coalesce_assigns', False):
+            ops = role.region.ops = self._sink_scalar_updates(ops)
+        self._compute_last_uses(ops)
+        coalesce = self._coalescable(ops) if getattr(self.kernel, 'coalesce_assigns', False) else {}
         for i, op in enumerate(ops):
+            dst = coalesce.get(i)
+            if dst is not None and dst.reg is not None and op.results[0].reg is None:
+                # R42: the value is computed where its only reader, an
+                # `assign`, would have moved it (see _coalescable).
+                op.results[0].reg = dst.reg
+                self._coalesced.add(id(op.results[0]))
             try:
                 getattr(self, f"_op_{op.kind}", self._unhandled)(op)
             except ResourceError:
@@ -582,6 +688,8 @@ class CodeGen:
         bank = {VECTOR: 'v', PRED: 'p'}.get(dst.kind, 's')
         if src.kind != dst.kind:
             raise Diagnostic(f"assign of a {src.kind} into a {dst.kind} {dst!r}")
+        if id(src) in self._coalesced and src.reg == dst.reg:
+            return                            # computed in place (_coalescable)
         self._emit(f'{bank}.mov', f'{bank}{dst.reg}', f'{bank}{src.reg}')
 
     # ---- vector ops -------------------------------------------------------

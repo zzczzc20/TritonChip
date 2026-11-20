@@ -3825,6 +3825,11 @@ class TTIRImporter:
         """
         if elem == 'i1':
             v = self.b.vselect(v, self.b.vmovi(1), self.b.vmovi(0))
+        return self._lanes_as_col(v, elem, rows)
+
+    def _lanes_as_col(self, v, elem, rows=None):
+        """`_vector_to_col` of a register that already holds the lanes: for
+        an i1, 0 or 1 in each."""
         def row(r):
             result = self.b.splat(self.b.vextract(v, r), dtype=elem)
             return (self.b.vcmp('ne', result, self.b.vmovi(0))
@@ -3832,6 +3837,29 @@ class TTIRImporter:
         # Every row is a splat of one lane.
         return Tile('lazy', row, rows or self.target.vlen, 1, elem, vector=v,
                     replicated=True)
+
+    def _col_mask_binary(self, op, kind):
+        """`m0 & m1` of two per-row masks, in the register that holds them.
+
+        A [R, 1] mask made from a vector is one lane a row (`_vector_to_col`:
+        0 or 1). Combining two of them row by row turned every row of every
+        term into an extract, a splat and a compare before the predicate AND
+        -- a convolution's five halo conditions were twenty instructions a
+        row. The lanes combine with one lane-local instruction for the whole
+        column, and a row is then read out of the result once.
+        """
+        if kind not in ('and', 'or', 'xor'):
+            return False
+        shape, elem = _parse_type(str(op.get_result(0).get_type()))
+        if elem != 'i1' or not isinstance(shape, tuple) or len(shape) != 2 or shape[1] != 1:
+            return False
+        tiles = [self._tiles.get(op.get_operand(i).id()) for i in range(2)]
+        if any(t is None or t.vector is None or t.dtype != 'i1'
+               or (t.rows, t.cols) != (shape[0], 1) for t in tiles):
+            return False
+        v = self.b.vbin(kind, tiles[0].vector, tiles[1].vector, dtype='i32')
+        self._tiles[op.get_result(0).id()] = self._lanes_as_col(v, 'i1', shape[0])
+        return True
 
     def _col_to_vector(self, tile, elem):
         """One value per row, gathered into one vector register.
@@ -5648,6 +5676,8 @@ class TTIRImporter:
         a, b = op.get_operand(0), op.get_operand(1)
         rid = op.get_result(0).id()
         if self._is_2d(op):
+            if self._col_mask_binary(op, kind):
+                return
             self._tile_binary(op, lambda xs, e: (self.b.pbin(kind, self._as_pred(xs[0]),
                                                              self._as_pred(xs[1]))
                 if e == 'i1' else self.b.vbin(

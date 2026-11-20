@@ -7,33 +7,44 @@ Branch `R42`, opened from `main` at `4b61abd8` on 2026-11-20. Goal given by the 
 parts of the scaling blueprint (wider tensor core, line-wide memory path, compiler and runtime work) and obtain a
 significant improvement of the ArchBench geometric mean.
 
-## 1. Registration (written before any R42 change was measured)
+## 1. Registration
 
-**Benchmark set.** The frozen ArchBench `tiny` and `small` tiers (`archbench/suites/tiny.json`, 27 points;
-`archbench/suites/small.json`, 25 points), every point, through the standard path
-(`python -m archbench.run --platform tnca`, default knobs, default optimisation level).
+The first registration (tiny and small tiers, single-core simulator, 2026-11-20) was withdrawn the same day on the
+author's instruction, before any R42 change existed: the yardstick is the whole suite and the baseline is the R41
+three-core instance. Source: the author's chat message of 2026-11-20, "你为什么只以tiny small为基准？以及你的baseline应该是R41
+3核实例". The single-core runs started under the first registration are kept as diagnostics only.
 
-**Measurement domain and boundary.** RTL simulation (`TNCA_BACKEND=sim-file`, Icarus Verilog), device cycles of the
-point's whole launch log, as ArchBench records them. No board run is part of this registration: a new image needs
-the author's approval and is a later step. Device cycles are compared at equal clock; a frequency claim needs
-out-of-context timing evidence of its own and is reported separately.
+**Benchmark set.** All 113 frozen original ArchBench points (tiers tiny, small, medium, large, hbm), every point,
+through the standard path with default knobs.
 
-**Baseline (B42).** `main` at `4b61abd8`, profile `core-vrf-sync-v5-x8` (the per-core profile of the delivered
-100 MHz image), default knobs. Measured once on GB10; records under `evidence/r42/baseline/`.
+**Baseline (B41).** The R41 three-core U280 instance: three cores, a NUCA home slice per core, three HBM outlets,
+100 MHz. Two R41 images have complete 113-point board records, and both are reported:
+- B41-run1, image `30e79769` (profile `core-vrf-sync-v5-x8`, 256-bit outlets), the image of `doc/r41_report.md`;
+- B41-run3, image `791b8af2` (profile `core-vrf-sync-v5-x8-g2c4-dp`, line-wide path, `m.mma.dp`), the latest R41
+  three-core image (`evidence/r41/hbm_bw/g4/run3/board/`). It is the stronger baseline and the primary one: work
+  that R41 already built is not counted as an R42 gain.
 
-**Candidate.** The `R42` head with the R42 per-core profile and default knobs. A new profile name is used when the
-hardware changes; the baseline profile keeps its RTL parameters and its cycles (non-regression gate).
+**Candidate.** The `R42` head as a three-core instance of the same shell, default knobs.
 
-**Metric.** `S_geo = exp(mean_i log(T_B42,i / T_R42,i))` over all registered points of a tier, `T` in device
-cycles (PROTOCOL.md §5.1 without the bootstrap, since RTL simulation is deterministic). Reported per tier, with the
-per-point table and the per-family geometric means. A point that fails numerically on either side is reported as
-failed and makes the tier result "not certified". Every point slower than the baseline by more than 2 % is listed
-with its cause.
+**Domains.** Each number is labelled with one of:
+1. *board*: the 113 points on the U280. The baseline records exist. A candidate board number needs a new image,
+   which needs the author's approval and one full link; until then no candidate board number is claimed.
+2. *RTL simulation of the three-core image* (`fpga-multicore-sim`, board top, image geometry of both sides): the
+   tiers the simulator can finish (tiny at least), baseline and candidate measured the same way.
+3. *SystemC/TLM model* configured as each instance: all 113 points. It is a prediction. The model's error is
+   reported from the baseline, where board records exist, before a candidate prediction is quoted.
+4. *single-core RTL simulation*: diagnostic only.
 
-**Numerics.** Each point's tolerance is the one frozen in its suite definition. No tolerance changes.
+**Metric.** `S_geo = exp(mean_i log(T_B41,i / T_R42,i))` over the points of a domain, `T` the serial-grid device
+time at equal clock (cycles); the per-tier and per-family geometric means and the per-point table are reported
+beside it. A point failing numerically on either side is reported failed and the result is "not certified".
+Every point slower than the baseline by more than 2 % is listed with its cause. A clock-frequency gain is a
+separate claim that needs routed timing.
 
-**Hardware cost.** Each RTL change records its resource and timing evidence (out-of-context synthesis on the x86
-host where a unit changed) before it is counted as deliverable on the U280.
+**Numerics.** Each point's frozen tolerance. No tolerance changes.
+
+**Hardware cost.** Every RTL change records per-module resources and out-of-context timing before it is counted as
+deliverable on the U280; SLR packing of the R41 image is the budget (`evidence/r41/hbm_bw/RESOURCES.md`).
 
 ## 2. Triage of the blueprint
 

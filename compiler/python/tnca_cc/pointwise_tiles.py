@@ -1,6 +1,7 @@
 """Tiled element-wise lowering: a 1-D program as a loop over register tiles.
 
-Option `tiled_pointwise` (TNCA_TILED_POINTWISE), default 0 (off):
+Option `tiled_pointwise` (TNCA_TILED_POINTWISE); the standard path's default is 2 since R42
+(the importer's own attribute defaults to 0):
 
   0  off: the program is lowered as before.
   1  a 1-D element-wise program of block W runs as a loop over tiles of

@@ -116,7 +116,7 @@ def _packed_window_unpack():
 
 
 def _tiled_pointwise():
-    value = int(os.environ.get('TNCA_TILED_POINTWISE', '0'))
+    value = int(os.environ.get('TNCA_TILED_POINTWISE', '2'))
     if value not in (0, 1, 2, 3):
         raise ValueError('TNCA_TILED_POINTWISE must be 0, 1, 2 or 3')
     return value
@@ -362,7 +362,7 @@ class TNCABackend(BaseBackend):
                           ('tiled_pointwise', 'TNCA_TILED_POINTWISE'),
                           ('ieee_div', 'TNCA_IEEE_DIV')):
             value = getattr(options, name)
-            if value or int(os.environ.get(env, '0')) != value:
+            if value or int(os.environ.get(env, '2' if name == 'tiled_pointwise' else '0')) != value:
                 compile_options[name] = value
         # The dump switches of doc/dumping_ir.md (TNCA_KERNEL_DUMP=1, written
         # under TNCA_DUMP_DIR/<kernel>/), on this entry point as on AOT --

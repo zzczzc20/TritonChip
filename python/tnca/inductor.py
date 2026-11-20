@@ -70,7 +70,7 @@ import os
 import time
 
 STAGE1_MAX_BLOCK = 16
-# With TNCA_TILED_POINTWISE (default 0), a pointwise kernel's block may grow to
+# With TNCA_TILED_POINTWISE (default 2 since R42; 0 turns it off), a pointwise kernel's block may grow to
 # this many lanes; tnca_cc/pointwise_tiles.py runs it as a loop over register
 # tiles, and a kernel it cannot tile falls back to the 16-lane configuration.
 TILED_POINTWISE_BLOCK = 1024
@@ -630,7 +630,7 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     _NO_X_DIM[0] = bool(no_x_dim)
     _install_no_x_dim()
     _BLOCK_CAP[0] = max_block
-    tiled = int(os.environ.get('TNCA_TILED_POINTWISE', '0'))
+    tiled = int(os.environ.get('TNCA_TILED_POINTWISE', '2'))
     if tiled not in (0, 1, 2, 3):
         raise ValueError('TNCA_TILED_POINTWISE must be 0, 1, 2 or 3')
     _STREAM[0] = tiled == 3

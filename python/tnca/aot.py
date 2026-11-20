@@ -51,7 +51,7 @@ KNOWN_OPTIONS = {
     'packed_window_unpack': 'int, 0 or 1; software lane unpack of packed FP16/BF16 DMA windows',
     'tiled_pointwise': 'int, 0..3; 1-D element-wise programs as a loop over register tiles, '
                        '1 with tensor-engine transfers where legal, 2 with vector loads/stores only '
-                       '(tnca_cc/pointwise_tiles.py; default 0)',
+                       '(tnca_cc/pointwise_tiles.py; default 2 since R42, TNCA_TILED_POINTWISE)',
     'window_reuse': 'int, 0 or 1; reuse disjoint awaited single-role window lifetimes',
     'ieee_div': 'int, 0 or 1; arith.divf correctly rounded (the extended lowering always is)',
     'no_ll': 'bool; at opt_level 2, switch the layout algebra off and use a legal plan instead. The ablation of phase 3.5 section 4.3, not a fallback: O2 without it never silently stops using LinearLayout',
@@ -317,7 +317,8 @@ def check_options(options):
                       ('rctx_roles', 'TNCA_RCTX_ROLES')):
         value = options.get(name)
         if value is None:
-            value = _physical_chunks_default() if name == 'physical_chunks' else int(os.environ.get(env, '0'))
+            value = (_physical_chunks_default() if name == 'physical_chunks'
+                     else int(os.environ.get(env, '2' if name == 'tiled_pointwise' else '0')))
             options.pop(name, None)
             if value:
                 options[name] = value
@@ -764,7 +765,7 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
         raise ValueError('packed_window_unpack must be 0 or 1')
     tiled = (options or {}).get('tiled_pointwise')
     if tiled is None:
-        tiled = int(os.environ.get('TNCA_TILED_POINTWISE', '0'))
+        tiled = int(os.environ.get('TNCA_TILED_POINTWISE', '2'))
     if tiled not in (0, 1, 2, 3):
         raise ValueError('tiled_pointwise must be 0, 1, 2 or 3')
     # The extended lowering (large tiles): a kernel the default lowering

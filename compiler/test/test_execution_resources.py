@@ -143,10 +143,23 @@ class ExecutionResourcePlanTests(unittest.TestCase):
                     mma_commands=programs*trips*fragments, physical=physical,
                     valid=m*n*k, padding=physical - m*n*k,
                     tile_padding=physical - m*n*k, fragment_padding=0))
-                self.assertEqual(plan['gemm']['static_mma_commands'],
-                                 dict(expected_from_sites=fragments, emitted=fragments, match=True))
-                self.assertEqual(plan['commands']['mma'], fragments)
-                self.assertEqual(plan['commands']['mma_in_k_loops'], fragments)
+                # R42: the K loop is a two-stage software pipeline by default
+                # (tnca_cc.gemm_pipeline), so each fragment's command has one
+                # static copy per stage; the logical work above is unchanged.
+                stages = plan['gemm']['static_mma_commands'].get('unroll_factor', 1)
+                expected = dict(expected_from_sites=fragments*stages, emitted=fragments*stages, match=True)
+                if stages > 1:
+                    expected['unroll_factor'] = stages
+                self.assertEqual(plan['gemm']['static_mma_commands'], expected)
+                self.assertEqual(plan['commands']['mma'], fragments*stages)
+                self.assertEqual(plan['commands']['mma_in_k_loops'], fragments*stages)
+        # The default pipelines the plain 16x16 tile; the ablation is the serial loop.
+        _result, plan = self.gemm(32, 32, 32, 16, True)
+        self.assertEqual(plan['gemm']['static_mma_commands'].get('unroll_factor'), 2)
+        _result, plan = self.compile(template_gemm, GEMM_SIG, dict(M=32, N=32, K=32, BN=16, EVEN_K=True),
+                                     gemm_pipeline=0)
+        self.assertEqual(plan['gemm']['static_mma_commands'],
+                         dict(expected_from_sites=1, emitted=1, match=True))
         # The hand values for the tail: 6 programs x 3 K steps x 2 fragments.
         _result, plan = self.gemm(17, 65, 33, 32, False)
         self.assertEqual(plan['gemm']['sites'][0]['macs']['physical'], 147456)
@@ -179,9 +192,12 @@ class ExecutionResourcePlanTests(unittest.TestCase):
         _r, plan = self.compile(descriptor_gemm, sig, dict(M=17, N=65, K=33, BN=16))
         # One A and one B box per K step through the transfer engine; no
         # LSU access in the K loop; the epilogue stores 16 rows by pointer.
-        self.assertEqual(plan['transfers']['descriptor_in_k_loops'], 2)
+        # R42: two pipeline stages in the loop, each with its A and B box (a
+        # third copy, of step 0, stands before the loop).
+        self.assertEqual(plan['gemm']['static_mma_commands'].get('unroll_factor'), 2)
+        self.assertEqual(plan['transfers']['descriptor_in_k_loops'], 2 * 2)
         self.assertEqual(plan['transfers']['pointer_in_k_loops'], 0)
-        self.assertEqual(plan['commands']['transfer_in_k_loops'], 2)
+        self.assertEqual(plan['commands']['transfer_in_k_loops'], 2 * 2)
         site, = plan['gemm']['sites']
         self.assertEqual((site['problem']['M'], site['problem']['N'], site['problem']['K']),
                          (17, 65, 33))
@@ -189,7 +205,7 @@ class ExecutionResourcePlanTests(unittest.TestCase):
         self.assertEqual(site['macs']['physical'], 10 * 3 * 4096)
         # A 16x32 B box is two compact fragments: three engine commands.
         _r, wide = self.compile(descriptor_gemm, sig, dict(M=17, N=65, K=33, BN=32))
-        self.assertEqual(wide['transfers']['descriptor_in_k_loops'], 3)
+        self.assertEqual(wide['transfers']['descriptor_in_k_loops'], 3 * 2)      # per pipeline stage
         self.assertEqual(wide['gemm']['sites'][0]['physical_fragments'], 2)
         # The pointer GEMM's tiles go through the LSU (and scratch).
         _r, pointer = self.gemm(17, 65, 33, 16, False)

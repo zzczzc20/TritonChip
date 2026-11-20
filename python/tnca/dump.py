@@ -71,20 +71,23 @@ SUFFIX = {
     # Context pair. Written only when compiled with rctx_roles=1 and allowed.
     'tnir_roles': '.roles.tnir',
     'tnir_single_role_pipeline': '.single-role-pipeline.tnir',
+    # After R42's software pipelining of the transfer/MMA loop
+    # (tnca_cc/gemm_pipeline.py). Written only when a loop was pipelined.
+    'tnir_gemm_pipeline': '.gemm-pipeline.tnir',
     'asm': '.s',
     'hex': '.hex',
 }
 
 # The order they are produced in, which is the order a reader wants them.
 STAGES = ('ttir', 'ttir_inlined', 'ttir_opt', 'tnir',
-          'tnir_opt', 'tnir_spmd', 'tnir_roles', 'tnir_single_role_pipeline', 'tnir_sched', 'asm', 'hex')
+          'tnir_opt', 'tnir_spmd', 'tnir_roles', 'tnir_single_role_pipeline', 'tnir_gemm_pipeline', 'tnir_sched', 'asm', 'hex')
 
 # Stages that exist only for some compiles. `ttir` is absent for a TNCA IR
 # source, which never had one; `ttir_opt` is absent at O0, where no pass
 # ran. A file that is written anyway would say something happened.
 CONDITIONAL_STAGES = frozenset({'ttir', 'ttir_inlined',
                                 'ttir_opt', 'tnir_opt', 'tnir_spmd', 'tnir_roles', 'tnir_single_role_pipeline',
-                                'tnir_sched'})
+                                'tnir_gemm_pipeline', 'tnir_sched'})
 
 # What every compile produces, whatever its source kind or optimisation
 # level. A stage missing from THIS list is a bug.

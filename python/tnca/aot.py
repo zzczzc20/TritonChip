@@ -45,6 +45,8 @@ ABI_VERSION = list(abi.ABI_VERSION)
 # something and been told nothing, and the artifact they get back is not the
 # one they asked for (CMP-02).
 KNOWN_OPTIONS = {
+    'gemm_pipeline': 'int, 0 or 1; software pipelining of a transfer/MMA loop on two window sets and two '
+                     'barriers (tnca_cc/gemm_pipeline.py; default 1, TNCA_GEMM_PIPELINE=0 is the ablation)',
     'single_role_pipeline': 'int, 0 or 1; opt-in two-slot single-role transfer/MMA overlap with guarded drain',
     'rctx_role_pairs': 'int, 0..2; cap paired programs for fixed-context comparisons (0 uses the target maximum)',
     'bank_alloc': 'int, 0 or 1; use the target bank-aware vector allocator',
@@ -324,6 +326,15 @@ def check_options(options):
         allowed = (0, 1, 2, 3) if name == 'tiled_pointwise' else (0, 1, 2) if name in ('rctx_roles', 'rctx_role_pairs') else (0, 1)
         if value not in allowed:
             raise ValueError(f'{name} must be one of {allowed}')
+    # Default ON (R42): only the ablation value is carried in the options.
+    pipe = options.get('gemm_pipeline')
+    if pipe is None:
+        pipe = int(os.environ.get('TNCA_GEMM_PIPELINE', '1'))
+    options.pop('gemm_pipeline', None)
+    if pipe not in (0, 1):
+        raise ValueError('gemm_pipeline must be 0 or 1')
+    if not pipe:
+        options['gemm_pipeline'] = 0
     if options.get('rctx_role_pairs') and not options.get('rctx_roles'):
         raise ValueError('rctx_role_pairs requires rctx_roles')
     if options.get('single_role_pipeline') and options.get('rctx_roles'):
@@ -961,6 +972,7 @@ def _lower_imported(module, kernel_name, params, target, prov, options, stages, 
             stages.stages.pop('tnir_roles', None)
             programs_per_launch = None
     single_role_applied = False
+    pipeline_key = 'single_role_pipeline'
     emit_options = options
     if not programs_per_launch and (options or {}).get('single_role_pipeline'):
         from tnca_cc.single_role_pipeline import pipeline_loop, NotPipelined
@@ -985,6 +997,37 @@ def _lower_imported(module, kernel_name, params, target, prov, options, stages, 
             single_role_applied = True
             prov.record('single_role_pipeline', info)
             stages.record('tnir_single_role_pipeline', str(kernel))
+    if (not programs_per_launch and not single_role_applied
+            and not (options or {}).get('single_role_pipeline')
+            and (options or {}).get('gemm_pipeline', 1)):
+        # R42: the transfer/MMA loop as a two-stage software pipeline
+        # (tnca_cc.gemm_pipeline), the default. Applied to a copy and emitted
+        # once on the fixed window layout before it replaces the kernel: a
+        # loop it refuses, or one whose doubled windows do not fit, keeps the
+        # serial form.
+        from tnca_cc.gemm_pipeline import pipeline_loop as _gemm_pipeline, NotPipelined as _NotPiped
+        if plain is None:
+            plain = _copy.deepcopy(kernel)
+        trial = _copy.deepcopy(kernel)
+        try:
+            info = _gemm_pipeline(trial)
+            emit_options = dict(options or {}, window_reuse=0)
+            _emit(_copy.deepcopy(trial), target, adapter.Provenance(), opt_level,
+                  emit_options, _dump.Dump(kernel_name + '_gemm_pipeline_preflight'))
+        except _NotPiped as error:
+            prov.record('gemm_pipeline_refused', str(error))
+            emit_options = options
+        except CompileError as error:
+            if error.detail.get('kind') != 'ResourceError':
+                raise
+            prov.record('gemm_pipeline_refused', str(error)[:200])
+            emit_options = options
+        else:
+            kernel = trial
+            single_role_applied = True
+            pipeline_key = 'gemm_pipeline'
+            prov.record('gemm_pipeline', info)
+            stages.record('tnir_gemm_pipeline', str(kernel))
     if not programs_per_launch:
         programs_per_launch = _rctx_spmd(kernel, target, prov, options, stages,
                                          scratch_bytes, 8 * len(params))
@@ -996,9 +1039,9 @@ def _lower_imported(module, kernel_name, params, target, prov, options, stages, 
             break
         except CompileError as e:
             if single_role_applied and e.detail.get('kind') == 'ResourceError':
-                prov.record('single_role_pipeline_fallback', str(e)[:200])
-                prov.entries.pop('single_role_pipeline', None)
-                stages.stages.pop('tnir_single_role_pipeline', None)
+                prov.record(pipeline_key + '_fallback', str(e)[:200])
+                prov.entries.pop(pipeline_key, None)
+                stages.stages.pop('tnir_' + pipeline_key, None)
                 kernel = _copy.deepcopy(plain)
                 single_role_applied = False
                 emit_options = options

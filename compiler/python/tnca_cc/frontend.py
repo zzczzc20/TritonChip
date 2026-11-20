@@ -3603,7 +3603,7 @@ class TTIRImporter:
             return None
         return name, total * _DTYPE_BYTES[elem]
 
-    def _hoisted_tile_descriptor(self, name, elem, aff, block, what):
+    def _hoisted_tile_descriptor(self, name, elem, aff, block, what, broadcast=False):
         """A TensorMap built ONCE, at the kernel's entry, and the coordinates
         of this tile in it -- or None (index_opt).
 
@@ -3616,7 +3616,9 @@ class TTIRImporter:
         Exact, with no division of an offset that might not be a multiple.
         A term that is neither keeps the old way.
         """
-        if aff.col_stride != 1 or aff.row_stride <= 1 or not aff.dynamic:
+        if aff.col_stride != 1 or aff.row_stride < 0 or aff.row_stride == 1 or not aff.dynamic:
+            return None
+        if aff.row_stride == 0 and not broadcast:
             return None
         origin = (name, 0)
         if name not in getattr(self, '_entry_args', ()):
@@ -3635,7 +3637,7 @@ class TTIRImporter:
             return None
         rows, cols = [], []
         for v, c in aff.dynamic:
-            if c % aff.row_stride == 0:
+            if aff.row_stride and c % aff.row_stride == 0:
                 rows.append((v, c // aff.row_stride))
             elif c == 1:
                 cols.append((v, 1))
@@ -5963,6 +5965,42 @@ class TTIRImporter:
             _parse_type(str(u.get_operand(1).get_type()))[1] == elem
             for u, k in users)
 
+    def _broadcast_row_fragment(self, op, name, elem, aff, block):
+        """One row broadcast down a tile, as ONE transfer -- or None.
+
+        A tile whose row index does not move (Inductor's GEMM template with
+        M = 1: a decode step's projections, a matrix-vector product) is a
+        TensorMap whose outer byte stride is zero: ISA sec 9D.3 addresses
+        an element at `base + sum i_d * byte_stride_d`, strides are signed
+        and sec 9E.2 refuses only an innermost stride that is not one
+        element, so every row of the box reads the same run and the window
+        holds the fragment sec 9C.2 describes. The map is built once at the
+        kernel's entry and the K position is its column coordinate.
+
+        Only for a tile every reader of which is a `tl.dot` operand of a
+        16-bit matrix format: such a tile is a fragment and nothing else.
+        Before this it was one vector load, sixteen stores of it to scratch,
+        a TensorMap over the scratch, a fence, a snapshot and the transfer
+        back (_rows_to_window) -- for every K step (R42 gemm, measured on
+        op.gemv: evidence/r42/gemm/ANALYSIS.md). A tile that arithmetic
+        reads keeps the one vector load, which is all it needs.
+        """
+        if not self.index_opt or elem not in ('f16', 'bf16') or op.get_num_operands() > 1:
+            return None
+        if aff.col_stride != 1 or (block[1] * self._ELEM_BYTES[elem]) % 8:
+            return None
+        value_users = getattr(op, 'value_users', None)
+        users = (value_users(self, op.get_result(0)) if value_users else
+                 self._value_users.get(op.get_result(0).id(), []))
+        if not users or not all(u.get_name() == 'tt.dot' and k in (0, 1) for u, k in users):
+            return None
+        what = 'one row broadcast down a tile (outer stride 0)'
+        hoisted = self._hoisted_tile_descriptor(name, elem, aff, block, what, broadcast=True)
+        if hoisted is None:
+            return None
+        desc, coords = hoisted
+        return self._dma_in(desc, coords, list(block), elem, what)
+
     def _arg_value(self, name):
         for _, (n, v) in self._args.items():
             if n == name:
@@ -6040,6 +6078,10 @@ class TTIRImporter:
                 # TensorMap cannot step rows by zero; one vector load can
                 # be every row. A tl.dot reaches it through the same
                 # repack as any computed tile (_as_fragment).
+                fragment = self._broadcast_row_fragment(op, name, elem, aff, shape2d)
+                if fragment is not None:
+                    self._tiles[op.get_result(0).id()] = fragment
+                    return
                 esize = self._ELEM_BYTES[elem]
                 at = self._arg_value(name)
                 if aff.const:

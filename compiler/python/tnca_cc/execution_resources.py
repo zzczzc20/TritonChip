@@ -424,7 +424,8 @@ def finalize(plan, *, measured, entries, code_limit=None):
     # emitted must be the sum of the sites' per-step physical commands.
     emitted = sum(r['commands']['mma'] for r in roles if 'commands' in r)
     expected = sum(s['per_k_step']['mma_commands'] for s in sites if s.get('engine') == 'mma')
-    pipeline = entries.get('single_role_pipeline') or entries.get('rctx_roles_ring')
+    pipeline = (entries.get('single_role_pipeline') or entries.get('gemm_pipeline')
+                or entries.get('rctx_roles_ring'))
     # A single K-loop dot has one guarded copy per pipeline stage. Keep the
     # logical work and TTIR trip count unchanged; do not guess the multiplier
     # for kernels with multiple sites whose unroll scope is ambiguous.

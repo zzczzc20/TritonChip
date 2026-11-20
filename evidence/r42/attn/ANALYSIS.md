@@ -91,3 +91,25 @@ remainder/divide index. Both are element-wise lowering (TNCA_TILED_POINTWISE, an
 **F6. bmm/tiny (no loop):** 962 cycles a program for one MMA: ~45 % is the epilogue (16 x `a.vread`,
 `vf.add 0`, convert, three recomputed masks, `v.st.h` through the LSU), the rest the two transfers, the
 software divide prologue and the MMA. Not changed here.
+
+**F7. Division of a lane-uniform index by a non-power-of-two constant is a 32-iteration vector loop.**
+In `model.llama_decode` the score reduction is fused with the KV-cache concatenation, so its program id is
+split as `xindex // 17`, `xindex % 17` (cache length = prompt + 1; 129, 257, 513 on the larger tiers). Each
+is the lane-wise restoring divide: 32 iterations of 13 vector instructions. The kernel
+(`red_..._view_9`, 68 programs) took 106,939 cycles per launch, 1,573 per 16-element dot, two launches =
+42 % of the tiny point. The same loop is taken by any 16-lane index divided by such a constant.
+
+## 4. What was changed (all in the compiler, no knob, no shape or name test)
+
+| # | mechanism | file | answers |
+|---|---|---|---|
+| C1 | A 2-D pointer that a loop advances by the same element count in every row and lane is carried as ONE scalar, a runtime term of its affine index; the tile is loaded through a TensorMap built once, as outside a loop. Decided from the loop text before lowering; any other advance keeps the index-tile carry. | `frontend.py` `_op_scf_for`, `_uniform_pointer_advance`, `_affine_advance` | F2 |
+| C2 | `x.to(int64) <cmp> c` with `c` inside int32, a signed predicate and nothing else reading the widened value: the widening is not formed and the compare is one 32-bit vector compare (sign extension preserves signed order). One-row and multi-row blocks. | `wide.py` `_narrow_compare` | F1 |
+| C3 | binary32 `tl.dot`: four rows advance together one K step at a time (same FMAs, same order within a row: identical result bits); `A[r][k]` is broadcast by `v.permute` through a shared index vector (was extract + splat); `acc + dot` with `acc` a carried accumulator adds each dot row into the accumulator row directly (same dot, same add; no second accumulator, no copy at the yield). | `frontend.py` `_dot_f32`, `_f32_dot_into`; `ir.py`/`codegen.py` `vshuffle('permute')` | F3 |
+| C4 | Integer division by a constant: a lane-uniform dividend by a non-power-of-two is divided once in scalar registers (reciprocal multiply); any other 32-bit vector dividend by a constant > 2 uses `v.mulh.u` (Granlund-Montgomery, exact for every 32-bit magnitude). The restoring loop remains for runtime divisors. | `frontend.py` `_integer_division` | F7 |
+
+Result bits: C1, C2, C4 are exact integer/addressing changes. C3 keeps every floating-point operation and its
+order per element. Every tiny point passes its frozen tolerance.
+
+A first form of C4 also moved power-of-two divisions of uniform values to scalar registers; it made the
+latency-bound softmax row slower (`red_3` 7,854 -> 9,853 cycles, record `c5_tiny.jsonl`) and was withdrawn.

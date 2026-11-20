@@ -57,7 +57,7 @@ check|launch)
     if [ "$cmd" = check ]; then
         fp "cd ~/r42/reg/$N && ~/tc_env/torchenv/bin/python board_ab.py run --reg ~/r42/reg/$N --out ~/r42/q/$N.check --check-only"
     else
-        fp "test ! -e ~/r42/q/$N || { echo '~/r42/q/$N exists: results are never overwritten' >&2; exit 3; }; mkdir -p ~/r42/q/$N && cd ~/r42/reg/$N && setsid nohup ~/tc_env/torchenv/bin/python -u board_ab.py run --reg ~/r42/reg/$N --out ~/r42/q/$N > ~/r42/q/$N/launch.log 2>&1 < /dev/null & echo \$! > ~/r42/q/$N/runner.pid; sleep 3; kill -0 \$(cat ~/r42/q/$N/runner.pid) && echo runner pid \$(cat ~/r42/q/$N/runner.pid) || { echo 'runner is not alive'; cat ~/r42/q/$N/launch.log; exit 5; }"
+        fp "test ! -e ~/r42/q/$N || { echo '~/r42/q/$N exists: results are never overwritten' >&2; exit 3; }; mkdir -p ~/r42/q/$N && cd ~/r42/reg/$N || exit 6; setsid nohup ~/tc_env/torchenv/bin/python -u board_ab.py run --reg ~/r42/reg/$N --out ~/r42/q/$N > ~/r42/q/$N/launch.log 2>&1 < /dev/null & echo \$! > ~/r42/q/$N/runner.pid; sleep 3; kill -0 \$(cat ~/r42/q/$N/runner.pid) && echo runner pid \$(cat ~/r42/q/$N/runner.pid) || { echo 'runner is not alive'; cat ~/r42/q/$N/launch.log; exit 5; }"
     fi
     ;;
 status)

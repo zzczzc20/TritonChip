@@ -52,7 +52,8 @@ Points slower by more than 2 % and their cause (from the dumped assembly, `tools
 - The gain of mode 2 measured in R41 (1.489x RTL, 1.578x board) was on 64 KiB and larger batches on other images.
   On this profile the small tier (16,384 elements; base against the R42-red head, which contains this change;
   `records/base_smallpoi.jsonl`, `records/D1_smallpoi.jsonl`) gives gelu_tanh 1.517, add 1.171, rope 1.252,
-  silu 1.020, swiglu 0.855. The swiglu loss is not explained yet (see ANALYSIS.md).
+  silu 1.020, swiglu 0.855. With part A alone (`records/A_smallpoi.jsonl`, added later): add 1.160, gelu_tanh 1.110,
+  rope 0.996, silu 1.002, swiglu 0.835, geometric mean 1.014. The swiglu loss is not explained.
 
 `make compiler` on GB10 from the tree: PASS, 173 tests, 67 skipped; `compiler-ir` SKIP (tnca-opt is not built on GB10).
 The compile-only default-change audit (113 points) was not run.

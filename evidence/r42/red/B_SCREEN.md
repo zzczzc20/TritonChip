@@ -64,8 +64,11 @@ op.softmax/small/fp16-r64-c512                                     449972     17
 op.swiglu/small/fp16-n16384                                         81953      95839  0.855
 points 10/10  S_geo 1.5176  sum-ratio 1.6950  slower>2%: 1
 ```
-All pass numerically. `op.swiglu/small` is slower (0.855); the tiled lowering of part A is the only change that
-reaches this kernel class; the A-only control (`records/A_smallpoi.jsonl`) is recorded when it finishes.
+All pass numerically. `op.swiglu/small` is slower (0.855). The A-only control (`records/A_smallpoi.jsonl`, the tree
+of commit 2a6870fb) attributes it to part A: against base, part A alone gives add 1.160, gelu_tanh 1.110, rope
+0.996, silu 1.002, swiglu 0.835 (geometric mean 1.014); the loop pass of part B then gains 1.126 on the same five
+tiled kernels (gelu_tanh 117,064 -> 85,608, rope 60,156 -> 47,839, swiglu 98,201 -> 95,839). Why the tiled
+swiglu program is slower than the 16-lane one on this profile was not analysed.
 
 ## Gates
 - `make compiler` (GB10, tree D): PASS, `compiler-unit` 182 tests (67 skipped), ISA/target/datapath checks PASS;

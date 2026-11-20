@@ -2194,7 +2194,11 @@ class TTIRImporter:
                 signed, remainder, divisor_const)
             return
         if self.index_opt and isinstance(rshape, int) and relem == 'i32' \
-                and divisor_const is not None and divisor_const > 0:
+                and divisor_const is not None and divisor_const > 2 \
+                and divisor_const & (divisor_const - 1):
+            # (A power of two stays two vector instructions below: in scalar
+            # registers its sign handling is a longer dependent chain, which a
+            # latency-bound softmax row measured as +25 %.)
             ua = self._uniform_scalar(op.get_operand(0))
             if ua is not None:
                 # Every lane holds the same value (Inductor's `xindex // n`,

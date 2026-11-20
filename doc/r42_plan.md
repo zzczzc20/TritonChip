@@ -85,3 +85,17 @@ for by a removal.
 | Hardware multicast, offline weight pre-packing, graph-level layout pass | No ArchBench point is bound by them today; revisit with the model points. |
 
 ## 3. Log
+
+**2026-11-20.**
+- Branch opened; registration rewritten twice on the author's instructions (113 points; R41 three-core baseline;
+  board only).
+- Board baseline table from the R41 records: `tools/r42/baseline_table.py` -> `evidence/r42/baseline/b41_board.json`.
+  Run 3 over run 1: geometric mean 1.347x over the 113 points (board).
+- Screening environment: GB10 and thor. A first set of single-core screening runs on GB10 imported the compiler
+  package (`tnca_cc`) from an unrelated old mirror because only `python/` was on `PYTHONPATH`; those records were
+  discarded unused (moved to `~/r42/invalid_stale_compiler` on GB10) and the runs restarted with
+  `PYTHONPATH=python:compiler/python:tools/asm`.
+- Work packages started on their own branches: `R42-red` (tiled element-wise default, reductions and norms),
+  `R42-attn` (attention, bmm), `R42-gemm` (register blocking, transfer overlap), `R42-mtx` (matrix engine B
+  prefetch and command overlap, RTL), `R42-fp32` (FP32 matrix format, ISA + RTL + compiler); a board worker
+  re-measures the 113-point baseline on the run-3 image with the software of `main` through the guarded queue.

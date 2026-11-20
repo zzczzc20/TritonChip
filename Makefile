@@ -867,6 +867,7 @@ core-r42: $(patsubst %,$(BUILD)/%.hex,$(RUN2_PROGS)) $(BUILD)/t41_mmadp.hex $(BU
 
 # R42: tnca_matrix OVL=1 against OVL=0, random command lists (tb_matrix_ovl.v)
 MTX_OVL_SEEDS ?= 1 2 3
+MTX_OVL_SEGS ?= 20
 $(BUILD)/tb_matrix_ovl_dp%.vvp: $(RTL_DEPS) $(TB)/core/tb_matrix_ovl.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen \
 	   -P tb_matrix_ovl.MAC_DP=$(word 1,$(subst v, ,$*)) -P tb_matrix_ovl.VRF_MODE=$(word 2,$(subst v, ,$*)) \
@@ -876,7 +877,7 @@ matrix-ovl: $(BUILD)/tb_matrix_ovl_dp1v1.vvp $(BUILD)/tb_matrix_ovl_dp1v2.vvp \
             $(BUILD)/tb_matrix_ovl_dp1v0.vvp $(BUILD)/tb_matrix_ovl_dp0v1.vvp
 	@for b in dp1v1 dp1v2 dp1v0 dp0v1; do for s in $(MTX_OVL_SEEDS); do \
 	   $(TOOLS)/run_test.sh "matrix OVL against OVL=0 ($$b, seed $$s)" \
-	     "$(VVP) $(BUILD)/tb_matrix_ovl_$$b.vvp +seed=$$s" || exit 1; \
+	     "$(VVP) $(BUILD)/tb_matrix_ovl_$$b.vvp +seed=$$s +segs=$(MTX_OVL_SEGS)" || exit 1; \
 	 done; done
 
 .PHONY: core-mtx-vrf-reg

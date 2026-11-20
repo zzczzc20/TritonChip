@@ -2601,11 +2601,23 @@ module tnca_core #(
     // producers issuing their transfers. The context wakes when an engine
     // goes idle (eng_freed) or as before.
     reg  mtx_busy_q, txf_busy_q;
+    // MTX_PIPE: also (a) when the pending matrix command became the running
+    // one, and (b) the cycle after a transfer-engine command that did not
+    // make the engine busy (w.release, td.release: one cycle in X). (b) is a
+    // latent race of RCTX_SWITCH=2, not of the matrix unit: a context whose
+    // instruction waited only for such a command in X gave way and was
+    // parked with no wake to come (stall_txf without txf_busy ever rising).
+    // t39_slice +allroles hangs on it once the matrix timing moves; the R41
+    // elaboration misses it by cycle alignment. Under MTX_PIPE only, so the
+    // parameter-0 core stays cycle-identical.
+    reg  txf_cmd_q;
     wire eng_freed = (RCTX_SWITCH >= 2) && ((mtx_busy_q && !mtx_busy) || (txf_busy_q && !txf_busy)
-                                            || mtxp_pend_freed);
+                                            || mtxp_pend_freed
+                                            || ((MTX_PIPE != 0) && txf_cmd_q && !txf_busy));
     always @(posedge clk) begin
         mtx_busy_q <= rst_n && mtx_busy;
         txf_busy_q <= rst_n && txf_busy;
+        txf_cmd_q  <= rst_n && (txf_is_cfg || txf_is_xfr);
     end
     // A parked context wakes on a writeback to one of its registers (every
     // register write passes through W) or an accumulator's completion.

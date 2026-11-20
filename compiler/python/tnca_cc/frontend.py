@@ -818,6 +818,7 @@ class TTIRImporter:
         carried = []
         carried_lanes = {}      # result index -> (address kind, _LaneTerm)
         sep_carries = {}        # result index -> (carried scalar, Sep2D of the carry)
+        affine_carries = {}     # result index -> (carried scalar, Affine2D of the carry)
         scalar_shares, shared_scalars = {}, {}
         pointer_tiles = set()
         mask_tiles = set()
@@ -850,6 +851,22 @@ class TTIRImporter:
                     for dest in (block.get_argument(i + 1), result):
                         self._ptr2d[dest.id()] = (name, pelem, sep)
                     sep_carries[i] = (delta, sep, share)
+                    carried.append(delta)
+                    continue
+                if (self.index_opt and isinstance(offset, Affine2D)
+                        and self._uniform_pointer_advance(block, body, i)):
+                    # The loop adds the same element count to every row and
+                    # lane (a GEMM template's `A += BLOCK_K * stride`): the
+                    # index stays affine, and what the loop has added so far
+                    # is ONE scalar, a runtime term of it. The tile is then
+                    # loaded as before the loop -- a transfer through a
+                    # TensorMap -- where the index tile below was sixteen
+                    # rows in scratch, gathered and rewritten every iteration.
+                    delta = self._copy_value(self.b.const(0))
+                    aff = offset.plus(Affine2D(dynamic=[(delta, 1)]))
+                    for dest in (block.get_argument(i + 1), op.get_result(i)):
+                        self._ptr2d[dest.id()] = (name, pelem, aff)
+                    affine_carries[i] = (delta, aff)
                     carried.append(delta)
                     continue
                 val = self._materialise(self._offset_row(offset), shape[0], shape[1], 'i32')
@@ -977,6 +994,11 @@ class TTIRImporter:
                         yielded_shares.add(share)
                         values[i] = self._copy_value(
                             self._sep_advance(self._ptr2d[src.id()][2], delta, carried_sep))
+                        continue
+                    if i in affine_carries:
+                        delta, carried_aff = affine_carries[i]
+                        values[i] = self._copy_value(
+                            self._affine_advance(self._ptr2d[src.id()][2], delta, carried_aff))
                         continue
                     held = self._tiles.get(src.id())
                     if self.index_opt and isinstance(dst, Tile) and held is not None \
@@ -2171,6 +2193,33 @@ class TTIRImporter:
                 self._value(op.get_operand(0)), self._value(op.get_operand(1)),
                 signed, remainder, divisor_const)
             return
+        if self.index_opt and isinstance(rshape, int) and relem == 'i32' \
+                and divisor_const is not None and divisor_const > 2 \
+                and divisor_const & (divisor_const - 1):
+            # (A power of two stays two vector instructions below: in scalar
+            # registers its sign handling is a longer dependent chain, which a
+            # latency-bound softmax row measured as +25 %.)
+            ua = self._uniform_scalar(op.get_operand(0))
+            if ua is not None:
+                # Every lane holds the same value (Inductor's `xindex // n`,
+                # `xindex % n` with xindex the program id: which row and
+                # which column of a reduction this program is). Divided once,
+                # in scalar registers, by the reciprocal multiply a scalar
+                # divide by a constant already uses -- the lane-wise
+                # restoring loop below is 32 iterations of vector work per
+                # divide, in every program, whenever n is not a power of two.
+                if signed:
+                    ua = self.b.sbini('ashr', self.b.sbini('shl', ua, 32), 32)
+                else:
+                    ua = self.b.sbini('lshr', self.b.sbini('shl', ua, 32), 32)
+                rid = op.get_result(0).id()
+                sc = self._scalar_divide(ua, self._const_scalar(divisor_const), signed,
+                                         remainder, divisor_const)
+                self._uscalar[rid] = sc
+                self._offsets[rid] = ('uniform', rid)
+                self._v[rid] = self.b.splat(sc, dtype=relem)
+                return
+
         def divide(xs, elem):
             if elem not in ('i32', 'i8', 'i16'):
                 raise Unsupported(f'integer vector division on {elem}')
@@ -2186,6 +2235,25 @@ class TTIRImporter:
                 result = (self.b.vbin('and', a, self.b.vmovi(divisor_const-1))
                           if remainder else self.b.vbin('lshr', a,
                               self.b.vmovi(divisor_const.bit_length()-1)))
+                return (self.b.vselect(aneg, self.b.vbin('sub', zero, result), result)
+                        if signed else result)
+            if (self.index_opt and elem == 'i32' and divisor_const is not None
+                    and 2 < divisor_const < (1 << 31)):
+                # Any other constant: the unsigned quotient by a reciprocal
+                # multiply (Granlund and Montgomery, N = 32; exact for every
+                # 32-bit magnitude), as _scalar_udiv_const does in scalar
+                # registers -- four vector instructions where the restoring
+                # loop below is 32 iterations of thirteen.
+                d = divisor_const
+                l = (d - 1).bit_length()
+                m = ((1 << 32) * ((1 << l) - d)) // d + 1
+                t1 = self.b.vbin('mulhu', a, self.b.vmovi(m), dtype='i32')
+                t = self.b.vbin('add', t1, self.b.vbin(
+                    'lshr', self.b.vbin('sub', a, t1, dtype='i32'), one, dtype='i32'), dtype='i32')
+                result = self.b.vbin('lshr', t, self.b.vmovi(l - 1), dtype='i32') if l > 1 else t
+                if remainder:
+                    result = self.b.vbin('sub', a, self.b.vbin(
+                        'mul', result, self.b.vmovi(d), dtype='i32'), dtype='i32')
                 return (self.b.vselect(aneg, self.b.vbin('sub', zero, result), result)
                         if signed else result)
             q, rem = self.b.vmovi(0), self.b.vmovi(0)
@@ -3362,6 +3430,47 @@ class TTIRImporter:
             return delta if step == 0 else self.b.sbini('add', delta, step)
         return self.b.sbin('add', delta, step)
 
+    def _uniform_pointer_advance(self, block, body, i):
+        """True when carry `i` of a loop, a 2-D pointer, is yielded as the
+        carried pointer plus an element count that is the same in every row
+        and lane and is already known before the loop (a constant tile or a
+        scalar): `ptr = ptr + K`. Decided from the loop's text before any of
+        it is lowered, so a loop that advances a pointer any other way keeps
+        the index-tile carry."""
+        arg = block.get_argument(i + 1).id()
+        yielded = [x for x in body if x.get_name() == 'scf.yield']
+        if len(yielded) != 1:
+            return False
+        want = yielded[0].get_operand(i).id()
+        for inner in body:
+            if inner.get_name() != 'tt.addptr' or inner.get_result(0).id() != want:
+                continue
+            if inner.get_operand(0).id() != arg:
+                return False
+            step = self._affine_of(inner.get_operand(1))
+            return (isinstance(step, Affine2D) and step.row_stride == 0
+                    and step.col_stride == 0 and isinstance(step.const, int))
+        return False
+
+    def _affine_advance(self, yielded, delta, carried):
+        """The carried scalar after one iteration: the yielded index minus
+        the carried one, which _uniform_pointer_advance found to be a scalar."""
+        if (not isinstance(yielded, Affine2D) or yielded.row_stride != carried.row_stride
+                or yielded.col_stride != carried.col_stride
+                or not isinstance(yielded.const, int) or not isinstance(carried.const, int)
+                or len(yielded.dynamic) < len(carried.dynamic)
+                or any(a[0] is not b[0] or a[1] != b[1]
+                       for a, b in zip(yielded.dynamic, carried.dynamic))):
+            raise Unsupported('a carried 2-D pointer advanced by a per-row or per-lane amount',
+                              remedy='advance it by a scalar')
+        out = delta
+        step = yielded.const - carried.const
+        if step:
+            out = self.b.sbini('add', out, step)
+        for v, k in yielded.dynamic[len(carried.dynamic):]:
+            out = self.b.sbin('add', out, v if k == 1 else self.b.sbini('mul', v, k))
+        return out
+
     def _try_affine(self, op, kind):
         """Track an integer operation on a 2-D index. True if handled."""
         shape, elem = _parse_type(str(op.get_result(0).get_type()))
@@ -4506,6 +4615,12 @@ class TTIRImporter:
                 pair.append(fragment)
             yield tuple(pair)
 
+    # Rows of a binary32 dot advanced together (_dot_f32): enough that a
+    # row's next FMA issues after its previous one has left the FP unit
+    # (three instructions a row and K step), few enough that the rows in
+    # flight and their broadcast lanes stay a handful of registers.
+    _F32_DOT_ROWS = 4
+
     def _dot_f32(self, op, a, b):
         """Full binary32 dot through vector FMAs, with no FP16 narrowing.
 
@@ -4527,16 +4642,82 @@ class TTIRImporter:
         else:
             get_c = self._row_getter(cin, a.rows, 'f32')
 
-        def row(r):
-            av = get_a(r)
-            result = get_c(r)
+        # Each row's K FMAs are a dependent chain. A row at a time, every
+        # FMA waited for the one before it (the core issues in order and a
+        # reader of a register being written waits at issue). Rows are
+        # independent, so _F32_DOT_ROWS of them advance together, one K
+        # step at a time: the same FMAs on the same operands in the same
+        # order within each row -- the result bits do not change -- with
+        # the other rows' work between two links of a chain.
+        group = self._F32_DOT_ROWS
+        done = {}
+
+        def rows_from(first):
+            rs = range(first, min(first + group, a.rows))
+            avs = [get_a(r) for r in rs]
+            accs = [get_c(r) for r in rs]
             for k in range(a.cols):
-                lane = self.b.splat(self.b.vextract(av, k), dtype='f32')
-                result = self.b.vfma(lane, get_b(k), result, dtype='f32')
-            return result
+                bk = get_b(k)
+                # A[r][k] in every lane: one v.permute through an index
+                # vector of k's, shared by the rows of the group (it was an
+                # extract to a scalar register and a splat back, a row).
+                index = self.b.vmovi(k)
+                lanes = [self.b.vshuffle('permute', av, index, dtype='f32') for av in avs]
+                accs = [self.b.vfma(lane, bk, acc, dtype='f32')
+                        for lane, acc in zip(lanes, accs)]
+            return rs, accs
+
+        folded = self._f32_dot_into(op, a, b) if self.index_opt else None
+        if folded is not None:
+            # `x + tl.dot(a, b, 0)` with x a carried accumulator (a GEMM
+            # template's `acc += tl.dot(a, b)`): each row of the dot is
+            # added to x's row and written back where it came from. The
+            # same dot and the same add -- the dot used to go to an
+            # accumulator of its own first, sixteen rows written and read
+            # back, and the sum was then copied into x by the yield.
+            add, k, x = folded
+            for first in range(0, a.rows, group):
+                rs, accs = rows_from(first)
+                for r, dot in zip(rs, accs):
+                    at = self.b.const(r)
+                    held = self.b.acc_read(x.handle, at)
+                    pair = (held, dot) if k == 1 else (dot, held)
+                    self.b.acc_write(x.handle, at, self.b.vbin('add', *pair, dtype='f32'))
+            tile = Tile('accumulator', x.handle, a.rows, b.cols, 'f32')
+            self._fused_add[add.get_result(0).id()] = tile
+            self._tiles[op.get_result(0).id()] = tile
+            return
+
+        def row(r):
+            if r not in done:
+                done.update(zip(*rows_from(r - r % group)))
+            return done.pop(r)
 
         self._tiles[op.get_result(0).id()] = self._materialise(
             row, a.rows, b.cols, 'f32')
+
+    def _f32_dot_into(self, op, a, b):
+        """(the add, the dot's operand index in it, x) when this binary32
+        dot into zero is read only by `x + dot` with x an accumulator tile
+        nothing else reads; else None. The conditions of _fuse_dot_add."""
+        if not self._is_zero_tensor(op.get_operand(2)):
+            return None
+        value_users = getattr(op, 'value_users', None)
+        users = (value_users(self, op.get_result(0)) if value_users else
+                 self._value_users.get(op.get_result(0).id(), []))
+        if len(users) != 1 or users[0][0].get_name() != 'arith.addf':
+            return None
+        add, k = users[0]
+        other = add.get_operand(1 - k)
+        x = self._tiles.get(other.id())
+        if x is None or x.kind != 'accumulator' or (x.rows, x.cols) != (a.rows, b.cols) \
+                or x.store != 'f32':
+            return None
+        other_users = (value_users(self, other) if value_users else
+                       self._value_users.get(other.id(), []))
+        if len(other_users) != 1:
+            return None
+        return add, k, x
 
     def _as_fragment(self, tile, what):
         cache = getattr(self, '_register_mma_fragment_cache', None)

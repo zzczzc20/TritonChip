@@ -871,6 +871,10 @@ class CodeGen:
         v, amount = op.operands
         out = op.results[0]
         self._alloc(out)
+        if op.attrs['op'] == 'permute':
+            # `v.permute Vd, Va, Vb` (ISA sec 8.6): lane i from lane Vb[i].
+            self._emit('v.permute', f"v{out.reg}", f"v{v.reg}", f"v{amount.reg}")
+            return
         self._emit(f"v.shuffle.{op.attrs['op']}", f"v{out.reg}",
                     f"v{v.reg}", f"s{amount.reg}")
 

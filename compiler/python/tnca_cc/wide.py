@@ -125,6 +125,8 @@ def lower(imp, op):
     shape, elem = _parse_type(str(dst.get_type()))
     count = _count(shape, vlen)
     wide_result = count is not None and elem == 'i64'
+    if _narrow_compare(imp, op, name, operands, dst, shape, count, wide_result):
+        return True
     has_wide = any(x.id() in imp._wide for x in operands)
     if not wide_result and not has_wide:
         return False
@@ -259,6 +261,91 @@ def lower(imp, op):
             raise Unsupported(f'64-bit tensor operation {name}')
         output(lambda i: b.sbin(kinds[name], lane(operands[0],i), lane(operands[1],i)), count)
     return True
+
+
+# ---------------------------------------------------------------------------
+# A widening that only compares stay 32 bits wide
+# ---------------------------------------------------------------------------
+
+# Predicates whose answer on two sign-extended 32-bit values is the answer
+# of the same signed compare on the 32-bit values themselves.
+_NARROW_CC = ('eq', 'ne', 'lt', 'le', 'gt', 'ge')
+
+
+def _real_id(value):
+    """The TTIR id of a value, through a row view of it (_RowValue)."""
+    while isinstance(value, _RowValue):
+        value = value.value
+    return value.id()
+
+
+def _narrow_constant(imp, value):
+    """A lane-uniform integer constant that fits int32, else None."""
+    k = imp._const.get(_real_id(value))
+    if isinstance(k, bool) or not isinstance(k, int):
+        return None
+    return k if -(1 << 31) <= k < (1 << 31) else None
+
+
+def _compares_narrow(imp, user, k, src_elem, signed):
+    """True when `user`, reading a widened value as operand `k`, is a
+    compare the 32-bit lanes decide: against an int32 constant, with a
+    signed predicate."""
+    from .frontend import _CMP_I
+    if user.get_name() != 'arith.cmpi' or k not in (0, 1):
+        return False
+    if _CMP_I.get(user.get_int_attr('predicate')) not in _NARROW_CC:
+        return False
+    other = _narrow_constant(imp, user.get_operand(1 - k))
+    if other is None:
+        return False
+    # sext(i32) against an int32 constant: the signed 32-bit compare. A
+    # mask widened without sign is 0 or 1 in a 32-bit lane, and any
+    # constant compares with those as it does in 64 bits.
+    return (signed and src_elem == 'i32') or (not signed and src_elem == 'i1')
+
+
+def _narrow_compare(imp, op, name, operands, dst, shape, count, wide_result):
+    """`x.to(int64) <cmp> constant` without the 64-bit block.
+
+    Inductor writes a mask as index arithmetic in 32 bits, a widening and a
+    compare with a constant (a causal attention mask is
+    `(col - row).to(int64) <= 0`; "any finite score" is
+    `(~(x == -inf)).to(int64) != 0`). Held as a 64-bit block, the widening
+    is an extract, two shifts and two inserts a lane and the compare is two
+    extracts, a shift, an or, a scalar compare and an insert a lane -- some
+    two hundred instructions for a 16-lane mask. A widened value that
+    NOTHING but such compares reads is never formed: the compare is one
+    32-bit vector compare of the unwidened lanes, which is the same
+    predicate exactly (sign extension preserves signed order, and the
+    constant is inside int32).
+    """
+    from .frontend import _parse_type, _CMP_I
+    narrow = imp.__dict__.setdefault('_narrow64', {})
+    if name in ('arith.extsi', 'arith.extui') and wide_result:
+        src = operands[0]
+        sdims, src_elem = _parse_type(str(src.get_type()))
+        if src.id() in imp._wide or _count(sdims, imp.target.vlen) != count:
+            return False
+        signed = name == 'arith.extsi'
+        users = getattr(imp, '_value_users', {}).get(_real_id(dst), [])
+        if not users or not all(_compares_narrow(imp, u, k, src_elem, signed) for u, k in users):
+            return False
+        narrow[dst.id()] = _vector(imp, src, src_elem)
+        return True
+    if name == 'arith.cmpi' and count is not None:
+        held = [narrow.get(x.id()) for x in operands]
+        if held[0] is None and held[1] is None:
+            return False
+        sides = []
+        for x, v in zip(operands, held):
+            if v is None:
+                v = imp.b.vmovi(_narrow_constant(imp, x))
+            sides.append(v)
+        cc = _CMP_I[op.get_int_attr('predicate')]
+        _publish(imp, dst, imp.b.vcmp(cc, sides[0], sides[1]), shape, 'i1')
+        return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -891,6 +978,8 @@ def _lower_rows(imp, op):
     values = ([op.get_operand(i) for i in range(op.get_num_operands())] +
               [op.get_result(i) for i in range(op.get_num_results())])
     wide_tiles = getattr(imp, '_wide_tiles', {})
+    narrow_tiles = imp.__dict__.setdefault('_narrow_tiles', {})
+    imp.__dict__.setdefault('_narrow64', {})
     shapes = [(v, *_parse_type(str(v.get_type()))) for v in values]
     if not any((isinstance(shape, tuple) and shape[0] > 1 and elem == 'i64') or
                v.id() in wide_tiles for v, shape, elem in shapes):
@@ -943,7 +1032,9 @@ def _lower_rows(imp, op):
                         Tile('lazy', lambda r, index=index: index, 1, shape[1], 'i32'))
                 if v.id() in imp._ptr_base:
                     imp._ptr_base[view.id()] = imp._ptr_base[v.id()]
-                if v.id() in wide_tiles:
+                if v.id() in narrow_tiles:
+                    imp._narrow64[view.id()] = narrow_tiles[v.id()][use_row]
+                elif v.id() in wide_tiles:
                     imp._wide[view.id()] = wide_tiles[v.id()][use_row]
                 elif v.id() in getattr(imp, '_affine64', {}):
                     imp._wide[view.id()] = _affine64_row(imp, imp._affine64[v.id()], use_row, shape[1])
@@ -970,7 +1061,9 @@ def _lower_rows(imp, op):
             for i in range(op.get_num_results()):
                 dst = view_op.get_result(i)
                 shape, elem = _parse_type(str(dst.get_type()))
-                if elem == 'i64':
+                if elem == 'i64' and dst.id() in imp._narrow64:
+                    outputs[i].append(('narrow', imp._narrow64[dst.id()]))
+                elif elem == 'i64':
                     outputs[i].append(imp._wide[dst.id()])
                 else:
                     outputs[i].append(imp._row_getter(dst, 1, elem)(0))
@@ -979,7 +1072,9 @@ def _lower_rows(imp, op):
     for i, result in enumerate(outputs):
         dst = op.get_result(i)
         shape, elem = _parse_type(str(dst.get_type()))
-        if elem == 'i64':
+        if elem == 'i64' and result and isinstance(result[0][0], str):
+            narrow_tiles[dst.id()] = [v for _tag, v in result]
+        elif elem == 'i64':
             wide_tiles[dst.id()] = result
         else:
             imp._tiles[dst.id()] = Tile('rows', tuple(result), rows, shape[1], elem)

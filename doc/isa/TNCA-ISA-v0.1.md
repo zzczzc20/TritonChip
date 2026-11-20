@@ -951,6 +951,72 @@ fixed-point DSP cascade at no LUT cost; four E5M2 (or mixed FP8) products need
 a 66-bit (52-bit) field and an alignment network that costs more than the lane
 it rides on, so those formats, like the 16-bit ones, are taken two per cycle.
 
+### 9C.5 `m.mma.f32.async` (binary32 fragments; R42, proposed 2026-11-20)
+
+> **Status: implemented behind a capability, not yet approved by the author.**
+> RTL (`tnca_matrix` `MAC_F32`, default off), assembler, disassembler, schema,
+> compiler lowering and the directed test `t42_mmaf32` exist on branch
+> `R42-fp32`; the only profile with the capability is `core-r42-fp32`, and no
+> image has been built from it.
+
+| `func` | Mnemonic | Fields | `mod` |
+|---:|---|---|---|
+| `0x03` | `m.mma.f32.async Ad, Va, Vb, Sc` | as `m.mma.async` | `[4]` source-free; `[3:0]` and `[9:5]` reserved, zero |
+
+```
+C[16x16] <- C[16x16] + A[16x16] . B[16x16]        A, B, C binary32
+```
+
+**Semantics.** §9C.1 with the identity in place of the widening:
+
+```
+C[k+1] = RNE_f32( A[m][k] * B[k][n] + C[k] )      k = 0 .. 15, in increasing order
+```
+
+one binary32 fused multiply-add per accumulation step, the product never
+rounded on its own. Subnormals are operated on exactly (no flush-to-zero);
+NaN, infinities and signed zeros follow the binary32 FMA of §9.3 (`vf.fma`).
+The result is therefore bit-identical to the vector unit's
+
+```
+for k in 0..15:  C[m] = vf.fma(splat(A[m][k]), B[k], C[m])
+```
+
+which is what a compiler without this opcode emits for an fp32 `tl.dot`. The
+opcode changes where that sum is computed, not one bit of it. The reference is
+`tools/model/fp32.py` `mma_ref` with the identity widening.
+
+**Fragment layout.** §9C.2 with `E = 4`: element `(m, k)` at byte
+`(m*16 + k)*4`, so a fragment is sixteen registers and each register is one
+row — `A[m][.]` is `Va + m`, `B[k][.]` is `Vb + k`, lane `i` of a register is
+column `i`. This is what `t.ld.async.w` writes for a 16×16 tile, and it is also
+sixteen consecutive registers of vector-unit results with no repacking: a
+binary32 row computed by the vector unit is already in fragment layout.
+
+**One K step.** K is 16. A 16×32 binary32 A fragment and its 32×16 B would be
+64 registers, a whole Role Context's file, so the K32 and K64 codes of
+`m.mma.async` do not exist here: `mod[1:0]` is reserved and must be zero. A
+deeper product is consecutive commands into the same accumulator, in
+increasing k, which is the same sum (§9C.1 has no state between steps other
+than C).
+
+`mod[4]`, the two completion events, the token rules (`Sc = S63` with `mod[4]`
+raises `ILLEGAL_INSTRUCTION`) and §9C.3 are those of `m.mma.async`.
+
+Gated by `CAPABILITY0.MATRIX_F32` (bit 13); without it the encoding raises
+`ILLEGAL_INSTRUCTION`, as every reserved `MATRIX` function does.
+
+**Why a new function and not a dtype code.** `mod[3:2]` of `m.mma.async` is
+full (FP16, BF16, E5M2, E4M3). A binary32 fragment also has a different K
+range, so it is not "the same command with a fifth format".
+
+**Cost in the reference implementation.** The MAC lanes and the accumulator
+file are unchanged: a binary32 operand goes through the lane's FP32 mode,
+which the accumulator row operations (`a.mul.row`, `a.fma.row`) already use.
+What is added is operand selection (a 32-bit lane instead of a 16-bit or 8-bit
+element), the B latch's third source, and a 16-register A buffer where
+`m.mma.async` buffers 8.
+
 ## 9D. `major = 0x30` — Tensor descriptor and RF window
 
 ### 9D.1 Two objects, deliberately separate (§7.1)
@@ -1236,6 +1302,7 @@ turn into a silent hang.
 | 10 | `CACHE_HINTS` | Stage 4 |
 | 11 | `MATRIX_FP8` | native `m.mma` with OCP FP8 E5M2 **and** E4M3 inputs |
 | 12 | `MATRIX_DP` | native `m.mma.dp.async` (§9C.4; approved 2026-10-29) |
+| 13 | `MATRIX_F32` | native `m.mma.f32.async` (§9C.5; R42, proposed) |
 
 A capability bit being clear means the corresponding encodings raise
 `ILLEGAL_INSTRUCTION`. It never means "works, but slowly, by some other route" —

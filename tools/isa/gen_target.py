@@ -113,6 +113,9 @@ def build_target(core, top, isa, name, description, profile=None):
         # Emitted only where true, so every older target file is unchanged;
         # TargetInfo.has() reads an absent key as False.
         **({'matrix_dp': True} if int(core.get('MAC_DP', 0)) else {}),
+        # ISA sec 9C.5 (R42): m.mma.f32.async, CAPABILITY0 bit 13. Emitted only
+        # where true, as matrix_dp is.
+        **({'matrix_f32': True} if int(core.get('MAC_F32', 0)) else {}),
         'mbarrier': True,
         'packed_f16': False,
         'cache_hints': False,

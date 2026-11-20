@@ -177,7 +177,11 @@ module tnca_core #(
     // sec 9C.4) executes, CAPABILITY0.MATRIX_DP set; 0 = the machine as before
     // (the encoding raises ILLEGAL_INSTRUCTION). MAC_CUTS: the lane's register cuts.
     parameter MAC_DP         = 0,
-    parameter MAC_CUTS       = 29
+    parameter MAC_CUTS       = 29,
+    // R42: 1 = the matrix engine executes m.mma.f32.async (ISA sec 9C.5,
+    // binary32 fragments through the same MACs), CAPABILITY0.MATRIX_F32 set;
+    // 0 = the machine as before (the encoding raises ILLEGAL_INSTRUCTION).
+    parameter MAC_F32        = 0
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -591,6 +595,9 @@ module tnca_core #(
     // ISA sec 9C.4: m.mma.dp.async is legal only with CAPABILITY0.MATRIX_DP.
     wire mmadp_unsupported = (dec_major == `TNCA_MAJ_MATRIX) &&
                              (dec_func  == `TNCA_M_MMADP) && (MAC_DP == 0);
+    // ISA sec 9C.5: m.mma.f32.async is legal only with CAPABILITY0.MATRIX_F32.
+    wire mmaf32_unsupported = (dec_major == `TNCA_MAJ_MATRIX) &&
+                              (dec_func  == `TNCA_M_MMAF32) && (MAC_F32 == 0);
 
     // Check the encoded logical barrier before RSLICE inserts context bits.
     // Otherwise an oversized local index silently names a different slice.
@@ -601,7 +608,7 @@ module tnca_core #(
            (dec_func == `TNCA_MB_INVAL)) && (dec_ra_idx >= d_bar_count)));
 
     wire d_illegal = dec_illegal | vreg_oob | sfu_unsupported
-                   | wrspecial_unsupported | atomic_unsupported | mmadp_unsupported | d_bar_index_oob;
+                   | wrspecial_unsupported | atomic_unsupported | mmadp_unsupported | mmaf32_unsupported | d_bar_index_oob;
 
     //==========================================================================
     // Register files (read in X)
@@ -1344,7 +1351,8 @@ module tnca_core #(
     reg [5:0] r_sb2_q, r_sb3_q, r_sb4_q, r_sb5_q;
     reg       r_mma_sf_q, r_txfer_q;
     wire d_mma_sf = (dec_major == `TNCA_MAJ_MATRIX) &&
-                    (dec_func == `TNCA_M_MMA || dec_func == `TNCA_M_MMADP)
+                    (dec_func == `TNCA_M_MMA || dec_func == `TNCA_M_MMADP ||
+                     (MAC_F32 != 0 && dec_func == `TNCA_M_MMAF32))
                  && dec_mod[4];
     always @(posedge clk) begin
         if (!stall_front) begin
@@ -1579,7 +1587,8 @@ module tnca_core #(
          ((x_func == `TNCA_MB_TEST) || (x_func == `TNCA_MB_WAIT)) &&
          !token_bar_valid(sa_data[15:0], x_bar_sl, x_sl, slice_k)) ||
         ((x_major == `TNCA_MAJ_MATRIX) &&
-         ((x_func == `TNCA_M_MMA) || (x_func == `TNCA_M_MMADP)) &&
+         ((x_func == `TNCA_M_MMA) || (x_func == `TNCA_M_MMADP) ||
+          (MAC_F32 != 0 && x_func == `TNCA_M_MMAF32)) &&
          (!token_bar_valid(sc_data[15:0], x_bar_sl, x_sl, slice_k) ||
           (x_mod[4] && !token_bar_valid(sb2_raw[15:0], x_bar_sl, x_sl, slice_k)))) ||
         ((x_major == `TNCA_MAJ_TXFER) &&
@@ -1621,7 +1630,8 @@ module tnca_core #(
 
     wire mtx_cmd_valid = x_is_mtx && !x_is_avread;
     // m.mma.async and m.mma.dp.async (ISA sec 9C, 9C.4): the same command shape.
-    wire x_is_mma_any = (x_func == `TNCA_M_MMA) || (x_func == `TNCA_M_MMADP);
+    wire x_is_mma_any = (x_func == `TNCA_M_MMA) || (x_func == `TNCA_M_MMADP) ||
+                        (MAC_F32 != 0 && x_func == `TNCA_M_MMAF32);
 
     wire [1:0] mtx_cmd_op =
         ((x_major == `TNCA_MAJ_MATRIX) && (x_func == `TNCA_M_ZERO)) ? 2'd0 :
@@ -1643,7 +1653,7 @@ module tnca_core #(
     tnca_matrix #(
         .VLEN(VLEN), .ELEN(ELEN), .ACC_N(ACC_N), .ACC_W(ACC_W),
         .ROWS(ACC_ROWS), .ROW_W(ACC_ROW_W), .BAR_W(BAR_W), .FMA_LAT(FP_LAT), .FMA_IMPL(FMA_IMPL),
-        .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .ABUF(MTX_ABUF)
+        .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .ABUF(MTX_ABUF), .MAC_F32(MAC_F32)
     ) u_mtx (
         .clk(clk), .rst_n(rst_n), .flush(launch_valid),
         .cmd_valid(mtx_cmd_valid), .cmd_op(mtx_cmd_op),
@@ -1651,6 +1661,7 @@ module tnca_core #(
         .cmd_va(x_va_idx), .cmd_vb(x_vb_idx),
         .cmd_k(x_mod[1:0]), .cmd_dt(x_mod[3:2]),
         .cmd_dp((x_major == `TNCA_MAJ_MATRIX) && (x_func == `TNCA_M_MMADP)), .cmd_bdt(x_mod[6:5]),
+        .cmd_f32((x_major == `TNCA_MAJ_MATRIX) && (x_func == `TNCA_M_MMAF32)),
         .cmd_bar_en(mtx_bar_en), .cmd_bar(mtx_bar),
         // ISA sec 9C mod[4]: also signal source-free, on the barrier whose
         // token sits in Sc+1.
@@ -2222,6 +2233,7 @@ module tnca_core #(
                                       | (64'd1 << `TNCA_CAP_MATRIX_BF16)
                                       | (64'd1 << `TNCA_CAP_MATRIX_FP8)
                                       | (MAC_DP ? (64'd1 << `TNCA_CAP_MATRIX_DP) : 64'd0)
+                                      | (MAC_F32 ? (64'd1 << `TNCA_CAP_MATRIX_F32) : 64'd0)
                                       // The transfer engine decodes and
                                       // executes TXFER unconditionally, so the
                                       // bit must be set: ISA sec 11 says a
@@ -3605,7 +3617,7 @@ module tnca_core #(
                          $time, d_whit, r_whit);
             // R41 F02: the registered indices and opcode tests equal what R
             // would compute from its own fields.
-            if (r_valid && ((r_mma_sf !== ((r_major == `TNCA_MAJ_MATRIX) && (r_func == `TNCA_M_MMA || r_func == `TNCA_M_MMADP) && r_mod[4]))
+            if (r_valid && ((r_mma_sf !== ((r_major == `TNCA_MAJ_MATRIX) && (r_func == `TNCA_M_MMA || r_func == `TNCA_M_MMADP || (MAC_F32 != 0 && r_func == `TNCA_M_MMAF32)) && r_mod[4]))
                             || (r_txfer_q !== (r_major == `TNCA_MAJ_TXFER))
                             || (r_sb2_idx !== (r_mma_sf ? (r_sc_idx + 6'd1) : (r_sb_idx + 6'd1)))
                             || (r_sb3_idx !== r_sb_idx + 6'd2) || (r_sb4_idx !== r_sb_idx + 6'd3)

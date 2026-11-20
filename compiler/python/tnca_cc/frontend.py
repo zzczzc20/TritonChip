@@ -4355,7 +4355,8 @@ class TTIRImporter:
         """
         a = self._tile_of(op.get_operand(0))
         b = self._tile_of(op.get_operand(1))
-        if a.dtype == b.dtype == 'f32':
+        f32_native = a.dtype == b.dtype == 'f32' and self._dot_f32_native(a, b)
+        if a.dtype == b.dtype == 'f32' and not f32_native:
             self._dot_f32(op, a, b)
             return
         if a.dtype != b.dtype and a.dtype in _FP8_FORMATS and b.dtype in _FP8_FORMATS:
@@ -4390,7 +4391,7 @@ class TTIRImporter:
             raise Unsupported(
                 f"a tl.dot of {a.dtype} with {b.dtype}: ISA sec 9C's "
                 f"mod[3:2] names ONE input format for both operands")
-        if a.dtype not in ('f16', 'bf16') and a.dtype not in _FP8_FORMATS:
+        if a.dtype not in ('f16', 'bf16') and a.dtype not in _FP8_FORMATS and not f32_native:
             raise Unsupported(
                 f"a tl.dot with {a.dtype} inputs",
                 because="ISA sec 9C's mod[3:2] names FP16, BF16 and the two "
@@ -4400,7 +4401,11 @@ class TTIRImporter:
                        'an integer input and a choice for a float one',
                 source='doc/isa/TNCA-ISA-v0.1.md sec 9C')
 
-        fused = self._fuse_dot_add(op, a, b) if self.index_opt else None
+        # A binary32 dot is not folded into `acc + tl.dot`: the vector path
+        # this replaces rounded the block's sum from zero and then added it,
+        # and m.mma.f32.async (ISA sec 9C.5) reproduces that bit for bit only
+        # into a zeroed accumulator.
+        fused = self._fuse_dot_add(op, a, b) if self.index_opt and not f32_native else None
         if fused is not None:
             for left, right in fragments:
                 self._mma_into(fused.handle, left, right)
@@ -4506,10 +4511,45 @@ class TTIRImporter:
                 pair.append(fragment)
             yield tuple(pair)
 
+    def _dot_f32_native(self, a, b):
+        """Whether this binary32 dot is one m.mma.f32.async (ISA sec 9C.5).
+
+        The command is a whole 16x16x16 step over binary32 fragments, one row
+        a register, and exists where the target has CAPABILITY0.MATRIX_F32.
+        Its sum is the vector FMA chain of `_dot_f32` bit for bit, so the
+        choice is the capability and the shape, and nothing about the values.
+        """
+        v = self.target.vlen
+        return (self.target.has('matrix_f32')
+                and a.rows == a.cols == b.rows == b.cols == v
+                and a.store == b.store == 'f32'
+                and a.kind in self._F32_FRAGMENT_KINDS and b.kind in self._F32_FRAGMENT_KINDS)
+
+    _F32_FRAGMENT_KINDS = ('window', 'rows', 'lazy', 'accumulator', 'spilled')
+
+    def _f32_fragment(self, tile):
+        """A binary32 tile as the fragment m.mma.f32.async reads.
+
+        ISA sec 9C.5: sixteen consecutive registers, one row each. A tile the
+        transfer engine loaded is that already. Any other is sixteen vector
+        registers that are each a row, so the repack is a move into the
+        window -- no trip through memory, because there is nothing to pack.
+        """
+        if tile.kind == 'window':
+            return tile
+        get = self._tile_row_getter(tile)
+        window = self._window_for(tile.rows, tile.cols, 'f32')
+        self.b.comment(f"a {tile.rows}x{tile.cols} f32 tile as a matrix fragment: "
+                       f"one row a register (ISA sec 9C.5)")
+        for r in range(tile.rows):
+            self.b.window_put(window, r, get(r))
+        return Tile('window', window, tile.rows, tile.cols, 'f32')
+
     def _dot_f32(self, op, a, b):
         """Full binary32 dot through vector FMAs, with no FP16 narrowing.
 
-        There is no FP32 MMA encoding. Broadcast each element of an A
+        Where the target has no binary32 matrix command (`_dot_f32_native`).
+        Broadcast each element of an A
         row and FMA the corresponding B row into a vector, then keep that
         result in an accumulator row. This also accepts a nonzero C tile.
         """
@@ -4551,6 +4591,9 @@ class TTIRImporter:
 
     def _as_fragment_uncached(self, tile, what):
         """This tile in the layout `m.mma.async` reads."""
+        if (tile.dtype == 'f32' and tile.store == 'f32' and self.target.has('matrix_f32')
+                and tile.kind in self._F32_FRAGMENT_KINDS):
+            return self._f32_fragment(tile)
         if tile.kind == 'row-chunks':
             getters = [self._tile_row_getter(p) for p in tile.handle]
             return self._rows_to_window(

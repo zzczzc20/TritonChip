@@ -46,6 +46,7 @@ module tb_tnca_core;
     parameter FMA_IMPL       = 0;   // R41 G2 FMA rebuild
     parameter MAC_DP         = 0;   // R41 G2 shared MAC lane + m.mma.dp.async
     parameter MAC_CUTS       = 29;
+    parameter MAC_F32        = 0;   // R42 m.mma.f32.async (ISA sec 9C.5)
     parameter HAS_TENSOR_XPOSE = 0;
 
     parameter NUM_RCTX       = 2;
@@ -113,7 +114,7 @@ module tb_tnca_core;
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
         .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_VRF_REG(MTX_VRF_REG),
-        .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS),
+        .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .MAC_F32(MAC_F32),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) dut (
         .clk(clk), .rst_n(rst_n),

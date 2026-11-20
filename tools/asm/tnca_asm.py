@@ -645,6 +645,18 @@ class Assembler:
             db = dts[1] if len(dts) > 1 else da
             return kk | (da << 2) | (sf_bit << 4) | (db << 5), ops
 
+        if sclass == 'mmaf32':
+            # ISA sec 9C.5: binary32 fragments, K16 only (".k16" may be
+            # written, and is the only K); ".sf" is mod[4]. No dtype suffix:
+            # the opcode is the format.
+            sf_bit = 0
+            for sf in sfx:
+                if sf == 'sf':
+                    sf_bit = 1
+                elif sf != 'k16':
+                    self.err(f"unknown m.mma.f32 suffix '.{sf}' (expected k16, sf)")
+            return sf_bit << 4, ops
+
         if sclass == 'txf':
             # ".b/.h/.w" element size, optional ".t" transpose
             esz, tr = 1, 0

@@ -65,7 +65,8 @@ class RegRange:
 # default K16, so a K64 FP16 fragment -- 32 registers -- was accepted into an
 # 8-register window.
 MMA_K_STEPS = {'k16': 16, 'k32': 32, 'k64': 64}
-MMA_DTYPE_BITS = {'f16': 16, 'bf16': 16, 'e5m2': 8, 'e4m3': 8}
+# 'f32' is m.mma.f32.async (ISA sec 9C.5): its own opcode, K16 only.
+MMA_DTYPE_BITS = {'f16': 16, 'bf16': 16, 'e5m2': 8, 'e4m3': 8, 'f32': 32}
 
 
 def mma_shape_of(attrs, *, m=16, n=16):

@@ -1314,7 +1314,18 @@ class CodeGen:
         # (16/32/64), and a short K is zero-padded by the transfer engine
         # to a whole K16 fragment, so a group never straddles two commands
         # and a padded group adds exactly zero.
-        if self.target.has('matrix_dp'):
+        if dtype == 'f32':
+            # ISA sec 9C.5: binary32 fragments are their own opcode, one K16
+            # step, and never the grouped one -- its sum is the sequential
+            # binary32 FMA and nothing else.
+            if op.attrs['k'] != 'k16':
+                raise Diagnostic(
+                    f"a binary32 matrix command with {op.attrs['k']}",
+                    because='m.mma.f32.async is one K16 step: a deeper binary32 '
+                            "fragment would not fit a Role Context's registers",
+                    source='doc/isa/TNCA-ISA-v0.1.md sec 9C.5')
+            mnemonic = 'm.mma.f32.async'
+        elif self.target.has('matrix_dp'):
             group = mma_dp_group(dtype, dtype)
             kstep = mma_shape_of(op.attrs)[2]
             if kstep % group:
@@ -1326,7 +1337,8 @@ class CodeGen:
             mnemonic = 'm.mma.dp.async'
         else:
             mnemonic = 'm.mma.async'
-        self._emit(f"{mnemonic}.{op.attrs['k']}.{op.attrs['dtype']}",
+        self._emit(mnemonic if dtype == 'f32' else
+                   f"{mnemonic}.{op.attrs['k']}.{op.attrs['dtype']}",
                     f"a{acc.reg}", f"v{aw.reg}", f"v{bw.reg}",
                     f"s{token.reg}")
         # sec 13.4 / ISA sec 9C.3: the matrix unit reads both fragments in

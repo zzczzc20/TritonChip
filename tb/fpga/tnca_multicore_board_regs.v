@@ -18,7 +18,7 @@ module tnca_multicore_board_regs;
  // The image's tensor-transpose option (core-vrf-sync-v5-x8 images build 2).
  parameter HAS_TENSOR_XPOSE=1,MTX_VRF_REG=0;
  // R41 G2 vector FMA implementation and shared matrix MAC lane (the image's values).
- parameter FMA_IMPL=0,MAC_DP=0,MAC_CUTS=29;
+ parameter FMA_IMPL=0,MAC_DP=0,MAC_CUTS=29, MAC_F32=0;
  // R41 G4: load/store units (with HYBRID_LSU, of its word path); 2 is the multicore default.
  parameter LSU_INFLIGHT=2;
  // R41 G2 resource sizing (tools/r40/image_geometry_tests.py sets them from an image.tcl).
@@ -73,7 +73,7 @@ module tnca_multicore_board_regs;
   .DCO_TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES),.DCO_REGISTER_WRITES(DCO_REGISTER_WRITES),
   .DCO_LOCAL_REPLICAS(DCO_LOCAL_REPLICAS),.NUCA_SHARED_DATA_READ(NUCA_SHARED_DATA_READ),.AXI_LINE_LUTRAM(AXI_LINE_LUTRAM),
   .AXI_OUT_N(AXI_OUT_N),.AXI_PIPELINED_ISSUE(AXI_PIPELINED_ISSUE),.AXI_DATA_W(AXI_DATA_W),
-  .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),.MTX_VRF_REG(MTX_VRF_REG),.FMA_IMPL(FMA_IMPL),.MAC_DP(MAC_DP),.MAC_CUTS(MAC_CUTS),.LSU_INFLIGHT(LSU_INFLIGHT),.NUM_RCTX(NUM_RCTX),.RCTX_W(RCTX_W),.PHYS_VREGS(PHYS_VREGS),.PHYS_W(PHYS_W),
+  .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),.MTX_VRF_REG(MTX_VRF_REG),.FMA_IMPL(FMA_IMPL),.MAC_DP(MAC_DP),.MAC_CUTS(MAC_CUTS), .MAC_F32(MAC_F32),.LSU_INFLIGHT(LSU_INFLIGHT),.NUM_RCTX(NUM_RCTX),.RCTX_W(RCTX_W),.PHYS_VREGS(PHYS_VREGS),.PHYS_W(PHYS_W),
   .ACC_N(ACC_N),.ACC_W(ACC_W),.BAR_N(BAR_N),.BAR_W(BAR_W),.BAR_EPOCH_W(BAR_EPOCH_W),.PHYS_ADDR_W(PHYS_ADDR_W)) dut(
 `endif
  .ap_clk(clk),.ap_rst_n(rst_n_async),

@@ -79,7 +79,14 @@ module tnca_matrix #(
     // for a vector-file read of the register holding its one A element:
     // measured, 551 cycles for an FP16 K16 command, of which the 256 MACs
     // are under half.
-    parameter ABUF     = 0
+    parameter ABUF     = 0,
+    // R42: 1 = the engine executes m.mma.f32.async (ISA sec 9C.5): both
+    // fragments binary32, one row per register (A[m][.] at va+m, B[k][.] at
+    // vb+k), one K16 step. The MACs and the accumulation are m.mma.async's
+    // (the widening of a binary32 operand is the identity); what changes is
+    // the element select, the B latch and the A buffer's depth (16).
+    // 0 = exactly as before; cmd_f32 is then never honoured.
+    parameter MAC_F32  = 0
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -95,6 +102,7 @@ module tnca_matrix #(
     input  wire [1:0]               cmd_dt,          // ISA sec 9C mod[3:2]
     input  wire                     cmd_dp,          // m.mma.dp.async (sec 9C.4)
     input  wire [1:0]               cmd_bdt,         // its B format, mod[6:5]
+    input  wire                     cmd_f32,         // m.mma.f32.async (sec 9C.5)
     input  wire                     cmd_bar_en,
     input  wire [BAR_W-1:0]         cmd_bar,
     // ISA sec 9C: the SECOND event. `free` fires when the fragments have been
@@ -158,6 +166,8 @@ module tnca_matrix #(
     reg [1:0]        r_dt;
     reg              r_dp;
     reg [1:0]        r_bdt;
+    reg              r_f32;     // MAC_F32: this command's fragments are binary32
+    wire             f32v = (MAC_F32 != 0) && r_f32;
     reg              r_bar_en;
     reg [BAR_W-1:0]  r_bar;
     reg              r_sf_en;
@@ -176,7 +186,10 @@ module tnca_matrix #(
                          (r_k == `TNCA_MMA_K32) ? 7'd32 : 7'd64;
 
     // ABUF: the A fragment, 16 x k_limit elements, in at most 8 registers.
-    reg  [VLEN*ELEN-1:0] abuf [0:7];
+    // MAC_F32: sixteen, a 16x16 binary32 fragment being one row a register.
+    localparam ABUF_N = (MAC_F32 != 0) ? 16 : 8;
+    localparam ABUF_W = (MAC_F32 != 0) ? 4 : 3;
+    reg  [VLEN*ELEN-1:0] abuf [0:ABUF_N-1];
     reg  [3:0]           la;          // the A register being read
     reg                  use_abuf;    // this command sweeps out of abuf
 
@@ -191,6 +204,7 @@ module tnca_matrix #(
         `TNCA_MMA_E5M2: r_fmt = `TNCA_FMT_E5M2;
         default:        r_fmt = `TNCA_FMT_E4M3;
         endcase
+        if (f32v) r_fmt = `TNCA_FMT_F32;     // sec 9C.5: no widening
     end
 
     // Both FP8 encodings are one byte per element; FP16 and BF16 are two.
@@ -202,7 +216,8 @@ module tnca_matrix #(
     wire g4     = dpv && (r_dt == `TNCA_MMA_E4M3) && (r_bdt == `TNCA_MMA_E4M3);
     wire [2:0] kstep = !dpv ? 3'd1 : g4 ? 3'd4 : 3'd2;
     // How many registers A takes (ABUF reads them all, when they fit).
-    wire [6:0] a_regs   = elem8 ? {2'd0, k_limit[6:2]} : {1'b0, k_limit[6:1]};
+    wire [6:0] a_regs   = f32v  ? 7'd16
+                        : elem8 ? {2'd0, k_limit[6:2]} : {1'b0, k_limit[6:1]};
 
     assign busy = (st != S_IDLE);
 
@@ -216,13 +231,20 @@ module tnca_matrix #(
     // bit `(flat%32)*16`; for a 1-byte element, at `flat/64`, bit `(flat%64)*8`.
     //==========================================================================
     wire [10:0] a_flat = mm[ROW_W-1:0] * k_limit + kk;
-    wire [7:0]  a_vreg = r_va + (elem8 ? {3'd0, a_flat[10:6]}
+    // sec 9C.5 (f32v): a 4-byte element, `flat/16` and lane `flat%16`. a_elem
+    // then names the lane as the 16-bit pair {lane, 0}, so the aligned 32-bit
+    // word select m.mma.dp already has (a_dp_v) is the element.
+    wire [7:0]  a_vreg = r_va + (f32v  ? {1'b0, a_flat[10:4]}
+                               : elem8 ? {3'd0, a_flat[10:6]}
                                        : {2'd0, a_flat[10:5]});
-    wire [5:0]  a_elem = elem8 ? a_flat[5:0] : {1'b0, a_flat[4:0]};
+    wire [5:0]  a_elem = f32v  ? {1'b0, a_flat[3:0], 1'b0}
+                       : elem8 ? a_flat[5:0] : {1'b0, a_flat[4:0]};
 
     // B[k][.] is 16 consecutive elements starting at k*16: half a vector
     // register at 16 bits per element, a quarter of one at 8.
-    wire [7:0]  b_vreg = r_vb + (elemB8 ? {3'd0, kk[6:2]} : {2'd0, kk[6:1]});
+    // sec 9C.5 (f32v): B[k][.] is the whole of register vb + k.
+    wire [7:0]  b_vreg = r_vb + (f32v   ? {1'b0, kk}
+                               : elemB8 ? {3'd0, kk[6:2]} : {2'd0, kk[6:1]});
     wire [1:0]  b_part = elemB8 ? kk[1:0] : {kk[0], 1'b0};
 
     assign vrf_addr = (st == S_LOADB) ? b_vreg
@@ -240,7 +262,7 @@ module tnca_matrix #(
     // expects a narrow value to be.
     // Under m.mma.dp a lane's word holds its G elements, one from each of G
     // consecutive B rows: 32 bits per lane.
-    localparam BW = (MAC_DP != 0) ? 32 : 16;
+    localparam BW = (MAC_DP != 0 || MAC_F32 != 0) ? 32 : 16;
     reg [VLEN*BW-1:0] b_row;
 
     // The row's lane words, from the vector read: m.mma's (one element, right
@@ -248,11 +270,13 @@ module tnca_matrix #(
     // rows, sec 9C.4).
     wire [BW-1:0] b_nd [0:VLEN-1];
     wire [31:0]   b_dp [0:VLEN-1];
+    wire [31:0]   b_f32 [0:VLEN-1];   // sec 9C.5: lane bi of the register is B[k][bi]
     genvar bi;
     generate
         for (bi = 0; bi < VLEN; bi = bi + 1) begin : g_bw
             assign b_nd[bi] = elem8 ? {8'd0, vrf_data[(b_part*VLEN + bi)*8 +: 8]}
                                     : vrf_data[(b_part[1]*VLEN + bi)*16 +: 16];
+            assign b_f32[bi] = vrf_data[bi*32 +: 32];
             assign b_dp[bi] =
                 !r_bdt[1] ? {vrf_data[(VLEN + bi)*16 +: 16], vrf_data[bi*16 +: 16]}
               : g4        ? {vrf_data[(3*VLEN + bi)*8 +: 8], vrf_data[(2*VLEN + bi)*8 +: 8],
@@ -263,15 +287,16 @@ module tnca_matrix #(
     endgenerate
 
     // A element for this cycle, right-aligned in 32 bits.
-    wire [2:0]           a_bi   = elem8 ? a_flat[8:6] : a_flat[7:5];
-    wire [VLEN*ELEN-1:0] a_word = use_abuf ? abuf[a_bi] : vrf_data;
+    wire [3:0]           a_bi   = f32v  ? a_flat[7:4]
+                                : elem8 ? {1'b0, a_flat[8:6]} : {1'b0, a_flat[7:5]};
+    wire [VLEN*ELEN-1:0] a_word = use_abuf ? abuf[a_bi[ABUF_W-1:0]] : vrf_data;
     // m.mma.dp: the G consecutive elements A[m][k..k+G-1] as one lane word --
     // 16-bit elements are one aligned 32-bit word; four E4M3 bytes likewise;
     // two bytes go to the low bytes of two 16-bit slots.
     wire [31:0] a_dp_v = !elem8 ? a_word[a_elem[4:1]*32 +: 32]
                        : g4     ? a_word[a_elem[5:2]*32 +: 32]
                        : {8'd0, a_word[(a_elem + 6'd1)*8 +: 8], 8'd0, a_word[a_elem*8 +: 8]};
-    wire [31:0] a_elem_v = dpv  ? a_dp_v
+    wire [31:0] a_elem_v = (dpv || f32v) ? a_dp_v
                          : elem8 ? {24'd0, a_word[a_elem*8 +: 8]}
                                  : {16'd0, a_word[a_elem[4:0]*16 +: 16]};
 
@@ -308,13 +333,13 @@ module tnca_matrix #(
         for (g = 0; g < VLEN; g = g + 1) begin : g_mac
             wire [31:0] fa = row_any ? acc_rd[g] : a_elem_v;
             wire [31:0] b_dpw;
-            if (MAC_DP != 0) begin : g_bdp
+            if (BW == 32) begin : g_bdp
                 assign b_dpw = b_row[g*BW +: 32];
             end else begin : g_nbdp
                 assign b_dpw = 32'd0;
             end
             wire [31:0] fb = row_any ? r_scale
-                                     : (MAC_DP != 0 && r_dp) ? b_dpw
+                                     : ((MAC_DP != 0 && r_dp) || f32v) ? b_dpw
                                      : {16'd0, b_row[g*BW +: 16]};
             wire [31:0] fc = row_fma ? r_vdata[g*ELEN +: ELEN]
                            : row_mul ? 32'd0
@@ -471,6 +496,7 @@ module tnca_matrix #(
                     r_dt     <= cmd_dt;
                     r_dp     <= (MAC_DP != 0) && cmd_dp;
                     r_bdt    <= cmd_bdt;
+                    r_f32    <= (MAC_F32 != 0) && cmd_f32;
                     r_bar_en <= cmd_bar_en;
                     r_bar    <= cmd_bar;
                     r_sf_en  <= cmd_sf_en;
@@ -497,7 +523,8 @@ module tnca_matrix #(
                     endcase
                     // r_k and r_dt are not latched yet: decide from the command.
                     if (cmd_op == 2'd1 && ABUF != 0 &&
-                        (cmd_dt[1] ? (cmd_k != `TNCA_MMA_K64) : (cmd_k == `TNCA_MMA_K16))) begin
+                        (((MAC_F32 != 0) && cmd_f32) ||
+                         (cmd_dt[1] ? (cmd_k != `TNCA_MMA_K64) : (cmd_k == `TNCA_MMA_K16)))) begin
                         use_abuf <= 1'b1;
                         st       <= S_LOADA;
                     end
@@ -520,7 +547,7 @@ module tnca_matrix #(
             //---------------------------------------------------------------
             // ABUF: the A fragment's registers, one read each, before any MAC.
             S_LOADA: if (!vrf_wait) begin
-                abuf[la[2:0]] <= vrf_data;
+                abuf[la[ABUF_W-1:0]] <= vrf_data;
                 if ({3'd0, la} == a_regs - 7'd1) st <= S_LOADB;
                 else                             la <= la + 1'b1;
             end
@@ -529,7 +556,8 @@ module tnca_matrix #(
             // One vector read holds B[k][.] for the whole m sweep.
             S_LOADB: if (!vrf_wait) begin
                 for (i = 0; i < VLEN; i = i + 1)
-                    b_row[i*BW +: BW] <= (MAC_DP != 0 && r_dp) ? b_dp[i][BW-1:0] : b_nd[i];
+                    b_row[i*BW +: BW] <= f32v ? b_f32[i][BW-1:0]
+                                       : (MAC_DP != 0 && r_dp) ? b_dp[i][BW-1:0] : b_nd[i];
                 mm <= {(ROW_W+1){1'b0}};
                 st <= S_MAC;
             end

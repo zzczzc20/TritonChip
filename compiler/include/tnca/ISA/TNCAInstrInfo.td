@@ -90,6 +90,8 @@ def TNCA_M_MMA_ASYNC : TNCAInst<64, 1, "m.mma.async"> {
 }
 def TNCA_M_MMA_DP_ASYNC : TNCAInst<64, 2, "m.mma.dp.async"> {
 }
+def TNCA_M_MMA_F32_ASYNC : TNCAInst<64, 3, "m.mma.f32.async"> {
+}
 def TNCA_M_ZERO : TNCAInst<64, 0, "m.zero"> {
 }
 def TNCA_MB_ARM : TNCAInst<80, 1, "mb.arm"> {

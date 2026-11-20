@@ -544,6 +544,59 @@
         "bench_args": ["+allroles"],
         "what": "the run-2 core bench reads back this profile's capabilities and resources"
       }
+    },
+    "core-r42-fp32": {
+      "target_file": "tnca-sim-r42-fp32.json",
+      "executes_artifacts_of": ["core-vrf-sync-v5-x8-g2c4-dp"],
+      "description": "core-vrf-sync-v5-x8-g2c4-dp with a binary32 element format for the matrix engine: m.mma.f32.async (ISA sec 9C.5; capability matrix_f32, CAPABILITY0 bit 13), tnca_core MAC_F32=1. C[16x16] += A[16x16] . B[16x16] over binary32 fragments (one row per vector register), exactly one RNE binary32 FMA per accumulation step in increasing k through the same MAC lanes -- bit-identical to the vector FMA sequence the compiler emitted for an fp32 tl.dot before. The compiler lowers fp32 tl.dot to it; every other instruction, format and capability is core-vrf-sync-v5-x8-g2c4-dp, whose artifacts run unchanged. The core-level RTL regression is `make core-mmaf32` (t42_mmaf32). No image has been built from this profile.",
+      "num_cores": 1,
+      "topology": "single",
+      "compiler": {
+        "snapshot_fence": true,
+        "why": "The run-2 images of this profile build the line-wide transfer engine (TENSOR_LINE): its TensorMap snapshot is one line request beside the LSU, so the context's map stores must be fenced before td.load (R41 G4, evidence/r41/hbm_bw/G4_DESIGN.md sec 9.6)."
+      },
+      "elaboration": {
+        "NUM_RCTX": 4,
+        "RCTX_W": 2,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 256,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0,
+        "RSLICE": 1,
+        "HAS_TENSOR_XPOSE": 2,
+        "RPAIR": 1,
+        "BAR_N": 8,
+        "BAR_W": 3,
+        "BAR_EPOCH_W": 38,
+        "MAC_DP": 1,
+        "MAC_CUTS": 29,
+        "MAC_F32": 1
+      },
+      "implementation": {
+        "vector_register_file": "banked",
+        "banks": 4,
+        "ports_per_bank": "1 read, 1 write",
+        "read_latency_cycles": 1,
+        "unwritten_reads": "zero, from per-lane valid bits",
+        "contract": "spec/r3v2_contract.json",
+        "rtl_parameters": {
+          "USE_BANKED_VRF": 1,
+          "VRF_BYPASS": 1,
+          "FE_NOBUBBLE": 1,
+          "VRF_PREFETCH": 1,
+          "RCTX_SWITCH": 2,
+          "LSU_INFLIGHT": 2,
+          "FPU_OVERLAP": 1,
+          "MTX_ABUF": 1
+        }
+      },
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_core_r42fp32.vvp",
+        "bench_args": ["+allroles"],
+        "what": "the run-2 core bench with MAC_F32=1 reads back this profile's capabilities and resources"
+      }
     }
   },
   "supported_topologies": {

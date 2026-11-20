@@ -2193,6 +2193,29 @@ class TTIRImporter:
                 self._value(op.get_operand(0)), self._value(op.get_operand(1)),
                 signed, remainder, divisor_const)
             return
+        if self.index_opt and isinstance(rshape, int) and relem == 'i32' \
+                and divisor_const is not None and divisor_const > 0:
+            ua = self._uniform_scalar(op.get_operand(0))
+            if ua is not None:
+                # Every lane holds the same value (Inductor's `xindex // n`,
+                # `xindex % n` with xindex the program id: which row and
+                # which column of a reduction this program is). Divided once,
+                # in scalar registers, by the reciprocal multiply a scalar
+                # divide by a constant already uses -- the lane-wise
+                # restoring loop below is 32 iterations of vector work per
+                # divide, in every program, whenever n is not a power of two.
+                if signed:
+                    ua = self.b.sbini('ashr', self.b.sbini('shl', ua, 32), 32)
+                else:
+                    ua = self.b.sbini('lshr', self.b.sbini('shl', ua, 32), 32)
+                rid = op.get_result(0).id()
+                sc = self._scalar_divide(ua, self._const_scalar(divisor_const), signed,
+                                         remainder, divisor_const)
+                self._uscalar[rid] = sc
+                self._offsets[rid] = ('uniform', rid)
+                self._v[rid] = self.b.splat(sc, dtype=relem)
+                return
+
         def divide(xs, elem):
             if elem not in ('i32', 'i8', 'i16'):
                 raise Unsupported(f'integer vector division on {elem}')
@@ -2208,6 +2231,25 @@ class TTIRImporter:
                 result = (self.b.vbin('and', a, self.b.vmovi(divisor_const-1))
                           if remainder else self.b.vbin('lshr', a,
                               self.b.vmovi(divisor_const.bit_length()-1)))
+                return (self.b.vselect(aneg, self.b.vbin('sub', zero, result), result)
+                        if signed else result)
+            if (self.index_opt and elem == 'i32' and divisor_const is not None
+                    and 2 < divisor_const < (1 << 31)):
+                # Any other constant: the unsigned quotient by a reciprocal
+                # multiply (Granlund and Montgomery, N = 32; exact for every
+                # 32-bit magnitude), as _scalar_udiv_const does in scalar
+                # registers -- four vector instructions where the restoring
+                # loop below is 32 iterations of thirteen.
+                d = divisor_const
+                l = (d - 1).bit_length()
+                m = ((1 << 32) * ((1 << l) - d)) // d + 1
+                t1 = self.b.vbin('mulhu', a, self.b.vmovi(m), dtype='i32')
+                t = self.b.vbin('add', t1, self.b.vbin(
+                    'lshr', self.b.vbin('sub', a, t1, dtype='i32'), one, dtype='i32'), dtype='i32')
+                result = self.b.vbin('lshr', t, self.b.vmovi(l - 1), dtype='i32') if l > 1 else t
+                if remainder:
+                    result = self.b.vbin('sub', a, self.b.vbin(
+                        'mul', result, self.b.vmovi(d), dtype='i32'), dtype='i32')
                 return (self.b.vselect(aneg, self.b.vbin('sub', zero, result), result)
                         if signed else result)
             q, rem = self.b.vmovi(0), self.b.vmovi(0)

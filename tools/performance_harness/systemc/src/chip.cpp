@@ -205,6 +205,12 @@ static Inst decode(u64 w){
             if(i.d>=16 || i.c>=64 || ((m&16) && (i.c&63)==63))return illegal("MMA accumulator/token register");
             return as(K::Mma);
         }
+        if(f==3){ // m.mma.f32.async (ISA sec 9C.5): only mod[4] (source-free) is meaningful
+            if(m&~16U)return illegal("reserved MMA.F32 modifier");
+            if(i.d>=16 || i.c>=64 || ((m&16) && (i.c&63)==63))return illegal("MMA accumulator/token register");
+            return as(K::Mma);
+        }
+        if(f!=1)return illegal("reserved MATRIX function");
         if((m&3)==3 || (m>>5))return illegal("reserved MMA K/modifier");
         if(i.d>=16 || i.c>=64 || ((m&16) && (i.c&63)==63))return illegal("MMA accumulator/token register");
         return as(K::Mma);
@@ -291,6 +297,7 @@ struct Core : sc_module {
     // pipeline of a dp command over m.mma's; the shared MAC lane's reported
     // latency is +1 or +2), mtx_dp_prefetch (the next step's B register is read
     // under the current step's MACs).
+    bool mf32=false; // mtx_f32: CAPABILITY0.MATRIX_F32, m.mma.f32.async (ISA sec 9C.5)
     bool mdp=false,mdp_pf=false;u64 mdp_extra=1;u64 *c_mdp=nullptr,*c_mdp_steps=nullptr;
     // Counter slots bound once.
     u64 *c_instr,*c_sfu_queue,*c_sleep,*c_dep_wait,*c_mtx_wait,*c_mtx_busy,*c_mtx_cmds,*c_mma,*c_lsu_wait,*c_arrive_wait,
@@ -331,7 +338,7 @@ struct Core : sc_module {
         t_rf=g("mtx_rf_read_cycles");t_mac=g("mtx_mac_cycles");t_mac_unbuf=g("mtx_mac_unbuffered_cycles");t_pipe=g("mtx_pipe_cycles");
         t_done=g("mtx_complete_cycles");t_zero=g("mtx_zero_cycles");t_row=g("mtx_row_cycles");t_launch=g("launch_cycles");abuf=g("mtx_abuf")!=0;
         dp_g16=x.c.get_or("mtx_dp_group_16",1);dp_g8=x.c.get_or("mtx_dp_group_8",1);dp_pf=x.c.get_or("mtx_dp_b_prefetch",0)!=0;
-        mdp=x.c.get_or("mtx_dp",0)!=0;mdp_pf=x.c.get_or("mtx_dp_prefetch",0)!=0;mdp_extra=x.c.get_or("mtx_dp_extra_latency",1);
+        mf32=x.c.get_or("mtx_f32",0)!=0;mdp=x.c.get_or("mtx_dp",0)!=0;mdp_pf=x.c.get_or("mtx_dp_prefetch",0)!=0;mdp_extra=x.c.get_or("mtx_dp_extra_latency",1);
         if(mdp){c_mdp=&x.counts[key("matrix_dp_commands")];c_mdp_steps=&x.counts[key("matrix_dp_lane_group_ops")];}
         // Bound only when a what-if key is active, so default counters are unchanged.
         if(dp_g16>1 || dp_g8>1 || dp_pf)c_dp=&x.counts[key("matrix_dp_whatif_commands")];
@@ -444,7 +451,7 @@ struct Core : sc_module {
             case 8:return f.role;case 9:return f.role_count;case 10:return id;case 11:return x.c.cores();case 12:return 16;case 13:return 64;
             case 14:return 5;case 15:return 16;case 16:return lnow(f);case 17:return f.retired;case 18:return 32;case 19:return 32;
             case 20:return 16;case 21:return 256;case 32:return f.arg;case 48:return 1;
-            case 49:return 0x9efULL|(mdp?0x1000ULL:0ULL); // VECTOR_FP32|SFU|GATHER|ATOM_DEV|MATRIX_F16|MATRIX_BF16|TENSOR_DMA|MBARRIER|MATRIX_FP8
+            case 49:return 0x9efULL|(mdp?0x1000ULL:0ULL)|(mf32?0x2000ULL:0ULL); // VECTOR_FP32|SFU|GATHER|ATOM_DEV|MATRIX_F16|MATRIX_BF16|TENSOR_DMA|MBARRIER|MATRIX_FP8
             case 64:case 65:return 0; // the faulting context stops; no surviving reader in this model
             default:return 0;}        // ISA sec 5.1: unimplemented ids read 0
     }
@@ -465,11 +472,14 @@ struct Core : sc_module {
         sync(f);
         const bool dp=in.func==2;
         if(dp && !mdp)throw ArchFault(trapcode::illegal,"ILLEGAL_INSTRUCTION: m.mma.dp.async without CAPABILITY0.MATRIX_DP at pc "+std::to_string(f.pc));
+        const bool f32=in.func==3;
+        if(f32 && !mf32)throw ArchFault(trapcode::illegal,"ILLEGAL_INSTRUCTION: m.mma.f32.async without CAPABILITY0.MATRIX_F32 at pc "+std::to_string(f.pc));
         unsigned slot=sliced(f,in.d,4),K=16U<<(in.mod&3),dt=(in.mod>>2)&3,bytes=tnca_matrix_ops::element_bytes(dt);
         const unsigned dtb=dp?(in.mod>>5)&3:dt;
         bool source_free=in.mod&16;
         u64 token=token_of(f,f.s[in.c]),sf_token=source_free?token_of(f,f.s[(in.c+1)&63]):0;
         unsigned a_regs=tnca_matrix_ops::fragment_registers(16,K,dt),b_regs=tnca_matrix_ops::fragment_registers(K,16,dtb);
+        if(f32)a_regs=b_regs=16;   // sec 9C.5: one binary32 row a register, K16
         // The RTL reads fragments without a scoreboard (tnca_decoder.v: "no read
         // port and no dependency"). The model waits for this context's own
         // in-flight vector writes to land before reading them at issue.
@@ -486,9 +496,11 @@ struct Core : sc_module {
             std::fprintf(stderr,"MMA core %u role %u t %llu a %u b %u ha %016llx hb %016llx\n",id,f.role,(unsigned long long)x.now(),in.a,in.b,(unsigned long long)ha,(unsigned long long)hb);
             for(unsigned r=0;r<b_regs;++r){std::fprintf(stderr,"MMAB %u:",r);for(auto w:B[r])std::fprintf(stderr," %08x",w);std::fprintf(stderr,"\n");}
             std::fprintf(stderr,"MMAPENDING %zu\n",f.physical->pending.size());for(auto& w:f.physical->pending)std::fprintf(stderr,"  pend idx %u mask %x due %llu\n",w.index,w.mask,(unsigned long long)x.to_cycles(w.due));}}
-        if(dp)tnca_matrix_ops::mma_dp(acc[slot],A,B,K,dt,dtb);
+        if(f32)tnca_matrix_ops::mma_f32(acc[slot],A,B);
+        else if(dp)tnca_matrix_ops::mma_dp(acc[slot],A,B,K,dt,dtb);
         else tnca_matrix_ops::mma(acc[slot],A,B,K,dt);
-        bool buffered=abuf && (bytes==1?K!=64:K==16);
+        // m.mma.f32.async: the 16-register A fragment is buffered (tnca_matrix MAC_F32), then 16 steps of one B register read and 16 MACs.
+        bool buffered=abuf && (f32 || (bytes==1?K!=64:K==16));
         u64 sweep=(buffered?a_regs*t_rf:0)+K*(t_rf+16*(buffered?t_mac:t_mac_unbuf));
         unsigned dp_g=unsigned(bytes==1?dp_g8:dp_g16);
         if(!dp && (dp_g>1 || dp_pf)){

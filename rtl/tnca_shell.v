@@ -98,6 +98,7 @@ module tnca_shell #(
     parameter RSLICE         = `TNCA_UARCH_RSLICE,
     parameter RPAIR          = `TNCA_UARCH_RPAIR,
     parameter MTX_ABUF       = `TNCA_UARCH_MTX_ABUF,
+    parameter MTX_PIPE       = `TNCA_UARCH_MTX_PIPE,
     parameter FPU_OVERLAP    = `TNCA_UARCH_FPU_OVERLAP,
     parameter HAS_TENSOR_XPOSE = `TNCA_UARCH_HAS_TENSOR_XPOSE,
     parameter CORE_ID        = 0,
@@ -309,7 +310,7 @@ module tnca_shell #(
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
-        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) u_core (
         .clk(clk), .rst_n(rst_n),

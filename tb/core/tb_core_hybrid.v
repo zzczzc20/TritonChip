@@ -39,6 +39,7 @@ module tb_core_hybrid;
     parameter RSLICE         = 0;
     parameter RPAIR          = 0;
     parameter MTX_ABUF       = 0;
+    parameter MTX_PIPE       = 0;
     parameter HAS_TENSOR_XPOSE = 0;
 
     parameter NUM_RCTX       = 2;
@@ -105,7 +106,7 @@ module tb_core_hybrid;
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
-        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) dut (
         .clk(clk), .rst_n(rst_n),

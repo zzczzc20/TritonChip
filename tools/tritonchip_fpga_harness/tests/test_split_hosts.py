@@ -113,7 +113,8 @@ class HostsFile(unittest.TestCase):
 
     def test_the_example_is_a_valid_hosts_file(self) -> None:
         hosts = parse_hosts(load_json(HERE / "examples" / "hosts.example.json"))
-        self.assertEqual({name: host.roles for name, host in hosts.items()}, {"build": ("build",), "card": ("board",)})
+        self.assertEqual({name: host.roles for name, host in hosts.items()}, {"build": ("build",), "cluster-1": ("build",), "card": ("board",)})
+        self.assertEqual(hosts["cluster-1"].lsf["queue"], "cpu")
         self.assertIn("PATH", hosts["build"].remote_env())
 
     def test_refuses_what_could_reach_a_shell(self) -> None:

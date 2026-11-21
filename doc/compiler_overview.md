@@ -314,6 +314,9 @@ There is one `Session` per (profile, backend, arguments), kept for the life of t
 | `TNCA_KERNEL_DUMP`, `TNCA_DUMP_DIR` | — | Dump every stage (TTIR, inlined, optimised, TNCA IR, assembly, hex), also for failing kernels |
 | `TNCA_TENSOR_DESCRIPTORS` | on (since R39) | `tnca.inductor.configure()` turns on Inductor's tensor-descriptor code generation (§9), the standard path; `0` turns it off |
 | `TNCA_MAX_BLOCK` | 16 | the block-dimension cap `tnca.inductor.configure()` gives Inductor (an R39 ablation knob) |
+| `TNCA_TILED_POINTWISE` | 2 (since R42; 0 before) | a 1-D element-wise program runs as a loop over register tiles of a block of up to 1,024 lanes, through the vector load/store unit (`tnca_cc/pointwise_tiles.py`); `0` turns it off, `1`/`3` use the tensor transfer engine |
+| `TNCA_REDUCTION_BLOCK` | 64 (since R42; 16 before) | the widest lane block of a looped reduction (16/32/64/128). A row keeps at least four blocks (`tnca.inductor._reduction_block`), so a short row stays at 16 lanes; scans, sorts and argmax/argmin keep 16 |
+| `TNCA_LOOP_OPT` | 1 (since R42) | loop optimisation of looped kernels on TNCA IR (`tnca_cc/loop_opt.py`): unused TensorMaps, all-true masks, copies, invariant hoisting, induction pointers, loop rotation. `0` turns it off; a kernel that does not fit its registers with it is compiled without it (`opt_loops_refused` in the provenance) |
 | `TNCA_SCHEDULE` | 1 on the Triton/Inductor path, 0 for `compile_aot` | `1` list-schedules every basic block against the measured machine model (`tnca_cc.schedule`, `spec/r39_sched_model.json`; R39-01). The compile option `schedule` overrides it. A schedule the allocator cannot fit is compiled in program order, and the provenance records `schedule_fallback` |
 | `TNCA_NO_X_DIM` | 1 (since R39-02a) | `1` generates looped reductions without their unit x dimension (`[R0_BLOCK]` blocks instead of `[1, R0_BLOCK]`; `tnca.inductor._install_no_x_dim`, R39-02) |
 | `TNCA_INDEX_OPT` | 1 on the Triton/Inductor path, 0 for `compile_aot` | `1` (compile option `index_opt`, R39-02a): lane-uniform 1-D integer values tracked through arithmetic; `(u + arange) % M` kept contiguous from non-negative/multiple facts (`assume`, multiplies); contiguous indices as affine terms; scalar division in scalar registers (reciprocal multiply, divisor-1 fast path); pointer-tile TensorMaps built once at entry with the tile origin as coordinates; `acc + tl.dot(a, b, 0)` accumulated in place; `acc.to(f16)` converted per row on its way to a store; affine rows and repeated compares built once |
@@ -331,7 +334,7 @@ There is one `Session` per (profile, backend, arguments), kept for the life of t
 | Setting | Why |
 |---|---|
 | `cpu_backend = "triton"` | CPU tensors are compiled as Triton kernels, which the TNCA plugin serves |
-| Pointwise and reduction heuristics cap every block dimension at 16 | The compiler's block limit (§14) |
+| Pointwise and reduction heuristics cap every block dimension at 16, except a 1-D element-wise block (tiled, up to 1,024 lanes) and a reduction's lane block (up to 64 lanes as four registers), since R42 | The compiler's block limit (§14); the wider blocks are loops over 16-lane registers |
 | Reductions: one row per program (`XBLOCK = 1`), `persistent_reductions = False` | A persistent reduction needs a block spanning the row |
 | Exactly one configuration per kernel | Inductor's autotuner would otherwise launch candidates, and ArchBench audits that the launch count equals the wrapper's |
 | GEMM and conv through Triton templates, one 16×16×16 configuration; `autotune_fallback_to_aten = False`; `benchmark_epilogue_fusion = False` | Keeps every matmul and convolution on the device |

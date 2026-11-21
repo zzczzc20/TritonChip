@@ -51,7 +51,7 @@ KNOWN_OPTIONS = {
     'packed_window_unpack': 'int, 0 or 1; software lane unpack of packed FP16/BF16 DMA windows',
     'tiled_pointwise': 'int, 0..3; 1-D element-wise programs as a loop over register tiles, '
                        '1 with tensor-engine transfers where legal, 2 with vector loads/stores only '
-                       '(tnca_cc/pointwise_tiles.py; default 0)',
+                       '(tnca_cc/pointwise_tiles.py; default 2 since R42, TNCA_TILED_POINTWISE)',
     'window_reuse': 'int, 0 or 1; reuse disjoint awaited single-role window lifetimes',
     'ieee_div': 'int, 0 or 1; arith.divf correctly rounded (the extended lowering always is)',
     'no_ll': 'bool; at opt_level 2, switch the layout algebra off and use a legal plan instead. The ablation of phase 3.5 section 4.3, not a fallback: O2 without it never silently stops using LinearLayout',
@@ -317,7 +317,8 @@ def check_options(options):
                       ('rctx_roles', 'TNCA_RCTX_ROLES')):
         value = options.get(name)
         if value is None:
-            value = _physical_chunks_default() if name == 'physical_chunks' else int(os.environ.get(env, '0'))
+            value = (_physical_chunks_default() if name == 'physical_chunks'
+                     else int(os.environ.get(env, '2' if name == 'tiled_pointwise' else '0')))
             options.pop(name, None)
             if value:
                 options[name] = value
@@ -764,7 +765,7 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
         raise ValueError('packed_window_unpack must be 0 or 1')
     tiled = (options or {}).get('tiled_pointwise')
     if tiled is None:
-        tiled = int(os.environ.get('TNCA_TILED_POINTWISE', '0'))
+        tiled = int(os.environ.get('TNCA_TILED_POINTWISE', '2'))
     if tiled not in (0, 1, 2, 3):
         raise ValueError('tiled_pointwise must be 0, 1, 2 or 3')
     # The extended lowering (large tiles): a kernel the default lowering
@@ -782,13 +783,38 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
             stages.stages.update(saved_stages)
             prov.record('extended_lowering', first)
         try:
-            def _once():
+            def _plain(loop_opt=False):
                 return _lower_imported(
                     module, kernel_name, params, target, prov, options, stages, opt_level,
                     index_opt=index_opt, sparse=sparse, window_reuse=window_reuse,
                     packed_unpack=packed_unpack, large_tiles=large_tiles, tiled=tiled,
                     # the retry also keeps one tiled lane group (register pressure)
-                    tiled_groups_cap=1 if large_tiles else 0)
+                    tiled_groups_cap=1 if large_tiles else 0, loop_opt=loop_opt)
+
+            def _once():
+                # R42 loop optimisation (tnca_cc/loop_opt.py), default on.
+                # A hoisted value holds a register across its loop and the
+                # allocator has no spill: the optimised kernel is kept only if
+                # it compiles without any resource fallback (a refused Role
+                # Context loop, a serial transfer order); otherwise the kernel
+                # is lowered as it always was.
+                if opt_level < 1 or not _loop_opt_wanted():
+                    return _plain()
+                keep_prov, keep_stages = dict(prov.entries), dict(stages.stages)
+                try:
+                    result = _plain(loop_opt=True)
+                    why = next((k for k in prov.entries
+                                if k.endswith('_fallback') and k not in keep_prov), None)
+                except CompileError as le:
+                    result, why = None, str(le).splitlines()[0][:160]
+                if result is not None and (why is None or 'opt_loops' not in prov.entries):
+                    return result
+                prov.entries.clear()
+                prov.entries.update(keep_prov)
+                stages.stages.clear()
+                stages.stages.update(keep_stages)
+                prov.record('opt_loops_refused', why)
+                return _plain()
             try:
                 result = _once()
             except CompileError as pe:
@@ -819,6 +845,13 @@ def _lower_ttir(module, ctx, kernel_name, params, target, prov, options, stages,
     raise AssertionError('unreachable')
 
 
+def _loop_opt_wanted():
+    value = int(os.environ.get('TNCA_LOOP_OPT', '1'))
+    if value not in (0, 1):
+        raise ValueError('TNCA_LOOP_OPT must be 0 or 1')
+    return bool(value)
+
+
 def _ieee_div(options):
     value = (options or {}).get('ieee_div')
     if value is None:
@@ -835,7 +868,7 @@ _CODE_STORE_BYTES = 0x20000
 
 def _lower_imported(module, kernel_name, params, target, prov, options, stages, opt_level, *,
                     index_opt, sparse, window_reuse, packed_unpack, large_tiles, tiled=0,
-                    tiled_groups_cap=0):
+                    tiled_groups_cap=0, loop_opt=False):
     kernel, _builder, imp = adapter.import_ttir(
         module, kernel_name, _placeholders(params),
         param_names=[n for n, _t in params], target=target, prov=prov,
@@ -920,6 +953,14 @@ def _lower_imported(module, kernel_name, params, target, prov, options, stages, 
         sr = strength_reduce(kernel)
         cse = pure_scalar_cse(kernel)
         dead = drop_dead_pure(kernel, flat_control=getattr(imp, 'tiled_pointwise_plan', None) is not None)
+        if loop_opt:
+            # R42: the loops of a looped kernel (every Inductor reduction),
+            # which the passes above leave alone (tnca_cc/loop_opt.py).
+            from tnca_cc.loop_opt import optimize as optimize_loops
+            lo = optimize_loops(kernel, target.vlen)
+            if any(lo.values()):
+                prov.record('opt_loops', lo)
+                kernel.coalesce_assigns = True     # codegen: compute into the assigned register
         if dict(target.capabilities).get('matrix_dp'):
             # R41 run-2 issue-stream work, gated by the capability until the audit decides
             # whether it becomes the default: dominator-scoped value numbering.
@@ -931,7 +972,7 @@ def _lower_imported(module, kernel_name, params, target, prov, options, stages, 
         prov.record('opt_strength_reduced', sr['sites'])
         prov.record('opt_pure_scalar_merged', cse['merged'])
         prov.record('opt_dead_pure_removed', dead['removed'])
-        if sr['sites'] or cse['merged'] or dead['removed']:
+        if sr['sites'] or cse['merged'] or dead['removed'] or (loop_opt and any(lo.values())):
             stages.record('tnir_opt', str(kernel))
 
     # R39-05: carrying values across the program loop raises scalar

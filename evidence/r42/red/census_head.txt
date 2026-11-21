@@ -1,0 +1,166 @@
+op.add_small_fp16-n16384  triton_poi_fused_add_0
+    (entry)            total    8  mem=3 scalar=5
+    __rctx_program     total    2  scalar=2
+    tiles_1            total  126  mem=48 vfp=64 scalar=13 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.add_tiny_fp16-n1000  triton_poi_fused_add_0
+    (entry)            total    8  mem=3 scalar=5
+    __rctx_program     total   10  vint=8 scalar=2
+    tiles_1            total  104  mem=24 vfp=32 vint=34 scalar=13 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.argmax_small_fp16-r8-v2048  triton_red_fused_argmax_0
+    (entry)            total    9  mem=2 scalar=7
+    __rctx_program     total   17  vint=10 scalar=7
+    for_1              total   22  mem=1 vfp=5 vint=5 pred=7 scalar=3 ctl=1
+    endfor_2           total  297  mem=2 vfp=60 vint=122 pred=105 scalar=8
+    __rctx_next        total    5  scalar=3 ctl=2
+op.argmax_tiny_fp16-r2-v256  triton_red_fused_argmax_0
+    (entry)            total    9  mem=2 scalar=7
+    __rctx_program     total   17  vint=10 scalar=7
+    for_1              total   22  mem=1 vfp=5 vint=5 pred=7 scalar=3 ctl=1
+    endfor_2           total  297  mem=2 vfp=60 vint=122 pred=105 scalar=8
+    __rctx_next        total    5  scalar=3 ctl=2
+op.cumsum_small_fp32-r64-c256  triton_red_fused_cumsum_0
+    (entry)            total    9  mem=2 scalar=7
+    __rctx_program     total   19  vint=10 scalar=9
+    for_1              total   98  mem=2 vfp=17 vint=74 scalar=4 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.cumsum_tiny_fp32-r4-c64  triton_red_fused_cumsum_0
+    (entry)            total    9  mem=2 scalar=7
+    __rctx_program     total   19  vint=10 scalar=9
+    for_1              total   98  mem=2 vfp=17 vint=74 scalar=4 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.embedding_small_fp16-v1024-d128-t64  triton_poi_fused_embedding_0
+    (entry)            total   13  mem=3 scalar=10
+    __rctx_program     total  238  mem=2 vint=135 pred=1 scalar=98 ctl=2
+    assert_ok_1        total  435  vint=221 scalar=212 ctl=2
+    narrow_ok_2        total    4  mem=2 scalar=2
+    __rctx_next        total    5  scalar=3 ctl=2
+op.embedding_tiny_fp16-v256-d64-t16  triton_poi_fused_embedding_0
+    (entry)            total   13  mem=3 scalar=10
+    __rctx_program     total  246  mem=2 vint=141 pred=3 scalar=98 ctl=2
+    assert_ok_1        total  435  vint=221 scalar=212 ctl=2
+    narrow_ok_2        total    5  mem=2 vint=1 scalar=2
+    __rctx_next        total    5  scalar=3 ctl=2
+op.gelu_tanh_small_fp16-n16384  triton_poi_fused_gelu_0
+    (entry)            total    7  mem=2 scalar=5
+    __rctx_program     total   17  vint=8 scalar=9
+    tiles_1            total  540  mem=32 sfu=32 vfp=416 vint=48 scalar=11 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.gelu_tanh_tiny_fp16-n256  triton_poi_fused_gelu_0
+    (entry)            total    6  mem=2 scalar=4
+    __rctx_program     total  102  mem=4 sfu=4 vfp=52 vint=27 scalar=15
+    __rctx_next        total    5  scalar=3 ctl=2
+op.layernorm_small_fp16-r64-d256  triton_red_fused_native_layer_norm_0
+    (entry)            total   11  mem=4 scalar=7
+    __rctx_program     total   14  vint=9 scalar=5
+    for_1              total   16  mem=4 vfp=8 scalar=3 ctl=1
+    endfor_2           total   34  sfu=1 vfp=13 vint=14 scalar=6
+    for_3              total   24  mem=4 vfp=16 scalar=3 ctl=1
+    endfor_4           total   45  sfu=2 vfp=19 vint=8 scalar=16
+    for_5              total   55  mem=16 vfp=32 scalar=6 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.layernorm_tiny_fp16-r4-d64  triton_red_fused_native_layer_norm_0
+    (entry)            total   11  mem=4 scalar=7
+    __rctx_program     total    8  vint=3 scalar=5
+    for_1              total    7  mem=1 vfp=2 scalar=3 ctl=1
+    endfor_2           total   22  sfu=1 vfp=7 vint=8 scalar=6
+    for_3              total    9  mem=1 vfp=4 scalar=3 ctl=1
+    endfor_4           total   38  sfu=2 vfp=13 vint=8 scalar=15
+    for_5              total   19  mem=4 vfp=8 scalar=6 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.rmsnorm_small_fp16-r64-d256  triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0
+    (entry)            total   10  mem=3 scalar=7
+    __rctx_program     total   14  vint=9 scalar=5
+    for_1              total   20  mem=4 vfp=12 scalar=3 ctl=1
+    endfor_2           total   46  sfu=2 vfp=19 vint=10 scalar=15
+    for_3              total   38  mem=12 vfp=20 scalar=5 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.rmsnorm_tiny_fp16-r4-d64  triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0
+    (entry)            total   10  mem=3 scalar=7
+    __rctx_program     total    8  vint=3 scalar=5
+    for_1              total    8  mem=1 vfp=3 scalar=3 ctl=1
+    endfor_2           total   39  sfu=2 vfp=13 vint=10 scalar=14
+    for_3              total   14  mem=3 vfp=5 scalar=5 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.rope_small_fp16-b1-h4-s64-d32  triton_poi_fused_add_mul_2
+    (entry)            total   10  mem=5 scalar=5
+    __rctx_program     total   23  vint=21 scalar=2
+    tiles_1            total  336  mem=80 vfp=128 vint=114 scalar=13 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.rope_small_fp16-b1-h4-s64-d32  triton_poi_fused_cat_neg_split_1
+    (entry)            total    7  mem=2 scalar=5
+    __rctx_program     total   23  vint=21 scalar=2
+    tiles_1            total  117  mem=16 vint=97 scalar=3 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.rope_small_fp16-b1-h4-s64-d32  triton_poi_fused_neg_split_0
+    (entry)            total    7  mem=2 scalar=5
+    __rctx_program     total   23  vint=21 scalar=2
+    tiles_1            total  157  mem=16 vfp=24 vint=113 scalar=3 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.rope_tiny_fp16-b1-h2-s16-d16  triton_poi_fused_add_mul_2
+    (entry)            total   10  mem=5 scalar=5
+    __rctx_program     total   12  vint=10 scalar=2
+    tiles_1            total  116  mem=20 vfp=32 vint=50 scalar=13 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.rope_tiny_fp16-b1-h2-s16-d16  triton_poi_fused_cat_neg_split_1
+    (entry)            total    5  mem=2 scalar=3
+    __rctx_program     total   67  mem=4 vint=62 scalar=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.rope_tiny_fp16-b1-h2-s16-d16  triton_poi_fused_neg_split_0
+    (entry)            total    5  mem=2 scalar=3
+    __rctx_program     total   79  mem=4 vfp=6 vint=68 scalar=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.silu_small_fp16-n16384  triton_poi_fused_silu_0
+    (entry)            total    7  mem=2 scalar=5
+    __rctx_program     total    8  vint=3 scalar=5
+    tiles_1            total  332  mem=32 sfu=32 vfp=224 vint=32 scalar=11 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.silu_tiny_fp16-n256  triton_poi_fused_silu_0
+    (entry)            total    6  mem=2 scalar=4
+    __rctx_program     total   67  mem=4 sfu=4 vfp=28 vint=20 scalar=11
+    __rctx_next        total    5  scalar=3 ctl=2
+op.softmax_small_fp16-r64-c512  triton_red_fused__softmax_0
+    (entry)            total   10  mem=3 scalar=7
+    __rctx_program     total   15  vint=9 scalar=6
+    for_1              total   16  mem=4 vfp=8 scalar=3 ctl=1
+    endfor_2           total   56  vfp=12 vint=32 scalar=12
+    for_3              total   53  mem=8 sfu=4 vfp=32 vint=4 scalar=4 ctl=1
+    endfor_4           total   41  mem=1 sfu=1 vfp=12 vint=9 pred=1 scalar=17
+    for_5              total   25  mem=8 vfp=8 vint=4 scalar=4 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.softmax_tiny_fp16-r4-c64  triton_red_fused__softmax_0
+    (entry)            total   10  mem=3 scalar=7
+    __rctx_program     total    9  vint=3 scalar=6
+    for_1              total    7  mem=1 vfp=2 scalar=3 ctl=1
+    endfor_2           total   27  vfp=3 vint=14 scalar=10
+    for_3              total   17  mem=2 sfu=1 vfp=8 vint=1 scalar=4 ctl=1
+    endfor_4           total   35  mem=1 sfu=1 vfp=6 vint=9 pred=1 scalar=17
+    for_5              total   10  mem=2 vfp=2 vint=1 scalar=4 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.softmax_tiny_fp32-r3-c37  triton_red_fused__softmax_0
+    (entry)            total    9  mem=2 scalar=7
+    __rctx_program     total   11  vint=5 scalar=6
+    for_1              total   11  mem=1 vfp=1 vint=5 scalar=3 ctl=1
+    endfor_2           total   28  vfp=3 vint=15 scalar=10
+    for_3              total   21  mem=2 sfu=1 vfp=7 vint=6 scalar=4 ctl=1
+    endfor_4           total   19  sfu=1 vfp=6 vint=5 scalar=7
+    for_5              total   11  mem=2 vfp=1 vint=4 scalar=3 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.swiglu_small_fp16-n16384  triton_poi_fused_mul_silu_0
+    (entry)            total    8  mem=3 scalar=5
+    __rctx_program     total    8  vint=3 scalar=5
+    tiles_1            total  382  mem=48 sfu=32 vfp=256 vint=32 scalar=13 ctl=1
+    __rctx_next        total    5  scalar=3 ctl=2
+op.swiglu_tiny_fp16-n256  triton_poi_fused_mul_silu_0
+    (entry)            total    7  mem=3 scalar=4
+    __rctx_program     total   79  mem=6 sfu=4 vfp=32 vint=24 scalar=13
+    __rctx_next        total    5  scalar=3 ctl=2
+op.transpose_small_fp32-r128-c256  triton_poi_fused_clone_t_0
+    (entry)            total    2  scalar=2
+    __rctx_program     total  321  mem=34 vint=118 pred=32 scalar=105 ctl=32
+    __rctx_next        total    5  scalar=3 ctl=2
+op.transpose_tiny_fp32-r32-c32  triton_poi_fused_clone_t_0
+    (entry)            total    2  scalar=2
+    __rctx_program     total  321  mem=34 vint=118 pred=32 scalar=105 ctl=32
+    __rctx_next        total    5  scalar=3 ctl=2

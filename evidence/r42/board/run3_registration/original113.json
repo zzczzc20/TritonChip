@@ -1,0 +1,31 @@
+{
+ "schema": "tnca-run2-stage-registration/1",
+ "id": "original113",
+ "experiments": [
+  {
+   "id": "r3-s2-original-suite",
+   "manifest": "spec/r41/run3/board/r3-s2-original-suite.json",
+   "sha256": "1696ea1b9ce6d00d3c6a39a96477c46f6a5773dad22d8c49c1b65e46c35a4d77",
+   "checks": [
+    {
+     "path": "original/batch.json",
+     "field": [
+      "status"
+     ],
+     "equals": "complete"
+    },
+    {
+     "path": "original/batch.json",
+     "field": [
+      "configurations"
+     ],
+     "equals": 113
+    }
+   ]
+  }
+ ],
+ "image_identity": {
+  "sha256": "791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09",
+  "uuid": "ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3"
+ }
+}

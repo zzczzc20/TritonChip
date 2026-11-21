@@ -326,7 +326,15 @@ class Builder:
 
         `xor` gives lane i the value from lane `i ^ amount`, which is
         the compare-exchange partner every bitonic stage asks for.
+        `permute` takes a VECTOR of lane indices instead of a scalar
+        amount: lane i of the result is lane `amount[i]` of `v`
+        (`v.permute`), so a constant index vector broadcasts one lane.
         """
+        if (kind == 'permute') != (amount.kind == VECTOR):
+            raise Diagnostic(
+                f"v.{'permute' if kind == 'permute' else 'shuffle.' + kind} takes a "
+                f"{'vector of lane indices' if kind == 'permute' else 'scalar amount'}; "
+                f"{amount.name} is a {amount.kind}")
         out = self._value(VECTOR, dtype or v.dtype, hint='sh')
         self._emit('vshuffle', [out], [v, amount], op=kind)
         return out

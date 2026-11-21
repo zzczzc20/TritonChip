@@ -48,6 +48,67 @@ deliverable on the U280; SLR packing of the R41 image is the budget (`evidence/r
 
 ## 2. Triage of the blueprint
 
-(filled in after the inventory; see the log)
+Ordering rule: the result is a board geometric mean over 113 points, so a family at eta 0.02 counts as much as one
+at 0.6. The board baseline (`evidence/r42/baseline/b41_board.json`, run-3 image) puts attention_prefill (0.021),
+conv2d (0.032), resnet_block (0.035), attention_decode (0.057), rope, softmax, bmm and the norms at the bottom.
+The R41 image is about 96 % packed in SLR0, so hardware that goes into the R42 image has to be nearly free or paid
+for by a removal.
+
+**Stage A: software on the R41 run-3 image** (measurable on the board without a link)
+
+| Item | Blueprint row | State |
+|---|---|---|
+| Tiled element-wise lowering as the default | Full Inductor fusion and numerics | in work (`R42-red`) |
+| Reductions, norms, softmax, argmax, rope lowering | same | in work (`R42-red`) |
+| Attention (SDPA) and bmm lowering | TNCA_SDPA / fusion | in work (`R42-attn`) |
+| GEMM register blocking and overlap of transfers with matrix commands | 64x64 blocking, async pipelining | next |
+
+**Stage B: RTL for the R42 image** (one link, then the board)
+
+| Item | Blueprint row | State |
+|---|---|---|
+| Matrix engine without bubbles: B prefetch, command overlap | Zero-bubble matrix pipeline | in work (`R42-mtx`) |
+| FP32 element format on the matrix engine (conv2d, resnet, fp32 matmul) | native formats | in work (`R42-fp32`) |
+| h4 set index, allocate-on-fill in the home slice | Production entry prefetch + h4 | next, small |
+| Line-wide path (LINE_ENGINE, hybrid LSU) | Native 512-bit datapath | already in the R41 run-3 image; kept |
+| `m.mma.dp` grouped dot product | K-fused tensor core | already in the R41 run-3 image; kept |
+
+**Not in this round, with the reason**
+
+| Item | Reason |
+|---|---|
+| 128-512 MAC/cycle core, DSP48E2 mapping, 6 cores at 250-300 MHz | A new physical design: every lane mapped to DSPs, the VRF read rate raised to feed it, a new floorplan and timing closure. It cannot be screened by one link on a 96 %-packed image. The matrix engine is busy about 44 % of a GEMM point's cycles (R40 model attribution), so the binding limits today are transfers and issue; those are attacked first. |
+| Dual-issue front end | The front-end-bound share measured in R39 is 4.3 %. |
+| URAM NUCA, 16-24 HBM ports, 256/512-bit NoC | The home engine and the core port bind before the outlets (R41 link budget: outlets busy 2-5 %). Kept for the image after this one. |
+| C++ MLIR middle end | It changes compile time, not device cycles, which is what ArchBench scores. |
+| Command ring, device-side decode loop | They change host time, not the serial-grid device time ArchBench scores. |
+| Hardware multicast, offline weight pre-packing, graph-level layout pass | No ArchBench point is bound by them today; revisit with the model points. |
 
 ## 3. Log
+
+**2026-11-20.**
+- Branch opened; registration rewritten twice on the author's instructions (113 points; R41 three-core baseline;
+  board only).
+- Board baseline table from the R41 records: `tools/r42/baseline_table.py` -> `evidence/r42/baseline/b41_board.json`.
+  Run 3 over run 1: geometric mean 1.347x over the 113 points (board).
+- Screening environment: GB10 and thor. A first set of single-core screening runs on GB10 imported the compiler
+  package (`tnca_cc`) from an unrelated old mirror because only `python/` was on `PYTHONPATH`; those records were
+  discarded unused (moved to `~/r42/invalid_stale_compiler` on GB10) and the runs restarted with
+  `PYTHONPATH=python:compiler/python:tools/asm`.
+- Work packages started on their own branches: `R42-red` (tiled element-wise default, reductions and norms),
+  `R42-attn` (attention, bmm), `R42-gemm` (register blocking, transfer overlap), `R42-mtx` (matrix engine B
+  prefetch and command overlap, RTL), `R42-fp32` (FP32 matrix format, ISA + RTL + compiler); a board worker
+  re-measures the 113-point baseline on the run-3 image with the software of `main` through the guarded queue.
+
+**2026-11-21. First board A/B (`ab-int1`).** Board, U280, run-3 image `791b8af2` on both sides, 100 MHz,
+serial-grid device cycles, default knobs, 113/113 points pass on both sides
+(`evidence/r42/board/ab-int1/comparison.json`, computed by `tools/r42/board_compare.py`).
+- Baseline `b41-run3-base`: software of `main` `4b61abd8`. It reproduces the R41 run-3 records at a geometric mean
+  of 0.9995.
+- Candidate: `R42` at `da6be2b8` (the merge of `R42-red` and `R42-attn`): tiled element-wise lowering by default,
+  the loop pass, 64-lane reduction blocks, the attention/bmm/GEMM-pointer fixes.
+- Result: geometric mean speed-up **1.613x** over the 113 points; sum of cycles 1.305x. By tier: hbm 1.72x,
+  large 1.70x, medium 1.84x, small 1.68x, tiny 1.28x.
+- Slower by more than 2 %: `op.matmul/small/fp16-m64-k128-n128` (1.049), `op.gemv/hbm` (1.024),
+  `op.gemv/large` (1.022). Causes not yet established.
+This is a software-only result on the R41 image. The RTL work (`R42-mtx`, `R42-fp32`) and `R42-gemm` are not in it.

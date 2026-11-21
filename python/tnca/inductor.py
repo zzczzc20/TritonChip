@@ -70,10 +70,20 @@ import os
 import time
 
 STAGE1_MAX_BLOCK = 16
-# With TNCA_TILED_POINTWISE (default 0), a pointwise kernel's block may grow to
+# With TNCA_TILED_POINTWISE (default 2 since R42; 0 turns it off), a pointwise kernel's block may grow to
 # this many lanes; tnca_cc/pointwise_tiles.py runs it as a loop over register
 # tiles, and a kernel it cannot tile falls back to the 16-lane configuration.
 TILED_POINTWISE_BLOCK = 1024
+# The lane block of a looped reduction (R0_BLOCK), TNCA_REDUCTION_BLOCK. A
+# block wider than one register is lowered as that many registers
+# (tnca_cc/register_blocks.py): one loop iteration issues its loads back to
+# back and the scheduler interleaves the per-register chains, where a
+# 16-lane iteration waits out each load and each floating-point latency in
+# turn. Scans, sorts and index-carrying reductions keep 16 lanes
+# (_install_narrow_blocks); a kernel that does not compile or fit at this
+# width falls back to 16 (_install_block_fallback). A short row keeps a
+# narrower block (_reduction_block).
+REDUCTION_BLOCK = 64
 # Mode 3 (streamed tensor-engine tiles) amortises a program's descriptor setup
 # and its pipeline fill and drain over a longer block.
 TILED_STREAM_BLOCK = 8192
@@ -173,7 +183,8 @@ def _register(cap, reduction_rows=1, gemm_tile=(16,16,16)):
             # (tnca_cc.register_blocks): it keeps the standard 16 lanes,
             # the semantically equivalent retile, instead of failing.
             narrow = (kwargs.get('inductor_meta') or {}).get('tnca_narrow_block')
-            lanes = min(cap, STAGE1_MAX_BLOCK) if narrow else cap
+            lanes = (min(cap, STAGE1_MAX_BLOCK) if narrow
+                     else max(cap, _reduction_block(kwargs.get('size_hints'))))
             return _with_fallback(super().get_configs(**kwargs), lanes, rows=reduction_rows)
 
     import torch._inductor.heuristics.template.triton as tt
@@ -350,6 +361,7 @@ def _install_unsplit_scan():
 
 _NO_X_DIM = [False]
 _BLOCK_CAP = [STAGE1_MAX_BLOCK]
+_REDUCTION_BLOCK = [STAGE1_MAX_BLOCK]   # set by configure() from TNCA_REDUCTION_BLOCK
 _POINTWISE_CAP = [0]   # 0: the block cap; set by configure() from TNCA_TILED_POINTWISE
 _STREAM = [False]      # TNCA_TILED_POINTWISE=3
 # With tiling on, a 1-D pointwise block also leaves at least this many
@@ -370,6 +382,27 @@ def _pointwise_cap(size_hints, cap):
     while block * 2 * TILED_MIN_PROGRAMS <= numel and block * 2 <= wide:
         block *= 2
     return max(cap, block)
+
+
+# A reduction's lane block leaves at least this many loop iterations: a row
+# of one wide block pays for the block's accumulators (set up, combined at
+# the end) without a loop to amortise them over.
+REDUCTION_MIN_BLOCKS = 4
+
+
+def _reduction_block(size_hints):
+    """The lane block of one looped reduction: the widest power of two up to
+    TNCA_REDUCTION_BLOCK that leaves REDUCTION_MIN_BLOCKS iterations over the
+    reduced elements, and never less than the standard 16 lanes."""
+    limit = _REDUCTION_BLOCK[0]
+    numel = 1
+    for name, n in (size_hints or {}).items():
+        if str(name).startswith('r'):
+            numel *= int(n)
+    block = STAGE1_MAX_BLOCK
+    while block * 2 <= limit and block * 2 * REDUCTION_MIN_BLOCKS <= numel:
+        block *= 2
+    return block
 
 
 def _install_narrow_blocks():
@@ -412,7 +445,7 @@ def _install_narrow_blocks():
     def inductor_meta_per_kernel(self):
         out = orig_meta(self)
         ops = self.__dict__.get('_tnca_narrow_ops')
-        if ops and _BLOCK_CAP[0] > STAGE1_MAX_BLOCK:
+        if ops and max(_BLOCK_CAP[0], _REDUCTION_BLOCK[0]) > STAGE1_MAX_BLOCK:
             out['tnca_narrow_block'] = sorted(ops)
         return out
     inductor_meta_per_kernel._tnca = True
@@ -630,7 +663,11 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     _NO_X_DIM[0] = bool(no_x_dim)
     _install_no_x_dim()
     _BLOCK_CAP[0] = max_block
-    tiled = int(os.environ.get('TNCA_TILED_POINTWISE', '0'))
+    reduction_block = int(os.environ.get('TNCA_REDUCTION_BLOCK', REDUCTION_BLOCK))
+    if reduction_block not in (16, 32, 64, 128):
+        raise ValueError('TNCA_REDUCTION_BLOCK must be 16, 32, 64 or 128')
+    _REDUCTION_BLOCK[0] = reduction_block
+    tiled = int(os.environ.get('TNCA_TILED_POINTWISE', '2'))
     if tiled not in (0, 1, 2, 3):
         raise ValueError('TNCA_TILED_POINTWISE must be 0, 1, 2 or 3')
     _STREAM[0] = tiled == 3
@@ -682,7 +719,8 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
         try:
             cache_identity = configure_persistent_cache(dict(max_block=max_block,
                 tensor_descriptors=bool(tensor_descriptors), no_x_dim=bool(no_x_dim),
-                reduction_rows=reduction_rows, gemm_tile=gemm_tile, sdpa_mode=sdpa_mode))
+                reduction_rows=reduction_rows, gemm_tile=gemm_tile, sdpa_mode=sdpa_mode,
+                reduction_block=reduction_block))
         except OSError as error:
             # An incomplete installed package or unwritable cache must not
             # silently reuse stale code or stop ordinary compilation.
@@ -709,7 +747,8 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
                compile_threads=config.compile_threads,
                max_autotune_gemm_backends=config.max_autotune_gemm_backends,
                tensor_descriptors=bool(tensor_descriptors),
-               no_x_dim=bool(no_x_dim), reduction_rows=reduction_rows, gemm_tile=gemm_tile)
+               no_x_dim=bool(no_x_dim), reduction_rows=reduction_rows, gemm_tile=gemm_tile,
+               reduction_block=reduction_block)
     return out
 
 

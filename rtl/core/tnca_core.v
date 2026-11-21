@@ -2601,24 +2601,24 @@ module tnca_core #(
     // producers issuing their transfers. The context wakes when an engine
     // goes idle (eng_freed) or as before.
     reg  mtx_busy_q, txf_busy_q;
-    // MTX_PIPE: also (a) when the pending matrix command became the running
-    // one, and (b) the cycle after a transfer-engine command that did not
-    // make the engine busy (w.release, td.release: one cycle in X). (b) is a
-    // latent race of RCTX_SWITCH=2, not of the matrix unit: a context whose
-    // instruction waited only for such a command in X gave way and was
-    // parked with no wake to come (stall_txf without txf_busy ever rising).
-    // t39_slice +allroles hangs on it once the matrix timing moves; the R41
-    // elaboration misses it by cycle alignment. Under MTX_PIPE only, so the
-    // parameter-0 core stays cycle-identical.
-    reg  txf_cmd_q;
+    // MTX_PIPE: also when the pending matrix command became the running one.
     wire eng_freed = (RCTX_SWITCH >= 2) && ((mtx_busy_q && !mtx_busy) || (txf_busy_q && !txf_busy)
-                                            || mtxp_pend_freed
-                                            || ((MTX_PIPE != 0) && txf_cmd_q && !txf_busy));
+                                            || mtxp_pend_freed);
     always @(posedge clk) begin
         mtx_busy_q <= rst_n && mtx_busy;
         txf_busy_q <= rst_n && txf_busy;
-        txf_cmd_q  <= rst_n && (txf_is_cfg || txf_is_xfr);
     end
+    // What R's instruction gives way for. A latent race of RCTX_SWITCH=2:
+    // an instruction that waited only for a transfer-engine command in X
+    // which never makes the engine busy (w.release, td.release: one cycle)
+    // gave way and its context was parked with no wake to come. t39_slice
+    // +allroles hangs on it once the matrix timing moves; the R41
+    // elaboration misses it by cycle alignment. Under MTX_PIPE an engine
+    // must BE busy for the instruction to give way (a command in X that
+    // does occupy the engine parks the context one cycle later); with
+    // MTX_PIPE = 0 the term is the R41 one, cycle for cycle.
+    wire eng_wait = (MTX_PIPE != 0) ? ((stall_mtx && mtx_busy) || (stall_txf && txf_busy))
+                                    : (stall_mtx || stall_txf);
     // A parked context wakes on a writeback to one of its registers (every
     // register write passes through W) or an accumulator's completion.
     reg [NUM_RCTX-1:0] rctx_wake;
@@ -2659,7 +2659,7 @@ module tnca_core #(
                                       || x_illegal || x_amo
                                       || ((x_fu == `TNCA_FU_BAR) && (x_func == `TNCA_MB_WAIT)));
     wire rp_go = (RCTX_SWITCH != 0) && r_valid && r_of_idle
-               && (hazard || ((RCTX_SWITCH >= 2) && (stall_mtx || stall_txf)))
+               && (hazard || ((RCTX_SWITCH >= 2) && eng_wait))
                && d_valid && (d_rctx != r_rctx)
                && !x_may_redirect && !vrf_wb_freeze;
     assign stall_front = stall_raw && !rp_go;
@@ -3497,7 +3497,7 @@ module tnca_core #(
     //   rsb_clm/rel the same for the instruction entering R (F05)
     //   hold_rel    a held D or R source was released while it waited (F05)
     wire cov_sw_cand = (RCTX_SWITCH != 0) && r_valid && r_of_idle
-                     && (hazard || ((RCTX_SWITCH >= 2) && (stall_mtx || stall_txf)))
+                     && (hazard || ((RCTX_SWITCH >= 2) && eng_wait))
                      && d_valid && (d_rctx != r_rctx) && !vrf_wb_freeze;
     reg [31:0] cov_sw_inhibit, cov_sw_redir, cov_hold_ops, cov_pf_drop, cov_mem_claim;
     reg [31:0] cov_fwd_s, cov_fwd_p;

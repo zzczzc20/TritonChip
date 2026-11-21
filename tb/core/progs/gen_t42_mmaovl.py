@@ -36,7 +36,7 @@ def rnd_elem(fmt):
 
 # fragment sets: (A format, B format, K, first A register, first B register)
 SETS = [('f16', 'f16', 16, 0, 8), ('f16', 'e4m3', 16, 16, 24), ('e4m3', 'e4m3', 32, 32, 40),
-        ('bf16', 'f16', 16, 44, 52)]
+        ('bf16', 'f16', 16, 48, 56)]
 out = []
 w = out.append
 tid = [0]
@@ -74,7 +74,7 @@ for idx, (fa, fb, K, va, vb) in enumerate(SETS):
 vw = [f2b(float(i) - 3.5) for i in range(16)]
 data.append(("vw", base, vw, 4))
 w(f"    .li       s10, #{base}")
-w("    v.ld.w    v61, [s10, #0]")
+w("    v.ld.w    v29, [s10, #0]")
 base += 0x400
 
 acc = {1: [f2b(0.0)] * (M * N), 2: [f2b(0.0)] * (M * N)}
@@ -89,9 +89,9 @@ def mma(slot, s):
 def check(slot, rows=(0, 6, 15), lanes=(0, 5, 15)):
     for r in rows:
         w(f"    .li       s13, #{r}")
-        w(f"    a.vread   v60, a{slot}, s13")
+        w(f"    a.vread   v28, a{slot}, s13")
         for ln in lanes:
-            w(f"    .assert_lane v60, #{ln}, #0x{acc[slot][r*N+ln]:08x}, #{nid()}")
+            w(f"    .assert_lane v28, #{ln}, #0x{acc[slot][r*N+ln]:08x}, #{nid()}")
 
 
 w("    m.zero    a1")
@@ -110,7 +110,7 @@ w("    // ---- train 3: a row write and a zero behind in-flight commands ----")
 w("    mb.arm    s12, b1, #0, #5")
 mma(1, 3); mma(1, 0)
 w("    .li       s13, #5")
-w("    a.vwrite  a1, s13, v61")
+w("    a.vwrite  a1, s13, v29")
 acc[1][5*N:6*N] = vw
 mma(2, 2)
 w("    m.zero    a2")

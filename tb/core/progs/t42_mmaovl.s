@@ -53,25 +53,25 @@ start:
     v.ld.w    v46, [s11, #384]
     v.ld.w    v47, [s11, #448]
     .li       s10, #35840
-    v.ld.w    v44, [s10, #0]
-    v.ld.w    v45, [s10, #64]
-    v.ld.w    v46, [s10, #128]
-    v.ld.w    v47, [s10, #192]
-    v.ld.w    v48, [s10, #256]
-    v.ld.w    v49, [s10, #320]
-    v.ld.w    v50, [s10, #384]
-    v.ld.w    v51, [s10, #448]
+    v.ld.w    v48, [s10, #0]
+    v.ld.w    v49, [s10, #64]
+    v.ld.w    v50, [s10, #128]
+    v.ld.w    v51, [s10, #192]
+    v.ld.w    v52, [s10, #256]
+    v.ld.w    v53, [s10, #320]
+    v.ld.w    v54, [s10, #384]
+    v.ld.w    v55, [s10, #448]
     .li       s11, #36352
-    v.ld.w    v52, [s11, #0]
-    v.ld.w    v53, [s11, #64]
-    v.ld.w    v54, [s11, #128]
-    v.ld.w    v55, [s11, #192]
-    v.ld.w    v56, [s11, #256]
-    v.ld.w    v57, [s11, #320]
-    v.ld.w    v58, [s11, #384]
-    v.ld.w    v59, [s11, #448]
+    v.ld.w    v56, [s11, #0]
+    v.ld.w    v57, [s11, #64]
+    v.ld.w    v58, [s11, #128]
+    v.ld.w    v59, [s11, #192]
+    v.ld.w    v60, [s11, #256]
+    v.ld.w    v61, [s11, #320]
+    v.ld.w    v62, [s11, #384]
+    v.ld.w    v63, [s11, #448]
     .li       s10, #36864
-    v.ld.w    v61, [s10, #0]
+    v.ld.w    v29, [s10, #0]
     m.zero    a1
     m.zero    a2
     // ---- train 1: four commands, one barrier, then the wait ----
@@ -82,122 +82,122 @@ start:
     m.mma.dp.async.k32.e4m3 a1, v32, v40, s12
     mb.wait   s12
     .li       s13, #0
-    a.vread   v60, a1, s13
-    .assert_lane v60, #0, #0xc0d96d3a, #1
-    .assert_lane v60, #5, #0x400a7de8, #2
-    .assert_lane v60, #15, #0x3ef10080, #3
+    a.vread   v28, a1, s13
+    .assert_lane v28, #0, #0xc0d96d3a, #1
+    .assert_lane v28, #5, #0x400a7de8, #2
+    .assert_lane v28, #15, #0x3ef10080, #3
     .li       s13, #6
-    a.vread   v60, a1, s13
-    .assert_lane v60, #0, #0x416657a4, #4
-    .assert_lane v60, #5, #0x403f6204, #5
-    .assert_lane v60, #15, #0xc13c928d, #6
+    a.vread   v28, a1, s13
+    .assert_lane v28, #0, #0x416657a4, #4
+    .assert_lane v28, #5, #0x403f6204, #5
+    .assert_lane v28, #15, #0xc13c928d, #6
     .li       s13, #15
-    a.vread   v60, a1, s13
-    .assert_lane v60, #0, #0xc24b5699, #7
-    .assert_lane v60, #5, #0xc15c8586, #8
-    .assert_lane v60, #15, #0x41b9fce4, #9
+    a.vread   v28, a1, s13
+    .assert_lane v28, #0, #0xc24b5699, #7
+    .assert_lane v28, #5, #0xc15c8586, #8
+    .assert_lane v28, #15, #0x41b9fce4, #9
     .li       s13, #0
-    a.vread   v60, a2, s13
-    .assert_lane v60, #0, #0xc103b5b4, #10
-    .assert_lane v60, #5, #0x3f328c85, #11
-    .assert_lane v60, #15, #0x401cd38c, #12
+    a.vread   v28, a2, s13
+    .assert_lane v28, #0, #0xc103b5b4, #10
+    .assert_lane v28, #5, #0x3f328c85, #11
+    .assert_lane v28, #15, #0x401cd38c, #12
     .li       s13, #6
-    a.vread   v60, a2, s13
-    .assert_lane v60, #0, #0xc067416f, #13
-    .assert_lane v60, #5, #0x400f4590, #14
-    .assert_lane v60, #15, #0xc1078cf8, #15
+    a.vread   v28, a2, s13
+    .assert_lane v28, #0, #0xc067416f, #13
+    .assert_lane v28, #5, #0x400f4590, #14
+    .assert_lane v28, #15, #0xc1078cf8, #15
     .li       s13, #15
-    a.vread   v60, a2, s13
-    .assert_lane v60, #0, #0xc12823cc, #16
-    .assert_lane v60, #5, #0x4081d6bb, #17
-    .assert_lane v60, #15, #0x403e01d2, #18
+    a.vread   v28, a2, s13
+    .assert_lane v28, #0, #0xc12823cc, #16
+    .assert_lane v28, #5, #0x4081d6bb, #17
+    .assert_lane v28, #15, #0x403e01d2, #18
     // ---- train 2: reads straight behind the train, no wait first ----
     mb.arm    s12, b1, #0, #3
     m.mma.dp.async.k16.f16.e4m3 a2, v16, v24, s12
-    m.mma.dp.async.k16.bf16.f16 a2, v44, v52, s12
+    m.mma.dp.async.k16.bf16.f16 a2, v48, v56, s12
     m.mma.dp.async.k16.f16 a1, v0, v8, s12
     .li       s13, #3
-    a.vread   v60, a2, s13
-    .assert_lane v60, #0, #0x4119139f, #19
-    .assert_lane v60, #5, #0xbf98a708, #20
-    .assert_lane v60, #15, #0xc068861b, #21
+    a.vread   v28, a2, s13
+    .assert_lane v28, #0, #0x4119139f, #19
+    .assert_lane v28, #5, #0xbf98a708, #20
+    .assert_lane v28, #15, #0xc068861b, #21
     .li       s13, #9
-    a.vread   v60, a1, s13
-    .assert_lane v60, #0, #0x408ffcc8, #22
-    .assert_lane v60, #5, #0x41eb7d7e, #23
-    .assert_lane v60, #15, #0xc0c36bd4, #24
+    a.vread   v28, a1, s13
+    .assert_lane v28, #0, #0x408ffcc8, #22
+    .assert_lane v28, #5, #0x41eb7d7e, #23
+    .assert_lane v28, #15, #0xc0c36bd4, #24
     mb.wait   s12
     // ---- train 3: a row write and a zero behind in-flight commands ----
     mb.arm    s12, b1, #0, #5
-    m.mma.dp.async.k16.bf16.f16 a1, v44, v52, s12
+    m.mma.dp.async.k16.bf16.f16 a1, v48, v56, s12
     m.mma.dp.async.k16.f16 a1, v0, v8, s12
     .li       s13, #5
-    a.vwrite  a1, s13, v61
+    a.vwrite  a1, s13, v29
     m.mma.dp.async.k32.e4m3 a2, v32, v40, s12
     m.zero    a2
     m.mma.dp.async.k16.f16 a2, v0, v8, s12
     m.mma.dp.async.k16.f16.e4m3 a1, v16, v24, s12
     mb.wait   s12
     .li       s13, #0
-    a.vread   v60, a1, s13
-    .assert_lane v60, #0, #0xbf4eaefc, #25
-    .assert_lane v60, #5, #0x400967f0, #26
-    .assert_lane v60, #15, #0xc1c92c56, #27
+    a.vread   v28, a1, s13
+    .assert_lane v28, #0, #0xbf4eaefc, #25
+    .assert_lane v28, #5, #0x400967f0, #26
+    .assert_lane v28, #15, #0xc1c92c56, #27
     .li       s13, #5
-    a.vread   v60, a1, s13
-    .assert_lane v60, #0, #0xbf615060, #28
-    .assert_lane v60, #5, #0xc0dd5df6, #29
-    .assert_lane v60, #15, #0xc06c7670, #30
+    a.vread   v28, a1, s13
+    .assert_lane v28, #0, #0xbf615060, #28
+    .assert_lane v28, #5, #0xc0dd5df6, #29
+    .assert_lane v28, #15, #0xc06c7670, #30
     .li       s13, #15
-    a.vread   v60, a1, s13
-    .assert_lane v60, #0, #0xc2d405fb, #31
-    .assert_lane v60, #5, #0xc09b03ab, #32
-    .assert_lane v60, #15, #0x4199c63b, #33
+    a.vread   v28, a1, s13
+    .assert_lane v28, #0, #0xc2d405fb, #31
+    .assert_lane v28, #5, #0xc09b03ab, #32
+    .assert_lane v28, #15, #0x4199c63b, #33
     .li       s13, #0
-    a.vread   v60, a2, s13
-    .assert_lane v60, #0, #0xc103b5b4, #34
-    .assert_lane v60, #5, #0x3f328c85, #35
-    .assert_lane v60, #15, #0x401cd38c, #36
+    a.vread   v28, a2, s13
+    .assert_lane v28, #0, #0xc103b5b4, #34
+    .assert_lane v28, #5, #0x3f328c85, #35
+    .assert_lane v28, #15, #0x401cd38c, #36
     .li       s13, #6
-    a.vread   v60, a2, s13
-    .assert_lane v60, #0, #0xc067416f, #37
-    .assert_lane v60, #5, #0x400f4590, #38
-    .assert_lane v60, #15, #0xc1078cf8, #39
+    a.vread   v28, a2, s13
+    .assert_lane v28, #0, #0xc067416f, #37
+    .assert_lane v28, #5, #0x400f4590, #38
+    .assert_lane v28, #15, #0xc1078cf8, #39
     .li       s13, #15
-    a.vread   v60, a2, s13
-    .assert_lane v60, #0, #0xc12823cc, #40
-    .assert_lane v60, #5, #0x4081d6bb, #41
-    .assert_lane v60, #15, #0x403e01d2, #42
+    a.vread   v28, a2, s13
+    .assert_lane v28, #0, #0xc12823cc, #40
+    .assert_lane v28, #5, #0x4081d6bb, #41
+    .assert_lane v28, #15, #0x403e01d2, #42
     // ---- train 4: twelve on one slot ----
     mb.arm    s12, b1, #0, #12
     m.mma.dp.async.k16.f16 a2, v0, v8, s12
     m.mma.dp.async.k16.f16.e4m3 a2, v16, v24, s12
-    m.mma.dp.async.k16.bf16.f16 a2, v44, v52, s12
+    m.mma.dp.async.k16.bf16.f16 a2, v48, v56, s12
     m.mma.dp.async.k32.e4m3 a2, v32, v40, s12
     m.mma.dp.async.k16.f16 a2, v0, v8, s12
     m.mma.dp.async.k16.f16.e4m3 a2, v16, v24, s12
-    m.mma.dp.async.k16.bf16.f16 a2, v44, v52, s12
+    m.mma.dp.async.k16.bf16.f16 a2, v48, v56, s12
     m.mma.dp.async.k32.e4m3 a2, v32, v40, s12
     m.mma.dp.async.k16.f16 a2, v0, v8, s12
     m.mma.dp.async.k16.f16.e4m3 a2, v16, v24, s12
-    m.mma.dp.async.k16.bf16.f16 a2, v44, v52, s12
+    m.mma.dp.async.k16.bf16.f16 a2, v48, v56, s12
     m.mma.dp.async.k32.e4m3 a2, v32, v40, s12
     mb.wait   s12
     .li       s13, #0
-    a.vread   v60, a2, s13
-    .assert_lane v60, #0, #0x41ec9af8, #43
-    .assert_lane v60, #5, #0x416d3bf5, #44
-    .assert_lane v60, #15, #0xc19fc828, #45
+    a.vread   v28, a2, s13
+    .assert_lane v28, #0, #0x41ec9af8, #43
+    .assert_lane v28, #5, #0x416d3bf5, #44
+    .assert_lane v28, #15, #0xc19fc828, #45
     .li       s13, #6
-    a.vread   v60, a2, s13
-    .assert_lane v60, #0, #0x427e456b, #46
-    .assert_lane v60, #5, #0x419ba789, #47
-    .assert_lane v60, #15, #0xc25b9bff, #48
+    a.vread   v28, a2, s13
+    .assert_lane v28, #0, #0x427e456b, #46
+    .assert_lane v28, #5, #0x419ba789, #47
+    .assert_lane v28, #15, #0xc25b9bff, #48
     .li       s13, #15
-    a.vread   v60, a2, s13
-    .assert_lane v60, #0, #0xc33d1a14, #49
-    .assert_lane v60, #5, #0xc22250ea, #50
-    .assert_lane v60, #15, #0x42732159, #51
+    a.vread   v28, a2, s13
+    .assert_lane v28, #0, #0xc33d1a14, #49
+    .assert_lane v28, #5, #0xc22250ea, #50
+    .assert_lane v28, #15, #0x42732159, #51
     exit
 
 .org 0x8000

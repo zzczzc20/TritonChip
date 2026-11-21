@@ -99,3 +99,16 @@ for by a removal.
   `R42-attn` (attention, bmm), `R42-gemm` (register blocking, transfer overlap), `R42-mtx` (matrix engine B
   prefetch and command overlap, RTL), `R42-fp32` (FP32 matrix format, ISA + RTL + compiler); a board worker
   re-measures the 113-point baseline on the run-3 image with the software of `main` through the guarded queue.
+
+**2026-11-21. First board A/B (`ab-int1`).** Board, U280, run-3 image `791b8af2` on both sides, 100 MHz,
+serial-grid device cycles, default knobs, 113/113 points pass on both sides
+(`evidence/r42/board/ab-int1/comparison.json`, computed by `tools/r42/board_compare.py`).
+- Baseline `b41-run3-base`: software of `main` `4b61abd8`. It reproduces the R41 run-3 records at a geometric mean
+  of 0.9995.
+- Candidate: `R42` at `da6be2b8` (the merge of `R42-red` and `R42-attn`): tiled element-wise lowering by default,
+  the loop pass, 64-lane reduction blocks, the attention/bmm/GEMM-pointer fixes.
+- Result: geometric mean speed-up **1.613x** over the 113 points; sum of cycles 1.305x. By tier: hbm 1.72x,
+  large 1.70x, medium 1.84x, small 1.68x, tiny 1.28x.
+- Slower by more than 2 %: `op.matmul/small/fp16-m64-k128-n128` (1.049), `op.gemv/hbm` (1.024),
+  `op.gemv/large` (1.022). Causes not yet established.
+This is a software-only result on the R41 image. The RTL work (`R42-mtx`, `R42-fp32`) and `R42-gemm` are not in it.

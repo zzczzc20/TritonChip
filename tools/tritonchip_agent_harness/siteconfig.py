@@ -67,6 +67,9 @@ class Site:
     fpga_pipeline: Optional[dict] = None
     # How many evaluations may run at once on this host (islands share it; report section 8.8 P10).
     evaluations: Optional[int] = None
+    # The free space a run of islands needs where it writes before it starts (resources.min_free_gib,
+    # 2026-11-23; loop._disk_check, default 50).
+    min_free_gib: Optional[float] = None
     # A SystemC installation (include/, lib/, lib/cmake/SystemCLanguage) the performance models in
     # tools/performance_harness/systemc build against: mounted read-only at runner.SYSTEMC_DIR for a
     # task that asks for the models (`models`, 2026-11-08). None: this site cannot run such a task.
@@ -114,7 +117,10 @@ def load_site(path: Optional[Path] = None) -> Site:
         raise SiteError("images: each must be an image reference")
 
     res = value["resources"]
-    _keys("resources", res, {"cpus", "memory", "pids"}, {"evaluations"})
+    _keys("resources", res, {"cpus", "memory", "pids"}, {"evaluations", "min_free_gib"})
+    if "min_free_gib" in res and (isinstance(res["min_free_gib"], bool) or not isinstance(res["min_free_gib"], (int, float))
+                                  or res["min_free_gib"] < 0):
+        raise SiteError("resources.min_free_gib must be a number of GiB >= 0")
     if "evaluations" in res and (not isinstance(res["evaluations"], int) or isinstance(res["evaluations"], bool)
                                  or res["evaluations"] < 1):
         raise SiteError("resources.evaluations must be a positive integer")
@@ -236,6 +242,7 @@ def load_site(path: Optional[Path] = None) -> Site:
         fpga_worker=dict(worker) if worker else None,
         fpga_pipeline=pipeline,
         evaluations=res.get("evaluations"),
+        min_free_gib=res.get("min_free_gib"),
         systemc=_systemc(value.get("systemc")),
     )
 

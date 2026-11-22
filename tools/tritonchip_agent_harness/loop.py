@@ -206,7 +206,9 @@ def _run_task(site: Site, task: Task, agent: str, mode: str, model: Optional[str
             record["agent_result"] = runner.run_agent(site, account, prompt, mode, run_dir, workspace,
                                                       timeout=float(task.wall_seconds), services=broker,
                                                       skills=names, **({"turns": turns} if turns else {}),
-                                                      **({"models": True} if task.models else {}))
+                                                      **({"models": True} if task.models else {}),
+                                                      **({"dev_cases": task.path.parent / task.evaluation["dev_cases"]}
+                                                         if (task.evaluation or {}).get("dev_cases") else {}))
         except KeyboardInterrupt as exc:
             record["agent_result"] = {"stop_reason": "operator",
                                       **({"services": broker.record()} if broker is not None else {})}
@@ -306,7 +308,8 @@ def _disk_check(site: Site, run_dir: Path) -> None:
     disk filled in the first hour and five requests were lost (review section 9)."""
     import shutil as _shutil
     need = float(getattr(site, "min_free_gib", None) or MIN_FREE_GIB)
-    for where in dict.fromkeys([run_dir, Path(site.state_dir)]):
+    state = getattr(site, "state_dir", None)
+    for where in dict.fromkeys([run_dir, *([Path(state)] if state else [])]):
         probe = where if where.exists() else where.parent
         free = _shutil.disk_usage(probe).free / 2 ** 30
         if free < need:

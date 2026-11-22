@@ -178,7 +178,8 @@ def _turn(agent: str, account: Account, command: list, timeout: float) -> tuple:
 
 def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Path,
               workspace: Optional[Path], timeout: float, services=None, skills: Optional[list] = None,
-              turns=None, name: Optional[str] = None, models: bool = False) -> dict:
+              turns=None, name: Optional[str] = None, models: bool = False,
+              dev_cases: Optional[Path] = None) -> dict:
     """`services`, when given, is a started-on-demand services.Broker the agent reaches with `tnca-service`.
 
     `turns`, an island's controller: called after each CLI run with that turn's record and the seconds left;
@@ -187,6 +188,7 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
 
     `skills`: the names of the skills this run gets (skills.select), staged and mounted; none by default.
     `models`: the task asks for the performance models' environment (SYSTEMC_DIR, MODELS_DIR).
+    `dev_cases`: the task's development cases (task.dev_index), mounted read-only at task.DEV_CASES_MOUNT.
     """
     selected = skills_.select(skills or [])
     model_env = models_env(site) if models else {}
@@ -223,6 +225,11 @@ def run_agent(site: Site, account: Account, prompt: str, mode: str, run_dir: Pat
             if roof:
                 env[roofline.ENV] = json.dumps(roof, sort_keys=True, separators=(",", ":"))
                 result["chip_roof"] = roof
+        if dev_cases is not None:
+            # The development set given to the agent (2026-11-23): its cases, read-only (task.dev_index).
+            from .task import DEV_CASES_MOUNT
+            extra.append(Mount(dev_cases, DEV_CASES_MOUNT))
+            result["dev_cases"] = {"mount": DEV_CASES_MOUNT, "index_sha256": _sha(dev_cases / "INDEX.json")}
         staged = skills_.stage(selected, run_dir / "skills") if selected else None
         mounts = agent_mounts(socket_dir, workspace, extra, skills=staged,
                               systemc=site.systemc if models else None)

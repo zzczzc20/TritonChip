@@ -618,7 +618,9 @@ def run(site, task: Task, account, mode: str, run_dir: Path, repo: Path, names: 
             turns = live[i]["turns"] = Turns(i, task, broker, archive, prompt)
             agent = runner.run_agent(site, account, prompt, mode, idir, workspace, timeout=float(task.wall_seconds),
                                      services=broker, skills=names, turns=turns, name=f"{run_dir.name}-i{i}",
-                                     **({"models": True} if task.models else {}))
+                                     **({"models": True} if task.models else {}),
+                                     **({"dev_cases": task.path.parent / task.evaluation["dev_cases"]}
+                                        if (task.evaluation or {}).get("dev_cases") else {}))
         except Exception as exc:  # noqa: BLE001 -- one island failing ends that island, not the run (D7)
             agent = {**agent, "error": f"{type(exc).__name__}: {exc}"}
         finally:

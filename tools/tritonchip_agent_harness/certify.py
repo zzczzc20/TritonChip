@@ -506,12 +506,16 @@ def after_run(site, repo: Path, task: Task, record: dict, run_dir: Path, broker=
         image = board.base_image(site, task)
     out["image"] = image
     got, checks = {}, {}
-    todo = names
+    # The card's held-out set (2026-11-23): measured in the same session when the task asks; it decides nothing
+    # here (no simulation to agree with) and is reported beside the verdict against the base on the card.
+    held = (list(task.evaluation.get("board_final") or ())
+            if (task.evaluation.get("certify") or {}).get("board_final") else [])
+    todo = names + held
     if reused:
         card = reused["full"]["card"]["record"]
         got.update({p: r for p, r in (card.get("points") or {}).items() if p in task.evaluation["validation"]})
         checks.update(((card.get("measured") or {}).get("checks")) or {})
-        todo = [p for p in names if p not in got]
+        todo = [p for p in names if p not in got] + held
         out["reused"] = {"request": reused["id"], "points": sorted(got)}
     if todo:
         rec = board.measure(site, repo, task, candidate, image, todo, work / "card", job["containers"],
@@ -529,11 +533,29 @@ def after_run(site, repo: Path, task: Task, record: dict, run_dir: Path, broker=
         checks.update(((rec.get("measured") or {}).get("checks")) or {})
     rows = _board_rows(sim, got, board_cycles(task))
     out["rows"] = rows
+    if held:
+        out["board_final"] = held_out_on_card(site, repo, task, held, got)
     # Kept so that the run can be judged again from its record (rejudge).
     out["checks"] = {n: {"exit": c.get("exit")} for n, c in checks.items()}
     verdict_, why = _judge(rows, checks)
     out.update(verdict=verdict_, why=why, finished=time.time())
     return out
+
+
+def held_out_on_card(site, repo: Path, task: Task, held: list, got: dict) -> dict:
+    """The card's held-out set against the base on the card, scored as the board score scores (families)."""
+    from . import board, evaluator, families as families_
+    try:
+        base = board.baseline(site, repo, task, points=held)
+        full = evaluator.score(base["points"], {p: got[p] for p in held if p in got}, held,
+                               faster_than=float(((task.services or {}).get("fpga_slow") or {}).get(
+                                   "board_faster_than", 1.0)))
+        full.update(families_.scores(full.get("points") or [], task.evaluation.get("families")))
+    except Exception as exc:  # noqa: BLE001 -- recorded; the verdict does not depend on it
+        return {"error": f"{type(exc).__name__}: {str(exc)[:300]}"}
+    return {**{k: full.get(k) for k in ("n", "passed", "score", "speedup_geomean", "families")},
+            "points": [{k: r.get(k) for k in ("point", "speedup", "failure", "cycles", "base_cycles")}
+                       for r in full.get("points") or []]}
 
 
 def _judge(rows: list, checks: dict) -> tuple:

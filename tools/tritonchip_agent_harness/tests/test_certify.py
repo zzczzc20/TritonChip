@@ -520,3 +520,26 @@ class Again(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HeldOutOnCard(unittest.TestCase):
+    """2026-11-23: the card's held-out set (evaluation.board_final) scored against the base on the card."""
+
+    def test_scored_by_family_beside_the_verdict(self):
+        import types
+        from unittest import mock
+        from tritonchip_agent_harness import board, certify as certify_
+        held = ["op.matmul/large/a", "op.matmul/large/b", "model.llama_decode/hbm/c"]
+        base = {"points": {p: {"status": "pass", "cycles": 1000} for p in held}}
+        got = {"op.matmul/large/a": {"status": "pass", "cycles": 500},
+               "op.matmul/large/b": {"status": "pass", "cycles": 2000},
+               "model.llama_decode/hbm/c": {"status": "numeric-error", "cycles": 10}}
+        task = types.SimpleNamespace(evaluation={"families": {"llama": {"prefixes": ["model.llama_decode/"],
+                                                                        "weight": 2}}},
+                                     services={"fpga_slow": {"board_faster_than": 1.01}})
+        with mock.patch.object(board, "baseline", return_value=base) as b:
+            out = certify_.held_out_on_card(None, None, task, held, got)
+        self.assertEqual(b.call_args.kwargs["points"], held)
+        self.assertEqual((out["n"], out["passed"]), (3, 2))
+        self.assertEqual(out["families"], {"llama": 0.5, "matmul": 1.0})
+        self.assertAlmostEqual(out["score"], 0.5 ** (2 / 3), places=4)

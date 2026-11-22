@@ -303,6 +303,12 @@ class SlowService(unittest.TestCase):
             "status": "BUILD_FAIL", "log_tail": ["ERROR: license checkout failed"]}}), "infra")
         self.assertEqual(fpga_slow.classify({"status": "PIPELINE_FAIL"}), "infra")
         self.assertEqual(fpga_slow.classify({"status": "TIMEOUT", "build": {}}), "timeout")
+        # The link stopped at the flow's cap on the build machine (the HPC links of 2026-11-21): not the design's,
+        # and another machine would not finish in time either.
+        self.assertEqual(fpga_slow.classify({"status": "BUILD_FAIL", "build": {
+            "status": "BUILD_FAIL", "timed_out": True, "log_tail": ['"returncode": 124,']}}), "timeout")
+        self.assertEqual(fpga_slow.classify({"status": "BUILD_FAIL", "build": {
+            "status": "BUILD_FAIL", "log_tail": ["HARNESS_TIMEOUT after 28800s"]}}), "timeout")
 
     def test_the_placement_hooks_refusal_is_the_designs(self):
         # R41-F4's b4 and b9 (2026-11-11): NOC_LINK_STAGES 1, refused by the U280 binding's place_design hook.

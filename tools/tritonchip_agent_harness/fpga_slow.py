@@ -365,6 +365,10 @@ def classify(pipe: dict, clock_mhz: Optional[float] = None) -> str:
         return "design"
     if status != "BUILD_FAIL" or build.get("preflight_failed"):
         return "infra"
+    if build.get("timed_out") or "HARNESS_TIMEOUT" in _build_text(build):
+        # The link ran past the flow's cap on the build machine (2026-11-21: the first HPC links at 480
+        # minutes). Another machine would run past it too, and later in the run: not tried again, not charged.
+        return "timeout"
     metrics = ((build.get("timing") or {}).get("metrics")) or {}
     if any(isinstance(metrics.get(k), (int, float)) and metrics[k] < 0 for k in ("wns_ns", "tns_ns", "whs_ns", "ths_ns")):
         return "design"

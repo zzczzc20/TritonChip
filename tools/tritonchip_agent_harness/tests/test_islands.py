@@ -529,3 +529,33 @@ class FinalCandidates(unittest.TestCase):
     def test_top3_stops_at_the_first_certified(self):
         ids, evaluated, _ = self._run("top3", ["certified"])
         self.assertEqual((ids, evaluated), (["0-1"], ["a"]))
+
+
+class RunGuards(unittest.TestCase):
+    """2026-11-23: free space before a run of islands; a live record while it runs."""
+
+    def test_a_full_disk_stops_the_run_before_it_starts(self):
+        import types as types_
+        from unittest import mock
+        from tritonchip_agent_harness import loop
+        with tempfile.TemporaryDirectory() as tmp:
+            site = types_.SimpleNamespace(state_dir=Path(tmp), min_free_gib=None)
+            loop._disk_check(site, Path(tmp) / "run")                    # a real disk has room
+            usage = types_.SimpleNamespace(total=100 * 2 ** 30, used=99 * 2 ** 30, free=2 ** 30)
+            with mock.patch("shutil.disk_usage", return_value=usage):
+                with self.assertRaisesRegex(RuntimeError, "1 GiB free; a run of islands needs 50 GiB"):
+                    loop._disk_check(site, Path(tmp) / "run")
+
+    def test_the_live_record_is_written_and_replaced(self):
+        import types as types_
+        from tritonchip_agent_harness import loop
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            a = islands.Archive(root, task(2))
+            commit(a, 0, root, "x", 1.2)
+            broker = types_.SimpleNamespace(island=0, archive=a, record=lambda: {"requests": [{"id": "s1"}]})
+            live = loop._LiveRecord(root, types_.SimpleNamespace(brokers=[broker]))
+            live.write()
+            got = json.loads((root / "run.live.json").read_text())
+            self.assertEqual((got["live"], got["archive"]["entries"][0]["id"]), (True, "0-1"))
+            self.assertEqual(got["islands"][0]["services"]["requests"][0]["id"], "s1")

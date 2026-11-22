@@ -292,6 +292,8 @@ def _build_summary(value: Mapping[str, Any]) -> dict[str, Any]:
         "xclbin_sha256": next((digest for name, digest in artifacts.items() if name.endswith(".xclbin")), None),
         "error": result.get("error"),
         "preflight_failed": result.get("preflight_failed"),
+        # A stage the submit stopped at its --timeout (the link at the flow's cap, 2026-11-21).
+        "timed_out": any(isinstance(s, dict) and s.get("timed_out") for s in (result.get("stages") or [])),
         "log_tail": value.get("log_tail"),
     }
 

@@ -33,7 +33,7 @@ from typing import Optional
 
 from . import evaluator, fpga_quick
 
-BUILD_STEPS = ("build:submit", "build")
+BUILD_STEPS = ("build:submit", "build:lsf", "build")
 BOARD_STEPS = ("board:measure", "board")
 WHOLE_SLOW = "the whole request, from its start to its end: no pipeline record timed a build or board stage"
 WHOLE_CERTIFY = "the whole pipeline, link and board stage together: its record timed no step"
@@ -94,7 +94,11 @@ def services(site, task, requests) -> list:
                          job.get("build_host") or cfg.get("build_host"),
                          cfg.get("board_host"), ("fpga-slow-build", "fpga-slow-board"), job["id"])
             got += _card(((full.get("card") or {}).get("record")), "fpga-slow-board", job["id"])
-            out += got or [entry("fpga-slow", None, *times, **common, covers=WHOLE_SLOW)]
+            # No timed stage (a flow stopped or timed out before its record): the machines its attempts took
+            # (2026-11-21, the HPC demo's two timed-out flows had none).
+            hosts = [a["build_host"] for a in ((full.get("build") or {}).get("attempts") or []) if a.get("build_host")]
+            out += got or [entry("fpga-slow", "+".join(dict.fromkeys(hosts)) or job.get("build_host"), *times,
+                                 **common, covers=WHOLE_SLOW)]
     return out
 
 

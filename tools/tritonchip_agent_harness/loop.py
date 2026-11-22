@@ -297,6 +297,57 @@ def _quiet_baseline(site: Site, repo: Path, task: Task, record: dict) -> None:
         record["simulated_baseline"] = {"error": f"{type(exc).__name__}: {str(exc)[:300]}"}
 
 
+MIN_FREE_GIB = 50      # free space a run of islands needs where it writes (site `min_free_gib`)
+LIVE_SECONDS = 600     # how often run.live.json is written while the islands run
+
+
+def _disk_check(site: Site, run_dir: Path) -> None:
+    """Before a run of islands (2026-11-23): enough free space where the run writes. In R41-F5g Myserver's root
+    disk filled in the first hour and five requests were lost (review section 9)."""
+    import shutil as _shutil
+    need = float(getattr(site, "min_free_gib", None) or MIN_FREE_GIB)
+    for where in dict.fromkeys([run_dir, Path(site.state_dir)]):
+        probe = where if where.exists() else where.parent
+        free = _shutil.disk_usage(probe).free / 2 ** 30
+        if free < need:
+            raise RuntimeError(f"{probe} has {free:.0f} GiB free; a run of islands needs {need:g} GiB there "
+                               f"(site min_free_gib)")
+
+
+class _LiveRecord:
+    """run.live.json while the islands run (2026-11-23): the archive and every island's requests every
+    LIVE_SECONDS, so that a run can be followed before run.json, which is written at the end (review
+    section 9). Never read back; a failed write is skipped."""
+
+    def __init__(self, run_dir: Path, shared) -> None:
+        self.run_dir, self.shared = run_dir, shared
+        self.done = threading.Event()
+        self.thread = threading.Thread(target=self._loop, daemon=True, name="live-record")
+
+    def start(self) -> None:
+        self.thread.start()
+
+    def stop(self) -> None:
+        self.done.set()
+        self.write()
+
+    def _loop(self) -> None:
+        while not self.done.wait(LIVE_SECONDS):
+            self.write()
+
+    def write(self) -> None:
+        try:
+            brokers = list(self.shared.brokers)
+            archive = next((b.archive for b in brokers if b.archive is not None), None)
+            snap = {"live": True, "at": time.time(), "archive": archive.record() if archive else None,
+                    "islands": [{"island": b.island, "services": b.record()} for b in brokers]}
+            tmp = self.run_dir / "run.live.json.tmp"
+            tmp.write_text(json.dumps(snap, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
+            tmp.replace(self.run_dir / "run.live.json")
+        except Exception:  # noqa: BLE001 -- the live record is a convenience; the run goes on
+            pass
+
+
 def _island_rows(results) -> list:
     """The islands' rows for the record: each island's own, with every request its broker kept."""
     rows = []
@@ -318,6 +369,7 @@ def _islands(site: Site, task: Task, account, mode: str, names: list, record: di
     evaluation and, when the task asks, to the card."""
     import types
     from . import islands as islands_, services
+    _disk_check(site, run_dir)
     shared = services.Shared(site, task)
     if ((task.services or {}).get("score") or {}).get("on") == "board":
         # The board as the score (2026-11-10): the base on the card before any island's clock starts -- every
@@ -336,8 +388,11 @@ def _islands(site: Site, task: Task, account, mode: str, names: list, record: di
         evaluator.baseline(site, repo, task)
     shared.roofline = _roofline(site, repo, task, record)
     got, rows, stage = None, None, "islands"
+    live = _LiveRecord(run_dir, shared)
     try:
+        live.start()
         got = islands_.run(site, task, account, mode, run_dir, repo, names, Broker, shared)
+        live.stop()
         archive, brokers = got["archive"], [r["broker"] for r in got["islands"] if r]
         stage = "waiting for the slow requests"
         for b in brokers:
@@ -354,6 +409,7 @@ def _islands(site: Site, task: Task, account, mode: str, names: list, record: di
         stage = "final evaluation"
         record["champions"] = _champions(site, repo, task, archive, view, run_dir)
     except KeyboardInterrupt as exc:
+        live.done.set()
         if rows is None:
             # Stopped while the islands ran (islands.Stopped carries what they had) or while the run waited.
             have = getattr(exc, "partial", None) or got or {}

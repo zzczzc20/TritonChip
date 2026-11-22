@@ -406,3 +406,85 @@ class F5Grid(unittest.TestCase):
         self.assertIn("less than 2 % takes no cell", text)
         self.assertIn("every 2 hours of the run", text)
         self.assertEqual(task_._exchange_text(dict(cfg, software_exchange_seconds=None)), "")
+
+
+# -- islands by direction (decided 2026-11-23) ---------------------------------------------------------------
+
+DIRECTIONS = {"op_groups": {"matrix": ["op.matmul/", "op.linear/", "op.w8a8_linear/", "op.conv2d/"],
+                            "reduction": ["op.softmax/", "op.rmsnorm/", "op.attention", "model."]},
+              "default_op_group": "movement"}
+ALL_LAYERS = ["hardware", "isa", "software"]
+
+
+def direction_task(exchange=7200) -> Task:
+    import dataclasses
+    t = f5_task(3, exchange)
+    roles = [{"name": g, "authors": ALL_LAYERS, "flows": 2, "board_runs": 0, "direction": g, "score_requests": 10}
+             for g in ("matrix", "movement", "reduction")]
+    return dataclasses.replace(t, islands=dict(t.islands, **DIRECTIONS, roles=roles,
+                                               shared={"flows": 3, "score_requests": 9}))
+
+
+class Directions(unittest.TestCase):
+    def test_groups_of_the_tasks_own_and_a_catch_all(self):
+        cfg = direction_task().islands
+        self.assertEqual(islands.op_group("op.w8a8_linear/held/x", cfg["op_groups"], "movement"), "matrix")
+        self.assertEqual(islands.op_group("model.gpt2_block/s/x", cfg["op_groups"], "movement"), "reduction")
+        self.assertEqual(islands.op_group("op.copy/hbm/x", cfg["op_groups"], "movement"), "movement")
+        full = {"points": [{"point": "op.copy/hbm/x", "failure": None, "speedup": 1.4},
+                           {"point": "op.matmul/s/z", "failure": None, "speedup": 1.0}]}
+        self.assertEqual(islands.grid_cell(["compiler"], full, cfg), "movement:compiler-only")
+        self.assertEqual(len(islands.grid_cells(cfg)), 9)
+        self.assertEqual(islands.grid_cells(cfg)[0], "movement:compiler-only")
+
+    def test_adopted_hardware_with_own_software_waits_for_the_exchange(self):
+        """R41-F5g's bypass (review section 7): a commit that took another island's built hardware and changed
+        only software was visible at once. Now only hardware no earlier commit had is."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, a = Path(tmp), islands.Archive(Path(tmp), direction_task())
+            now = {"t": a.started + 1800}
+            a.clock = lambda: now["t"]
+            rtl = {"rtl/core/x.v": "module x; wire w; endmodule\n"}
+            hw = enter(a, 2, snapshot(root, "h", rtl))
+            self.assertEqual((hw["authored"], hw["visible_at"]), (["hardware"], a.started + 1800))
+            both = snapshot(root, "s", {"compiler/a.py": "tile = 4\n", **rtl})
+            who = a.authorship(0, both)
+            self.assertEqual((who["authored"], who["adopted"], who["kept"]), (["software"], {"hardware": "2-1"}, {}))
+            sw = enter(a, 0, both)
+            self.assertEqual(sw["visible_at"], a.started + 7200)       # it brought no hardware of its own
+            again = enter(a, 0, snapshot(root, "s2", {"compiler/a.py": "tile = 8\n", **rtl}))
+            self.assertEqual((again["adopted"], again["visible_at"]), ({"hardware": "2-1"}, a.started + 7200))
+            own = enter(a, 2, snapshot(root, "h2", {"compiler/a.py": "tile = 2\n", **rtl}))
+            self.assertEqual((own["authored"], own["kept"]), (["software"], {"hardware": "2-1"}))
+            self.assertEqual(own["visible_at"], a.started + 7200)       # its own hardware, kept: not new
+            new = enter(a, 1, snapshot(root, "h3", {"rtl/core/x.v": "module x; wire v; endmodule\n"}))
+            self.assertEqual(new["visible_at"], a.started + 1800)
+
+    def test_the_task_check_and_the_islands_text(self):
+        from tritonchip_agent_harness import task as task_
+        services = {"score": {"requests": 10},
+                    "fpga_slow": {"mode": "board", "flows": 9, "board_runs": 0, "flow_minutes": 720,
+                                  "board_minutes": 120}}
+        roles = [{"name": g, "authors": ALL_LAYERS, "flows": 2, "direction": g, "score_requests": 10}
+                 for g in ("matrix", "movement", "reduction")]
+        ok = {"count": 3, "topology": "all", "features": ["op_group", "layer"], "software_exchange_seconds": 7200,
+              **DIRECTIONS, "roles": roles, "shared": {"flows": 3, "score_requests": 9}}
+        cfg = task_._check_islands(Path("t.json"), ok, services)
+        self.assertEqual(cfg["shared"], {"flows": 3, "score_requests": 9})
+        self.assertEqual([r["direction"] for r in cfg["roles"]], ["matrix", "movement", "reduction"])
+        bad_roles = [dict(r, direction="vector") for r in roles]
+        for bad in ({"shared": {"flows": 2}},                          # 3 x 2 + 2 is not the task's 9
+                    {"roles": bad_roles},                              # no such group
+                    {"default_op_group": "matrix"},                    # the catch-all is not listed too
+                    {"op_groups": {"matrix": ["op.mat"], "x": ["op.matmul/"]}}):   # overlapping prefixes
+            with self.assertRaises(task_.TaskError, msg=repr(bad)):
+                task_._check_islands(Path("t.json"), dict(ok, **bad), services)
+        text = task_._cells_text(cfg)
+        self.assertIn("`matrix` (matmul, linear, w8a8_linear, conv2d)", text)
+        self.assertIn("`movement` (every other program)", text)
+        import dataclasses
+        t = dataclasses.replace(direction_task(), islands=cfg, services=services)
+        island1 = task_._ending(t, 1)
+        self.assertIn("Your island's direction is `movement` (every other program)", island1)
+        self.assertIn("10 commits of your own, then a share of the run's pool of 9 more", island1)
+        self.assertIn("brought hardware no earlier commit had", task_._exchange_text(cfg))

@@ -116,6 +116,7 @@ def load_task(path: Path) -> Task:
     if slow is not None:
         _check_slow(path, slow, ev)
     _check_board_score(path, services, ev)
+    _check_dev_cases(path, ev)
     islands = _check_islands(path, v.get("islands"), services)
     resume = _check_resume(path, v.get("resume"))
     models = v.get("models", False)
@@ -131,6 +132,39 @@ def load_task(path: Path) -> Task:
 
 
 POINT_SETS = ("validation", "final", "board_validation", "board_final")
+DEV_SETS = ("validation", "board_validation")
+
+
+def dev_index(task: "Task") -> Optional[dict]:
+    """The development set given to the agent (2026-11-23), or None: `evaluation.dev_cases` names a directory
+    beside task.json holding one case file per development point (skill_cases.py) and INDEX.json."""
+    rel = (task.evaluation or {}).get("dev_cases")
+    if not rel:
+        return None
+    return json.loads((task.path.parent / rel / "INDEX.json").read_text(encoding="utf-8"))
+
+
+def _check_dev_cases(path: Path, ev: dict) -> None:
+    """`evaluation.dev_cases` (2026-11-23, the points split by role): the development points -- the
+    validation sets the run is scored on -- given to the agent as cases, with stand-ins for the longest. Every
+    case is a development point or a stand-in of one; no held-out point is ever among them."""
+    rel = ev.get("dev_cases")
+    if rel is None:
+        return
+    root = path.parent / str(rel)
+    if not isinstance(rel, str) or not (root / "INDEX.json").is_file():
+        raise TaskError(f"{path}: evaluation.dev_cases must name a directory beside task.json with INDEX.json")
+    index = json.loads((root / "INDEX.json").read_text(encoding="utf-8"))
+    dev = {p for s in DEV_SETS for p in ev.get(s, [])}
+    held = {p for s in ("final", "board_final") for p in ev.get(s, [])}
+    for c in index.get("cases", []):
+        point = c.get("point")
+        target = c.get("stands_in_for") or point
+        if point in held or target in held or target not in dev:
+            raise TaskError(f"{path}: evaluation.dev_cases may give development points and their stand-ins only, "
+                            f"not {point}")
+        if not (root / c["file"]).is_file():
+            raise TaskError(f"{path}: evaluation.dev_cases lists {c['file']}, which is not there")
 
 
 def _check_point_sets(path: Path, ev: dict, services: dict) -> None:
@@ -209,6 +243,20 @@ DEFAULT_OP_GROUPS = {"matrix": ["op.matmul/", "op.bmm/", "op.linear/", "op.gemv/
                                 "op.w8a8_block_linear/"],
                      "attention": ["op.attention"],
                      "model": ["model."]}
+DEFAULT_OP_GROUP = "elementwise"
+# A task may name groups of its own (2026-11-23, islands by direction): `islands.op_groups` maps each name to
+# point-id prefixes and `islands.default_op_group` names the group every other point falls in. Without either,
+# the groups above.
+_GROUP_NAME = re.compile(r"^[a-z][a-z0-9-]{0,23}$")
+
+
+def op_group_names(cfg: dict) -> tuple:
+    """The groups of an islands config in a fixed order: the catch-all first, then the named ones as listed."""
+    default = cfg.get("default_op_group") or DEFAULT_OP_GROUP
+    groups = cfg.get("op_groups") or DEFAULT_OP_GROUPS
+    if default == DEFAULT_OP_GROUP and set(groups) <= set(OP_GROUPS[1:]):
+        return OP_GROUPS
+    return (default, *[g for g in groups if g != default])
 # The layers an island role may write (islands.LAYERS), and how the task text names them.
 ROLE_LAYERS = {"software": "software (`compiler/`, `python/tnca/`)",
                "hardware": "hardware (`rtl/`, the scored profile in `spec/r1_profiles.json`, the device "
@@ -216,35 +264,67 @@ ROLE_LAYERS = {"software": "software (`compiler/`, `python/tnca/`)",
                "isa": "the ISA (`isa/`)"}
 
 
-def _check_roles(path: Path, roles, n: int, services: dict) -> Optional[list]:
+def _count(path: Path, where: str, x) -> int:
+    if not isinstance(x, int) or isinstance(x, bool) or x < 0:
+        raise TaskError(f"{path}: {where} must be a count")
+    return x
+
+
+def _check_shared(path: Path, value) -> dict:
+    """`islands.shared` (2026-11-23): the run's pool an island draws on once its own count of a kind is spent --
+    flows and score requests, first come first served."""
+    if value is None:
+        return {"flows": 0, "score_requests": 0}
+    if not isinstance(value, dict) or set(value) - {"flows", "score_requests"}:
+        raise TaskError(f"{path}: islands.shared may have flows and score_requests")
+    return {k: _count(path, f"islands.shared.{k}", value.get(k, 0)) for k in ("flows", "score_requests")}
+
+
+def _check_roles(path: Path, roles, n: int, services: dict, groups: tuple = OP_GROUPS,
+                 shared: Optional[dict] = None) -> Optional[list]:
     """`islands.roles` (2026-11-09): one per island -- the layers it writes and its own budgets for the slow tier
-    (flows, board runs) and the quick tier (minutes). The slow tier's counts add up to the task's."""
+    (flows, board runs) and the quick tier (minutes). The slow tier's counts add up to the task's, the shared
+    pool's flows included. 2026-11-23: a role may name the island's `direction` (one of the op groups: the
+    programs it is asked to speed up, while the score stays the whole set's) and its own `score_requests`
+    (else the task's per-island count)."""
+    shared = shared or {"flows": 0, "score_requests": 0}
     if roles is None:
         return None
     if not isinstance(roles, list) or len(roles) != n:
         raise TaskError(f"{path}: islands.roles needs one entry per island ({n})")
     out = []
+    keys = {"name", "authors", "flows", "board_runs", "fpga_quick_minutes", "direction", "score_requests"}
     for i, r in enumerate(roles):
-        if (not isinstance(r, dict) or set(r) - {"name", "authors", "flows", "board_runs", "fpga_quick_minutes"}
+        if (not isinstance(r, dict) or set(r) - keys
                 or not isinstance(r.get("authors"), list) or not r["authors"]
                 or any(a not in ROLE_LAYERS for a in r["authors"])):
             raise TaskError(f"{path}: islands.roles[{i}] needs authors (a list of {', '.join(ROLE_LAYERS)}) and may "
-                            f"have name, flows, board_runs, fpga_quick_minutes")
+                            f"have {', '.join(sorted(keys - {'authors'}))}")
         for key in ("flows", "board_runs"):
-            x = r.get(key, 0)
-            if not isinstance(x, int) or isinstance(x, bool) or x < 0:
-                raise TaskError(f"{path}: islands.roles[{i}].{key} must be a count")
+            _count(path, f"islands.roles[{i}].{key}", r.get(key, 0))
         q = r.get("fpga_quick_minutes")
         if q is not None and (not isinstance(q, (int, float)) or isinstance(q, bool) or q < 0):
             raise TaskError(f"{path}: islands.roles[{i}].fpga_quick_minutes must be >= 0")
+        direction = r.get("direction")
+        if direction is not None and direction not in groups:
+            raise TaskError(f"{path}: islands.roles[{i}].direction must be one of the op groups ({', '.join(groups)})")
+        sr = r.get("score_requests")
+        if sr is not None:
+            _count(path, f"islands.roles[{i}].score_requests", sr)
         out.append({"name": str(r.get("name") or f"island-{i}"), "authors": sorted(set(r["authors"])),
                     "flows": int(r.get("flows", 0)), "board_runs": int(r.get("board_runs", 0)),
-                    **({"fpga_quick_minutes": float(q)} if q is not None else {})})
+                    **({"fpga_quick_minutes": float(q)} if q is not None else {}),
+                    **({"direction": direction} if direction is not None else {}),
+                    **({"score_requests": int(sr)} if sr is not None else {})})
     slow = (services or {}).get("fpga_slow")
     if slow:
-        for key in ("flows", "board_runs"):
-            if sum(r[key] for r in out) != int(slow.get(key, 0)):
-                raise TaskError(f"{path}: islands.roles' {key} must add up to services.fpga_slow.{key}")
+        if sum(r["flows"] for r in out) + shared["flows"] != int(slow.get("flows", 0)):
+            raise TaskError(f"{path}: islands.roles' flows and islands.shared.flows must add up to "
+                            f"services.fpga_slow.flows")
+        if sum(r["board_runs"] for r in out) != int(slow.get("board_runs", 0)):
+            raise TaskError(f"{path}: islands.roles' board_runs must add up to services.fpga_slow.board_runs")
+    elif shared["flows"]:
+        raise TaskError(f"{path}: islands.shared.flows without services.fpga_slow")
     return out
 
 
@@ -255,7 +335,8 @@ def _check_islands(path: Path, value, services: dict) -> Optional[dict]:
     if value is None:
         return None
     known = {"count", "topology", "migration_interval", "migration_rate", "features", "max_idle_turns",
-             "max_restarts", "target", "roles", "op_groups", "min_gain", "software_exchange_seconds"}
+             "max_restarts", "target", "roles", "op_groups", "min_gain", "software_exchange_seconds",
+             "default_op_group", "shared"}
     if not isinstance(value, dict) or set(value) - known or "count" not in value:
         raise TaskError(f"{path}: islands needs count (and may have {', '.join(sorted(known - {'count'}))})")
     n = value["count"]
@@ -280,10 +361,24 @@ def _check_islands(path: Path, value, services: dict) -> Optional[dict]:
     if not isinstance(features, list) or not features or any(f not in FEATURES for f in features):
         raise TaskError(f"{path}: islands.features: known axes are {', '.join(FEATURES)}")
     groups = value.get("op_groups", DEFAULT_OP_GROUPS)
-    if not isinstance(groups, dict) or set(groups) - set(OP_GROUPS[1:]) or not all(
-            isinstance(v, list) and all(isinstance(x, str) and x for x in v) for v in groups.values()):
-        raise TaskError(f"{path}: islands.op_groups maps {', '.join(OP_GROUPS[1:])} to point-id prefixes "
-                        f"(every other point is elementwise)")
+    default = value.get("default_op_group")
+    if default is None:
+        if not isinstance(groups, dict) or set(groups) - set(OP_GROUPS[1:]) or not all(
+                isinstance(v, list) and all(isinstance(x, str) and x for x in v) for v in groups.values()):
+            raise TaskError(f"{path}: islands.op_groups maps {', '.join(OP_GROUPS[1:])} to point-id prefixes "
+                            f"(every other point is elementwise), or names groups of its own with "
+                            f"islands.default_op_group")
+    elif (not isinstance(default, str) or not _GROUP_NAME.match(default) or not isinstance(groups, dict)
+          or not groups or default in groups or not all(_GROUP_NAME.match(str(k)) for k in groups)
+          or not all(isinstance(v, list) and v and all(isinstance(x, str) and x for x in v)
+                     for v in groups.values())):
+        raise TaskError(f"{path}: islands.op_groups (with islands.default_op_group) maps group names "
+                        f"(lowercase, digits, '-') to non-empty lists of point-id prefixes; the default group is "
+                        f"every other point and is not listed")
+    else:
+        prefixes = [p for v in groups.values() for p in v]
+        if any(a != b and b.startswith(a) for a in prefixes for b in prefixes) or len(set(prefixes)) != len(prefixes):
+            raise TaskError(f"{path}: islands.op_groups' prefixes must not overlap: a point is in one group")
     gain = value.get("min_gain", 1.02)
     if not isinstance(gain, (int, float)) or isinstance(gain, bool) or not 1.0 <= gain < 2.0:
         raise TaskError(f"{path}: islands.min_gain (a group's geometric-mean speedup a commit needs for a cell) "
@@ -297,10 +392,14 @@ def _check_islands(path: Path, value, services: dict) -> Optional[dict]:
         raise TaskError(f"{path}: islands.target may name speedup_geomean and/or fast_1")
     if not ((services or {}).get("score") or {}).get("requests"):
         raise TaskError(f"{path}: islands need services.score.requests: an island's commits")
-    roles = _check_roles(path, value.get("roles"), n, services)
+    shared = _check_shared(path, value.get("shared"))
+    names = op_group_names({"op_groups": groups, "default_op_group": default})
+    roles = _check_roles(path, value.get("roles"), n, services, names, shared)
     return {"count": n, "topology": topo, "migration_interval": int(value.get("migration_interval", 3)),
             "migration_rate": float(rate), "features": list(features),
             "op_groups": {k: list(v) for k, v in groups.items()}, "min_gain": float(gain),
+            **({"default_op_group": default} if default is not None else {}),
+            **({"shared": shared} if any(shared.values()) else {}),
             "software_exchange_seconds": exchange,
             "max_idle_turns": int(value.get("max_idle_turns", 3)), "max_restarts": int(value.get("max_restarts", 2)),
             "target": target, **({"roles": roles} if roles else {})}
@@ -391,7 +490,8 @@ def render(task: Task, mode: str, skills: Iterable[str] = (), island: Optional[i
                               board_cycles=((task.evaluation or {}).get("certify") or {}).get("board_cycles", "equal"),
                               board_set=bool((task.evaluation or {}).get("board_validation")),
                               roofline=bool((task.evaluation or {}).get("device")),
-                              board=_board_facts(task))
+                              board=_board_facts(task),
+                              pool=((task.islands or {}).get("shared") or {}) if island is not None else {})
     return instruction.rstrip() + services + f"""
 
 ## The rules of this run
@@ -400,10 +500,24 @@ def render(task: Task, mode: str, skills: Iterable[str] = (), island: Optional[i
 - What is evaluated is what you change under {design}. The evaluator rebuilds from the base commit plus
   those changes, with its own copies of everything else (tests, benchmarks, tools, and the code that builds
   and drives the simulated device); a change anywhere else is ignored.
-- The evaluation runs a benchmark you are not shown. Each point is judged on its own: a point whose numbers
-  are wrong, or that does not run on the device, is a failed point; the other points still count.
+{_benchmark_rule(task)}
 {skill_text}- {net}
 {_ending(task, island)}"""
+
+
+DEV_CASES_MOUNT = "/opt/tnca-task/dev_cases"   # where a task's development cases are in the sandbox
+
+
+def _benchmark_rule(task: Task) -> str:
+    """The rules' line on what the run is measured on: a benchmark not shown, or (2026-11-23) a development
+    set given and a held-out set not shown."""
+    tail = ("Each point is judged on its own: a point whose numbers\n  are wrong, or that does not run on the "
+            "device, is a failed point; the other points still count.")
+    if dev_index(task) is None:
+        return "- The evaluation runs a benchmark you are not shown. " + tail
+    return (f"- The run is scored on a development set you are given, every point of it a case in "
+            f"`{DEV_CASES_MOUNT}` (its INDEX.json says what each is); the final evaluation adds held-out points\n"
+            f"  you are not shown, and the run's result is judged on those. " + tail)
 
 
 def _board_facts(task: Task) -> Optional[dict]:
@@ -412,7 +526,9 @@ def _board_facts(task: Task) -> Optional[dict]:
         return None
     ev = task.evaluation
     return {"n": len(board_points(task)), "families": ev.get("families") or {},
-            "gate": len(ev.get("gate_points") or ()), "health": bool(ev.get("health_point"))}
+            "gate": len(ev.get("gate_points") or ()), "health": bool(ev.get("health_point")),
+            "dev": dev_index(task) is not None,
+            "post_place": bool(((task.services or {}).get("fpga_slow") or {}).get("post_place_report"))}
 
 
 def _ending(task: Task, island: Optional[int]) -> str:
@@ -433,6 +549,11 @@ def _ending(task: Task, island: Optional[int]) -> str:
               f"base at the same time, and the run's result is the best commit of all islands by the validation "
               f"set.")
     role = (cfg.get("roles") or [None] * n)[island]
+    if role and role.get("direction"):
+        what = groups_text(cfg)[role["direction"]]
+        others += (f" Your island's direction is `{role['direction']}` ({what}): those are the programs you are "
+                   f"here to make faster, in the compiler and in the machine; the score is still every program's, "
+                   f"so a commit that slows the others down loses what it gains.")
     if role:
         writes = [ROLE_LAYERS[a] for a in role["authors"]]
         others += (f" Your island writes {', '.join(writes[:-1]) + ' and ' + writes[-1] if len(writes) > 1 else writes[0]}"
@@ -447,8 +568,12 @@ def _ending(task: Task, island: Optional[int]) -> str:
     others = others.replace("by the validation set.", f"by {by}.")
     goal = (f" The run ends early if a commit reaches {', '.join(f'{k} {v:g}' for k, v in target.items())} on "
             f"{by}." if target else "")
-    return (f"- You have {task.wall_seconds // 60} minutes and "
-            f"{int(((task.services or {}).get('score') or {}).get('requests', 0))} commits.{others} Keep improving "
+    own = int((role or {}).get("score_requests", ((task.services or {}).get("score") or {}).get("requests", 0)))
+    pool = int((cfg.get("shared") or {}).get("score_requests", 0))
+    commits = (f"{own} commits of your own, then a share of the run's pool of {pool} more, first come first served "
+               f"among the islands once their own are spent (`tnca-service budget` says what is left)"
+               if pool else f"{own} commits")
+    return (f"- You have {task.wall_seconds // 60} minutes and {commits}.{others} Keep improving "
             f"until your commits or your time run out: a commit is what counts, not your working directory as you "
             f"leave it, and the best commit by {by} is the result.{goal}\n"
             f"- `tnca-service submit score --message \"one line on what this commit changes\"` commits a snapshot: "
@@ -466,14 +591,34 @@ def _ending(task: Task, island: Optional[int]) -> str:
             f"{cfg['max_idle_turns']} idle turns in a row end your island.\n")
 
 
+def _family(prefix: str) -> str:
+    """op.matmul/ -> matmul; op.attention -> attention*; model. -> whole models."""
+    if prefix == "model.":
+        return "whole models"
+    head = prefix.split(".", 1)[1] if "." in prefix else prefix
+    return head.rstrip("/") + ("" if prefix.endswith("/") else "*")
+
+
+def groups_text(cfg: dict) -> dict:
+    """Each op group's name -> what the task text says it holds, for a task that names groups of its own."""
+    groups = cfg.get("op_groups") or DEFAULT_OP_GROUPS
+    out = {g: ", ".join(_family(x) for x in prefixes) for g, prefixes in groups.items()}
+    out[cfg.get("default_op_group") or DEFAULT_OP_GROUP] = "every other program"
+    return out
+
+
 def _cells_text(cfg: dict) -> str:
     """How the task text says what a cell of the island grid is."""
     if "op_group" not in cfg.get("features", ()):
         return "one elite per cell; cells are what a commit changed: compiler only, hardware only, or both"
-    return (f"one elite per cell, every cell listed, empty ones included; a cell is the group of the scored "
-            f"programs that sped up most -- element-wise, reduction and data-movement programs, matrix products, "
-            f"attention, or whole models, by the geometric mean of their speedups -- and what the commit changed: "
-            f"compiler only, hardware only, or both. A commit whose best group gained less than "
+    if cfg.get("default_op_group"):
+        groups = "; ".join(f"`{g}` ({what})" for g, what in groups_text(cfg).items())
+        what = f"the group of the scored programs that sped up most -- {groups} -- by the geometric mean of their speedups"
+    else:
+        what = ("the group of the scored programs that sped up most -- element-wise, reduction and data-movement "
+                "programs, matrix products, attention, or whole models, by the geometric mean of their speedups")
+    return (f"one elite per cell, every cell listed, empty ones included; a cell is {what} -- and what the "
+            f"commit changed: compiler only, hardware only, or both. A commit whose best group gained less than "
             f"{(cfg.get('min_gain', 1.02) - 1) * 100:.0f} % takes no cell; it stays in the archive")
 
 
@@ -484,15 +629,16 @@ def _exchange_text(cfg: dict) -> str:
         return ""
     hours = every / 3600
     when = f"{hours:g} hours" if hours >= 1 else f"{every // 60} minutes"
-    return (f"- A commit of another island that changed hardware is visible to you (in the archive, to read, and "
-            f"as an elite you are given) as soon as it is scored; one that changed only software becomes visible "
-            f"at the next exchange, every {when} of the run, for every island at once. Your own commits are always "
+    return (f"- A commit of another island that brought hardware no earlier commit had is visible to you (in the "
+            f"archive, to read, and as an elite you are given) as soon as it is scored; any other -- software of "
+            f"its own on the base's hardware or on hardware an earlier commit brought -- becomes visible at the "
+            f"next exchange, every {when} of the run, for every island at once. Your own commits are always "
             f"visible to you.\n")
 
 
 def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, board_cycles: str = "equal",
                    board_set: bool = False, role: Optional[dict] = None, roofline: bool = False,
-                   board: Optional[dict] = None) -> str:
+                   board: Optional[dict] = None, pool: Optional[dict] = None) -> str:
     """How the agent may ask the evaluator for a measurement, and how much it may ask. `role`: the island's
     (islands.roles), whose budgets are its own."""
     if not cfg:
@@ -502,6 +648,9 @@ def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, boar
     flows = int(role["flows"]) if role else int(slow.get("flows", 0)) if slow else 0
     board_runs = int(role["board_runs"]) if role else int(slow.get("board_runs", 0)) if slow else 0
     shared = (", your island's own" if role else ", shared by every island") if islands else ""
+    if islands and role and (pool or {}).get("flows"):
+        shared = (f" of your island's own, then a share of the run's pool of {int(pool['flows'])} more, first come "
+                  f"first served among the islands once their own are spent")
     at_once = int(slow.get("flows_at_once", 1)) if slow else 1
     # One at a time keeps the text it always had; more says how many, and that a flow may wait for a machine.
     concurrency = ("One slow request at a time; the quick tier stays open while it runs." if at_once == 1 else
@@ -519,7 +668,7 @@ def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, boar
               "A request still running when you stop is cancelled, and its result is lost (a board request "
               "excepted, below)."), ""]
     if score and board is not None:
-        lines += _board_lines(score, slow, board, flows, shared, islands, at_once)
+        lines += _board_lines(score, slow, board, flows, shared, islands, at_once, role, pool or {})
     elif score:
         lines.append(f"- `tnca-service submit score`: the hidden validation set, in simulation. You get how many "
                      f"points passed, the geometric-mean speedup over the points that passed, and the share of all "
@@ -601,27 +750,57 @@ def _services_text(cfg: dict, islands: bool = False, resumed: bool = False, boar
 
 
 def _board_lines(score: dict, slow: dict, board: dict, flows: int, shared: str, islands: bool,
-                 at_once: int) -> list:
+                 at_once: int, role: Optional[dict] = None, pool: Optional[dict] = None) -> list:
     """The services text when the board is the score (2026-11-10): `score` on the card, `flow` for a changed
     machine's image."""
     named = [f"{', '.join('`' + x.rstrip('/') + '`' for x in spec['prefixes'])} points together form the family "
              f"`{name}`, of weight {float(spec.get('weight', 1)):g}" for name, spec in board["families"].items()]
     faster = float(slow.get("board_faster_than", 1.0))
     every = "every island's" if islands else "every"
+    if board.get("dev"):
+        what = (f"- `tnca-service submit score`: the development set on the real card -- your machine on the FPGA at "
+                f"its target clock, the {board['n']} points you are given (`{DEV_CASES_MOUNT}`), of small, medium "
+                f"and large size (the large ones too slow to simulate; the longest have stand-ins there, smaller "
+                f"programs of the same kind for the cycle models) -- against the base on the card. The score: each "
+                f"family of points (the operator a point exercises")
+        reply = ("how many points passed, failures counted by kind, and every point by name: its card cycles, its "
+                 "speedup over the base on the card, the resource that binds it and its η, its distance from the "
+                 "whole chip's roofline (η = L / T: L the least cycles the base machine's cores and memory outlets "
+                 "could take for its work, T the cycles measured; none for a point that did not pass), beside the "
+                 "base's η. Never a point's own error text.")
+    else:
+        what = (f"- `tnca-service submit score`: the hidden board validation set on the real card -- your machine "
+                f"on the FPGA at its target clock, {board['n']} points of small, medium and large size (the large "
+                f"ones too slow to simulate) -- against the base on the card. The score: each family of points (the "
+                f"operator a point exercises")
+        reply = ("how many points passed, failures counted by kind, and every point of the set in a fixed order, "
+                 "numbered and never named: its family, the resource that binds it and its η, its distance from the "
+                 "whole chip's roofline (η = L / T: L the least cycles the base machine's cores and memory outlets "
+                 "could take for its work, T the cycles measured; none for a point that did not pass), beside the "
+                 "base's η. Never a point's shape or its own error text.")
+    own = int((role or {}).get("score_requests", score.get("requests", 0)))
+    spool = int((pool or {}).get("score_requests", 0))
+    requests = (f"{own} scoring requests of your island's own, then a share of the run's pool of {spool} more, "
+                f"first come first served among the islands once their own are spent"
+                if islands and spool else f"{int(score.get('requests', 0))} scoring requests")
+    prediction = (" With `--prediction FILE` (a JSON object: point id -> the speedup over the base you expect on the "
+                  "card, for any points you choose; a stand-in's id counts for the point it stands in for, and "
+                  "`\"score\"` for the score), a `score` or `flow` request records what you expect of that "
+                  "snapshot; when the card measures exactly that snapshot, the reply sets each expectation beside "
+                  "what the card measured. Nothing is charged or refused for it, and it does not change the score."
+                  if board.get("dev") else "")
+    post_place = (" While a flow runs, `tnca-service status` gives, once its placement has ended (about half way), "
+                  "what Vivado says of the placed design: its own QoR assessment (a score from 1, it will not "
+                  "route or meet timing, to 5, it likely will), the placer's congestion level, and the estimated "
+                  "worst slack. The flow goes on whatever they say."
+                  if board.get("post_place") else "")
     return [
-        f"- `tnca-service submit score`: the hidden board validation set on the real card -- your machine on the "
-        f"FPGA at its target clock, {board['n']} points of small, medium and large size (the large ones too slow "
-        f"to simulate) -- against the base on the card. The score: each family of points (the operator a point "
-        f"exercises"
+        what
         + ("; " + "; ".join(named) if named else "")
         + ", every other family of weight 1) gets the geometric mean of its points' speedups over the base, a point "
         "that does not pass counting as a speedup of 0.5; the score is the weighted geometric mean over the "
         "families, so a family counts once however many points it has. You get the score, each family's value, "
-        "how many points passed, failures counted by kind, and every point of the set in a fixed order, numbered "
-        "and never named: its family, the resource that binds it and its η, its distance from the whole chip's "
-        "roofline (η = L / T: L the least cycles the base machine's cores and memory outlets could take for its "
-        "work, T the cycles measured; none for a point that did not pass), beside the base's η. Never a point's "
-        "shape or its own error text."
+        + reply
         + (f" A point counts as faster only when it is more than {(faster - 1) * 100:g}% faster than the base: "
            "the card's count of one program differs by up to about half a percent from run to run."
            if faster > 1.0 else "")
@@ -631,7 +810,7 @@ def _board_lines(score: dict, slow: dict, board: dict, flows: int, shared: str, 
         f"this run has built its image (`flow`, below); before that, `score` refuses it, uncharged. The card is "
         f"one, shared by {every} requests: one session at a time, first come first served, so a request may "
         f"wait for the card, and the wait is part of your time; a session takes about half an hour. You have "
-        f"{int(score.get('requests', 0))} scoring requests, one running at a time. A snapshot exactly like one "
+        f"{requests}, one running at a time. A snapshot exactly like one "
         f"this run already scored is not measured or charged again" + (" and is not a new commit" if islands else "")
         + ": you get that request's result. A session that fails on the infrastructure, or after which the card "
         "fails its own known-answer check, is not charged.",
@@ -647,7 +826,7 @@ def _board_lines(score: dict, slow: dict, board: dict, flows: int, shared: str, 
         "(timing or place-and-route does not converge, it does not fit, DRC) counts; one that fails on the "
         "infrastructure does not, and is retried for you. You get its routed timing; for a flow that failed, why: "
         "the failing stage, slack, the worst paths and whether they cross an SLR, utilisation per SLR, the DRC "
-        "rules that failed. A flow still running when you stop is stopped.",
+        "rules that failed. A flow still running when you stop is stopped." + post_place + prediction,
         "- There is no simulated scoring service in this task: between card sessions, what you measure is your own "
         "-- the RTL simulation and the cycle models in your working directory.",
     ]

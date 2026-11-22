@@ -302,9 +302,6 @@ class Services(unittest.TestCase):
         self.assertEqual([(r["id"], r["full"]) for r in record["requests"]], [("f1", {"full": "fpga"})])
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class RunSimulations(unittest.TestCase):
     """D1/D2/D6 (2026-11-09): one simulation per snapshot for the run, joined while it runs, within the slots."""
@@ -492,3 +489,40 @@ class IslandPools(unittest.TestCase):
                            "full": {"wns_ns": 0.4, "failing_endpoints": 0}}
         self.assertTrue(b[1]._timing_met("H"))       # island 2's quick result on exactly this hardware
         self.assertEqual(len(b[0]._all_jobs()), 1)
+
+class SharedPool(unittest.TestCase):
+    """2026-11-23: each island's own flows and score requests first, then the run's shared pool, first come
+    first served; a refund goes back where the charge came from."""
+
+    def test_own_first_then_the_pool_and_back_where_it_came_from(self):
+        repo, base = make_repo()
+        roles = [{"name": g, "authors": ["hardware", "isa", "software"], "flows": 1, "board_runs": 0,
+                  "direction": g, "score_requests": 2} for g in ("matrix", "movement", "reduction")]
+        t = Task(task_id="t", kind="cross-layer", base_commit=base, design=("compiler/", "rtl/"),
+                 evaluator_owned=(), hide=(), instruction="", reference=None, wall_seconds=60,
+                 evaluation={"profile": "core-sim", "validation": ["p"], "final": ["q"]},
+                 services={"score": {"requests": 10, "on": "board"},
+                           "fpga_slow": {"mode": "board", "flows": 5, "board_runs": 0, "flow_minutes": 60,
+                                         "board_minutes": 60}},
+                 path=repo, sha256="", islands={"count": 3, "topology": "all", "roles": roles,
+                                                "shared": {"flows": 2, "score_requests": 3}})
+        site = types.SimpleNamespace(fpga_worker=None, fpga_pipeline=None)
+        from tritonchip_agent_harness.services import Shared as _Shared
+        shared = _Shared(site, t)
+        b = [Broker(site, repo, t, Path(tempfile.mkdtemp()), Path(tempfile.mkdtemp()) / f"r{i}", island=i,
+                    shared=shared) for i in range(3)]
+        got = b[0].budget()
+        self.assertEqual((got["score_requests_left"], got["flows_left"]), (5, 3))      # 2 own + 3 shared; 1 + 2
+        self.assertEqual((got["shared_score_requests_left"], got["shared_flows_left"]), (3, 2))
+        self.assertEqual([b[0]._charge("flows") for _ in range(3)], ["own", "shared", "shared"])
+        self.assertEqual((b[0]._left("flows"), b[1]._left("flows")), (0, 1))          # the pool is spent for all
+        self.assertEqual(b[1]._charge("flows"), "own")
+        self.assertEqual(b[1]._left("flows"), 0)
+        b[0]._give_back("flows", "shared")
+        self.assertEqual((shared.pool_left["flows"], b[2]._left("flows")), (1, 2))
+        self.assertEqual([b[2]._charge("score") for _ in range(4)], ["own", "own", "shared", "shared"])
+        self.assertEqual((b[0].requests_left(), b[2].requests_left()), (3, 1))
+
+
+if __name__ == "__main__":
+    unittest.main()

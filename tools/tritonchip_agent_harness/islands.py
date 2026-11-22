@@ -45,7 +45,7 @@ from pathlib import Path
 from typing import Optional
 
 from . import evaluator, runner
-from .task import OP_GROUPS, Task, render
+from .task import DEFAULT_OP_GROUP, Task, op_group_names, render
 from .workspace import export, git
 
 CELLS = ("compiler-only", "hardware-only", "cross-layer")
@@ -150,12 +150,13 @@ def layer_cell(labels: list) -> Optional[str]:
     return "cross-layer"
 
 
-def op_group(point: str, groups: dict) -> str:
-    """The group of programs a point belongs to (task.OP_GROUPS), by its id's prefix."""
-    for name in ("model", "attention", "matrix"):
-        if any(point.startswith(prefix) for prefix in groups.get(name, ())):
+def op_group(point: str, groups: dict, default: str = DEFAULT_OP_GROUP) -> str:
+    """The group of programs a point belongs to, by its id's prefix (the task's groups, whose prefixes do not
+    overlap); every other point is in the default group (task.op_group_names)."""
+    for name, prefixes in groups.items():
+        if any(point.startswith(prefix) for prefix in prefixes):
             return name
-    return "elementwise"
+    return default
 
 
 def gain_group(full: Optional[dict], cfg: dict) -> Optional[str]:
@@ -165,7 +166,8 @@ def gain_group(full: Optional[dict], cfg: dict) -> Optional[str]:
     by: dict = {}
     for row in (full or {}).get("points") or ():
         if row.get("failure") is None and row.get("speedup"):
-            by.setdefault(op_group(row["point"], cfg.get("op_groups") or {}), []).append(math.log(row["speedup"]))
+            by.setdefault(op_group(row["point"], cfg.get("op_groups") or {},
+                                   cfg.get("default_op_group") or DEFAULT_OP_GROUP), []).append(math.log(row["speedup"]))
     if not by:
         return None
     best = max(sorted(by), key=lambda g: sum(by[g]) / len(by[g]))
@@ -177,7 +179,7 @@ def grid_cells(cfg: dict) -> tuple:
     """Every cell of an island's grid, in a fixed order."""
     if "op_group" not in cfg.get("features", ()):
         return CELLS
-    return tuple(f"{g}:{layer}" for g in OP_GROUPS for layer in CELLS)
+    return tuple(f"{g}:{layer}" for g in op_group_names(cfg) for layer in CELLS)
 
 
 def grid_cell(labels: list, full: Optional[dict], cfg: dict) -> Optional[str]:
@@ -238,13 +240,17 @@ class Archive:
         self.clock = time.time             # tests set it
 
     # -- who sees a commit, and from when (2026-11-11, R41-F5) --------------------------------------------
-    def visible_at(self, labels: list, at: float) -> float:
-        """When another island may see a commit: at once if it changed hardware (a flow is hours: no island
-        should wait for it or build it again), at the next software exchange -- every
-        `software_exchange_seconds` of the run, the same moment for every island -- if it changed software
-        only. Without exchanges, at once."""
+    def visible_at(self, authored: list, at: float) -> float:
+        """When another island may see a commit: at once if it brought hardware (or ISA) no earlier commit had
+        (a flow is hours: no island should wait for it or build it again), at the next software exchange --
+        every `software_exchange_seconds` of the run, the same moment for every island -- otherwise.
+
+        2026-11-23: by what the commit itself brought (`authored`), not by how it differs from the base. In
+        R41-F5g a commit that took another island's built hardware and changed only software was visible at
+        once, since its snapshot differs from the base in hardware: from 10 h on, software reached every island
+        without the exchange's delay (review section 7). Without exchanges, at once."""
         every = self.cfg.get("software_exchange_seconds")
-        if not every or layer_cell(labels) != "compiler-only":
+        if not every or set(authored) & {"hardware", "isa"}:
             return at
         return self.started + math.ceil((at - self.started) / every) * every
 
@@ -278,9 +284,11 @@ class Archive:
         return out
 
     def authorship(self, island: int, candidate: Optional[Path]) -> dict:
-        """Whether the island may submit this snapshot under its role (2026-11-09): every layer it changed that
-        the role does not write must be exactly that layer of a commit the island can see. {"authored",
-        "adopted": {layer: commit id}, "layers"} or {"refused", "files"}."""
+        """Whether the island may submit this snapshot under its role (2026-11-09), and what it brings
+        (2026-11-23). Each layer that differs from the base is one of: taken whole from another island's commit
+        the island can see (`adopted`), the same as one of the island's own earlier commits (`kept`), or new
+        (`authored`) -- and a new layer the role does not write is refused. {"authored": [layer],
+        "adopted": {layer: commit id}, "kept": {layer: commit id}, "layers"} or {"refused", "files"}."""
         role = (self.roles or [])[island] if self.roles and island < len(self.roles) else None
         digests = layer_digests(self.task, candidate)
         # Any file of a layer counts -- a comment in an RTL file, another profile in spec/r1_profiles.json, a
@@ -290,17 +298,22 @@ class Archive:
         with self.lock:
             now = self.clock()
             sources = [e for e in self.entries if self._seen(island, e, now)]
-        adopted = {}
-        for layer in sorted(changed - writes):
-            src = next((e for e in reversed(sources) if (e.get("layers") or {}).get(layer) == digests[layer]), None)
-            if src is None:
+        adopted, kept, authored = {}, {}, []
+        for layer in sorted(changed):
+            # The first commit the island can see that had this layer: where it came from, so that a layer
+            # carried on from the island's own commit that took it keeps its origin.
+            src = next((e for e in sources if (e.get("layers") or {}).get(layer) == digests[layer]), None)
+            if src is not None:
+                (adopted if src["island"] != island else kept)[layer] = src["id"]
+            elif layer in writes:
+                authored.append(layer)
+            else:
                 files = [c["path"] for c in layer_files(self.task, candidate)[layer]]
                 return {"refused": (f"island {island} writes {' and '.join(sorted(writes))} only: the {layer} in this "
                                     f"snapshot is not exactly the {layer} of any commit you can see. Leave it as the "
                                     f"base, or take one commit's {layer} whole (`tnca-service read-commit ID`)."),
                         "files": files}
-            adopted[layer] = src["id"]
-        return {"authored": sorted(changed & writes), "adopted": adopted, "layers": digests}
+        return {"authored": authored, "adopted": adopted, "kept": kept, "layers": digests}
 
     def add(self, island: int, job: dict, candidate: Optional[Path], result: dict) -> dict:
         """A finished commit, entered: its labels and cell, the grid, the trajectory, the target."""
@@ -320,7 +333,8 @@ class Archive:
                  and not result.get("stage_errors"),
                  "candidate": str(candidate) if candidate else None, "digest": job.get("digest"),
                  "hardware": job.get("hardware"), "layers": layers, "authored": authored,
-                 "adopted": dict(who.get("adopted") or {}), "at": at, "visible_at": self.visible_at(labels, at)}
+                 "adopted": dict(who.get("adopted") or {}), "kept": dict(who.get("kept") or {}), "at": at,
+                 "visible_at": self.visible_at(authored, at)}
             self.entries.append(e)
             self.by_id[e["id"]] = e
             if e["listed"] and e["cell"]:
@@ -468,7 +482,9 @@ class Turns:
         with self.broker.lock:
             running = any(j["service"] == "score" and j["state"] in ("queued", "running")
                           for j in self.broker.jobs.values())
-            return self.broker.score_left + (1 if running else 0)
+            # The shared pool's requests count too (2026-11-23): an island whose own are spent goes on.
+            left = self.broker.requests_left() if hasattr(self.broker, "requests_left") else self.broker.score_left
+            return left + (1 if running else 0)
 
     def __call__(self, record: dict, left: float):
         if self.archive is not None and self.archive.halt.is_set():

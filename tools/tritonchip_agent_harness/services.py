@@ -176,6 +176,10 @@ class Shared:
                            for i, r in enumerate(roles)}
         else:
             self.counts = {None: {"flows": int(fs.get("flows", 0)), "board_runs": int(fs.get("board_runs", 0))}}
+        # The run's shared pool (islands.shared, 2026-11-23): flows and score requests an island draws on once
+        # its own of that kind are spent, first come first served.
+        pool = (task.islands or {}).get("shared") or {}
+        self.pool_left = {"flows": int(pool.get("flows", 0)), "score": int(pool.get("score_requests", 0))}
         self.images: dict = {}
         # The run's Vivado flows running now (the hardware requests holding them): at most flows_at_once,
         # each on a build machine of its own (fpga_slow.place); one by default (B8). Card runs are serial on
@@ -223,11 +227,12 @@ class Broker:
         self.run_id = run_id or run_dir.name
         self.dir = run_dir / "services"
         cfg = task.services or {}
-        self.score_left = int((cfg.get("score") or {}).get("requests", 0))
         fq = cfg.get("fpga_quick") or {}
         roles = (task.islands or {}).get("roles") or []
-        # The island's role (islands.roles, 2026-11-09): which layers it writes, and its own budgets.
+        # The island's role (islands.roles, 2026-11-09): which layers it writes, and its own budgets -- its own
+        # score requests too when it names them (2026-11-23).
         self.role = roles[island] if island is not None and island < len(roles) else None
+        self.score_left = int((self.role or {}).get("score_requests", (cfg.get("score") or {}).get("requests", 0)))
         minutes = (self.role or {}).get("fpga_quick_minutes", fq.get("minutes", 0))
         self.fpga_left = float(minutes) * 60.0
         self.fpga_job = float(fq.get("job_minutes", 30)) * 60.0
@@ -261,6 +266,34 @@ class Broker:
     board_runs_left = property(lambda self: self.shared.pool(self.island)["board_runs"],
                                lambda self, v: self.shared.pool(self.island).__setitem__("board_runs", v))
     images = property(lambda self: self.shared.images)
+
+    # -- own counts first, then the run's shared pool (2026-11-23); under the lock ---------------------------
+    _OWN = {"flows": "flows_left", "score": "score_left"}
+
+    def _left(self, kind: str) -> int:
+        """What this island may still be charged for: its own count of `kind` and the shared pool's."""
+        return getattr(self, self._OWN[kind]) + (self.shared.pool_left[kind] if self.island is not None else 0)
+
+    def requests_left(self) -> int:
+        """Scoring requests (an island's commits) left, the shared pool's included."""
+        return self._left("score")
+
+    def _charge(self, kind: str) -> str:
+        """Charge one `kind` to the island's own count, or when that is spent to the shared pool; says which."""
+        own = self._OWN[kind]
+        if getattr(self, own) > 0:
+            setattr(self, own, getattr(self, own) - 1)
+            return "own"
+        self.shared.pool_left[kind] -= 1
+        return "shared"
+
+    def _give_back(self, kind: str, source: Optional[str]) -> None:
+        """Return a charge where it came from (a request charged before 2026-11-23 has no source: its own)."""
+        if source == "shared":
+            self.shared.pool_left[kind] += 1
+        else:
+            own = self._OWN[kind]
+            setattr(self, own, getattr(self, own) + 1)
 
     def _who(self, job: dict) -> str:
         return f"{self.island}:{job.get('id')}" if self.island is not None else str(job.get("id"))
@@ -331,7 +364,7 @@ class Broker:
                     continue
                 if job["service"] == "fpga-slow" and job["state"] == "queued" and job.get("charge"):
                     if job["charge"] == "flow":
-                        self.flows_left += 1
+                        self._give_back("flows", job.get("flow_from"))
                     else:
                         self.board_runs_left += 1
                     job["charged"] = None
@@ -386,16 +419,21 @@ class Broker:
         return {"error": f"unknown operation {op!r}; see `tnca-service --help`"}
 
     def budget(self) -> dict:
+        # With a shared pool (2026-11-23): what is left in all, and of that the pool's, which other islands
+        # draw on too.
+        pool = ({"shared_score_requests_left": self.shared.pool_left["score"],
+                 "shared_flows_left": self.shared.pool_left["flows"]}
+                if self.island is not None and any(self.shared.pool_left.values()) else {})
         if self.board_scoring:
-            return {"score_requests_left": self.score_left,
+            return {"score_requests_left": self._left("score"),
                     "fpga_minutes_left": round(self.fpga_left / 60.0, 1),
                     "fpga_minutes_per_request": round(self.fpga_job / 60.0, 1),
-                    "flows_left": self.flows_left, "busy": sorted(self.busy)}
-        return {"score_requests_left": self.score_left,
+                    "flows_left": self._left("flows"), **pool, "busy": sorted(self.busy)}
+        return {"score_requests_left": self._left("score"),
                 "fpga_minutes_left": round(self.fpga_left / 60.0, 1),
                 "fpga_minutes_per_request": round(self.fpga_job / 60.0, 1),
-                "fpga_slow_flows_left": self.flows_left,
-                "fpga_slow_board_runs_left": self.board_runs_left,
+                "fpga_slow_flows_left": self._left("flows"),
+                "fpga_slow_board_runs_left": self.board_runs_left, **pool,
                 "busy": sorted(self.busy)}
 
     def submit(self, service, message=None) -> dict:
@@ -556,12 +594,12 @@ class Broker:
                     return {"refused": refused, "snapshot": snapshot, **self.budget()}
                 self.shared.flows.add(f"{self.run_id}:{job_id}")
             if service == "score":
-                self.score_left -= 1
+                job["score_from"] = self._charge("score")
             elif service == "flow":
-                self.flows_left -= 1
+                job["flow_from"] = self._charge("flows")
             elif service == "fpga-slow":
                 if job["charge"] == "flow":
-                    self.flows_left -= 1
+                    job["flow_from"] = self._charge("flows")
                 else:
                     self.board_runs_left -= 1
             self.jobs[job_id] = job
@@ -595,7 +633,7 @@ class Broker:
         built = self.images.get(job["hardware"])
         if self.slow_mode == "build" or (changed and built is None):
             job["kind"], job["charge"] = "hardware", "flow"
-            if self.flows_left <= 0:
+            if self._left("flows") <= 0:
                 return "no Vivado flows left for this run"
             if changed and not self._timing_met(job["hardware"]):
                 return ("a hardware request needs an fpga-quick result of this run on exactly this hardware "
@@ -632,7 +670,7 @@ class Broker:
             return f"{len(running)} {service} requests are already running ({', '.join(running)}); at most {at_once} at once"
         if service == "score" and self.archive is not None and self.archive.halt.is_set():
             return "the run has ended (its target was reached): no more commits"
-        if service == "score" and self.score_left <= 0:
+        if service == "score" and self._left("score") <= 0:
             return "no scoring requests left"
         if service == "fpga-quick":
             if not self.site.fpga_worker:
@@ -647,7 +685,7 @@ class Broker:
                 return "this task has no flow service; ask fpga-slow"
             if not getattr(self.site, "fpga_pipeline", None):
                 return "this site has no FPGA pipeline"
-            if self.flows_left <= 0:
+            if self._left("flows") <= 0:
                 return "no Vivado flows left" + (" for your island" if self.island is not None else "")
         if service == "score" and self.board_scoring:
             if not (getattr(self.site, "fpga_pipeline", None) or {}).get("card"):
@@ -665,7 +703,7 @@ class Broker:
             if self.slow_mode == "board" and not (self.site.fpga_pipeline.get("board_host")
                                                   and self.site.fpga_pipeline.get("card")):
                 return "the FPGA pipeline has no card host for board sessions"
-            if self.flows_left <= 0 and self.board_runs_left <= 0:
+            if self._left("flows") <= 0 and self.board_runs_left <= 0:
                 return "no Vivado flows and no board runs left for this run"
         return None
 
@@ -819,7 +857,7 @@ class Broker:
     def _refund_score(self, job: dict) -> None:
         with self.lock:
             if job.get("charged", "score") is not None and not job.get("dedupe_of"):
-                self.score_left += 1
+                self._give_back("score", job.get("score_from"))
             job["charged"] = None
 
     def _flow_gate(self, job: dict, candidate: Optional[Path], job_dir: Path) -> Optional[dict]:
@@ -852,7 +890,7 @@ class Broker:
             with self.lock:
                 job["charged"] = "flow" if kept else None
                 if not kept:
-                    self.flows_left += 1
+                    self._give_back("flows", job.get("flow_from"))
                 if job.get("image") and job.get("outcome") == "ok":
                     self.images[job["hardware"]] = job["image"]
         if "validation" in visible:
@@ -964,7 +1002,7 @@ class Broker:
                 job["charged"] = job["charge"] if kept else None
                 if not kept:
                     if job["charge"] == "flow":
-                        self.flows_left += 1
+                        self._give_back("flows", job.get("flow_from"))
                     else:
                         self.board_runs_left += 1
                 if job.get("kind") == "hardware" and job.get("image") and job.get("outcome") == "ok":

@@ -46,7 +46,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from . import board, certify, evaluator, families as families_, provider, roofline as roofline_
+from . import board, certify, congestion as congestion_, evaluator, families as families_, provider, roofline as roofline_
 from .siteconfig import Site
 from .task import Task, board_points
 
@@ -604,7 +604,15 @@ def routed_timing(site: Site, run_id: str, build_host: Optional[str]) -> dict:
         return {}
 
 
-def _build_visible(site: Site, pipe: dict, outcome: str, routed: dict) -> dict:
+def _conflict_line(line: str) -> str:
+    """v++'s routing-verification error lists "the first 10" conflicted nets, the first in name order: they need
+    not be where the congestion is (R41-HPC-demo b3: all in `device/control`), so they are not passed on."""
+    if "partially-conflicted nets" in line and "(Up to first" in line:
+        return line.split("(Up to first", 1)[0].rstrip() + " (nets not listed here: see congestion)"
+    return line
+
+
+def _build_visible(site: Site, pipe: dict, outcome: str, routed: dict, congestion: Optional[dict] = None) -> dict:
     build = pipe.get("build") or {}
     metrics = ((build.get("timing") or {}).get("metrics")) or {}
     visible = {"status": build.get("status") or pipe.get("status"),
@@ -628,10 +636,13 @@ def _build_visible(site: Site, pipe: dict, outcome: str, routed: dict) -> dict:
                     row[key] = _scrub(row[key], site, words)[:160]
         if build.get("error"):
             visible["error"] = _scrub(build["error"], site, words)
-        tail = [_scrub(x, site, words) for x in [*(build.get("log_tail") or []), *(build.get("log_errors") or [])]
+        tail = [_scrub(_conflict_line(str(x)), site, words)
+                for x in [*(build.get("log_tail") or []), *(build.get("log_errors") or [])]
                 if "ERROR" in str(x) or "CRITICAL" in str(x)]
         if tail:
             visible["errors"] = tail[-10:]
+    if congestion:
+        visible["congestion"] = congestion
     return visible
 
 
@@ -726,8 +737,14 @@ def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir
         kept = [a["routed_timing"] for a in attempts if a.get("routed_timing")]
         if kept:
             routed = {"routed_timing": kept[-1]}
+    # What the link said of routing congestion (congestion.py): its own log after every flow that got that far,
+    # and Vivado's attribution of the congested windows to cells after one that failed in placement or routing.
+    found = {} if job.get("_cancel_requested") else congestion_.collect(
+        site, pipe.get("run_id") or remote_id, job.get("build_host"),
+        analyse=outcome == "design" and failing_stage(pipe) in congestion_.ANALYSED_STAGES)
     return {"outcome": outcome, "pipeline": pipe, "attempts": attempts, "tree_commit": commit, "manifest": m,
-            "routed": routed, "visible": _build_visible(site, pipe, outcome, routed),
+            "routed": routed, "congestion": found,
+            "visible": _build_visible(site, pipe, outcome, routed, congestion_.visible(found)),
             "run_id": pipe.get("run_id") or remote_id, "build_host": job.get("build_host"),
             "outside_wait_seconds": job.get("outside_wait_seconds", 0.0)}
 

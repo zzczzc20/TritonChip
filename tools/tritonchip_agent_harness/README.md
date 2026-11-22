@@ -1149,6 +1149,50 @@ One island and N islands take the same path; without the block a run is as befor
 Not yet: a sandbox that died cannot be recreated (its island ends as crashed); queue waits for an evaluation
 are recorded but do not extend an island's clock; axes other than the layer; a judge-model descriptor.
 
+### 12.6a Islands by direction, shared pools, a given development set (2026-11-23)
+
+Decided with the operator on 2026-11-23 for the R41 runs after R41-F5g (`tasks/r41-dp-dir`); every part is
+off unless a task asks for it.
+
+- **Directions.** `islands.op_groups` may name groups of the task's own (prefix lists that do not overlap) with
+  `islands.default_op_group` for every other point; a role's `direction` names one group, and the island's text
+  says those programs are the ones it is there to speed up while the score stays every program's. Roles may
+  author every layer. The grid's op-group axis uses the same groups.
+- **Shared pools.** A role's `flows` and `score_requests` are the island's own; `islands.shared` holds flows and
+  score requests any island draws on once its own are spent, first come first served. A charge records where
+  it came from and a refund goes back there; `tnca-service budget` shows what is left in all and in the pool.
+- **Visibility by what a commit brought.** Each layer that differs from the base is `adopted` (another
+  island's commit had it), `kept` (the island's own earlier commit had it) or `authored` (new). A commit is
+  visible to other islands at once only when it authored hardware or ISA; any other waits for the software
+  exchange. R41-F5g's commits that took another island's built hardware were visible at once (review s7).
+- **The development set.** `evaluation.dev_cases` names a directory beside task.json made by `dev_cases.py`:
+  the development points (`validation` + `board_validation`) as cases, stand-ins (`dev_standins.py`) for the
+  points too long for the CA model, calibration cases (`calib_points.py`), `INDEX.json` (group, base card and
+  CA cycles, CA minutes, the CA model's error on the base) and `CALIBRATION.json` (which cases reach each
+  mechanism of the CA model's counters). The loader refuses a held-out point among them. The sandbox mounts
+  it read-only at `/opt/tnca-task/dev_cases`; the test-case skill's `scripts/dev_points.py` runs any of them on
+  a model several at once. With a development set the card reply names every point with its card cycles.
+- **Predictions.** `tnca-service submit score|flow --prediction FILE` (point id or stand-in id -> expected
+  speedup over the base, and "score") is kept and graded when the card measures exactly that snapshot:
+  measured over expected per point, the median error, how often the direction agreed (`predictions.py`).
+- **The placed design.** With `fpga_slow.post_place_report`, a running flow looks every 10 minutes for the end
+  of placement in the build machine's runme.log; `status` then shows `placed_design` (the placer's estimated
+  WNS/TNS, the post-placement congestion level per direction). The flow is never stopped for it.
+- **After the run.** `islands.final_candidates: per_island` gives each island's best commit the final
+  evaluation, all of them, then certifies in the in-run order; `evaluation.certify.board_final` measures the
+  card's held-out set in the certification session and scores it against the base on the card.
+- **Guards.** A link stopped at the flow's cap is a timeout (not charged, not retried). A run of islands
+  refuses to start with less than `resources.min_free_gib` (default 50) free where it writes, and writes
+  `run.live.json` every 10 minutes while the islands run.
+
+Checked before the first run (2026-11-23): every development case loads in a fresh process and builds its
+point's module state and inputs bit for bit; on R41-F5g's compiler-only commit 0-5 the CA model's speedups
+against the card's: 38 points, median error 2.0 %, direction agreed 36/38, Spearman 0.95; 8 stand-ins, median
+3.1 %; implied score 1.663 against the card's 1.732. Copy-like streams are the exception (copy hbm: the model
+counts half the card's cycles on the base, and predicted 1.12x where the card measured 2.26x), while the RTL
+simulator and the CA model agree on the 64 Ki-element copy (11,326 and 11,334 cycles): the card's memory, not
+the model's logic.
+
 ## 13. Fair comparison and statistics
 
 **Unit of comparison.** One cell is a (scaffold, model, auth mode) on a fixed

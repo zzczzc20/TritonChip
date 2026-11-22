@@ -115,17 +115,28 @@ class Bundle:
                 return
             if name in self.defs:
                 return
-            self.defs[name] = None        # placed now: a recursive reference finds it
             if inspect.isclass(obj):
+                # Its bases first: a class is written after the classes it derives from (2026-11-23, the
+                # strided add's Binary(_Layout) came out before _Layout).
                 for base in obj.__bases__:
                     if (base.__module__ or "").startswith("archbench"):
                         self._add(base.__name__, base)
+            self.defs[name] = None        # placed now: a recursive reference finds it
+            if inspect.isclass(obj):
                 for attr in vars(obj).values():
                     if inspect.isfunction(attr):
                         self.need(attr)
             else:
                 self.need(obj)
-            self.defs[name] = code_only(inspect.getsource(obj))
+            source = code_only(inspect.getsource(obj))
+            # What its decorators name (@dataclass on LlamaCfg, 2026-11-23): the module's own globals.
+            node = ast.parse(source).body[0]
+            module = sys.modules.get(obj.__module__)
+            for dec in getattr(node, "decorator_list", []):
+                for ref in ast.walk(dec):
+                    if isinstance(ref, ast.Name) and module is not None and ref.id in vars(module):
+                        self.bind(ref.id, vars(module)[ref.id])
+            self.defs[name] = source
             return
         if _literal(obj):
             self.consts[name] = repr(obj)
@@ -155,13 +166,39 @@ def _function_node(fn) -> ast.FunctionDef:
     return ast.fix_missing_locations(ast.FunctionDef(**kw))
 
 
+def _default(value, bundle: Bundle) -> ast.expr:
+    """A default of make() as code: a literal as it is; a class or function of the benchmark's (the module a
+    loop builds, 2026-11-23: the hbm points' streaming loop) by its name, bundled; one of torch's by its path."""
+    if _literal(value):
+        return ast.parse(repr(value), mode="eval").body
+    if inspect.isclass(value) or inspect.isfunction(value):
+        bundle.bind(value.__name__, value)
+        return ast.Name(id=value.__name__, ctx=ast.Load())
+    import dataclasses
+    if dataclasses.is_dataclass(value) and not isinstance(value, type) and all(
+            _literal(getattr(value, f.name)) for f in dataclasses.fields(value)):
+        # A configuration the benchmark builds (LlamaCfg): its class bundled, the value as its constructor call.
+        cls = type(value)
+        bundle.bind(cls.__name__, cls)
+        args = ", ".join(f"{f.name}={getattr(value, f.name)!r}" for f in dataclasses.fields(value))
+        return ast.parse(f"{cls.__name__}({args})", mode="eval").body
+    name = getattr(value, "__name__", None)
+    if name:
+        import torch
+        for path, mod in (("torch", torch), ("torch.nn.functional", torch.nn.functional)):
+            if getattr(mod, name, None) is value:
+                bundle.imports["torch"] = "import torch"
+                return ast.parse(f"{path}.{name}", mode="eval").body
+    raise ExportError(f"cannot export the default {value!r}")
+
+
 def point_make_source(fn, bundle: Bundle) -> str:
     """The point's make(), renamed _point_make, its defaults bound to their values (they were the loop's)."""
     node = _drop_docstrings(_function_node(fn))
     node.name = "_point_make"
     node.decorator_list = []
-    node.args.defaults = [ast.parse(repr(v), mode="eval").body for v in (fn.__defaults__ or ())]
-    node.args.kw_defaults = [ast.parse(repr(v), mode="eval").body if v is not None else None
+    node.args.defaults = [_default(v, bundle) for v in (fn.__defaults__ or ())]
+    node.args.kw_defaults = [_default(v, bundle) if v is not None else None
                              for v in [(fn.__kwdefaults__ or {}).get(a.arg) for a in node.args.kwonlyargs]]
     for name, value in inspect.getclosurevars(fn).nonlocals.items():
         bundle.bind(name, value)      # the loop's values: a size, a dtype, the module class it builds

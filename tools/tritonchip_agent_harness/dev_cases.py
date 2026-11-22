@@ -53,6 +53,7 @@ def export(archbench_root: Path, task_dir: Path, base_card: Path, base_model: li
     for name in ("dev_standins", "calib_points"):
         spec = importlib.util.spec_from_file_location(name, HERE / f"{name}.py")
         mods[name] = importlib.util.module_from_spec(spec)
+        sys.modules[name] = mods[name]      # inspect finds a lambda's module, and so its source, through here
         spec.loader.exec_module(mods[name])
     standins, calib = mods["dev_standins"], mods["calib_points"]
     raw = json.loads((task_dir / "task.json").read_text(encoding="utf-8"))
@@ -71,7 +72,15 @@ def export(archbench_root: Path, task_dir: Path, base_card: Path, base_model: li
         name = skill_cases.file_name(pid)
         if name in sources:
             raise skill_cases.ExportError(f"two points map to {name}")
-        sources[name] = skill_cases.case_source(point, source_commit)
+        src = skill_cases.case_source(point, source_commit)
+        head = "A point of the benchmark itself"
+        if pid in calib.CALIBRATION:
+            src = src.replace(head, "A calibration case, not scored (CALIBRATION.json says what it reaches); like a "
+                                    "point of the benchmark", 1)
+        elif pid != target:
+            src = src.replace(head, f"A stand-in for {target}: the same operator at a smaller size, for the "
+                                    f"performance models; like a point of the benchmark", 1)
+        sources[name] = src
         m = model.get(pid) or {}
         c = (card.get(pid) or {}) if pid == target else {}
         entry = {"point": pid, "file": name, "kind": point.kind, "family": point.family, "tier": point.tier,

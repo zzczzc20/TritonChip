@@ -488,3 +488,44 @@ class Directions(unittest.TestCase):
         self.assertIn("Your island's direction is `movement` (every other program)", island1)
         self.assertIn("10 commits of your own, then a share of the run's pool of 9 more", island1)
         self.assertIn("brought hardware no earlier commit had", task_._exchange_text(cfg))
+
+
+class FinalCandidates(unittest.TestCase):
+    """2026-11-23: each island's best as a candidate, every one given the final evaluation, the in-run order
+    deciding which is certified."""
+
+    def _run(self, final, verdicts):
+        import dataclasses
+        from unittest import mock
+        from tritonchip_agent_harness import loop
+        t = direction_task()
+        t = dataclasses.replace(t, islands=dict(t.islands, final_candidates=final),
+                                services={**t.services, "fpga_slow": {"mode": "board", "certify_after_run": True}})
+        with tempfile.TemporaryDirectory() as tmp:
+            root, a = Path(tmp), islands.Archive(Path(tmp), t)
+            for island, name, score in ((0, "a", 2.0), (0, "b", 1.9), (1, "c", 1.5), (2, "d", 1.2), (0, "e", 1.8)):
+                scored(a, island, root, name, MATRIX, path=f"compiler/{name}.py", score=score)["digest"] = name
+            evaluated, certified = [], []
+
+            def evaluate(site, repo, task, cand, here):
+                evaluated.append(cand.name)
+                return {"valid": True}
+
+            def after_run(site, repo, task, rec, where, view):
+                certified.append(rec["gate"]["taken"][0])
+                return {"verdict": verdicts.pop(0)}
+            with mock.patch.object(loop.evaluator, "evaluate", evaluate), \
+                    mock.patch.object(loop.evaluator, "hardware_changed", lambda *x: {}), \
+                    mock.patch.object(loop.certify, "after_run", after_run):
+                out = loop._champions(None, root, t, a, None, root / "run")
+        return [c["id"] for c in out], evaluated, certified
+
+    def test_per_island_evaluates_every_islands_best(self):
+        ids, evaluated, certified = self._run("per_island", ["board-disagrees", "certified"])
+        self.assertEqual(ids, ["0-1", "1-1", "2-1"])
+        self.assertEqual(evaluated, ["a", "c", "d"])                    # all three, before any card
+        self.assertEqual(certified, ["compiler/a.py", "compiler/c.py"])  # the order decides; it stops at one
+
+    def test_top3_stops_at_the_first_certified(self):
+        ids, evaluated, _ = self._run("top3", ["certified"])
+        self.assertEqual((ids, evaluated), (["0-1"], ["a"]))

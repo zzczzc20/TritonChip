@@ -387,26 +387,43 @@ def _champions(site: Site, repo: Path, task: Task, archive, view, run_dir: Path)
     is chosen never looks at the final set."""
     slow = (task.services or {}).get("fpga_slow") or {}
     on_card = bool(slow.get("certify_after_run")) and slow.get("mode") == "board"
+    per_island = (task.islands or {}).get("final_candidates") == "per_island"
     out, seen, top = [], set(), []
     for e in archive.ranked():
         # The same snapshot committed twice (a re-commit, a migrated patch applied as it was) is one candidate.
         if e.get("digest") in seen:
             continue
+        # Per island (2026-11-23): each island's best, so that the candidates come from different lines; in
+        # R41-F5g the top three were variants of one compiler line on one hardware.
+        if per_island and any(t["island"] == e["island"] for t in top):
+            continue
         seen.add(e.get("digest"))
         top.append(e)
-        if len(top) == 3:
+        if len(top) == 3 and not per_island:
             break
-    for rank, e in enumerate(top, 1):
+
+    def evaluate(rank: int, e: dict) -> dict:
         cand = Path(e["candidate"]) if e["candidate"] else None
         # The run's id in the directory name: the evaluator names its containers after it.
         here = run_dir / "champions" / f"{run_dir.name}-c{rank}"
         here.mkdir(parents=True, exist_ok=True)
         started = time.time()
         evaluation = evaluator.evaluate(site, repo, task, cand, here)
-        c = {"rank": rank, "id": e["id"], "island": e["island"], "labels": e["labels"], "cell": e["cell"],
-             "validation_in_run": e["validation"], "evaluation": evaluation, "evaluated": (started, time.time())}
+        return {"rank": rank, "id": e["id"], "island": e["island"], "labels": e["labels"], "cell": e["cell"],
+                "validation_in_run": e["validation"], "evaluation": evaluation, "evaluated": (started, time.time())}
+
+    # Per island, every candidate gets the final evaluation, whatever the first's (2026-11-23): how the
+    # in-run order and the held-out set agree is part of what a run shows. The order still decides.
+    done = [evaluate(rank, e) for rank, e in enumerate(top, 1)] if per_island else []
+    for rank, e in enumerate(top, 1):
+        cand = Path(e["candidate"]) if e["candidate"] else None
+        here = run_dir / "champions" / f"{run_dir.name}-c{rank}"
+        c = done[rank - 1] if per_island else evaluate(rank, e)
+        evaluation = c["evaluation"]
         out.append(c)
         if not on_card:
+            if per_island:
+                continue
             break   # the first is the run's result; nothing decides between it and the next without the card
         if not evaluation.get("valid"):
             continue
@@ -418,6 +435,7 @@ def _champions(site: Site, repo: Path, task: Task, archive, view, run_dir: Path)
         except Exception as exc:  # noqa: BLE001 -- recorded; the next champion is tried
             c["certification"] = {"verdict": "no-verdict", "why": f"{type(exc).__name__}: {str(exc)[:300]}"}
         if c["certification"].get("verdict") == "certified":
+            out += [d for d in done[rank:]]    # evaluated, not certified: the run's result is decided
             break
     return out
 

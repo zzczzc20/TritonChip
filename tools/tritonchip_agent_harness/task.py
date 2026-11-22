@@ -336,7 +336,7 @@ def _check_islands(path: Path, value, services: dict) -> Optional[dict]:
         return None
     known = {"count", "topology", "migration_interval", "migration_rate", "features", "max_idle_turns",
              "max_restarts", "target", "roles", "op_groups", "min_gain", "software_exchange_seconds",
-             "default_op_group", "shared"}
+             "default_op_group", "shared", "final_candidates"}
     if not isinstance(value, dict) or set(value) - known or "count" not in value:
         raise TaskError(f"{path}: islands needs count (and may have {', '.join(sorted(known - {'count'}))})")
     n = value["count"]
@@ -392,6 +392,10 @@ def _check_islands(path: Path, value, services: dict) -> Optional[dict]:
         raise TaskError(f"{path}: islands.target may name speedup_geomean and/or fast_1")
     if not ((services or {}).get("score") or {}).get("requests"):
         raise TaskError(f"{path}: islands need services.score.requests: an island's commits")
+    final = value.get("final_candidates", "top3")
+    if final not in ("top3", "per_island"):
+        raise TaskError(f"{path}: islands.final_candidates is top3 (the archive's best three) or per_island (each "
+                        f"island's best, every one given the final evaluation)")
     shared = _check_shared(path, value.get("shared"))
     names = op_group_names({"op_groups": groups, "default_op_group": default})
     roles = _check_roles(path, value.get("roles"), n, services, names, shared)
@@ -400,6 +404,7 @@ def _check_islands(path: Path, value, services: dict) -> Optional[dict]:
             "op_groups": {k: list(v) for k, v in groups.items()}, "min_gain": float(gain),
             **({"default_op_group": default} if default is not None else {}),
             **({"shared": shared} if any(shared.values()) else {}),
+            **({"final_candidates": final} if final != "top3" else {}),
             "software_exchange_seconds": exchange,
             "max_idle_turns": int(value.get("max_idle_turns", 3)), "max_restarts": int(value.get("max_restarts", 2)),
             "target": target, **({"roles": roles} if roles else {})}

@@ -226,6 +226,17 @@ Run them on the base before you change anything, and keep the numbers. To
 vary a dimension, copy a file and change the defaults of its `_point_make`:
 the generator, the seed and the module stay what they are.
 
+**A task's development set.** When the task gives you the programs it is
+scored on (`/opt/tnca-task/dev_cases`, with an `INDEX.json`), they are cases
+like these, and `scripts/dev_points.py` runs any of them on a performance
+model several at once: by id, by the index's op `group`, or all of them, the
+longest as their stand-ins unless you ask for the points. Beside each it sets
+the base machine's cycles on the CA model, so the ratio is the speedup that
+model gives your change, and how far the CA model was from the card on that
+program for the base. Its `--prediction OUT` writes those ratios in the form
+a scoring or flow request takes them (`--prediction OUT`), so that what you
+expected is set beside what the card measures.
+
 **`classes.json`** lists the classes of workload you are given: what each
 computes, the regime it usually sits in, the dimensions that matter in it,
 and its cases in `benchmark_cases/`. A class without a case is still

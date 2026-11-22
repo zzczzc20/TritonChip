@@ -431,7 +431,7 @@ def _check_slow(path: Path, slow, ev: dict) -> None:
     """services.fpga_slow (report section 8.9): counts, not minutes, for the run; caps for one request."""
     required = {"mode", "flows", "board_runs", "flow_minutes", "board_minutes"}
     optional = {"base_image_sha256", "board_checks", "certify_after_run", "flows_at_once", "board_faster_than",
-                "relay_cache_gib", "flows_at_once_per_island"}
+                "relay_cache_gib", "flows_at_once_per_island", "post_place_report"}
     if not isinstance(slow, dict) or not required <= set(slow) or set(slow) - required - optional:
         raise TaskError(f"{path}: services.fpga_slow needs {', '.join(sorted(required))} "
                         f"(and may have {', '.join(sorted(optional))})")
@@ -795,9 +795,11 @@ def _board_lines(score: dict, slow: dict, board: dict, flows: int, shared: str, 
                   "what the card measured. Nothing is charged or refused for it, and it does not change the score."
                   if board.get("dev") else "")
     post_place = (" While a flow runs, `tnca-service status` gives, once its placement has ended (about half way), "
-                  "what Vivado says of the placed design: its own QoR assessment (a score from 1, it will not "
-                  "route or meet timing, to 5, it likely will), the placer's congestion level, and the estimated "
-                  "worst slack. The flow goes on whatever they say."
+                  "what Vivado's placer says of the placed design (`placed_design`): the worst slack it estimates "
+                  "and how congested the placement is, as Vivado's congestion level per direction (an n x n region "
+                  "is level log2 n; AMD's guide: 5 and above often hurt timing, above 6 the design may not route). "
+                  "The base's placement had level 6 and an estimated slack of +0.004 ns. The flow goes on whatever "
+                  "they say."
                   if board.get("post_place") else "")
     return [
         what

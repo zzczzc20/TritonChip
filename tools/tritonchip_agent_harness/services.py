@@ -1084,6 +1084,9 @@ class Broker:
                 end = None
             if end is not None:
                 out["ends_within_minutes"] = max(0, round((end - time.time()) / 60.0))
+        if job["service"] in ("fpga-slow", "flow") and job.get("post_place"):
+            # The placed design, as Vivado's placer saw it (fpga_slow.post_place, 2026-11-23); the flow goes on.
+            out["placed_design"] = {k: v for k, v in job["post_place"].items() if k != "at"}
         return out
 
     def _view(self, job_id, with_result: bool) -> dict:

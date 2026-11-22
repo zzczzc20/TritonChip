@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
 import signal
@@ -586,6 +587,64 @@ def design_timing(text: str) -> dict:
     return keep
 
 
+# -- what the placed design says, while the flow goes on (decided 2026-11-23) ------------------------------
+#
+# Once Vivado's placer has finished, its own log already says how congested the placed design is and the slack
+# it estimates; a design that does not route (R41-F5g's b22, the HPC demo's b3: congestion level 7, estimated
+# WNS -0.863 ns) shows it hours before routing fails. The flow is not stopped for it: the agent is told.
+# Levels follow UG949: an n x n region, level log2(n); 5 and above often hurt timing, above 6 the design may
+# not route.
+
+POST_PLACE_SECONDS = 600     # how often a running flow's placement is looked for
+_RUNME = "artifacts/tmp/link/vivado/vpl/prj/prj.runs/impl_1/runme.log"
+_PLACE_SCRIPT = ('L="$1"; [ -f "$L" ] || exit 3; grep -q "Ending Placer Task" "$L" || exit 4; '
+                 'sed -n "1,/Ending Placer Task/p" "$L" | grep "Estimated Timing Summary" | tail -1; '
+                 'sed -n "/Post-Placement Estimated Congestion/,/Print Estimated Congestion |/p" "$L" | head -60')
+_WNS = re.compile(r"WNS=\s*(-?[0-9.]+)\s*\|\s*TNS=\s*(-?[0-9.]+)")
+_ROW = re.compile(r"^\|\s*(North|South|East|West)\s*\|\s*(\d+)x\d+\s*\|\s*(\d+)x\d+\s*\|\s*(\d+)x\d+\s*\|")
+
+
+def parse_post_place(text: str) -> Optional[dict]:
+    """The placed design's signals from runme.log's lines: the placer's last estimated WNS/TNS before it ended,
+    and the post-placement congestion (the first table: the whole device) as levels per direction."""
+    wns = _WNS.search(text)
+    table: dict = {}
+    for line in text.splitlines():
+        m = _ROW.match(line.strip())
+        if m and m.group(1) not in table:
+            table[m.group(1)] = {k: int(round(math.log2(int(v)))) for k, v in
+                                 zip(("global", "long", "short"), m.group(2, 3, 4))}
+    if not wns and not table:
+        return None
+    out: dict = {}
+    if wns:
+        out["estimated_wns_ns"], out["estimated_tns_ns"] = float(wns.group(1)), float(wns.group(2))
+    if table:
+        out["congestion_level"] = max(v for row in table.values() for v in row.values())
+        out["congestion_by_direction"] = table
+    return out
+
+
+def post_place(site: Site, run_id: str, build_host: Optional[str]) -> Optional[dict]:
+    """What the build machine's Vivado log says of the placed design of a running flow, once placement has
+    ended; None before (or when the machine cannot be read)."""
+    if not build_host:
+        return None
+    try:
+        from tritonchip_fpga_harness.hosts import host_for, load_hosts
+        from tritonchip_fpga_harness.pipeline import remote
+        cfg = site.fpga_pipeline
+        host = host_for(load_hosts(cfg["hosts"]), build_host, "build")
+        done = remote(host, ["sh", "-c", _PLACE_SCRIPT, "post-place", f"{host.state_dir}/runs/{run_id}/{_RUNME}"],
+                      check=False, timeout=120)
+        if done.returncode != 0:
+            return None
+        got = parse_post_place(done.stdout.decode(errors="replace"))
+        return {**got, "at": round(time.time(), 1)} if got else None
+    except Exception:  # noqa: BLE001 -- a convenience for the agent; the flow goes on without it
+        return None
+
+
 def routed_timing(site: Site, run_id: str, build_host: Optional[str]) -> dict:
     """What the routed design's timing came to, for a flow that wrote no image (an infrastructure failure
     after routing, or the flow's cap reached in write_bitstream): design_timing of the run's routed timing
@@ -689,12 +748,23 @@ def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir
                     # Stopped between taking the machine and starting the flow (a gate that did not pass, D3,
                     # or the agent's end): what started is stopped here and on the build host.
                     job["cleanup"] = cancel(job, cfg)
-                try:
-                    proc.wait(timeout=seconds + 600)
-                    timed_out = False
-                except subprocess.TimeoutExpired:
-                    job["cleanup"] = cancel(job, cfg)
-                    timed_out = True
+                timed_out, until = False, time.time() + seconds + 600
+                watch = bool(((task.services or {}).get("fpga_slow") or {}).get("post_place_report"))
+                while True:
+                    left = until - time.time()
+                    if left <= 0:
+                        job["cleanup"] = cancel(job, cfg)
+                        timed_out = True
+                        break
+                    try:
+                        proc.wait(timeout=min(POST_PLACE_SECONDS, left) if watch else left)
+                        break
+                    except subprocess.TimeoutExpired:
+                        # While it runs: the placed design, once there is one (2026-11-23).
+                        if watch and not job.get("post_place"):
+                            got = post_place(site, remote_id, host)
+                            if got:
+                                job["post_place"] = got
             job.pop("_process", None)
         finally:
             slot = _drop_slot(holder)

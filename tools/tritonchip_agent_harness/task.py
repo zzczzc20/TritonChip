@@ -160,7 +160,7 @@ def _check_dev_cases(path: Path, ev: dict) -> None:
     for c in index.get("cases", []):
         point = c.get("point")
         target = c.get("stands_in_for") or point
-        if point in held or target in held or target not in dev:
+        if point in held or target in held or (target not in dev and not c.get("calibration")):
             raise TaskError(f"{path}: evaluation.dev_cases may give development points and their stand-ins only, "
                             f"not {point}")
         if not (root / c["file"]).is_file():

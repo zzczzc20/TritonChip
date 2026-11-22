@@ -71,8 +71,8 @@ def select(index: dict, names: list, groups: list, every: bool, points_only: boo
             sys.exit(f"{n}: not a development case (see INDEX.json)")
         chosen.append(c)
     for c in cases:
-        if c.get("stands_in_for"):
-            continue
+        if c.get("stands_in_for") or c.get("calibration"):
+            continue          # a stand-in comes with its point; a calibration case is not a development point
         if every or c.get("group") in groups:
             chosen.append(c)
     if not points_only:

@@ -51,9 +51,9 @@ import time
 from pathlib import Path
 from typing import Callable, Optional
 
-from . import board, evaluator, fpga_quick, fpga_slow, provider, roofline
+from . import board, evaluator, fpga_quick, fpga_slow, predictions, provider, roofline
 from .siteconfig import Site
-from .task import Task, board_points
+from .task import Task, board_points, dev_index
 from .workspace import apply_candidate, export, gate
 
 SERVICES = ("score", "fpga-quick", "fpga-slow", "flow")
@@ -180,6 +180,8 @@ class Shared:
         # its own of that kind are spent, first come first served.
         pool = (task.islands or {}).get("shared") or {}
         self.pool_left = {"flows": int(pool.get("flows", 0)), "score": int(pool.get("score_requests", 0))}
+        # What agents said they expect of a snapshot on the card (predictions.py), until the card measures it.
+        self.predictions: list = []
         self.images: dict = {}
         # The run's Vivado flows running now (the hardware requests holding them): at most flows_at_once,
         # each on a build machine of its own (fpga_slow.place); one by default (B8). Card runs are serial on
@@ -233,6 +235,11 @@ class Broker:
         # score requests too when it names them (2026-11-23).
         self.role = roles[island] if island is not None and island < len(roles) else None
         self.score_left = int((self.role or {}).get("score_requests", (cfg.get("score") or {}).get("requests", 0)))
+        # The development set given to the agent (2026-11-23): its stand-ins count for their points.
+        dev = dev_index(task)
+        self.standins = {c["point"]: c["stands_in_for"] for c in (dev or {}).get("cases", [])
+                         if c.get("stands_in_for")}
+        self.predicts = dev is not None
         minutes = (self.role or {}).get("fpga_quick_minutes", fq.get("minutes", 0))
         self.fpga_left = float(minutes) * 60.0
         self.fpga_job = float(fq.get("job_minutes", 30)) * 60.0
@@ -402,7 +409,8 @@ class Broker:
         if op == "budget":
             return self.budget()
         if op == "submit":
-            return self.submit(request.get("service"), message=request.get("message"))
+            return self.submit(request.get("service"), message=request.get("message"),
+                               prediction=request.get("prediction"))
         if op == "archive":
             return self.archive.view(self.island) if self.archive is not None else {"error": "this run has no islands"}
         if op == "read-commit":
@@ -436,7 +444,7 @@ class Broker:
                 "fpga_slow_board_runs_left": self.board_runs_left, **pool,
                 "busy": sorted(self.busy)}
 
-    def submit(self, service, message=None) -> dict:
+    def submit(self, service, message=None, prediction=None) -> dict:
         if service not in SERVICES:
             return {"error": f"no service {service!r}; there are: {', '.join(SERVICES)}"}
         with self.lock:
@@ -450,6 +458,8 @@ class Broker:
             self.busy.setdefault(service, []).append(job_id)
         try:
             reply = self._submit(service, message, job_id, job_dir)
+            if prediction is not None and "refused" not in reply:
+                reply.update(self._take_prediction(self.jobs.get(reply.get("id")), prediction))
             if "refused" in reply:
                 with self.lock:
                     self._refused(service, reply["refused"], reply.get("files") or reply.get("rejected"))
@@ -460,6 +470,41 @@ class Broker:
             with self.lock:
                 self._unbusy(service, job_id)
             raise
+
+    def _take_prediction(self, job: Optional[dict], value) -> dict:
+        """A request's prediction (predictions.py): checked, kept on the job and in the run's list until the
+        card measures exactly that snapshot. Never a reason to refuse or charge: a bad one is only reported."""
+        if job is None:
+            return {}
+        if not self.predicts or job["service"] not in ("score", "flow"):
+            return {"prediction_error": "predictions are taken with score and flow requests of a task that gives "
+                                        "a development set"}
+        if job.get("dedupe_of"):
+            return {"prediction_error": "this snapshot was measured on the card before: its result is that "
+                                        "request's, and a prediction made after it is not graded"}
+        try:
+            expected = predictions.check(value, board_points(self.task), self.standins)
+        except predictions.PredictionError as exc:
+            return {"prediction_error": str(exc)}
+        with self.lock:
+            job["prediction"] = expected
+            self.shared.predictions.append({"island": self.island, "job": job["id"], "digest": job.get("digest"),
+                                            "expected": expected, "at": round(time.time(), 1), "graded_by": None})
+        return {"prediction": f"{len(expected)} expectations kept; graded when the card measures this snapshot"}
+
+    def _grade_predictions(self, job: dict, full: Optional[dict]) -> list:
+        """Every prediction of this island on exactly this snapshot not graded yet, beside the card's rows."""
+        out = []
+        with self.lock:
+            pending = [x for x in self.shared.predictions if x["island"] == self.island and x["graded_by"] is None
+                       and x["digest"] is not None and x["digest"] == job.get("digest")]
+            for x in pending:
+                x["graded_by"] = job["id"]
+        for x in pending:
+            g = predictions.grade(x["expected"], full)
+            x["grade"] = g
+            out.append({"from": x["job"], **g})
+        return out
 
     def _refused(self, service: str, why: str, files=None) -> None:
         """Under the lock: a refused submission, for the record."""
@@ -528,6 +573,7 @@ class Broker:
             job["sim_key"] = sim_key(self.task, candidate)
         if service == "score" and self.board_scoring:
             job["hardware"] = fpga_slow.hardware_digest(candidate)
+            job.setdefault("digest", fpga_slow.snapshot_digest(candidate))
             changed = evaluator.hardware_changed(self.repo, self.task, candidate)["changed"]
             if changed and job["hardware"] not in self.images:
                 with self.lock:
@@ -848,6 +894,9 @@ class Broker:
         agg = dict(visible.get("validation") or {"n": len(board_points(self.task)), "passed": 0})
         result = {"aggregate": agg, "full": card.get("score"), "families": visible.get("families"),
                   "outcome": card["outcome"]}
+        graded = self._grade_predictions(job, card.get("score")) if self.predicts else []
+        if graded:
+            visible["predictions"] = graded
         if self.archive is not None and (job.get("state", "running") == "running" or job.get("outlived_run")):
             entry = self.archive.add(self.island, job, candidate, result)
             job["commit"] = entry["id"]
@@ -1054,8 +1103,10 @@ class Broker:
             # records brokers whose requests are still ending).
             jobs = [{k: v for k, v in dict(j).items() if k != "thread" and not k.startswith("_")}
                     for j in list(self.jobs.values())]
+            mine = [dict(x) for x in self.shared.predictions if x["island"] == self.island]
         return {"config": self.task.services, "left": self.budget(), "requests": jobs,
-                "refusals": [dict(r) for r in list(self.refusals)]}
+                "refusals": [dict(r) for r in list(self.refusals)],
+                **({"predictions": mine} if mine else {})}
 
 
 __all__ = ["Broker", "SERVICES"]

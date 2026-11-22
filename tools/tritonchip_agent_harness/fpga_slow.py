@@ -48,7 +48,7 @@ from typing import Optional
 
 from . import board, certify, evaluator, families as families_, provider, roofline as roofline_
 from .siteconfig import Site
-from .task import Task, board_points
+from .task import Task, board_points, dev_index
 
 RETRIES = 2               # an infrastructure failure is tried again this many times
 REPORT_BYTES = 4 << 20     # the most of one Vivado report fetched from the build host
@@ -845,6 +845,20 @@ def _card_view(site: Site, task: Task, points: list, fams, rec: dict, outcome: s
                                 family=(lambda p: families_.family_of(p, fams)) if fams is not None else None)
         if listed is not None:
             visible["points"] = listed     # each card point's eta against the whole chip's roofline, by number
+        if dev_index(task) is not None:
+            # A development set the agent is given (2026-11-23): every point by name, with its card cycles.
+            rows = {r.get("point"): r for r in full.get("points") or []}
+            named = []
+            for i, p in enumerate(points):
+                r = rows.get(p) or {}
+                e = {"point": p, "cycles": r.get("cycles"), "base_cycles": r.get("base_cycles"),
+                     "speedup": round(r["speedup"], 4) if r.get("speedup") else None}
+                if r.get("failure") is not None:
+                    e["failure"] = r["failure"]
+                if listed is not None:
+                    e.update({k: v for k, v in listed[i].items() if k != "n"})
+                named.append(e)
+            visible["points"] = named
         failures = evaluator.failure_counts(full)
         if failures:
             visible["failures"] = failures

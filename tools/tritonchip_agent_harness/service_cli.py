@@ -8,6 +8,7 @@
     tnca-service submit fpga-slow      the card: a hardware change is first fully linked (a flow)
     tnca-service submit flow           a task that scores on the board: a changed machine's image (a flow)
     tnca-service submit score --message TEXT    on an island: a commit, with one line on what it changes
+    ... --prediction FILE   (score, flow) what you expect of this snapshot on the card, set beside what it measures
     tnca-service archive               on an island: the commits you can see
     tnca-service read-commit ID        on an island: one commit, as a patch against the base commit
     tnca-service status [ID]           one request, or all of them
@@ -54,10 +55,22 @@ def main(argv) -> int:
     cmd, rest = argv[0], argv[1:]
     if cmd == "budget":
         reply = call({"op": "budget"})
-    elif cmd == "submit" and len(rest) == 1:
-        reply = call({"op": "submit", "service": rest[0]})
-    elif cmd == "submit" and len(rest) == 3 and rest[1] == "--message":
-        reply = call({"op": "submit", "service": rest[0], "message": rest[2]})
+    elif cmd == "submit" and rest and len(rest) % 2 == 1 and all(
+            k in ("--message", "--prediction") for k in rest[1::2]):
+        request = {"op": "submit", "service": rest[0]}
+        for key, value in zip(rest[1::2], rest[2::2]):
+            if key == "--message":
+                request["message"] = value
+            else:
+                # What the agent expects of this snapshot on the card (2026-11-23): a JSON object, point id ->
+                # speedup over the base (and "score"), read here and sent as it is; the evaluator checks it.
+                try:
+                    with open(value, encoding="utf-8") as f:
+                        request["prediction"] = json.load(f)
+                except (OSError, ValueError) as exc:
+                    print(json.dumps({"error": f"--prediction {value}: {exc}"}), file=sys.stderr)
+                    return 2
+        reply = call(request)
     elif cmd == "archive" and not rest:
         reply = call({"op": "archive"})
     elif cmd == "read-commit" and len(rest) == 1:

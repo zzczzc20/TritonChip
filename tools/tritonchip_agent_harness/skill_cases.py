@@ -32,6 +32,9 @@ import types
 from pathlib import Path
 
 SCHEMA = "tritonchip-skill-benchmark-cases/1"
+# Modules whose classes and functions a case carries as code: the benchmark's, and the point modules the
+# harness registers beside it (dev_standins.py, calib_points.py: never importable in the sandbox).
+INLINE = ("archbench", "dev_standins", "calib_points")
 SEED = 0   # the evaluation's (archbench/run.py --seed default)
 
 
@@ -109,7 +112,7 @@ class Bundle:
             self.imports[name] = f"import {mod}" if name == mod else f"import {mod} as {name}"
             return
         if inspect.isclass(obj) or inspect.isfunction(obj):
-            if not (obj.__module__ or "").startswith("archbench"):
+            if not (obj.__module__ or "").startswith(INLINE):
                 line = f"from {obj.__module__} import {obj.__name__}"
                 self.imports[name] = line + (f" as {name}" if name != obj.__name__ else "")
                 return
@@ -119,7 +122,7 @@ class Bundle:
                 # Its bases first: a class is written after the classes it derives from (2026-11-23, the
                 # strided add's Binary(_Layout) came out before _Layout).
                 for base in obj.__bases__:
-                    if (base.__module__ or "").startswith("archbench"):
+                    if (base.__module__ or "").startswith(INLINE):
                         self._add(base.__name__, base)
             self.defs[name] = None        # placed now: a recursive reference finds it
             if inspect.isclass(obj):
@@ -210,7 +213,7 @@ def case_source(point, source_commit: str | None) -> str:
     bundle = Bundle()
     make = point_make_source(point.make, bundle)
     module, _ = point.make(SEED)
-    if inspect.isclass(type(module)) and (type(module).__module__ or "").startswith("archbench"):
+    if inspect.isclass(type(module)) and (type(module).__module__ or "").startswith(INLINE):
         bundle._add(type(module).__name__, type(module))
     d = point.demand
     # The point's note is not copied: it is the benchmark's free text (it can name other points' shapes);

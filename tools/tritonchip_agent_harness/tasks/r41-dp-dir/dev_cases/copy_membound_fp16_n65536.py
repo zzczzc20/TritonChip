@@ -8,7 +8,6 @@ dimension.
 Generated from the benchmark at d8d6a4cdd5d6; regenerated, not edited.
 """
 import torch
-from calib_points import Copy
 import bound  # this skill's scripts/: tnca_case.py puts it on the path
 
 POINT = 'op.copy/membound/fp16-n65536'
@@ -16,6 +15,12 @@ TOL = 0.02
 DEMAND = bound.Demand(macs=0.0, fp_ops=0.0, sfu_ops=0.0, read_bytes=131072, write_bytes=131072)
 
 TORCH_DTYPE = {'fp32': 'float32', 'fp16': 'float16', 'bf16': 'bfloat16', 'e4m3': 'float8_e4m3fn', 'e5m2': 'float8_e5m2'}
+
+
+class Copy(torch.nn.Module):
+
+    def forward(self, x):
+        return x.clone()
 
 
 def gen(seed):

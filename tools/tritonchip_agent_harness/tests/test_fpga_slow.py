@@ -1,8 +1,10 @@
 """The optional slow service keeps its pipeline and hidden-point evidence separate."""
 from __future__ import annotations
 
+import ast
 import dataclasses
 import json
+import subprocess
 import sys
 import tempfile
 import types
@@ -13,7 +15,8 @@ from unittest import mock
 HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE.parent))
 
-from tritonchip_agent_harness import board, fpga_slow  # noqa: E402
+from tritonchip_agent_harness import board, fpga_slow, workspace  # noqa: E402
+from tritonchip_agent_harness import task as task_module  # noqa: E402
 from tritonchip_agent_harness.task import Task, TaskError, load_task, render  # noqa: E402
 
 
@@ -153,6 +156,35 @@ class SlowService(unittest.TestCase):
             self.assertEqual(visible["charged"], "board_run")
             self.assertNotIn("secret.validation", json.dumps(visible))
             self.assertNotIn("secret.final", json.dumps(visible))
+
+    def test_a_failed_check_the_task_shows_comes_with_its_command_and_never_its_log(self):
+        """2026-11-23 (R41-DIR-smoke): an island failed `fp8` three times knowing nothing else of it."""
+        shown = dataclasses.replace(task(), services={"fpga_slow": {"board_checks": [
+            {"name": "fp8", "command": ["x"], "in_workspace": "`python fp8_cases.py --out NEW_DIR`"},
+            {"name": "other", "command": ["y"]}]}})
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            site = types.SimpleNamespace(fpga_pipeline={"hosts": root / "hosts.json", "build_host": "build",
+                                                        "board_host": "card", "card": {"bdf": "0000:04:00.1"}})
+            job = {"id": "l1", "remote_id": "agent-slow-1", "containers": "tnca-test", "kind": "software"}
+            sim = {"aggregate": {"n": 1, "passed": 1},
+                   "full": {"points": [{"point": "secret.validation", "failure": None, "done_cycles": 42}]}}
+            card = {"session": {"status": "ok"},
+                    "measured": {"checks": {"fp8": {"exit": 1, "log_tail": ["the candidate wrote this"]},
+                                            "other": {"exit": None, "timed_out": True}}},
+                    "points": {"secret.validation": {"status": "pass", "cycles": 40, "record_cycles": 42,
+                                                     "fallbacks": [], "observer": {"done_cycles": 42}}}}
+            base = {"points": {"secret.validation": {"status": "pass", "cycles": 80}}}
+            with (mock.patch.object(fpga_slow.evaluator, "measure_validation", return_value=sim),
+                  mock.patch.object(fpga_slow.board, "measure", return_value=card),
+                  mock.patch.object(fpga_slow.board, "baseline", return_value=base)):
+                visible, _ = fpga_slow.run(site, root, shown, None, root / "job", job, with_board=True,
+                                           image={"path": "/x", "sha256": "c" * 64}, flow_seconds=60,
+                                           board_seconds=60)
+            self.assertEqual(visible["board"]["checks"], {
+                "fp8": {"result": "fail", "in_workspace": "`python fp8_cases.py --out NEW_DIR`"},
+                "other": "did not finish"})
+            self.assertNotIn("the candidate wrote this", json.dumps(visible))
 
     def test_a_task_that_records_board_cycles_reports_their_ratio_in_aggregate(self):
         recording = task()
@@ -715,3 +747,90 @@ SLR0:
         self.assertEqual((got["estimated_wns_ns"], got["congestion_level"]), (-0.863, 7))
         self.assertEqual(got["congestion_by_direction"]["North"], {"global": 5, "long": 7, "short": 6})
         self.assertIsNone(fpga_slow.parse_post_place("Phase 4 Global Iteration 0\n"))
+
+
+REPO = HERE.parents[1]
+
+
+def _has_commit(commit: str) -> bool:
+    return subprocess.run(["git", "-C", str(REPO), "cat-file", "-e", commit + "^{commit}"],
+                          capture_output=True).returncode == 0
+
+
+class ShownCheck(unittest.TestCase):
+    """2026-11-23 (user, after R41-DIR-smoke): the next run's agents see the FP8 board check's script and what it
+    imports, so a failed `fp8` can be run in the working directory; the evaluator still runs its own copy, and
+    the check's log stays hidden."""
+    TASK = HERE / "tasks" / "r41-dp-dir"
+    SCRIPTS = ("tools/performance_harness/fp8_cases.py", "tools/performance_harness/fp8_block_reference.py")
+    # Where the two scripts look for modules: their own directory, then what fp8_cases.py and
+    # fp8_block_reference.py put on sys.path.
+    SEARCH = ("tools/performance_harness", "", "python", "compiler/python", "tools/asm",
+              "tools/performance_harness/systemc", "tools/model")
+
+    def setUp(self):
+        self.task = load_task(self.TASK)
+        if not _has_commit(self.task.base_commit):
+            self.skipTest(f"base commit {self.task.base_commit[:12]} not in this clone")
+
+    def _show(self, path: str) -> str:
+        return subprocess.run(["git", "-C", str(REPO), "show", f"{self.task.base_commit}:{path}"],
+                              capture_output=True, text=True, check=True).stdout
+
+    def test_every_module_the_scripts_import_from_the_tree_is_shown(self):
+        full = workspace.base_tree(REPO, self.task.base_commit)
+        shown = workspace.visible_tree(REPO, self.task.base_commit, self.task.hide)
+        for script in self.SCRIPTS:
+            self.assertIn(script, shown, script)
+            names = set()
+            for node in ast.walk(ast.parse(self._show(script))):
+                if isinstance(node, ast.Import):
+                    names.update(a.name for a in node.names)
+                elif isinstance(node, ast.ImportFrom) and node.module and not node.level:
+                    names.add(node.module)
+            for name in sorted(names):
+                parts = name.split(".")
+                for base in self.SEARCH:
+                    pre = f"{base}/" if base else ""
+                    files = [pre + "/".join(parts[:i]) + "/__init__.py" for i in range(1, len(parts))]
+                    files += [pre + "/".join(parts) + ".py", pre + "/".join(parts) + "/__init__.py"]
+                    found = [f for f in files if f in full]
+                    if found:
+                        for f in found:
+                            self.assertTrue(f in shown, f"{script} imports {name}: {f} is hidden")
+                        break
+
+    def test_nothing_beside_them_is_shown(self):
+        shown = workspace.visible_tree(REPO, self.task.base_commit, self.task.hide)
+        self.assertEqual(sorted(p for p in shown if p.startswith("archbench/")),
+                         ["archbench/__init__.py", "archbench/provenance.py"])
+        top = "tools/performance_harness/"
+        self.assertEqual(sorted(p for p in shown if p.startswith(top) and "/" not in p[len(top):]),
+                         sorted(self.SCRIPTS))
+
+    def test_no_scored_or_held_out_point_is_named_in_them(self):
+        ev = self.task.evaluation
+        text = "\n".join(self._show(p) for p in self.SCRIPTS + ("archbench/__init__.py", "archbench/provenance.py"))
+        for pid in ev["final"] + ev.get("board_final", []) + ev["validation"] + ev.get("board_validation", []):
+            self.assertNotIn(pid, text, pid)
+
+    def test_an_edit_of_them_never_reaches_the_evaluator(self):
+        """The gate takes only changes under the task's design paths: the card runs the base's copy."""
+        for path in self.SCRIPTS + ("archbench/__init__.py", "archbench/provenance.py"):
+            self.assertFalse(any(workspace.under(path, d) for d in self.task.design), path)
+
+    def test_the_task_text_names_the_check_and_how_to_run_it(self):
+        text = render(self.task, "offline", skills=self.task.skills, island=0)
+        self.assertIn("Each session also runs the task's board checks on the card", text)
+        self.assertIn("python tools/performance_harness/fp8_cases.py --out NEW_DIR", text)
+        self.assertIn("never its log", text)
+
+    def test_an_empty_in_workspace_text_is_refused(self):
+        raw = json.loads((self.TASK / "task.json").read_text(encoding="utf-8"))
+        slow = raw["services"]["fpga_slow"]
+        slow["board_checks"][0]["in_workspace"] = " "
+        with self.assertRaisesRegex(TaskError, "non-empty `in_workspace`"):
+            task_module._check_slow(self.TASK / "task.json", slow, raw["evaluation"])
+        slow["board_checks"][0]["in_workspace"] = ["not", "text"]
+        with self.assertRaisesRegex(TaskError, "non-empty `in_workspace`"):
+            task_module._check_slow(self.TASK / "task.json", slow, raw["evaluation"])

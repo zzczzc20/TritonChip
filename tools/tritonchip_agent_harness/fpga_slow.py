@@ -952,7 +952,14 @@ def _card_view(site: Site, task: Task, points: list, fams, rec: dict, outcome: s
         visible["cycles_on_card"] = _cycles_view(points, got, sim_rows)
     checks = ((rec.get("measured") or {}).get("checks")) or {}
     if checks:
-        bad = {name: _check_view(ran) for name, ran in checks.items() if _check_view(ran) != "pass"}
+        # A check the task shows the agent (`in_workspace`, 2026-11-23) comes with the command that runs it there.
+        how = {c["name"]: c["in_workspace"] for c in ((task.services or {}).get("fpga_slow") or {}).get(
+            "board_checks") or [] if c.get("in_workspace")}
+        bad = {}
+        for name, ran in checks.items():
+            seen = _check_view(ran)
+            if seen != "pass":
+                bad[name] = {"result": seen, "in_workspace": how[name]} if name in how else seen
         visible["checks"] = bad or "all passed"
     return {"outcome": outcome if outcome == "candidate" else "ok", "record": rec, "attempts": attempts,
             "score": full, "visible": visible, "health": rec.get("health")}

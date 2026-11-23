@@ -468,8 +468,11 @@ def _check_slow(path: Path, slow, ev: dict) -> None:
         if (not isinstance(c, dict) or not _CHECK_NAME.match(str(c.get("name", "")))
                 or not isinstance(c.get("command"), list) or not c["command"]
                 or not all(isinstance(a, str) for a in c["command"])
-                or not isinstance(c.get("env", {}), dict) or set(c) - {"name", "command", "env", "timeout_seconds"}):
-            raise TaskError(f"{path}: each services.fpga_slow.board_checks entry needs a name and a command list")
+                or not isinstance(c.get("env", {}), dict)
+                or not isinstance(c.get("in_workspace", "-"), str) or not c.get("in_workspace", "-").strip()
+                or set(c) - {"name", "command", "env", "timeout_seconds", "in_workspace"}):
+            raise TaskError(f"{path}: each services.fpga_slow.board_checks entry needs a name and a command list "
+                            f"(and, if it has one, a non-empty `in_workspace` text)")
     if not isinstance(slow.get("certify_after_run", False), bool):
         raise TaskError(f"{path}: services.fpga_slow.certify_after_run must be boolean")
     if slow["mode"] == "board" and not isinstance(ev.get("platform"), dict):
@@ -801,6 +804,16 @@ def _board_lines(score: dict, slow: dict, board: dict, flows: int, shared: str, 
                   "The base's placement had level 6 and an estimated slack of +0.004 ns. The flow goes on whatever "
                   "they say."
                   if board.get("post_place") else "")
+    # 2026-11-23 (R41-DIR-smoke): an island failed the FP8 check three times without learning what the check
+    # runs. A check with `in_workspace` names it here; its log stays hidden (the candidate's code wrote it).
+    board_checks = list(slow.get("board_checks") or [])
+    checks = ("" if not board_checks else
+              " Each session also runs the task's board checks on the card, your compiler and software against "
+              "fixed expectations: "
+              + "; ".join(f"`{c['name']}`" + (f" (in your working directory: {c['in_workspace']})"
+                                              if c.get("in_workspace") else "") for c in board_checks)
+              + ". The reply names a check that did not pass (`fail`, or `did not finish`), never its log; the "
+              "final evaluation runs the checks again, and a snapshot with a check that does not pass fails it.")
     return [
         what
         + ("; " + "; ".join(named) if named else "")
@@ -811,7 +824,7 @@ def _board_lines(score: dict, slow: dict, board: dict, flows: int, shared: str, 
         + (f" A point counts as faster only when it is more than {(faster - 1) * 100:g}% faster than the base: "
            "the card's count of one program differs by up to about half a percent from run to run."
            if faster > 1.0 else "")
-        + " Each point may run for 20 times the base's cycles on it; past that it fails as a timeout.",
+        + " Each point may run for 20 times the base's cycles on it; past that it fails as a timeout." + checks,
         f"- A snapshot that kept the base's machine (compiler and software only) goes straight to the card. One "
         f"that changed the machine (RTL, the profile's parameters, the device description) runs on the card once "
         f"this run has built its image (`flow`, below); before that, `score` refuses it, uncharged. The card is "

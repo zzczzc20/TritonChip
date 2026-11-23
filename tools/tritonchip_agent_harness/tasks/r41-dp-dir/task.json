@@ -37,6 +37,8 @@
  ],
  "hide": [
   "archbench/",
+  "!archbench/__init__.py",
+  "!archbench/provenance.py",
   "compiler/README.md",
   "doc/architecture_overview.md",
   "doc/compiler_overview.md",
@@ -87,6 +89,8 @@
   "tools/performance_harness/",
   "!tools/performance_harness/systemc/",
   "!tools/performance_harness/align/",
+  "!tools/performance_harness/fp8_block_reference.py",
+  "!tools/performance_harness/fp8_cases.py",
   "tools/performance_harness/systemc/test_run_graphs.py",
   "tools/r37/aot_run.py",
   "tools/r37/upstream_cases.py",
@@ -400,7 +404,8 @@
       "TNCA_DEADLINE": "200000000000",
       "TNCA_HOST_TIMEOUT": "6000"
      },
-     "timeout_seconds": 3600
+     "timeout_seconds": 3600,
+     "in_workspace": "`TNCA_PROFILE=core-vrf-sync-v5-x8-g2c4-dp-board python tools/performance_harness/fp8_cases.py --out NEW_DIR [--group casts|plumbing|scaled_mm|linear] [--quick]`: FP8 as a generic Torch dtype (casts, tensor plumbing, _scaled_mm, linears), each case's numbers against CPU references and, for _scaled_mm, the matrix instructions in its compiled code. The card runs every group in full (`--quick` leaves cases out) with that profile; your working directory runs it on the backend your environment selects, and NEW_DIR/report.json gives each case that did not pass and why. On a model a _scaled_mm case is also compared with the model's count of matrix commands, which this base's models leave at 0, so there every such case says `fail` with `dynamic 0`; the card has no such count, and there a case passes when its numbers are right, its compiled code has FP8 MMAs (`static_fp8_mma`) and no other MMA (`static_other_mma`), and nothing ran on the host"
     }
    ],
    "certify_after_run": true,

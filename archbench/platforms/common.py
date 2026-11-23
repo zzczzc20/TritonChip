@@ -39,6 +39,11 @@ def reference(point, seed, device='cpu'):
     reference's. TF32 is off for the duration (protocol: IEEE fp32 only).
     """
     m, ins = point.make(seed)
+    if point.reference is not None:
+        # xl tier: the point defines its own higher-precision reference (it is the same module, with
+        # exact block-wise FP8 arithmetic in binary64), always on the CPU
+        with torch.no_grad():
+            return tuple(t.detach().cpu() for t in flatten(point.reference(m.eval(), ins)))
     m, ins = _to_fp32(m.eval(), ins, device)
     with _ieee_fp32():
         return tuple(t.detach().cpu() for t in flatten(m(*ins)))

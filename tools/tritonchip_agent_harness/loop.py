@@ -23,7 +23,7 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 from . import __version__, certify, evaluator, occupancy, runner
 from .services import Broker
@@ -322,8 +322,8 @@ class _LiveRecord:
     LIVE_SECONDS, so that a run can be followed before run.json, which is written at the end (review
     section 9). Never read back; a failed write is skipped."""
 
-    def __init__(self, run_dir: Path, shared) -> None:
-        self.run_dir, self.shared = run_dir, shared
+    def __init__(self, run_dir: Path, shared, stage: Callable[[], str] = lambda: "islands") -> None:
+        self.run_dir, self.shared, self.stage = run_dir, shared, stage
         self.done = threading.Event()
         self.thread = threading.Thread(target=self._loop, daemon=True, name="live-record")
 
@@ -342,7 +342,8 @@ class _LiveRecord:
         try:
             brokers = list(self.shared.brokers)
             archive = next((b.archive for b in brokers if b.archive is not None), None)
-            snap = {"live": True, "at": time.time(), "archive": archive.record() if archive else None,
+            snap = {"live": True, "at": time.time(), "stage": self.stage(),
+                    "archive": archive.record() if archive else None,
                     "islands": [{"island": b.island, "services": b.record()} for b in brokers]}
             tmp = self.run_dir / "run.live.json.tmp"
             tmp.write_text(json.dumps(snap, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
@@ -391,11 +392,13 @@ def _islands(site: Site, task: Task, account, mode: str, names: list, record: di
         evaluator.baseline(site, repo, task)
     shared.roofline = _roofline(site, repo, task, record)
     got, rows, stage = None, None, "islands"
-    live = _LiveRecord(run_dir, shared)
+    # Until the champions are chosen and evaluated, not only while the islands run (R41-DIR-smoke, 2026-11-23:
+    # the record stopped at the islands' end, and the three hours of scores still running and the final
+    # evaluation went unseen until run.json).
+    live = _LiveRecord(run_dir, shared, stage=lambda: stage)
     try:
         live.start()
         got = islands_.run(site, task, account, mode, run_dir, repo, names, Broker, shared)
-        live.stop()
         archive, brokers = got["archive"], [r["broker"] for r in got["islands"] if r]
         stage = "waiting for the slow requests"
         for b in brokers:
@@ -411,6 +414,8 @@ def _islands(site: Site, task: Task, account, mode: str, names: list, record: di
                                      jobs={f"{b.island}:{k}": j for b in brokers for k, j in b.jobs.items()})
         stage = "final evaluation"
         record["champions"] = _champions(site, repo, task, archive, view, run_dir)
+        stage = "done"
+        live.stop()
     except KeyboardInterrupt as exc:
         live.done.set()
         if rows is None:

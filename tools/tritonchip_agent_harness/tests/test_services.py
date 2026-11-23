@@ -459,6 +459,46 @@ class SlotWait(unittest.TestCase):
         self.assertFalse(sims.kept("k"))
 
 
+class CardQueue(unittest.TestCase):
+    """The card goes to the islands in the order they asked (R41-DIR-smoke, 2026-11-23)."""
+
+    def test_waiters_hold_in_the_order_they_asked(self):
+        from tritonchip_agent_harness.services import FairQueue
+        q, order = FairQueue(), []
+        self.assertTrue(q.hold())                     # island 0 holds the card
+        threads = []
+        for name in ("island 2", "island 1", "island 0 again"):
+            t = threading.Thread(target=lambda n=name: q.hold(poll=0.01) and (order.append(n), q.release()))
+            t.start()
+            threads.append(t)
+            while q.waiting() < len(threads):     # each is queued before the next asks
+                time.sleep(0.005)
+        time.sleep(0.1)                               # many polls pass: nobody loses its place
+        q.release()
+        for t in threads:
+            t.join(5)
+        self.assertEqual(order, ["island 2", "island 1", "island 0 again"])
+
+    def test_a_cancelled_waiter_leaves_and_the_next_one_holds(self):
+        from tritonchip_agent_harness.services import FairQueue
+        q, stop, got = FairQueue(), {"now": False}, {}
+        q.hold()
+        first = threading.Thread(target=lambda: got.update(first=q.hold(lambda: stop["now"], poll=0.01)))
+        first.start()
+        while q.waiting() < 1:
+            time.sleep(0.005)
+        second = threading.Thread(target=lambda: got.update(second=q.hold(poll=0.01)))
+        second.start()
+        while q.waiting() < 2:
+            time.sleep(0.005)
+        stop["now"] = True
+        first.join(5)
+        self.assertEqual((got["first"], q.waiting()), (False, 1))
+        q.release()
+        second.join(5)
+        self.assertEqual((got["second"], q.waiting()), (True, 0))
+
+
 class IslandPools(unittest.TestCase):
     """2026-11-09: with roles, each island's own slow-tier counts and quick minutes; the run's quick results."""
 

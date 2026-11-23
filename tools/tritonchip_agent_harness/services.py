@@ -39,6 +39,7 @@ earlier one of the run already scored is not charged and is no new commit: its r
 
 from __future__ import annotations
 
+import collections
 import dataclasses
 import hashlib
 import json
@@ -161,6 +162,43 @@ class Simulations:
             return e is not None and e["state"] == "done"
 
 
+class FairQueue:
+    """One holder at a time, in the order of asking. threading.Lock wakes a waiter in no fixed order, and a
+    waiter whose timed acquire ran out and asks again goes to the back: in R41-DIR-smoke (2026-11-23) island 2's
+    first card session waited 146 minutes, past the islands' end, while islands 0 and 1 took the card six times
+    between them with requests they made after it. A waiter keeps its place while it listens for a cancel."""
+
+    def __init__(self) -> None:
+        self._cond = threading.Condition()
+        self._queue: collections.deque = collections.deque()
+        self._held = False
+
+    def hold(self, cancelled: Callable[[], bool] = lambda: False, poll: float = 10.0) -> bool:
+        """Wait for this caller's turn; True once it holds, False (and out of the queue) if `cancelled()`, asked
+        every `poll` seconds while it waits, said so first."""
+        me = object()
+        with self._cond:
+            self._queue.append(me)
+            while self._held or self._queue[0] is not me:
+                if cancelled():
+                    self._queue.remove(me)
+                    self._cond.notify_all()
+                    return False
+                self._cond.wait(poll)
+            self._queue.popleft()
+            self._held = True
+            return True
+
+    def release(self) -> None:
+        with self._cond:
+            self._held = False
+            self._cond.notify_all()
+
+    def waiting(self) -> int:
+        with self._cond:
+            return len(self._queue)
+
+
 class Shared:
     """What a run's islands share (report sections 8.9 B7/B8 and 8.8 P10): the slow tier's counts and the
     images it built, one slow request at a time, the cap on evaluations at once, the run's simulations -- and
@@ -201,7 +239,7 @@ class Shared:
         # The board as the score (2026-11-10): one card run per snapshot for the run, the card one session at a
         # time for every island, and its health as the last check found it (None: healthy).
         self.boards = Simulations(None)
-        self.card = threading.Lock()
+        self.card = FairQueue()          # first come, first served across islands
         self.card_unhealthy: Optional[dict] = None
         self.health_tree: Optional[Path] = None
         self.brokers: list = []          # every island's broker: the run-wide checks look at all their requests
@@ -850,11 +888,8 @@ class Broker:
             except Exception as exc:  # noqa: BLE001 -- no base measurement to answer from: the card measures it
                 job["from_base_error"] = f"{type(exc).__name__}: {exc}"
         queued = time.time()
-        held = False
-        while not held:
-            held = self.shared.card.acquire(timeout=10)
-            if not held and job.get("state", "running") != "running" and not job.get("outlived_run"):
-                return {"outcome": "cancelled"}
+        if not self.shared.card.hold(lambda: job.get("state", "running") != "running" and not job.get("outlived_run")):
+            return {"outcome": "cancelled"}
         job["card_queued_seconds"] = round(time.time() - queued, 1)
         try:
             image = self._card_image(job)

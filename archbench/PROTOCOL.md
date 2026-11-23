@@ -45,6 +45,15 @@ same bound formulas and scoring library (`tools/r38/archbench`).
     gather, and the R40 decoder (4 layers, 211 MiB of weights). R40's *HBM
     suite* is every point of every tier plus the multi-step decoder workload
     (`spec/r40/suites/hbm.json`, `spec/r40/plan.json`).
+  - `xl` (R42, `archbench/xl.py`, frozen as `suites/xl.json`): AI-practical points
+    beyond `large`, at the dimensions of the 2B-class decoder the R41 FP8 work validated
+    (Qwen3-VL-2B text decoder: hidden 2048, MLP 6144, 16 query and 8 KV heads of 128,
+    28 layers, vocabulary 151936), the majority built on block-wise FP8 matrix
+    multiplication through the Hub kernels `kernels-community/finegrained-fp8`
+    (section 4.1). Every point's live device bytes (arguments, outputs, scratch) are
+    declared by the point and at most 3 GiB, 3/4 of the 4 GiB a launch sees; the selftest
+    checks them. It is registered before any xl result exists and every point is
+    reported (R42 plan, "XL tier registration").
 - Tracks: `llm` covers decoder inference; `general` covers convolution, scan,
   transpose and the ResNet block.
 
@@ -204,6 +213,91 @@ can only lower `L` and make η conservative.
   derived from the vendor's 1 PFLOPS sparse FP4 figure.
 - **Efficiency.** `η = L / T`, dimensionless and comparable across platforms.
   η > 1 is an audit failure, never clipped (`score.eta` raises `BoundViolation`).
+
+### 4.1 E4M3 matrix work (xl tier; written before any xl result)
+
+A point with FP8 matrix work declares `Demand.macs_fp8`, the part of `macs` whose
+operands are E4M3 (a block-wise W8A8 product: E4M3 weights with 128 x 128 fp32 block
+scales, activations quantised per row and 128-wide K block, binary32 accumulation).
+Its dtype is `fp8` when every matrix operation is of that kind, and `fp8` also marks
+an FP8 decoder (whose attention and head are fp16 MACs).
+
+*Matrix rate assumed on TNCA.* The matrix engine has VLEN = 16 lanes, one output
+column each (`rtl/core/tnca_matrix.v`, "ARRAY SIZE. 16 MACs"). `m.mma.async` advances
+one k per lane per cycle in every format: 16 MAC/cycle, the `mma_mac` of
+`tools/r38/archbench/peaks.py`. `m.mma.dp.async` (ISA §9C.4, capability `MATRIX_DP`,
+RTL parameter `MAC_DP`, approved 2026-10-29) advances `kstep` k per lane per cycle:
+4 for E4M3 x E4M3, 2 for every other pair (`tnca_matrix.v`: `kstep = !dpv ? 1 : g4 ? 4 : 2`;
+the lane forms four exact products and one binary32 rounding per cycle,
+`rtl/core/tnca_mac_lane.v` mode DP4). So an E4M3 x E4M3 MAC runs at 16 x 4 = 64 per
+cycle on a profile whose target has `matrix_dp` and `matrix_fp8` (the cores of the R41
+run-3 image, `core-vrf-sync-v5-x8-g2c4-dp`), and at 16 otherwise
+(`bounds._fp8_matrix_rate`). It is the architecture's peak, as every `spec_peak` rate,
+and no measurement enters it. The vector FPU runs one FMA per lane per cycle (VLEN = 16),
+for MACs and for every other operation.
+
+*Bound.* Other work (`fp_ops`, `sfu_ops`) can only run on the vector FPU, MACs on either unit:
+
+    compute = max((macs + other) / (vector + matrix_e4m3), other / vector)
+    L       = max(compute, (read_bytes + write_bytes) / 8)
+
+the second term the core's one 8-byte memory port, as for every TNCA point. A point that
+also has 16-bit MACs (the attention of an FP8 decoder: 2 % of the MACs of a layer at 512 tokens, 8 % at 2048)
+is credited the E4M3 rate for all of them, which can only lower the bound. On the GPU the
+tensor rate is `tensor_fp8_mac` = 2 x `tensor_fp16_mac` (`specs/gpu_gb10.json`, the same
+vendor-figure derivation one operand-width doubling lower); no other point reads it.
+
+*Convention kept for 16-bit points.* The bound of every fp16 point, in `xl` as in the 113
+original points, keeps `mma_mac` = 16 (`m.mma.async`): the dp opcode's 2 products per cycle
+for 16-bit pairs is not credited, so that eta stays comparable across tiers and with the
+R41 board baseline. On the dp image that convention is loose by up to 1.5x for a
+compute-bound fp16 point (a strict bound would be 48 MAC/cycle instead of 32); an xl or
+original fp16 point whose eta exceeded 1 under it would be an audit failure and a reason to
+bump the bound version, not to clip.
+
+*Demand counted for a block-wise W8A8 product* `C[M,N] = Q(A[M,K]) W[N,K]^T` (K a multiple
+of 128; KB = K/128, NB = ceil(N/128)): `macs = macs_fp8 = M N K`; `fp_ops = 2 M K` (a
+max-abs fold and a scale multiplication per activation element) `+ M N KB` (one fused
+multiply-add applying the product of the two block scales per output element and K block)
+`+ M NB KB` (forming that product); `sfu_ops = M KB` (the reciprocal of each block scale);
+`read_bytes = 2 M K` (fp16 activations) `+ N K` (E4M3 weights) `+ 4 NB KB` (fp32 scales);
+`write_bytes = 2 M N` (fp16 output). `fp8_act_quant` counts the first two terms and the
+reciprocals, reads `2 M K` and writes `M K + 4 M KB`. Hidden states between the stages of a
+composite point are not counted, a tied embedding table is read once (the head reads all
+of it), a causal attention counts its unmasked scores, and what the kernel actually executes
+(three quantisations of one tensor for q, k and v, the padded work) does not enter.
+
+### 4.2 xl references and tolerances (written before any xl result)
+
+An xl FP8 point cannot take the standard reference of section 2 (its device path is a Triton kernel and
+re-quantises activations, so "the module in binary32" does not exist on the CPU). Its reference is the same module in
+**binary64 with exact block-wise FP8 arithmetic** (`xl.xl_reference`, `Point.reference`): activations are rounded to
+fp16 where the device stores them between kernels (the stage boundaries of the module), quantised per row and 128-wide
+K block exactly as the kernel does (`scale = amax / 448` and `codes = RNE_E4M3(x / max(scale, 1e-12))` in IEEE binary32),
+every 128-term E4M3 dot product is summed exactly (each E4M3 value is a multiple of 2^-9, so the sum needs 43 bits), scaled
+by the row scale and the weight block scale and accumulated in ascending K, and the result is rounded once to fp16;
+attention, norms, RoPE and SwiGLU are evaluated in binary64. fp16 points keep the section 2 reference.
+
+The criterion is section 2's. A tolerance is a multiple of a **rounding floor measured on the CPU**, never of a device
+output (`tools/r42/xl_tolerance.py`, results in `evidence/r42/xl/tolerance/`: the twin that rounds every stage to fp16
+and forms block products in binary32 against the binary64 reference, 3 seeds):
+
+| Point kind | Tolerance | Basis |
+|---|---|---|
+| `fp8_linear` | 4e-3 | four fp16 ulps of the largest binade relative to max\|ref\| (4 x 2^-10). The product is exact up to binary32 accumulation and the activation codes are reproduced exactly, so the only disagreement is an accumulation-order flip of the fp16 rounding, one ulp; measured floor at most 7.7e-4 over 13 points and 3 seeds |
+| `fp8_act_quant` | 8e-2 | one E4M3 code of the top binade relative to the largest code in a block: 32/448 = 7.1e-2. `fp8_act_quant` divides with the default faithful quotient (<= 1 ulp), which flips about 0.5 % of codes by one ulp (`evidence/r41/fp8/kernels/README.md`); the twin and the reference agree exactly |
+| `fp8_layer_*`, `fp8_decoder_prefill` | 2e-2 | the registry fp16 value: a composite is not held tighter than its fp16 stages, and the device rounds at stages the CPU twin does not reproduce. Measured floors 6.6e-4 to 4.0e-3 |
+| `fp8_decoder_decode` | 0.2 | 3 x the largest floor (4.4e-2, in the new K/V entries of the deepest layers; logits 5e-3), rounded up to 1-2-5. 28 layers of re-quantised activations turn a one-ulp difference upstream into E4M3 code flips downstream, so this point detects gross failure only; the projection and one-layer points carry the tight checks |
+| fp16 families | 2e-2 (0 for `embedding`, `argmax`) | registry values |
+
+Decoder initialisation is part of the definition: the output projections (`o`, `down`) are N(0, (0.02 / sqrt(2 x 28))^2) and
+the tied embedding N(0, 1), with the final norm weight H^-1/2. With unit-variance branches over a 0.02-std embedding the same
+CPU comparison disagreed by 26 % of the largest logit after 28 layers (`evidence/r42/xl/tolerance/v1_unit_init.log`); with
+this initialisation it is 0.5 %.
+
+*Memory.* Every xl point declares `extra.memory` = arguments (inputs, weights, scales, caches, tables) + outputs + scratch
+(every intermediate of the largest layer alive at once, softmax in binary32 written out: an upper bound), at most 3 GiB;
+`xl.memory()` refuses to register a point above it and the selftest recomputes arguments and outputs from the point's tensors.
 
 ## 5. Aggregation
 

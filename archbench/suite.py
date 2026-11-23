@@ -44,14 +44,46 @@ def non_regression():
                 baseline='s2-original-suite on the run-1 100 MHz image (evidence/r41/stage2/board/results.md)')
 
 
+def xl_summary(pts, entries):
+    """The xl tier's registered facts, beyond the definition hashes: live device bytes, the planning estimate of each
+    point's device time at the R41 run-3 baseline (archbench/xl_estimate.py), the FP8 share. Planning figures, never
+    results; they are in the suite hash, so a later change of the efficiency table is a different suite."""
+    from . import xl_estimate
+    from .xl import CAP_BYTES
+    table = xl_estimate.load_eta()
+    total = total_pess = 0.0
+    for p, e in zip(pts, entries):
+        est = xl_estimate.estimate(p, table)
+        e.update(live_bytes=p.extra['memory']['live_bytes'], tolerance=p.tolerance, estimate=est)
+        total += est['seconds']
+        total_pess += est['seconds_pessimistic']
+    matmul_fp8 = [p.id for p in pts if p.demand.macs_fp8]
+    return dict(name='xl', rules='archbench/xl.py (module docstring), archbench/PROTOCOL.md 4.1-4.2',
+                plan='doc/r42_plan.md, XL tier registration',
+                status='frozen: registered before any xl result exists; every point is reported, favourable or not; '
+                       'a changed definition is a different suite',
+                memory_cap_bytes=CAP_BYTES, max_live_bytes=max(p.extra['memory']['live_bytes'] for p in pts),
+                fp8_matmul_points=len(matmul_fp8), fp8_matmul_share=len(matmul_fp8) / len(pts),
+                estimate_total_seconds=total, estimate_total_seconds_pessimistic=total_pess,
+                estimate_max_seconds=max(e['estimate']['seconds'] for e in entries),
+                estimate_max_seconds_pessimistic=max(e['estimate']['seconds_pessimistic'] for e in entries),
+                estimate_profile=xl_estimate.PROFILE, estimate_clock_hz=xl_estimate.CLOCK_HZ,
+                eta_table=dict(path='archbench/suites/xl_eta.json', sha256=hashlib.sha256(
+                    xl_estimate.ETA_FILE.read_bytes()).hexdigest()))
+
+
 def build(tier):
     pts = registry.points(tier=tier)
     entries = [dict(id=p.id, sha256=p.definition_sha256(), kind=p.kind, family=p.family,
                     dtype=p.dtype, track=list(p.track)) for p in pts]
+    if tier == 'xl':
+        extra_doc = xl_summary(pts, entries)
     blob = json.dumps(entries, sort_keys=True)
     doc = dict(schema='archbench-suite/1', tier=tier, points=entries,
                families=sorted({p.family for p in pts}),
                sha256=hashlib.sha256(blob.encode()).hexdigest())
+    if tier == 'xl':
+        doc.update(extra_doc)
     if tier == 'membound':
         doc.update(name=NAMES[tier], rules='archbench/membound.py (module docstring)',
                    plan='evidence/r41/hbm_bw/BANDWIDTH_PLAN.md section 3',

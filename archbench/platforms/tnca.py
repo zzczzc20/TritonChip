@@ -39,7 +39,7 @@ import sys
 from pathlib import Path
 
 from .. import provenance as _prov
-from ..bounds import VERSION, tnca_bound, tnca_peak
+from ..bounds import VERSION, tnca_bound, tnca_peak, tnca_rates
 from .common import SCHEMA2, base_record, classify, compare, error_text, reference
 
 EVIDENCE = {'sim-file': 'measured-rtl', 'sim-socket': 'measured-rtl',
@@ -286,7 +286,7 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
 
     L, binding, terms = tnca_bound(point, profile)
     rec['bound'] = dict(version=VERSION, unit='cycles', value=L, binding=binding, terms=terms,
-                        peak=tnca_peak(profile)['rates'])
+                        peak=tnca_rates(point, profile))
     if rec['status'] == 'pass' and cycles:
         rec['eta'] = L / cycles
         if rec['eta'] > 1:
@@ -509,5 +509,7 @@ def _wrapper_launches(code):
         lines = [l for l in body.splitlines() if not l.lstrip().startswith('#')]
         if any(re.match(r'\s*(for|while)\b', l) for l in lines):
             return None
-        total += sum(len(re.findall(r'\btriton_\w+\.run\(', l)) for l in lines)
+        # Inductor's own kernels are named triton_*; a user-defined Triton kernel (the Hub FP8 kernels of the xl
+        # tier, traced through torch.library.triton_op) keeps its own name with an index: <name>_<n>.run(...)
+        total += sum(len(re.findall(r'\b\w+\.run\(', l)) for l in lines)
     return total

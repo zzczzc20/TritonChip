@@ -16,6 +16,7 @@ scoring refuses what it must.
      WeightMismatch; a missing point makes E zero and uncertified.
 """
 import argparse
+import contextlib
 import sys
 
 import torch
@@ -27,16 +28,18 @@ from .platforms.common import flatten
 
 # Families whose MACs are exactly the dense count (no causal mask, no
 # padding taps): the declared demand must EQUAL the counter's.
-EXACT_MACS = {'matmul', 'linear', 'gemv', 'bmm', 'mlp', 'attention_decode'}
+EXACT_MACS = {'matmul', 'linear', 'gemv', 'bmm', 'mlp', 'attention_decode', 'fp8_linear'}
 
 
 def _bytes(ts):
     seen, total = set(), 0
     for t in ts:
         st = t.untyped_storage()
-        if st.data_ptr() in seen:
+        # a meta tensor has no address: its storage object identifies it (xl points are checked on meta)
+        key = st._cdata if t.device.type == 'meta' else st.data_ptr()
+        if key in seen:
             continue
-        seen.add(st.data_ptr())
+        seen.add(key)
         total += t.numel() * t.element_size()
     return total
 
@@ -49,18 +52,24 @@ def _math_sdpa(q, k, v, attn_mask=None, dropout_p=0.0, is_causal=False, scale=No
     s = (q @ k.transpose(-2, -1)) * (scale or q.shape[-1] ** -0.5)
     if is_causal:
         n, m = s.shape[-2], s.shape[-1]
-        s = s.masked_fill(torch.ones(n, m, dtype=torch.bool).triu(m - n + 1), float('-inf'))
+        s = s.masked_fill(torch.ones(n, m, dtype=torch.bool, device=s.device).triu(m - n + 1), float('-inf'))
     return torch.softmax(s.float(), dim=-1).to(q.dtype) @ v
 
 
 def check_point(p):
     problems = []
-    m, ins = p.make(0)
+    # xl points are checked on the meta device: their shapes are real LLM sizes (hundreds of MiB of weights), and
+    # everything checked here -- MACs, bytes, memory -- is a property of shapes. Their FP8 modules are run in `emu`
+    # mode (the CPU twin of the Hub kernels), which has the same shapes, dtypes and matrix work.
+    xl = p.tier == 'xl'
+    m, ins = p.make(0, device='meta') if xl else p.make(0)
     m = m.eval()
     real = torch.nn.functional.scaled_dot_product_attention
     torch.nn.functional.scaled_dot_product_attention = _math_sdpa
     try:
-        with torch.no_grad(), FlopCounterMode(display=False) as fc:
+        from . import xl as _xl
+        with torch.no_grad(), FlopCounterMode(display=False) as fc, \
+                (_xl.mode('emu') if xl else contextlib.nullcontext()):
             out = m(*ins)
     finally:
         torch.nn.functional.scaled_dot_product_attention = real
@@ -77,12 +86,40 @@ def check_point(p):
     rb = _bytes(list(ins) + list(m.parameters()) + list(m.buffers()))
     if d.read_bytes > rb + 0.5:
         problems.append(f'declares {d.read_bytes} bytes read, inputs+weights are only {rb}')
+    if xl:
+        problems += check_xl_memory(p, ins, m, outs)
     for name, fn in (('tnca', lambda: tnca_bound(p, 'core-sim')),
                      ('tnca/hbm', lambda: tnca_bound(p, 'core-vrf-sync-v5/hbm')),
+                     ('tnca/dp', lambda: tnca_bound(p, 'core-vrf-sync-v5-x8-g2c4-dp')),
                      ('gpu', lambda: gpu_bound(p))):
         L, _binding, _terms = fn()
         if not L > 0:
             problems.append(f'{name} bound {L} is not positive')
+    return problems
+
+
+def check_xl_memory(p, ins, m, outs):
+    """xl: the live device bytes the point declares (arguments + outputs + scratch) are what its tensors say,
+    and within the cap (3 GiB of the 4 GiB a launch sees)."""
+    from .xl import CAP_BYTES
+    problems = []
+    mem = p.extra['memory']
+    args = _bytes(list(ins) + list(m.parameters()) + list(m.buffers()))
+    out = sum(t.numel() * t.element_size() for t in outs)
+    if mem['args_bytes'] != args:
+        problems.append(f'declares {mem["args_bytes"]} argument bytes, the tensors are {args}')
+    if mem['out_bytes'] != out:
+        problems.append(f'declares {mem["out_bytes"]} output bytes, the outputs are {out}')
+    live = args + out + mem['scratch_bytes']
+    if live != mem['live_bytes']:
+        problems.append(f'live_bytes {mem["live_bytes"]} is not args + outputs + scratch = {live}')
+    if mem['cap_bytes'] != CAP_BYTES or live > CAP_BYTES:
+        problems.append(f'live device bytes {live} exceed the {CAP_BYTES}-byte cap')
+    if p.family == 'argmax':                       # exact point: the data of seed 0 must have no tie at the maximum
+        x = p.make(0)[1][0]
+        top = torch.topk(x.float(), 2, dim=-1).values
+        if bool((top[:, 0] == top[:, 1]).any()):
+            problems.append('a row of the argmax input has a tie at its maximum')
     return problems
 
 
@@ -109,7 +146,7 @@ def check_scoring():
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--tier', nargs='+', default=['tiny', 'small'])
+    ap.add_argument('--tier', nargs='+', default=['tiny', 'small', 'xl'])
     args = ap.parse_args(argv)
     fails = 0
     for p in registry.points(tier=args.tier):

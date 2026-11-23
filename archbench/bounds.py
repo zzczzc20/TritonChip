@@ -58,8 +58,62 @@ def tnca_peak(profile):
     return _r38_peaks.spec_peak(profile)
 
 
+def _fp8_matrix_rate(profile):
+    """E4M3 x E4M3 MACs per cycle the matrix engine of `profile` can execute.
+
+    The matrix engine has VLEN = 16 lanes, one output column each
+    (rtl/core/tnca_matrix.v). m.mma.async advances one k per lane per cycle:
+    16 MAC/cycle in every format. m.mma.dp.async (ISA sec 9C.4, capability
+    MATRIX_DP, RTL parameter MAC_DP) advances `kstep` k per lane per cycle:
+    4 for E4M3 x E4M3 (the DP4 mode of rtl/core/tnca_mac_lane.v, four exact
+    products summed in a fixed-point cascade and rounded once into the
+    binary32 accumulator), so 16 x 4 = 64 MAC/cycle. A profile without
+    MATRIX_DP (or without MATRIX_FP8) keeps 16. This is the architecture's
+    peak, never a measured rate; see archbench/PROTOCOL.md section 4.1.
+    """
+    if profile.endswith('/hbm'):
+        from tnca.device import base_profile
+        profile = base_profile(profile)
+    caps = _r38_peaks.target_for(profile)['capabilities']
+    base = _r38_peaks.spec_peak(profile)['rates']['mma_mac']
+    return base * (4 if caps.get('matrix_dp') and caps.get('matrix_fp8') else 1)
+
+
+def tnca_rates(point, profile):
+    """The per-cycle service rates a point's bound is computed from (recorded with every result)."""
+    rates = dict(tnca_peak(profile)['rates'])
+    if point.demand.macs_fp8 or point.dtype == 'fp8':
+        rates['mma_mac_e4m3'] = _fp8_matrix_rate(profile)
+    return rates
+
+
+def _tnca_bound_fp8(point, profile):
+    """Strict bound of a point with E4M3 matrix work (xl tier).
+
+    MACs run on the matrix engine at its E4M3 rate or on the vector FPU
+    (VLEN FMA lanes); everything else only on the vector FPU:
+
+        compute = max((MAC + other) / (vector + matrix_e4m3), other / vector)
+
+    A point that also has 16-bit MACs (an attention inside an FP8 decoder
+    layer) is credited the E4M3 rate for all of them: the bound can only
+    get lower, never invalid. Bytes cross the core's one memory port, as for
+    every TNCA point.
+    """
+    r = tnca_rates(point, profile)
+    vector = r['fp_lane'] - r['mma_mac']
+    d = point.demand
+    other = d.fp_ops + d.sfu_ops
+    terms = dict(fp_lane=max((d.macs + other) / (vector + r['mma_mac_e4m3']), other / vector),
+                 mem_bytes=(d.read_bytes + d.write_bytes) / r['mem_bytes'])
+    binding = max(terms, key=terms.get)
+    return terms[binding], binding, terms
+
+
 def tnca_bound(point, profile):
     """(cycles, binding resource, terms) on a TNCA profile."""
+    if point.demand.macs_fp8 or point.dtype == 'fp8':
+        return _tnca_bound_fp8(point, profile)
     d = point.demand
     w = _r38_bounds.Workload(point.id, point.family, point.kind,
                              fp_ops=d.macs + d.fp_ops, macs=d.macs, sfu_ops=d.sfu_ops,
@@ -79,6 +133,10 @@ def gpu_bound(point, name='gb10'):
         # IEEE binary32 only: TF32 is disabled by the protocol, so tensor
         # cores cannot serve these MACs.
         tensor, simt = 0.0, r['fp32_fma']
+    elif point.dtype == 'fp8' or d.macs_fp8:
+        # xl tier: FP8 tensor cores (a point with 16-bit MACs as well is credited
+        # the FP8 rate for all of them, which can only lower the bound).
+        tensor, simt = r['tensor_fp8_mac'], r['fp16_fma_simt']
     else:
         tensor = r['tensor_bf16_mac'] if point.dtype == 'bf16' else r['tensor_fp16_mac']
         simt = r['fp16_fma_simt']

@@ -826,7 +826,6 @@ class TTIRImporter:
         row r of the old one and nothing else of it, the rows are written in order, and no other carry's new value
         reads the old one -- the snapshot a parallel update takes is not needed.
         """
-        import os
         if not self.index_opt or os.environ.get('TNCA_CARRY_INPLACE', '1') == '0':
             return False
         body_block = block
@@ -5179,8 +5178,11 @@ class TTIRImporter:
         get = self._tile_row_getter(tile)
         return tuple(get(r) for r in range(tile.rows))
 
-    def _materialise(self, rows_fn, rows, cols, elem):
+    def _materialise(self, rows_fn, rows, cols, elem, remat=False):
         """Where a computed tile goes once it exists.
+
+        `remat`: the caller has shown that evaluating the rule again at every use is correct and cheap (a widened load,
+        _remat_ok); the tile then stays a rule instead of going to scratch, when scratch is where it would go.
 
         An accumulator, when the element is 32 bits wide. A0..A15 are
         16x16 of binary32 (ISA sec 9B) -- which is a tile, exactly, and
@@ -5197,6 +5199,9 @@ class TTIRImporter:
         if elem == 'i1':
             return Tile('lazy', rows_fn, rows, cols, elem)
         if self._ELEM_BYTES.get(elem) != 4 or elem == 'i32' or len(self.kernel.accumulators) >= 8:
+            if remat:
+                self._rematerialised = getattr(self, '_rematerialised', 0) + 1
+                return Tile('lazy', rows_fn, rows, cols, elem)
             offset = self._take_scratch(rows * self.target.vlen * 4)
             addr = self.b.sbini('add', self._scratch_base(), offset)
             for r in range(rows):
@@ -5218,7 +5223,7 @@ class TTIRImporter:
             return tile.row_vector if (tile.cols == 1 and tile.dtype == elem) else None
         pending = self._pending_const.get(value.id())
         if pending is not None and pending[0] == 'tile' and str(pending[2]) == elem:
-            return self._fconst(pending[1], elem)       # the same number in every lane
+            return self.b.vmovi(int(pending[1]), dtype=pending[2])     # the same bits in every lane, as _row_getter
         return None
 
     def _tile_binary(self, op, build, extra=None):
@@ -5230,7 +5235,9 @@ class TTIRImporter:
         # An N-D tile is prod(shape[:-1]) rows of shape[-1].
         rows, cols = math.prod(shape[:-1]), shape[-1]
         if (extra is None and cols == 1 and rows <= self.target.vlen and elem == 'f32' and self.index_opt
-                and os.environ.get('TNCA_ROW_VECTORS', '1') != '0'):
+                and os.environ.get('TNCA_ROW_VECTORS', '1') != '0'
+                and not (self._equal_rows_enabled()
+                         and all(self._equal_rows(op.get_operand(i)) for i in range(op.get_num_operands())))):
             # An operation on [R, 1] tiles that are one value per row: lane-wise, so once on the register that
             # holds the rows, not R times on a splat of each (`max(a_s[:, None], eps)`, `1 / l[:, None]`).
             forms = [self._row_vector_form(op.get_operand(i), elem) for i in range(op.get_num_operands())]
@@ -5302,6 +5309,48 @@ class TTIRImporter:
         for o in self._all_ops[i + 1:j]:
             name = o.get_name()
             if name in self._NOT_ACROSS or name.startswith(('scf.', 'cf.')):
+                return False
+        return True
+
+    # Operations a value may not be re-evaluated across: a store (or anything that writes memory or calls out) may
+    # change what a load would read, and a region leaves the straight line.
+    _REMAT_BARRIER = ('tt.store', 'tt.descriptor_store', 'tt.atomic_rmw', 'tt.atomic_cas', 'tt.call', 'tt.return',
+                      'tt.assert', 'tt.print', 'tt.descriptor_scatter', 'tt.descriptor_reduce')
+
+    def _remat_ok(self, op, src):
+        """May this conversion of a loaded tile be evaluated again at each of its (few) uses?
+
+        Yes when the converted operand is a plain `tt.load` and the conversion has two or three users, all in the
+        same block after it, with no store, atomic, call or region between it and the last of them: a load issued
+        later then reads the bytes the first one read. The tile would otherwise go to scratch (a store of every
+        row and a load a use); two loads of the same rows from the tensor cost less than that, and need no scratch.
+        """
+        if not self.index_opt or os.environ.get('TNCA_REMAT_LOADS', '1') == '0':
+            return False
+        orig = op
+        while hasattr(orig, 'op'):
+            orig = orig.op
+        value = getattr(src, 'value', src)
+        while hasattr(value, 'value'):
+            value = value.value
+        d = self._value_def.get(value.id())
+        if d is None or d.get_name() != 'tt.load':
+            return False
+        users = self._value_users.get(orig.get_result(0).id(), [])
+        if not 2 <= len(users) <= 3:
+            return False
+        i = self._op_pos.get(id(orig))
+        if i is None:
+            return False
+        last = i
+        for user, _k in users:
+            j = self._op_pos.get(id(user))
+            if j is None or j <= i or user.get_block().id() != orig.get_block().id():
+                return False
+            last = max(last, j)
+        for o in self._all_ops[i + 1:last]:
+            name = o.get_name()
+            if name in self._REMAT_BARRIER or name.startswith(('scf.', 'cf.')):
                 return False
         return True
 
@@ -5518,7 +5567,7 @@ class TTIRImporter:
             shape2, elem2 = _parse_type(str(op.get_result(0).get_type()))
             divisor = self._tiles.get(op.get_operand(1).id())
             if (self.index_opt and elem2 == 'f32' and shape2[-1] > 1 and divisor is not None
-                    and divisor.row_vector is not None
+                    and divisor.row_vector is not None and not divisor.equal_rows
                     and os.environ.get('TNCA_ROW_VECTORS', '1') != '0'):
                 # The divisor is one number per row (`x / l[:, None]`): its refined reciprocal is a function of that
                 # number alone, so it is formed once for all the rows, on the register that holds them, and each
@@ -5687,7 +5736,8 @@ class TTIRImporter:
                     tile.rows, tile.cols, rtype, replicated=self._rows_replicated(src))
                 return
             else:
-                converted = self._materialise(convert, tile.rows, tile.cols, rtype)
+                converted = self._materialise(convert, tile.rows, tile.cols, rtype,
+                                              remat=tile.kind == 'lazy' and self._remat_ok(op, src))
                 converted.replicated = self._rows_replicated(src)
                 self._tiles[res.id()] = converted
             return

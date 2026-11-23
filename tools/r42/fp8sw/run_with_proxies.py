@@ -26,5 +26,33 @@ def _run_child_here(cmd, *a, **k):
 
 R.subprocess.run = _run_child_here
 
+# FP8SW_DIGEST_DIR=DIR: record the sha256 of every output tensor of every point in DIR/<point>.digest (a bit-for-bit
+# comparison of two compilers on the same inputs; the record's max_rel_err is a tolerance check, not that).
+if os.environ.get('FP8SW_DIGEST_DIR'):
+    import hashlib
+    import archbench.platforms.tnca as T
+    _cur = []
+    _run_point, _compare = T.run, T.compare
+
+    def _run(point, *a, **k):
+        _cur[:] = [point.id]
+        return _run_point(point, *a, **k)
+
+    def _cmp(got, ref, tol):
+        import torch
+        from archbench.platforms.common import flatten
+        lines = []
+        for i, g in enumerate(flatten(got)):
+            g = g.detach().cpu().contiguous()
+            lines.append(f'{i} {tuple(g.shape)} {g.dtype} '
+                         + hashlib.sha256(g.reshape(-1).view(torch.uint8).numpy().tobytes()).hexdigest())
+        d = os.environ['FP8SW_DIGEST_DIR']
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, _cur[0].replace('/', '_') + '.digest'), 'w') as fh:
+            fh.write('\n'.join(lines) + '\n')
+        return _compare(got, ref, tol)
+
+    T.run, T.compare = _run, _cmp
+
 if __name__ == '__main__':
     sys.exit(R.main(sys.argv[1:]))

@@ -1315,10 +1315,6 @@ def _emit_once(kernel, target, prov, opt_level, options, stages):
     # the default window, then with no slack and a narrow window, then
     # program order: the allocator has no spill.
     attempts = [(None, None), ({'vector': 0, 'scalar': 0, 'pred': 0}, 16)]
-    if os.environ.get('TNCA_SCHED_SLACK') or os.environ.get('TNCA_SCHED_WINDOW'):      # development experiment
-        _sv = int(os.environ.get('TNCA_SCHED_SLACK', '4'))
-        _sw = int(os.environ.get('TNCA_SCHED_WINDOW', '48'))
-        attempts.insert(0, ({'vector': _sv, 'scalar': 4, 'pred': 1}, _sw))
     for i, (slack, window) in enumerate(attempts):
         trial = kernel if i == 0 else copy.deepcopy(original)
         rep = schedule_kernel(trial, target, slack=slack, window=window)
@@ -1328,9 +1324,6 @@ def _emit_once(kernel, target, prov, opt_level, options, stages):
         prov.record('schedule_moved', rep['moved'])
         prov.record('schedule_estimate', [rep['estimate_before'], rep['estimate_after']])
         prov.record('schedule_slack', 'default' if slack is None else 'none')
-        if os.environ.get('TNCA_SCHED_DEBUG'):
-            import sys as _sys
-            print('SCHED attempt', i, slack, window, rep, file=_sys.stderr)
         stages.record('tnir_sched', str(trial))
         try:
             return adapter.emit(trial, target, prov=prov, opt_level=opt_level,
@@ -1339,9 +1332,6 @@ def _emit_once(kernel, target, prov, opt_level, options, stages):
             if e.detail.get('kind') != 'ResourceError':
                 raise
             last = e
-            if os.environ.get('TNCA_SCHED_DEBUG'):
-                import sys as _sys
-                print('SCHED attempt', i, 'failed:', str(e)[:300], file=_sys.stderr)
     prov.record('schedule_fallback', f'program order: {str(last)[:200]}')
     return adapter.emit(original, target, prov=prov, opt_level=opt_level,
                         check_protocol=check, bank_alloc=bank_alloc, window_reuse=window_reuse)

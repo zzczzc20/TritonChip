@@ -1,0 +1,232 @@
+{
+ "schema": "tnca-systemc-graph-runs/1",
+ "backend": "systemc-tlm-grid",
+ "binary": "/home/zhongchun/r42/fp8sw_out/tlm-build/tnca-chip",
+ "source_root": "/home/zhongchun/r42/fp8sw",
+ "points": [
+  {
+   "point": "op.fp8_linear/xl/fp8-m1-k512-n1536",
+   "status": "pass",
+   "problems": [],
+   "fallbacks": [],
+   "launches": 1,
+   "device_cycles": 403171,
+   "first_call_device_cycles": 413880,
+   "steady_request_s": 0.567735,
+   "timing": "serial-grid",
+   "max_rel_err": 1.1475470035252644e-06,
+   "tol": 0.004,
+   "first_call_wall_s": 2.02,
+   "child_wall_s": 4.478,
+   "process_wall_s": 6.15,
+   "model_launch_host_s": 1.14012,
+   "model_transfer_host_s": 0.0063620000000000005,
+   "model_retired": 568404,
+   "model_dirs": [
+    "/home/zhongchun/r42/fp8sw_out/tlm/xl_base2/runs/op.fp8_linear__xl__fp8-m1-k512-n1536/model/model-3712645-hnbu0dai"
+   ],
+   "evidence": "model-prediction-uncalibrated",
+   "model_graph": {
+    "graph_cycles": 403171,
+    "device_cycles": 403171,
+    "measured_call": "steady",
+    "launches": [
+     {
+      "kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+      "cycles": 403171
+     }
+    ]
+   },
+   "model_timing_status": "uncalibrated",
+   "dram": {},
+   "cold_setup_only": false,
+   "returncode": 0,
+   "record": "/home/zhongchun/r42/fp8sw_out/tlm/xl_base2/runs/op.fp8_linear__xl__fp8-m1-k512-n1536/record.json",
+   "key": "op.fp8_linear/xl/fp8-m1-k512-n1536",
+   "requested_knobs": {},
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "32",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "model_knobs": {
+    "TNCA_TLM_BINARY": "/home/zhongchun/r42/fp8sw_out/tlm-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r42/fp8sw_out/cfg/cal.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r42/fp8sw_out/tlm/xl_base2/runs/op.fp8_linear__xl__fp8-m1-k512-n1536/model"
+   },
+   "knobs_verified": true
+  },
+  {
+   "point": "op.fp8_linear/xl/fp8-m1-k1024-n1536",
+   "status": "pass",
+   "problems": [],
+   "fallbacks": [],
+   "launches": 1,
+   "device_cycles": 766798,
+   "first_call_device_cycles": 775969,
+   "steady_request_s": 0.572263,
+   "timing": "serial-grid",
+   "max_rel_err": 0.0,
+   "tol": 0.004,
+   "first_call_wall_s": 2.41,
+   "child_wall_s": 5.12,
+   "process_wall_s": 6.91,
+   "model_launch_host_s": 1.184468,
+   "model_transfer_host_s": 0.006508,
+   "model_retired": 934644,
+   "model_dirs": [
+    "/home/zhongchun/r42/fp8sw_out/tlm/xl_base2/runs/op.fp8_linear__xl__fp8-m1-k1024-n1536/model/model-3712857-3v136w8r"
+   ],
+   "evidence": "model-prediction-uncalibrated",
+   "model_graph": {
+    "graph_cycles": 766798,
+    "device_cycles": 766798,
+    "measured_call": "steady",
+    "launches": [
+     {
+      "kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+      "cycles": 766798
+     }
+    ]
+   },
+   "model_timing_status": "uncalibrated",
+   "dram": {},
+   "cold_setup_only": false,
+   "returncode": 0,
+   "record": "/home/zhongchun/r42/fp8sw_out/tlm/xl_base2/runs/op.fp8_linear__xl__fp8-m1-k1024-n1536/record.json",
+   "key": "op.fp8_linear/xl/fp8-m1-k1024-n1536",
+   "requested_knobs": {},
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "32",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "model_knobs": {
+    "TNCA_TLM_BINARY": "/home/zhongchun/r42/fp8sw_out/tlm-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r42/fp8sw_out/cfg/cal.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r42/fp8sw_out/tlm/xl_base2/runs/op.fp8_linear__xl__fp8-m1-k1024-n1536/model"
+   },
+   "knobs_verified": true
+  },
+  {
+   "point": "op.fp8_linear/xl/fp8-m48-k512-n1536",
+   "status": "pass",
+   "problems": [],
+   "fallbacks": [],
+   "launches": 1,
+   "device_cycles": 2790497,
+   "first_call_device_cycles": 2800407,
+   "steady_request_s": 1.621541,
+   "timing": "serial-grid",
+   "max_rel_err": 2.52831715210356e-05,
+   "tol": 0.004,
+   "first_call_wall_s": 3.4,
+   "child_wall_s": 7.02,
+   "process_wall_s": 8.73,
+   "model_launch_host_s": 3.315047,
+   "model_transfer_host_s": 0.0073999999999999995,
+   "model_retired": 3896988,
+   "model_dirs": [
+    "/home/zhongchun/r42/fp8sw_out/tlm/xl_base2/runs/op.fp8_linear__xl__fp8-m48-k512-n1536/model/model-3713136-cefuam4g"
+   ],
+   "evidence": "model-prediction-uncalibrated",
+   "model_graph": {
+    "graph_cycles": 2790497,
+    "device_cycles": 2790497,
+    "measured_call": "steady",
+    "launches": [
+     {
+      "kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+      "cycles": 2790497
+     }
+    ]
+   },
+   "model_timing_status": "uncalibrated",
+   "dram": {},
+   "cold_setup_only": false,
+   "returncode": 0,
+   "record": "/home/zhongchun/r42/fp8sw_out/tlm/xl_base2/runs/op.fp8_linear__xl__fp8-m48-k512-n1536/record.json",
+   "key": "op.fp8_linear/xl/fp8-m48-k512-n1536",
+   "requested_knobs": {},
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "32",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "model_knobs": {
+    "TNCA_TLM_BINARY": "/home/zhongchun/r42/fp8sw_out/tlm-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r42/fp8sw_out/cfg/cal.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r42/fp8sw_out/tlm/xl_base2/runs/op.fp8_linear__xl__fp8-m48-k512-n1536/model"
+   },
+   "knobs_verified": true
+  },
+  {
+   "point": "op.fp8_linear/xl/fp8-m48-k1024-n1536",
+   "status": "pass",
+   "problems": [],
+   "fallbacks": [],
+   "launches": 1,
+   "device_cycles": 5303309,
+   "first_call_device_cycles": 5312698,
+   "steady_request_s": 3.288486,
+   "timing": "serial-grid",
+   "max_rel_err": 0.00024015369836695484,
+   "tol": 0.004,
+   "first_call_wall_s": 7.1,
+   "child_wall_s": 13.027,
+   "process_wall_s": 15.05,
+   "model_launch_host_s": 8.936863,
+   "model_transfer_host_s": 0.00573,
+   "model_retired": 6941724,
+   "model_dirs": [
+    "/home/zhongchun/r42/fp8sw_out/tlm/xl_base2/runs/op.fp8_linear__xl__fp8-m48-k1024-n1536/model/model-3713668-toszty_0"
+   ],
+   "evidence": "model-prediction-uncalibrated",
+   "model_graph": {
+    "graph_cycles": 5303309,
+    "device_cycles": 5303309,
+    "measured_call": "steady",
+    "launches": [
+     {
+      "kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+      "cycles": 5303309
+     }
+    ]
+   },
+   "model_timing_status": "uncalibrated",
+   "dram": {},
+   "cold_setup_only": false,
+   "returncode": 0,
+   "record": "/home/zhongchun/r42/fp8sw_out/tlm/xl_base2/runs/op.fp8_linear__xl__fp8-m48-k1024-n1536/record.json",
+   "key": "op.fp8_linear/xl/fp8-m48-k1024-n1536",
+   "requested_knobs": {},
+   "knobs": {
+    "TNCA_ACTIVE_CORES": "3",
+    "TNCA_RTL_MEM_PORTS": "3",
+    "TNCA_RTL_OUTSTANDING": "32",
+    "TNCA_SUBMIT": "single",
+    "TNCA_TORCH_DEVICE": "native",
+    "TNCA_TRANSFER_POLICY": "resident"
+   },
+   "model_knobs": {
+    "TNCA_TLM_BINARY": "/home/zhongchun/r42/fp8sw_out/tlm-build/tnca-chip",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r42/fp8sw_out/cfg/cal.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r42/fp8sw_out/tlm/xl_base2/runs/op.fp8_linear__xl__fp8-m48-k1024-n1536/model"
+   },
+   "knobs_verified": true
+  }
+ ]
+}

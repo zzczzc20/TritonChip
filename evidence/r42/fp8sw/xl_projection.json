@@ -1,0 +1,286 @@
+{
+ "wave_model": {
+  "1": {
+   "base_a_b": [
+    39544.0,
+    90906.75
+   ],
+   "cand_a_b": [
+    48792.0,
+    62371.0
+   ]
+  },
+  "16": {
+   "base_a_b": [
+    92561.66666666651,
+    209401.00000000003
+   ],
+   "cand_a_b": [
+    74465.0,
+    138056.08333333334
+   ]
+  }
+ },
+ "points": {
+  "model.fp8_decoder_decode/xl/fp8-b1-p2048-layers28": {
+   "family": "fp8_decoder_decode",
+   "m_class": 1,
+   "fp8": true,
+   "base": 1442429214.525721,
+   "cand": 1190891998.525721,
+   "speedup": 1.2112174876574815
+  },
+  "model.fp8_decoder_prefill/xl/fp8-b1-s2048-layers4": {
+   "family": "fp8_decoder_prefill",
+   "m_class": 16,
+   "fp8": true,
+   "base": 72412564512.79916,
+   "cand": 62923836558.13248,
+   "speedup": 1.15079703453715
+  },
+  "model.fp8_decoder_prefill/xl/fp8-b1-s512-layers28": {
+   "family": "fp8_decoder_prefill",
+   "m_class": 16,
+   "fp8": true,
+   "base": 69064326175.70139,
+   "cand": 52386249842.36804,
+   "speedup": 1.3183674415236484
+  },
+  "model.fp8_layer_decode/xl/fp8-b1-p2048-layers1": {
+   "family": "fp8_layer_decode",
+   "m_class": 1,
+   "fp8": true,
+   "base": 43822327.03036359,
+   "cand": 34838855.03036359,
+   "speedup": 1.257857842692319
+  },
+  "model.fp8_layer_prefill/xl/fp8-b1-s512-layers1": {
+   "family": "fp8_layer_prefill",
+   "m_class": 16,
+   "fp8": true,
+   "base": 2458998329.9955506,
+   "cand": 1863352746.6622171,
+   "speedup": 1.3196633511289262
+  },
+  "op.argmax/xl/fp16-r16-v151936": {
+   "family": "argmax",
+   "m_class": 16,
+   "fp8": false,
+   "base": 3495017.145524715,
+   "cand": 3495017.145524715,
+   "speedup": 1.0
+  },
+  "op.attention_decode/xl/fp16-b1-h16-kv8-l2048-d128": {
+   "family": "attention_decode",
+   "m_class": 16,
+   "fp8": false,
+   "base": 14095809.50463641,
+   "cand": 14095809.50463641,
+   "speedup": 1.0
+  },
+  "op.attention_decode/xl/fp16-b1-h16-kv8-l4096-d128": {
+   "family": "attention_decode",
+   "m_class": 16,
+   "fp8": false,
+   "base": 28177867.000000004,
+   "cand": 28177867.000000004,
+   "speedup": 1.0
+  },
+  "op.attention_decode/xl/fp16-b1-h16-kv8-l8192-d128": {
+   "family": "attention_decode",
+   "m_class": 16,
+   "fp8": false,
+   "base": 56341981.99072719,
+   "cand": 56341981.99072719,
+   "speedup": 1.0
+  },
+  "op.attention_prefill/xl/fp16-b1-h16-kv8-s1024-d128": {
+   "family": "attention_prefill",
+   "m_class": 16,
+   "fp8": false,
+   "base": 2750853917.9588275,
+   "cand": 2750853917.9588275,
+   "speedup": 1.0
+  },
+  "op.attention_prefill/xl/fp16-b1-h16-kv8-s2048-d128": {
+   "family": "attention_prefill",
+   "m_class": 16,
+   "fp8": false,
+   "base": 10998048151.99539,
+   "cand": 10998048151.99539,
+   "speedup": 1.0
+  },
+  "op.embedding/xl/fp16-v151936-d2048-t2048": {
+   "family": "embedding",
+   "m_class": 16,
+   "fp8": false,
+   "base": 74882368.0,
+   "cand": 74882368.0,
+   "speedup": 1.0
+  },
+  "op.fp8_act_quant/xl/fp8-m2048-k2048": {
+   "family": "fp8_act_quant",
+   "m_class": 16,
+   "fp8": false,
+   "base": 7946240.0,
+   "cand": 7946240.0,
+   "speedup": 1.0
+  },
+  "op.fp8_act_quant/xl/fp8-m2048-k6144": {
+   "family": "fp8_act_quant",
+   "m_class": 16,
+   "fp8": false,
+   "base": 23838720.0,
+   "cand": 23838720.0,
+   "speedup": 1.0
+  },
+  "op.fp8_linear/xl/fp8-m1-k2048-n12288": {
+   "family": "fp8_linear",
+   "m_class": 1,
+   "fp8": true,
+   "base": 11952416.0,
+   "cand": 8373824.0,
+   "speedup": 1.4273545754006771
+  },
+  "op.fp8_linear/xl/fp8-m1-k2048-n151936": {
+   "family": "fp8_linear",
+   "m_class": 1,
+   "fp8": true,
+   "base": 147911148.0,
+   "cand": 103626072.0,
+   "speedup": 1.4273545754006771
+  },
+  "op.fp8_linear/xl/fp8-m1-k2048-n4096": {
+   "family": "fp8_linear",
+   "m_class": 1,
+   "fp8": true,
+   "base": 4482156.0,
+   "cand": 3140184.0,
+   "speedup": 1.4273545754006771
+  },
+  "op.fp8_linear/xl/fp8-m1-k6144-n2048": {
+   "family": "fp8_linear",
+   "m_class": 1,
+   "fp8": true,
+   "base": 8806136.0,
+   "cand": 6085200.0,
+   "speedup": 1.4471399460987313
+  },
+  "op.fp8_linear/xl/fp8-m16-k2048-n12288": {
+   "family": "fp8_linear",
+   "m_class": 16,
+   "fp8": true,
+   "base": 27543821.333333336,
+   "cand": 18266898.666666668,
+   "speedup": 1.5078542798069572
+  },
+  "op.fp8_linear/xl/fp8-m16-k2048-n151936": {
+   "family": "fp8_linear",
+   "m_class": 16,
+   "fp8": true,
+   "base": 340854789.00000006,
+   "cand": 226052871.00000003,
+   "speedup": 1.5078542798069572
+  },
+  "op.fp8_linear/xl/fp8-m16-k6144-n2048": {
+   "family": "fp8_linear",
+   "m_class": 16,
+   "fp8": true,
+   "base": 20287619.333333336,
+   "cand": 13402314.0,
+   "speedup": 1.5137400402149461
+  },
+  "op.fp8_linear/xl/fp8-m2048-k2048-n12288": {
+   "family": "fp8_linear",
+   "m_class": 16,
+   "fp8": true,
+   "base": 3525609130.666667,
+   "cand": 2338163029.3333335,
+   "speedup": 1.5078542798069572
+  },
+  "op.fp8_linear/xl/fp8-m2048-k2048-n2048": {
+   "family": "fp8_linear",
+   "m_class": 16,
+   "fp8": true,
+   "base": 588749181.0,
+   "cand": 390454959.0,
+   "speedup": 1.5078542798069572
+  },
+  "op.fp8_linear/xl/fp8-m2048-k2048-n4096": {
+   "family": "fp8_linear",
+   "m_class": 16,
+   "fp8": true,
+   "base": 1177498362.0,
+   "cand": 780909918.0,
+   "speedup": 1.5078542798069572
+  },
+  "op.fp8_linear/xl/fp8-m2048-k6144-n2048": {
+   "family": "fp8_linear",
+   "m_class": 16,
+   "fp8": true,
+   "base": 1734591453.0000002,
+   "cand": 1145897847.0,
+   "speedup": 1.5137400402149461
+  },
+  "op.fp8_linear/xl/fp8-m512-k2048-n12288": {
+   "family": "fp8_linear",
+   "m_class": 16,
+   "fp8": true,
+   "base": 881402282.6666667,
+   "cand": 584540757.3333334,
+   "speedup": 1.5078542798069572
+  },
+  "op.fp8_linear/xl/fp8-m512-k6144-n2048": {
+   "family": "fp8_linear",
+   "m_class": 16,
+   "fp8": true,
+   "base": 436183815.66666675,
+   "cand": 288149751.0,
+   "speedup": 1.5137400402149463
+  },
+  "op.gemv/xl/fp16-k2048-n151936": {
+   "family": "gemv",
+   "m_class": 16,
+   "fp8": false,
+   "base": 215600321.26586708,
+   "cand": 215600321.26586708,
+   "speedup": 1.0
+  },
+  "op.linear/xl/fp16-m2048-k2048-n6144-bias0": {
+   "family": "linear",
+   "m_class": 16,
+   "fp8": false,
+   "base": 1261445072.023426,
+   "cand": 1261445072.023426,
+   "speedup": 1.0
+  },
+  "op.rmsnorm_residual/xl/fp16-r2048-d2048": {
+   "family": "rmsnorm_residual",
+   "m_class": 16,
+   "fp8": false,
+   "base": 27825082.586341463,
+   "cand": 27825082.586341463,
+   "speedup": 1.0
+  },
+  "op.rope/xl/fp16-b1-h16-s2048-d128": {
+   "family": "rope",
+   "m_class": 16,
+   "fp8": false,
+   "base": 39189405.57575758,
+   "cand": 39189405.57575758,
+   "speedup": 1.0
+  },
+  "op.swiglu/xl/fp16-r2048-i6144": {
+   "family": "swiglu",
+   "m_class": 16,
+   "fp8": false,
+   "base": 46046422.49999999,
+   "cand": 46046422.49999999,
+   "speedup": 1.0
+  }
+ },
+ "geomean_speedup_all": 1.2160782203381821,
+ "geomean_speedup_fp8_points": 1.4159329400065221,
+ "points_n": 32,
+ "fp8_points_n": 18
+}

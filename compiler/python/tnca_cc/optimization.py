@@ -751,7 +751,7 @@ def fold_address_offsets(kernel):
             if o.kind not in _DISP_OPS or not o.operands:
                 continue
             root, const, first = chain(o.operands[0])
-            if not const or first is None or not ssa(root) or defs[id(root)][0] > first:
+            if first is None or not ssa(root) or defs[id(root)][0] > first:
                 continue
             new = int(o.attrs.get('offset', 0) or 0) + const
             if not (_DISP_MIN <= new <= _DISP_MAX):

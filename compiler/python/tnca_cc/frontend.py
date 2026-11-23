@@ -21,6 +21,7 @@ Two rules govern what is *not* here:
             substitution.
 """
 import math
+import os
 import re
 import struct
 
@@ -810,6 +811,49 @@ class TTIRImporter:
             raise Unsupported('unrecognised upstream proton.record syntax')
         self.b.proton_record(op.get_str_attr('name'), start=phase == 'start')
 
+    # Operations whose row r of the result depends on row r of each tile operand and on nothing else of it.
+    _ROWWISE = frozenset({
+        'arith.addf', 'arith.subf', 'arith.mulf', 'arith.divf', 'arith.negf', 'arith.maximumf', 'arith.minimumf',
+        'arith.maxnumf', 'arith.minnumf', 'arith.extf', 'arith.truncf', 'arith.select', 'arith.cmpf',
+        'tt.fp_to_fp'})
+
+    def _carry_updated_in_place(self, loop, block, i):
+        """May carry `i` of this loop be updated in place at the yield?
+
+        Yes when the old value of the carry reaches nothing but the chain of row-wise operations that make its own
+        new value: every user of the block argument is such an operation, so is every user of their results, and
+        the only other user anywhere is the yield, at this carry's own position. Row r of the new value then reads
+        row r of the old one and nothing else of it, the rows are written in order, and no other carry's new value
+        reads the old one -- the snapshot a parallel update takes is not needed.
+        """
+        import os
+        if not self.index_opt or os.environ.get('TNCA_CARRY_INPLACE', '1') == '0':
+            return False
+        body_block = block
+        while hasattr(body_block, 'block'):
+            body_block = body_block.block
+        layout = getattr(loop, 'layout', None)
+        index = layout[i][0] if layout is not None else i
+        arg = block.get_argument(i + 1)
+        arg = getattr(arg, 'value', arg)
+        seen, stack = set(), [arg]
+        while stack:
+            value = stack.pop()
+            for user, k in self._value_users.get(value.id(), []):
+                name = user.get_name()
+                if name == 'scf.yield':
+                    # this loop's own yield (not an inner loop's), at this carry's own position
+                    if user.get_block().id() != body_block.id() or k != index:
+                        return False
+                    continue
+                if name not in self._ROWWISE:
+                    return False
+                result = user.get_result(0)
+                if result.id() not in seen:
+                    seen.add(result.id())
+                    stack.append(result)
+        return True
+
     def _op_scf_for(self, op):
         block, body = self._region_block(op)
         lo, hi, step = [self._value(op.get_operand(i)) for i in range(3)]
@@ -1006,6 +1050,20 @@ class TTIRImporter:
                         # Already where the carry lives (_fuse_dot_add).
                         continue
                     if isinstance(dst, Tile):
+                        if (dst.kind == 'accumulator' and i not in pointer_tiles and i not in mask_tiles
+                                and self._carry_updated_in_place(op, block, i)):
+                            # The new value goes straight into the carried accumulator, row by row, as it is
+                            # computed: no operation of the iteration reads this carry's old value except the
+                            # chain that makes the new one, so each row is read before it is overwritten and
+                            # there is no snapshot to take (a store, a fence and a load a row, then the copy).
+                            row_of = {}
+                            get = self._tile_row_getter(self._tile_of(src))
+                            for r in range(dst.rows):
+                                if r not in row_of:
+                                    row_of[r] = self.b.const(r)
+                                self.b.acc_write(dst.handle, row_of[r], get(r))
+                            self._carried_in_place = getattr(self, '_carried_in_place', 0) + 1
+                            continue
                         if i in pointer_tiles:
                             get = self._offset_row(self._ptr2d[src.id()][2])
                         elif i in mask_tiles:
@@ -2749,7 +2807,8 @@ class TTIRImporter:
             if tile.rows == shape[0]:
                 self._tiles[rid] = Tile(tile.kind, tile.handle, shape[0],
                                         shape[1], tile.dtype, replicated=replicated,
-                                        equal_rows=tile.equal_rows and self._equal_a_stage_enabled())
+                                        equal_rows=tile.equal_rows and self._equal_a_stage_enabled(),
+                                        row_vector=tile.row_vector if tile.cols == 1 else None)
                 return
             if tile.rows == 1:
                 # `q[None, :]` stretched down the tile: every row is the
@@ -3369,6 +3428,14 @@ class TTIRImporter:
             self._mma_into(accs[j], a_tile, Tile('window', b_win, step, vlen, ae))
         same_output_rows = all_a_rows_equal and _os.environ.get('TNCA_X8_EQUAL_OUTPUT', '0') == '1'
         for j, acc in enumerate(accs):
+            if not same_output_rows and _os.environ.get('TNCA_DOT_ACC_LAZY', '1') != '0':
+                # The result stays where the matrix unit wrote it: every MMA above has been waited on, the
+                # accumulator is private to this dot, and a consumer reads a row with `a.vread` when it wants it,
+                # as after any other tl.dot (_op_tt_dot) -- not stored to scratch and loaded back (a store,
+                # a fence and a load a row, on the one load/store unit).
+                rid = ('register-chunk', op.get_result(0).id(), j) if n > vlen else op.get_result(0).id()
+                self._tiles[rid] = Tile('accumulator', acc, vlen, vlen, 'f32')
+                continue
             off = self._take_scratch((1 if same_output_rows else vlen) * vlen * 4)
             addr = b.sbini('add', scratch, off)
             for i in range(1 if same_output_rows else vlen):
@@ -3833,6 +3900,7 @@ class TTIRImporter:
                         remedy='pass scratch_addr, or compile with dynamic '
                                'arguments')
                 self._scratch = self.b.const(self.scratch_addr)
+                self.b.region.ops[-1].attrs['region'] = 'scratch'
                 if self.scratch_stride:
                     self._scratch = self.b.sbin(
                         'add', self._scratch,
@@ -3845,6 +3913,8 @@ class TTIRImporter:
                 size='d',
                 comment='descriptor scratch: one slot past the declared '
                         'arguments (ABI v1 offsets are unchanged)')
+            # The scratch buffer is the launch's own: no tensor argument points into it (tnca_cc.schedule reads this).
+            self.b.region.ops[-1].attrs['region'] = 'scratch'
         return self._scratch
 
     def _spill_region(self, nbytes):
@@ -3942,7 +4012,13 @@ class TTIRImporter:
                     if elem == 'i1' else result)
         # Every row is a splat of one lane.
         return Tile('lazy', row, rows or self.target.vlen, 1, elem, vector=v,
-                    replicated=True)
+                    replicated=True, row_vector=v if elem != 'i1' else None)
+
+    def _row_vector_tile(self, vec, rows, elem):
+        """A [rows, 1] tile whose row r is lane r of `vec` (a splat of it wherever a row is wanted)."""
+        def row(r):
+            return self.b.splat(self.b.vextract(vec, r), dtype=elem)
+        return Tile('lazy', row, rows, 1, elem, vector=vec, replicated=True, row_vector=vec)
 
     def _col_to_vector(self, tile, elem):
         """One value per row, gathered into one vector register.
@@ -5135,13 +5211,39 @@ class TTIRImporter:
             self.b.acc_write(acc, self.b.const(r), rows_fn(r))
         return Tile('accumulator', acc, rows, cols, elem)
 
-    def _tile_binary(self, op, build):
-        """An elementwise operation over a tile, a row at a time."""
+    def _row_vector_form(self, value, elem):
+        """`value` (a [R, 1] float tile) as one register, lane r holding row r; None when it is not one."""
+        tile = self._tiles.get(value.id())
+        if tile is not None:
+            return tile.row_vector if (tile.cols == 1 and tile.dtype == elem) else None
+        pending = self._pending_const.get(value.id())
+        if pending is not None and pending[0] == 'tile' and str(pending[2]) == elem:
+            return self._fconst(pending[1], elem)       # the same number in every lane
+        return None
+
+    def _tile_binary(self, op, build, extra=None):
+        """An elementwise operation over a tile, a row at a time.
+
+        `extra`, when given, is a function of the row whose result is passed to `build` after the operands' rows.
+        """
         shape, elem = _parse_type(str(op.get_result(0).get_type()))
         # An N-D tile is prod(shape[:-1]) rows of shape[-1].
         rows, cols = math.prod(shape[:-1]), shape[-1]
+        if (extra is None and cols == 1 and rows <= self.target.vlen and elem == 'f32' and self.index_opt
+                and os.environ.get('TNCA_ROW_VECTORS', '1') != '0'):
+            # An operation on [R, 1] tiles that are one value per row: lane-wise, so once on the register that
+            # holds the rows, not R times on a splat of each (`max(a_s[:, None], eps)`, `1 / l[:, None]`).
+            forms = [self._row_vector_form(op.get_operand(i), elem) for i in range(op.get_num_operands())]
+            if all(f is not None for f in forms) and any(
+                    getattr(self._tiles.get(op.get_operand(i).id()), 'row_vector', None) is not None
+                    for i in range(op.get_num_operands())):
+                vec = build(forms, elem)
+                self._tiles[op.get_result(0).id()] = self._row_vector_tile(vec, rows, elem)
+                return
         getters = [self._row_getter(op.get_operand(i), rows, elem)
                    for i in range(op.get_num_operands())]
+        if extra is not None:
+            getters = getters + [extra]
         if (self._equal_rows_enabled()
                 and all(self._equal_rows(op.get_operand(i)) for i in range(op.get_num_operands()))):
             value = build([g(0) for g in getters], elem)
@@ -5413,6 +5515,25 @@ class TTIRImporter:
         # quotient the frozen kernels were compiled with.
         div = mathlib.div_ieee if (self.large_tiles or self.ieee_div) else mathlib.div
         if self._is_2d(op):
+            shape2, elem2 = _parse_type(str(op.get_result(0).get_type()))
+            divisor = self._tiles.get(op.get_operand(1).id())
+            if (self.index_opt and elem2 == 'f32' and shape2[-1] > 1 and divisor is not None
+                    and divisor.row_vector is not None
+                    and os.environ.get('TNCA_ROW_VECTORS', '1') != '0'):
+                # The divisor is one number per row (`x / l[:, None]`): its refined reciprocal is a function of that
+                # number alone, so it is formed once for all the rows, on the register that holds them, and each
+                # chunk of a row takes its lane. The same operations as `div`/`div_ieee`, in the same order on the
+                # same values: the same bits, without a reciprocal for every row of every chunk.
+                key = ('rcp-rows', id(divisor.row_vector))
+                rvec = self._fconst_cache.get(key)
+                if rvec is None:
+                    rvec = self._fconst_cache[key] = mathlib.rcp(
+                        self.b, lambda c: self._fconst(c, elem2), divisor.row_vector, dtype=elem2)
+                ieee = bool(self.large_tiles or self.ieee_div)
+                self._tile_binary(
+                    op, lambda xs, e: mathlib.div_with_rcp(self.b, xs[0], xs[1], xs[2], ieee=ieee, dtype=e),
+                    extra=lambda r: self.b.splat(self.b.vextract(rvec, r), dtype=elem2))
+                return
             self._tile_binary(op, lambda xs, e: div(
                 self.b, lambda c: self._fconst(c, e), xs[0], xs[1],
                 dtype=e))

@@ -183,12 +183,17 @@ class Tile:
     """
 
     __slots__ = ('kind', 'handle', 'rows', 'cols', 'dtype', 'desc',
-                 'store', 'vector', 'replicated', 'equal_rows')
+                 'store', 'vector', 'replicated', 'equal_rows', 'row_vector')
 
     def __init__(self, kind, handle, rows, cols, dtype, desc=None,
-                 store=None, vector=None, replicated=False, equal_rows=False):
+                 store=None, vector=None, replicated=False, equal_rows=False,
+                 row_vector=None):
         self.kind = kind
         self.equal_rows = equal_rows
+        # R42: the tile is uniform along each row (every element of row r is the same number) and lane r of this
+        # register is that number. An operation that is lane-wise can then be done once on the register for all the
+        # rows instead of once a row on a splat of each (frontend._tile_binary, _op_arith_divf).
+        self.row_vector = row_vector
         # True only when it is proven that every lane of each row register
         # holds that row's value (a value computed from row indices, splats
         # or such rows lane by lane). A loaded [R, 1] has its data in lane 0

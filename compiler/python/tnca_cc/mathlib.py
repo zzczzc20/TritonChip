@@ -110,6 +110,19 @@ def div_ieee(b, k, a, y, dtype='f32'):
     return _keep_unrefined(b, q1, q0)
 
 
+def div_with_rcp(b, a, y, r, *, ieee, dtype='f32'):
+    """a/y when the refined reciprocal r = rcp(y) is already in hand: the same operations as `div` (`ieee` False)
+    or `div_ieee` (`ieee` True) after their first one, so the same bits. A divisor shared by many numerators --
+    one value per row of a tile, divided into every chunk of the row -- pays for its reciprocal once."""
+    if not ieee:
+        return b.vbin('mul', a, r, dtype=dtype, comment='a/y as a refined reciprocal (ISA has no divide)')
+    q0 = b.vbin('mul', a, r, dtype=dtype, comment='a/y: faithful quotient')
+    t = b.vfms(q0, y, a, dtype=dtype)
+    q1 = b.vun('neg', b.vfms(t, r, q0, dtype=dtype), dtype=dtype,
+               comment='a/y: one correction to the IEEE quotient')
+    return _keep_unrefined(b, q1, q0)
+
+
 def rsqrt(b, k, x, dtype='f32'):
     """1/sqrt(x), refined."""
     r0 = b.vun('rsqrt', x, dtype=dtype,

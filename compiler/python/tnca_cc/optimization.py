@@ -695,3 +695,84 @@ def dominating_value_numbering(kernel, *, scalar_window=400, vector_window=80):
         out['merged'] += note['merged']
         out['roles'].append(note)
     return out
+
+
+# ---- address displacement folding (R42 fp8sw) --------------------------------------------------------
+_DISP_MIN, _DISP_MAX = -(1 << 15), (1 << 15) - 1          # `[Sa, #imm16]` of v.ld/v.st/s.ld/s.st (ISA 0x00-0x18)
+_DISP_OPS = frozenset({'load', 'store', 'sload', 'sstore'})
+_IN_PLACE = {'vinsert': (0,), 'assign': (0,), 'window_put': (1, 2)}
+
+
+def fold_address_offsets(kernel):
+    """`[Sa, #imm]`: a constant added to an address becomes the displacement of the access.
+
+    `load(sbini(add, p, 64))` is `load(p, offset=64)` -- the encoding has had a signed 16-bit displacement
+    since ISA 0x10, the IR carries it as `offset`, and the importer builds every scratch address (a spilled tile's
+    row, a staging row, a TensorMap word) as `sbini(add, scratch_base, constant)` followed by an access at offset 0.
+    One scalar instruction per access disappears, and the scalar register that held the sum with it.
+
+    Applies to `load`, `store`, `sload` and `sstore` (a gather or scatter has no displacement field). The base is
+    followed through a chain of `sbini add/sub` values and used only if every value on the chain is defined once,
+    never written in place (a loop-carried pointer is an `assign` target and is left alone) and defined before the
+    first sum that reads it, so the base holds at the access the number it held where the sum was formed. A sum
+    nothing names any more is dropped. Memory behaviour, order and results are unchanged: the same address is
+    accessed.
+    """
+    out = {'folded': 0, 'removed': 0}
+    for role in kernel.roles:
+        ops = role.region.ops
+        defs, written = {}, set()
+        for i, o in enumerate(ops):
+            for r in o.results:
+                defs.setdefault(id(r), []).append(i)
+            for k in _IN_PLACE.get(o.kind, ()):
+                if k < len(o.operands) and isinstance(o.operands[k], Value):
+                    written.add(id(o.operands[k]))
+
+        def ssa(v):
+            return isinstance(v, Value) and len(defs.get(id(v), ())) == 1 and id(v) not in written
+
+        def chain(v):
+            """(root, constant, first sum): `v` = root + constant through single-definition `sbini add/sub` values;
+            first sum = position of the one nearest the root."""
+            total, first = 0, None
+            while ssa(v):
+                at = defs[id(v)][0]
+                d = ops[at]
+                if d.kind != 'sbini' or d.attrs.get('op') not in ('add', 'sub') or len(d.operands) != 1:
+                    break
+                imm = int(d.attrs['imm'])
+                total += imm if d.attrs['op'] == 'add' else -imm
+                v, first = d.operands[0], at
+            return v, total, first
+
+        folded = False
+        for o in ops:
+            if o.kind not in _DISP_OPS or not o.operands:
+                continue
+            root, const, first = chain(o.operands[0])
+            if not const or first is None or not ssa(root) or defs[id(root)][0] > first:
+                continue
+            new = int(o.attrs.get('offset', 0) or 0) + const
+            if not (_DISP_MIN <= new <= _DISP_MAX):
+                continue
+            o.operands = [root] + list(o.operands[1:])
+            o.attrs = dict(o.attrs, offset=new)
+            out['folded'] += 1
+            folded = True
+        if not folded:
+            continue
+        # Drop the sums nothing names any more (to a fixed point: a chain's inner links go with its outer ones).
+        while True:
+            used = {}
+            for o in ops:
+                for v in _values_in(o):
+                    used[id(v)] = used.get(id(v), 0) + 1
+            keep = [o for o in ops if not (o.kind == 'sbini' and o.attrs.get('op') in ('add', 'sub') and len(o.results) == 1
+                                           and used.get(id(o.results[0]), 0) == 0 and id(o.results[0]) not in written)]
+            if len(keep) == len(ops):
+                break
+            out['removed'] += len(ops) - len(keep)
+            ops = keep
+        role.region.ops = ops
+    return out

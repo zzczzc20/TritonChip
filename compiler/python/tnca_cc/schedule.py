@@ -13,8 +13,16 @@ What it may move, and what it may not:
   * Pure operations (`PURE`: arithmetic, compares, splats, constants,
     reductions) move freely subject to their data dependences.
   * Memory reads (`load`, `gather`, `sload`) may pass each other and pure
-    operations, never a write, a fence, a barrier, a transfer or anything
-    else with an effect.
+    operations, never a fence, a barrier, a transfer or anything else with an
+    effect other than a memory write; and never a write that may touch the
+    same bytes (R42, below).
+  * Memory writes (`store`, `scatter`, `sstore`) keep their order relative to
+    every access that may touch the same bytes, and to every other effect.
+    Which accesses may is decided by `memory_locations`: the launch's scratch
+    buffer is never a tensor argument, and two accesses at constant distances
+    from the same base are disjoint when their byte ranges are. A kernel that
+    spills a tile row by row to scratch and loads other rows of it, or other
+    tensors, between the stores no longer serialises on them.
   * Everything else keeps its order relative to every other effectful
     operation and to the reads.
   * `vinsert` and `assign` write an operand in place: they are ordered after
@@ -43,6 +51,9 @@ PURE = frozenset({
     'vextract', 'vshuffle', 'vcmp', 'pbin', 'pun', 'vselect', 'reduce',
 })
 MEMREAD = frozenset({'load', 'gather', 'sload'})
+MEMWRITE = frozenset({'store', 'scatter', 'sstore'})
+_BYTES = {'b': 1, 'h': 2, 'w': 4, 'd': 8}
+VLEN = 16
 # Operations that write the register of an operand rather than a result.
 MUTATES = {'vinsert': (0,), 'assign': (0,)}
 # Operations whose result names a register something else can write.
@@ -160,6 +171,82 @@ class Model:
                            'atomic', 'atomic_cas')
 
 
+def memory_locations(ops):
+    """Where each memory access of a flat op list goes: op id -> (region, root, lo, hi).
+
+    `region` is 'scratch' for an address built on the launch's scratch base (the importer tags that load or
+    constant `region=scratch`; a sum with it, as the Role Context passes make, is scratch too) and 'other'
+    for everything else. `root` is the id of the base value after the constant sums (`sbini add/sub`) and the
+    access's own displacement are taken off, and `lo`, `hi` the byte range [lo, hi) from it; root is None, and
+    so are the bounds, when the base is not a value defined once and never written in place, or the access has
+    no constant extent (a gather or a scatter).
+    """
+    defs, written = {}, set()
+    for i, o in enumerate(ops):
+        for r in o.results:
+            defs.setdefault(id(r), []).append(i)
+        for k in MUTATES.get(o.kind, ()):
+            if k < len(o.operands) and hasattr(o.operands[k], 'kind'):
+                written.add(id(o.operands[k]))
+
+    def ssa(v):
+        return len(defs.get(id(v), ())) == 1 and id(v) not in written
+
+    cls_memo = {}
+
+    def region(v, depth=0):
+        key = id(v)
+        if key in cls_memo:
+            return cls_memo[key]
+        out = 'other'
+        if ssa(v) and depth < 32:
+            d = ops[defs[key][0]]
+            if d.attrs.get('region') == 'scratch' and d.kind in ('sload', 'const'):
+                out = 'scratch'
+            elif d.kind in ('sbini', 'sbin') and d.attrs.get('op') in ('add', 'sub') and d.operands:
+                out = region(d.operands[0], depth + 1)
+        cls_memo[key] = out
+        return out
+
+    def root_of(v):
+        total = 0
+        while ssa(v):
+            d = ops[defs[id(v)][0]]
+            if d.kind != 'sbini' or d.attrs.get('op') not in ('add', 'sub') or len(d.operands) != 1:
+                break
+            imm = int(d.attrs['imm'])
+            total += imm if d.attrs['op'] == 'add' else -imm
+            v = d.operands[0]
+        return v, total
+
+    locs = {}
+    for o in ops:
+        if o.kind not in MEMREAD and o.kind not in MEMWRITE or not o.operands:
+            continue
+        base = o.operands[0]
+        cls = region(base)
+        root, const = root_of(base)
+        size = _BYTES.get(o.attrs.get('size'), 4)
+        if o.kind in ('gather', 'scatter') or not ssa(root):
+            locs[id(o)] = (cls, None, None, None)
+            continue
+        lo = const + int(o.attrs.get('offset', 0) or 0)
+        n = size if o.kind in ('sload', 'sstore') else size * VLEN
+        locs[id(o)] = (cls, id(root), lo, lo + n)
+    return locs
+
+
+def may_alias(a, b):
+    """May two accesses (memory_locations entries) touch a common byte?"""
+    if a is None or b is None:
+        return True
+    if a[0] != b[0]:
+        return False
+    if a[1] is not None and a[1] == b[1] and a[2] is not None and b[2] is not None:
+        return a[2] < b[3] and b[2] < a[3]
+    return True
+
+
 def _blocks(ops):
     """Split a flat op list into basic blocks: a label starts one, a branch
     or an exit ends one."""
@@ -212,13 +299,14 @@ def _edge(a, b, lat):
         b.preds[a] = lat
 
 
-def _graph(units, model, aliased):
+def _graph(units, model, aliased, locs=None):
     nodes = [_Node(u, i) for i, u in enumerate(units)]
     writer = {}          # value id -> node that last defined or wrote it
     readers = {}         # value id -> nodes that read it since that write
-    last_effect = None
+    last_effect = None   # last operation that orders everything: with `locs`, the last synchronisation
     reads_since = []     # memory reads since last_effect
     alias_readers = []   # nodes reading an aliased value, waiting for the next effect
+    mem_since = []       # with `locs`: (node, is_write, location) of the memory accesses since last_effect
     for n in nodes:
         op = n.op
         if op.kind == 'label':
@@ -227,6 +315,8 @@ def _graph(units, model, aliased):
             n.kind = 'pure'
         elif op.kind in MEMREAD:
             n.kind = 'read'
+        elif locs is not None and op.kind in MEMWRITE:
+            n.kind = 'write'
         else:
             n.kind = 'effect'
         reads = [v for v in _values_in(op) if hasattr(v, 'kind')]
@@ -251,15 +341,25 @@ def _graph(units, model, aliased):
                 _edge(last_effect, n, 0)
             for r in reads_since:
                 _edge(r, n, 0)
+            for m, _w, _loc in mem_since:
+                _edge(m, n, 0)
             for r in alias_readers:
                 _edge(r, n, 0)
-            reads_since, alias_readers = [], []
+            reads_since, alias_readers, mem_since = [], [], []
             last_effect = n
-        elif n.kind == 'read':
+        elif n.kind in ('read', 'write'):
             if last_effect is not None:
                 _edge(last_effect, n, 0)
-            reads_since.append(n)
-        if n.kind != 'effect' and any(id(v) in aliased for v in reads):
+            if locs is None:
+                reads_since.append(n)
+            else:
+                here = locs.get(id(op))
+                is_write = n.kind == 'write'
+                for m, m_write, there in mem_since:
+                    if (is_write or m_write) and may_alias(here, there):
+                        _edge(m, n, 0)
+                mem_since.append((n, is_write, here))
+        if n.kind not in ('effect', 'write') and any(id(v) in aliased for v in reads):
             alias_readers.append(n)
     # The first node of a block that starts with a label stays first; the
     # last one, a branch or an exit, stays last.
@@ -370,7 +470,7 @@ class _Pressure:
         return best
 
 
-def schedule_block(block, model, dies_here, aliased, slack=None, window=None):
+def schedule_block(block, model, dies_here, aliased, slack=None, window=None, locs=None):
     """One basic block, list-scheduled. Returns the new op list.
 
     Each step issues, among the operations whose predecessors are all
@@ -384,7 +484,7 @@ def schedule_block(block, model, dies_here, aliased, slack=None, window=None):
     units, tail = _units(block)
     if len(units) < 3:
         return block
-    nodes = _graph(units, model, aliased)
+    nodes = _graph(units, model, aliased, locs)
     pressure = _Pressure(nodes, dies_here)
     peaks = pressure.peaks(nodes)
     cap = {k: peaks[k] + slack[k] for k in _FILES}
@@ -442,11 +542,11 @@ def schedule_block(block, model, dies_here, aliased, slack=None, window=None):
     return out + tail
 
 
-def estimate(block, model):
+def estimate(block, model, locs=None):
     """Issue cycles of a block in the given order under the model -- what the
     scheduler minimises, for reports and tests."""
     units, _ = _units(block)
-    nodes = _graph(units, model, set())
+    nodes = _graph(units, model, set(), locs)
     issue_at, t, lsu_free = {}, 0, 0
     for n in nodes:
         s = t
@@ -504,11 +604,14 @@ def drop_unread_argument_loads(ops):
     return keep, len(ops) - len(keep)
 
 
-def schedule_kernel(kernel, target, *, model=None, slack=None, window=None):
+def schedule_kernel(kernel, target, *, model=None, slack=None, window=None, disambiguate=None):
     """Reorder every basic block of every role. Returns a report:
     {'model', 'blocks', 'moved', 'estimate_before', 'estimate_after',
     'dropped_argument_loads'}."""
     model = model or Model.for_target(target)
+    if disambiguate is None:
+        import os
+        disambiguate = os.environ.get('TNCA_SCHED_ALIAS', '1') != '0'
     report = dict(model=model.name, blocks=0, moved=0, estimate_before=0, estimate_after=0,
                   dropped_argument_loads=0)
     for role in kernel.roles:
@@ -519,6 +622,7 @@ def schedule_kernel(kernel, target, *, model=None, slack=None, window=None):
         for op in ops:
             if op.kind in ALIASES:
                 aliased.update(id(r) for r in op.results)
+        locs = memory_locations(ops) if disambiguate else None
         blocks = _blocks(ops)
         last = last_uses(ops)
         new = []
@@ -527,9 +631,9 @@ def schedule_kernel(kernel, target, *, model=None, slack=None, window=None):
             lo, hi = pos, pos + len(blk) - 1
             pos += len(blk)
             dies_here = {vid for vid, at in last.items() if lo <= at <= hi}
-            before = estimate(blk, model)
-            out = schedule_block(blk, model, dies_here, aliased, slack, window)
-            after = estimate(out, model)
+            before = estimate(blk, model, locs)
+            out = schedule_block(blk, model, dies_here, aliased, slack, window, locs)
+            after = estimate(out, model, locs)
             if after > before:
                 out = blk                      # never worse than program order
                 after = before

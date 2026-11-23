@@ -47,6 +47,10 @@ ABI_VERSION = list(abi.ABI_VERSION)
 KNOWN_OPTIONS = {
     'gemm_pipeline': 'int, 0 or 1; software pipelining of a transfer/MMA loop on two window sets and two '
                      'barriers (tnca_cc/gemm_pipeline.py; default 1, TNCA_GEMM_PIPELINE=0 is the ablation)',
+    'gemm_kmerge': 'int, 0 or 1; the chunks of a K32 tl.dot operand are ONE transfer (A 16x32, B 32x16, or the '
+                   'transposed 16x32 source box of a K-contiguous weight) into one fragment window instead of '
+                   'one transfer a 16-lane chunk plus a repack through scratch (frontend._defer_matrix_load; '
+                   'default 1, TNCA_GEMM_KMERGE=0 is the ablation)',
     'single_role_pipeline': 'int, 0 or 1; opt-in two-slot single-role transfer/MMA overlap with guarded drain',
     'rctx_role_pairs': 'int, 0..2; cap paired programs for fixed-context comparisons (0 uses the target maximum)',
     'bank_alloc': 'int, 0 or 1; use the target bank-aware vector allocator',
@@ -336,6 +340,14 @@ def check_options(options):
         raise ValueError('gemm_pipeline must be 0 or 1')
     if not pipe:
         options['gemm_pipeline'] = 0
+    kmerge = options.get('gemm_kmerge')
+    if kmerge is None:
+        kmerge = int(os.environ.get('TNCA_GEMM_KMERGE', '1'))
+    options.pop('gemm_kmerge', None)
+    if kmerge not in (0, 1):
+        raise ValueError('gemm_kmerge must be 0 or 1')
+    if not kmerge:
+        options['gemm_kmerge'] = 0
     if options.get('rctx_role_pairs') and not options.get('rctx_roles'):
         raise ValueError('rctx_role_pairs requires rctx_roles')
     if options.get('single_role_pipeline') and options.get('rctx_roles'):
@@ -886,7 +898,7 @@ def _lower_imported(module, kernel_name, params, target, prov, options, stages, 
         dynamic_args=True, index_opt=bool(index_opt), sparse_maps=bool(sparse),
         window_reuse=bool(window_reuse), packed_window_unpack=bool(packed_unpack),
         large_tiles=large_tiles, ieee_div=bool(_ieee_div(options)), tiled_pointwise=tiled,
-        tiled_groups_cap=tiled_groups_cap)
+        tiled_groups_cap=tiled_groups_cap, k_merge=bool((options or {}).get('gemm_kmerge', 1)))
     if getattr(imp, 'tiled_pointwise_plan', None) is not None:
         prov.record('tiled_pointwise', imp.tiled_pointwise_plan)
     if imp.large_tiles or imp.ieee_div:
@@ -895,6 +907,8 @@ def _lower_imported(module, kernel_name, params, target, prov, options, stages, 
         prov.record('packed_window_unpack_rows', imp._packed_unpack_rows)
     if getattr(imp, '_mma_retiles', None):
         prov.record('mma_retiles', sorted(imp._mma_retiles))
+    if getattr(imp, '_kmerge_loads', 0):
+        prov.record('gemm_kmerge_transfers', imp._kmerge_loads)
     reduction_tiles = sorted(getattr(imp, '_reduction_tiles', ()))
     if reduction_tiles and int(os.environ.get('TNCA_REDUCTION_ROWS', '1')) > 1:
         prov.record('reduction_tiles', reduction_tiles)

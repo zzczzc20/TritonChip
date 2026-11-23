@@ -173,6 +173,16 @@ class _LaneTerm:
 _UNIFORM_SBIN = frozenset({'add', 'sub', 'mul', 'and', 'or', 'xor'})
 
 
+class _DeferredLoad:
+    """A chunk of a K-wide tl.dot operand whose transfer is held back (see
+    TTIRImporter._defer_matrix_load)."""
+    __slots__ = ('name', 'elem', 'aff', 'shape', 'xpose', 'row', 'col')
+
+    def __init__(self, name, elem, aff, shape, xpose, row, col):
+        self.name, self.elem, self.aff, self.shape = name, elem, aff, shape
+        self.xpose, self.row, self.col = xpose, row, col
+
+
 class TTIRImporter:
     """Walk a TTIR module and build the TNCA IR for it."""
 
@@ -4734,6 +4744,15 @@ class TTIRImporter:
 
     def _as_fragment_uncached(self, tile, what):
         """This tile in the layout `m.mma.async` reads."""
+        if tile.kind in ('row-chunks', 'column-chunks') and tile.handle and \
+                any(p.kind == 'deferred' for p in tile.handle):
+            merged = (self._merge_deferred(tile)
+                      if all(p.kind == 'deferred' for p in tile.handle) else None)
+            if merged is not None:
+                self._kmerge_loads = getattr(self, '_kmerge_loads', 0) + 1
+                return merged
+            for p in tile.handle:
+                self._materialize_deferred(p)
         if tile.kind == 'row-chunks':
             getters = [self._tile_row_getter(p) for p in tile.handle]
             return self._rows_to_window(
@@ -6092,6 +6111,25 @@ class TTIRImporter:
                     else shape[0] != self.target.vlen)
                 or shape[1] not in (4, 8, 16)):
             return None
+        deferred = self._defer_matrix_load(op, name, elem, aff, shape, True)
+        if deferred is not None:
+            return deferred
+        return self._emit_transposed_tile_load(name, elem, aff, shape)
+
+    def _emit_plain_tile_load(self, name, elem, aff, shape2d, what):
+        """One plain 2-D tile, as one transfer into its own window."""
+        hoisted = self._hoisted_tile_descriptor(name, elem, aff, shape2d, what) \
+            if self.index_opt else None
+        if hoisted is not None:
+            desc, coords = hoisted
+            return self._dma_in(desc, coords, list(shape2d), elem, what)
+        desc = self._tile_descriptor(name, elem, aff, shape2d, what)
+        zero = self.b.const(0)
+        return self._dma_in(desc, [zero, zero], list(shape2d), elem, what)
+
+    def _emit_transposed_tile_load(self, name, elem, aff, shape):
+        """The tile `shape` (K rows, N columns) of a K-contiguous operand, as one
+        transposed transfer: the source box is N rows of K elements."""
         u = Affine2D(row_stride=aff.col_stride, col_stride=1, const=aff.const,
                      dynamic=aff.dynamic)
         block = [shape[1], shape[0]]
@@ -6113,6 +6151,113 @@ class TTIRImporter:
                         coords, tok, dtype=elem, transpose=True)
         self.b.barrier_wait(tok)
         return Tile('window', window, shape[0], shape[1], elem)
+
+    # ---- K-wide matrix fragments from ONE transfer (R42 xfer) ---------------------
+    #
+    # A K32 `tl.dot` operand reaches the importer as register chunks of VLEN (the
+    # chunking of register_blocks): A as two 16x16 column chunks, B as two 16x16
+    # row chunks. Lowered one chunk at a time that is two transfers a K step per
+    # operand and, because a K32 fragment is not two K16 fragments side by side
+    # (ISA sec 9C.2: a flat row-major array), a repack through scratch memory
+    # (_as_fragment_uncached). Here a chunk of such an operand is not transferred
+    # when it is loaded: it is held as a deferred load, and the dot that consumes
+    # the chunks takes them as the one K-wide box they are -- A 16x32, B 32x16, or
+    # for a K-contiguous weight the transposed 16x32 source box -- in ONE
+    # transfer into one fragment window. A 16x32 FP16 row is 64 bytes: a whole
+    # line, which the line-wide transfer engine (TENSOR_LINE) moves as line
+    # requests where the 16x16 half-line rows take its word walk
+    # (rtl/core/tnca_tensor.v le_elig).
+    #
+    # Same elements, same fragment bytes, same MMA order: the K32 command
+    # accumulates groups 0..15 exactly as two K16 commands do (ISA sec 9C.4).
+
+    def _defer_matrix_load(self, op, name, elem, aff, shape, xpose):
+        if not getattr(self, '_k_merge', False) or not getattr(op, '_register_chunk', False):
+            return None
+        if elem not in ('f16', 'bf16') or op.get_num_operands() > 1:
+            return None
+        project = getattr(op, 'value_users', None)
+        users = (project(self, op.get_result(0)) if project else
+                 self._value_users.get(op.get_result(0).id(), []))
+        side = None
+        for u, k in users:
+            raw = getattr(u, 'op', u)
+            if raw.get_name() != 'tt.dot' or k not in (0, 1) or (side is not None and side != k):
+                return None
+            side = k
+            (a, ae), (b, be) = (_parse_type(str(raw.get_operand(i).get_type())) for i in (0, 1))
+            if (ae != be or ae != elem or not isinstance(a, tuple) or not isinstance(b, tuple)
+                    or a[0] != self.target.vlen or a[1] not in self._KMERGE_K
+                    or a[1] != b[0] or f'k{a[1]}' not in self.target.mma['k_steps']
+                    or b[1] % self.target.vlen):
+                return None
+        if side is None:
+            return None
+        if xpose and side != 1:
+            return None           # a transposed tile is a B operand
+        if isinstance(aff.const, bool) or not isinstance(aff.const, int):
+            return None
+        return Tile('deferred', _DeferredLoad(name, elem, aff, tuple(shape), bool(xpose),
+                                              getattr(op, 'row', 0), getattr(op, 'chunk', 0)),
+                    shape[0], shape[1], elem)
+
+    _KMERGE_K = (32,)
+
+    def _folded(self, aff):
+        """(element offset, the runtime terms) of an index: a term whose scalar is a
+        compile-time constant (a chunk's own offset is one) joins the constant."""
+        const, rest = aff.const, []
+        for v, k in aff.dynamic:
+            known = next((c for c, val in self._scalar_cache.items()
+                          if val is v and isinstance(c, int) and not isinstance(c, bool)), None)
+            if known is None:
+                rest.append((id(v), k))
+            else:
+                const += known * k
+        return const, sorted(rest)
+
+    def _merge_deferred(self, tile):
+        """The one transfer a K-wide operand's chunks make, or None when they are
+        not consecutive pieces of one box."""
+        infos = [p.handle for p in tile.handle]
+        first = infos[0]
+        a0 = first.aff
+        vlen = self.target.vlen
+        const0, rest0 = self._folded(a0)
+        for i, d in enumerate(infos):
+            if (d.name != first.name or d.elem != first.elem or d.xpose != first.xpose
+                    or d.shape != first.shape or (d.aff.row_stride, d.aff.col_stride) !=
+                    (a0.row_stride, a0.col_stride)):
+                return None
+            const, rest = self._folded(d.aff)
+            if tile.kind == 'column-chunks':        # A: chunk i is columns [16 i, 16 i + 16)
+                step = vlen * a0.col_stride
+            else:                                   # B: chunk i is rows [16 i, 16 i + 16)
+                step = vlen * a0.row_stride
+            if rest != rest0 or const != const0 + i * step:
+                return None
+        if tile.kind == 'column-chunks':
+            if first.xpose or a0.col_stride != 1:
+                return None
+            block = (first.shape[0], first.shape[1] * len(infos))
+        else:
+            block = (first.shape[0] * len(infos), first.shape[1])
+        if first.xpose:
+            return self._emit_transposed_tile_load(first.name, first.elem, a0, block)
+        return self._emit_plain_tile_load(first.name, first.elem, a0, block,
+                                          'a K-wide tl.dot operand, one transfer')
+
+    def _materialize_deferred(self, tile):
+        """Emit a deferred chunk's own transfer; the tile becomes the window."""
+        if tile.kind != 'deferred':
+            return tile
+        d = tile.handle
+        if d.xpose:
+            real = self._emit_transposed_tile_load(d.name, d.elem, d.aff, d.shape)
+        else:
+            real = self._emit_plain_tile_load(d.name, d.elem, d.aff, d.shape, 'a 2-D tt.load')
+        tile.kind, tile.handle, tile.desc = real.kind, real.handle, real.desc
+        return tile
 
     def _scalar_const(self, vid):
         """The value of `vid` if it is a scalar constant, else None.
@@ -6274,18 +6419,12 @@ class TTIRImporter:
                 self._tiles[op.get_result(0).id()] = Tile(
                     'lazy', lambda r, row=row: row, shape2d[0], shape2d[1], elem)
                 return
-            hoisted = self._hoisted_tile_descriptor(name, elem, aff, shape2d, 'a 2-D tt.load') \
-                if self.index_opt else None
-            if hoisted is not None:
-                desc, coords = hoisted
-                self._tiles[op.get_result(0).id()] = self._dma_in(
-                    desc, coords, list(shape2d), elem, 'a 2-D tt.load')
+            deferred = self._defer_matrix_load(op, name, elem, aff, shape2d, False)
+            if deferred is not None:
+                self._tiles[op.get_result(0).id()] = deferred
                 return
-            desc = self._tile_descriptor(name, elem, aff, shape2d,
-                                         'a 2-D tt.load')
-            zero = self.b.const(0)
-            self._tiles[op.get_result(0).id()] = self._dma_in(
-                desc, [zero, zero], list(shape2d), elem, 'a 2-D tt.load')
+            self._tiles[op.get_result(0).id()] = self._emit_plain_tile_load(
+                name, elem, aff, shape2d, 'a 2-D tt.load')
             return
         mask = self._value(op.get_operand(1)) if op.get_num_operands() > 1 \
             else None

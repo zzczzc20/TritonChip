@@ -123,6 +123,7 @@ struct Config {
         require(get_or("dma_line_engine",0)==0 || (get("memory_model")==1 && get_or("tl_core_beat_bytes",8)==64),
                 "the line engine needs timeline memory and a 64-byte core beat");
         {auto n=get_or("dma_line_buffers",64);require(n>=1 && n<=256,"dma_line_buffers must be 1..256");}
+        require(get_or("dma_line_elig",0)<=2 && get_or("dma_xpose_line_buffer",0)<=1 && get_or("mtx_abuf_k32",0)<=1,"dma_line_elig is 0|1|2, dma_xpose_line_buffer and mtx_abuf_k32 are 0|1");
         cache_hot();
         for(auto& k:keys)if(k!="memory_base" && k!="pc_first" && k!="trace_events" && k!="noc_stages" && k!="full_line_tag"
                             && k!="mtx_abuf" && k!="launch_cycles" && k!="dispatch_cycles" && k!="load_latency"
@@ -155,7 +156,9 @@ struct Config {
         static const std::vector<std::string> k={"mtx_dp","mtx_dp_extra_latency","mtx_dp_prefetch","mtx_dp_group_16","mtx_dp_group_8","mtx_dp_b_prefetch","tl_core_beat_bytes","tl_noc_payload_bytes","tl_lsu_units","tl_memory_lanes","tl_lsu_shared_issue","tl_pc_stripe_bytes","tl_prefetch_lines",
             // R41 G4 what-ifs (default off): full-line writes allocate without a memory read
             // (HOME_LINE_WRITE_NOFILL); the line-wide multi-command tensor engine.
-            "mtx_dp_g_override","mtx_dp_b_regs","issue_free_mode","tl_full_line_nofill","tl_slice_install_occupancy","dma_line_engine","dma_line_buffers","dma_line_rf_cycles","dma_line_combine"};return k;}
+            "mtx_dp_g_override","mtx_dp_b_regs","issue_free_mode","tl_full_line_nofill","tl_slice_install_occupancy","dma_line_engine","dma_line_buffers","dma_line_rf_cycles","dma_line_combine",
+            // R42 xfer what-ifs (default off): mirror of rtl/core/tnca_tensor.v at TENSOR_LINE 1
+            "dma_line_elig","dma_xpose_line_buffer","mtx_abuf_k32"};return k;}
     u64 get_or(const std::string& k,u64 fallback)const{auto i=v.find(k);return i==v.end()?fallback:i->second;}
     // Hot-path copies of fixed geometry (set once by cache_hot()).
     u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;

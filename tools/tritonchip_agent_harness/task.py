@@ -327,7 +327,7 @@ def _check_slow(path: Path, slow, ev: dict) -> None:
     """services.fpga_slow (report section 8.9): counts, not minutes, for the run; caps for one request."""
     required = {"mode", "flows", "board_runs", "flow_minutes", "board_minutes"}
     optional = {"base_image_sha256", "board_checks", "certify_after_run", "flows_at_once", "board_faster_than",
-                "relay_cache_gib", "flows_at_once_per_island"}
+                "relay_cache_gib", "flows_at_once_per_island", "placement_warning_level"}
     if not isinstance(slow, dict) or not required <= set(slow) or set(slow) - required - optional:
         raise TaskError(f"{path}: services.fpga_slow needs {', '.join(sorted(required))} "
                         f"(and may have {', '.join(sorted(optional))})")
@@ -647,7 +647,16 @@ def _board_lines(score: dict, slow: dict, board: dict, flows: int, shared: str, 
         "(timing or place-and-route does not converge, it does not fit, DRC) counts; one that fails on the "
         "infrastructure does not, and is retried for you. You get its routed timing; for a flow that failed, why: "
         "the failing stage, slack, the worst paths and whether they cross an SLR, utilisation per SLR, the DRC "
-        "rules that failed. A flow still running when you stop is stopped.",
+        "rules that failed, and where routing was congested (`congestion`: Vivado's own estimates, the routing "
+        "resources most contended when it stopped and, for a flow that failed in placement or routing, the "
+        "modules Vivado names as filling the congested windows). While a flow's link runs, its status (`tnca-service status ID`) shows its placement "
+        "once placement has ended, a few hours before the link's end: Vivado's timing estimate and its estimated "
+        f"routing congestion. A placement Vivado puts at congestion level "
+        f"{int(slow.get('placement_warning_level', 7))} or above is flagged "
+        "(`placement.warning`); `tnca-service wait ID` returns on it, and you may then abandon that flow "
+        "(`tnca-service abandon ID`: the link stops, the flow is not charged, and it is recorded as abandoned) or "
+        "let it run (`tnca-service wait ID --to-end`; a design failure is then charged as any). A flow still "
+        "running when you stop is stopped.",
         "- There is no simulated scoring service in this task: between card sessions, what you measure is your own "
         "-- the RTL simulation and the cycle models in your working directory.",
     ]

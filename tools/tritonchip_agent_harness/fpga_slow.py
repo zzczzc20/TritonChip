@@ -664,15 +664,42 @@ def _wait(proc, limit: float, watch, poll: float) -> bool:
             watch()
 
 
-def _watch_placement(site: Site, job: dict, remote_id: str, host: str, elapsed: float) -> None:
+PLACEMENT_WARNING_LEVEL = 7   # AMD's UG949: above level 6 a design is unlikely to meet timing, may not route
+
+
+def placement_warning(seen: dict, level: int = PLACEMENT_WARNING_LEVEL) -> Optional[dict]:
+    """The worst congestion the placer estimated, when it is at `level` or above: {level, where, why}."""
+    worst = None
+    for scope, kinds in (seen.get("placer") or {}).items():
+        for kind, v in (kinds or {}).items():
+            if v.get("level", -1) >= level and (worst is None or v["level"] > worst["level"]):
+                worst = {"level": v["level"], "where": f"{scope}, {kind} congestion, {v.get('direction')}"}
+    if worst is None:
+        return None
+    return {**worst, "why": f"the placer estimated congestion level {worst['level']}; AMD's methodology guide "
+                            "(UG949) says above 6 a design is unlikely to meet timing and may fail to route"}
+
+
+def _watch_placement(site: Site, job: dict, remote_id: str, host: str, elapsed: float,
+                     warn_level: int = PLACEMENT_WARNING_LEVEL) -> None:
     """Once the running link's placement has ended, what its log says (congestion.placement) goes to the
     request's status (2026-11-23, the user: the agent learns of a placement that will not route hours before
-    the link's end). Read until found, then no more."""
+    the link's end). A placement at `warn_level` or above is flagged (2026-11-24, the user): `wait` returns on
+    it, and the agent may abandon the flow, uncharged, or let it run on. Read until found, then no more."""
     if job.get("placement") or job.get("_cancel_requested"):
         return
     seen = congestion_.placement(site, remote_id, host)
-    if seen:
-        job["placement"] = {**seen, "seen_after_minutes": round(elapsed / 60.0)}
+    if not seen:
+        return
+    found = {**seen, "seen_after_minutes": round(elapsed / 60.0)}
+    warning = placement_warning(seen, warn_level)
+    if warning:
+        rid = job.get("id", "ID")
+        found["warning"] = {**warning, "choices": (
+            f"`tnca-service abandon {rid}`: the link stops now; the flow is not charged and is recorded as "
+            f"abandoned. `tnca-service wait {rid} --to-end`: it runs on; if it then fails on the design, it is "
+            "charged as any flow")}
+    job["placement"] = found
 
 
 def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: Path, job: dict,
@@ -727,8 +754,11 @@ def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir
                     # or the agent's end): what started is stopped here and on the build host.
                     job["cleanup"] = cancel(job, cfg)
                 job.pop("placement", None)       # an earlier attempt's, on another machine
+                warn = int(((task.services or {}).get("fpga_slow") or {}).get("placement_warning_level",
+                                                                              PLACEMENT_WARNING_LEVEL))
                 timed_out = _wait(proc, seconds + 600,
-                                  lambda: _watch_placement(site, job, remote_id, host, time.time() - started_at),
+                                  lambda: _watch_placement(site, job, remote_id, host, time.time() - started_at,
+                                                           warn),
                                   PLACEMENT_POLL_SECONDS)
                 if timed_out:
                     job["cleanup"] = cancel(job, cfg)

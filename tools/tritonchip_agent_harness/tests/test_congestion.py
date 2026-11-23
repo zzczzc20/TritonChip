@@ -216,6 +216,23 @@ class Watch(unittest.TestCase):
         self.assertEqual(len(looked), 3)
         self.assertTrue(fpga_slow._wait(Proc(10 ** 6), 0.05, lambda: None, 0.01))
 
+    def test_a_placement_at_level_7_is_flagged_with_the_agents_two_choices(self):
+        b3 = congestion.parse_log(read("b3_runme.log"))
+        base = congestion.parse_log(read("base_runme.log"))
+        warning = fpga_slow.placement_warning(b3)
+        self.assertEqual((warning["level"], warning["where"]), (7, "device, long congestion, north"))
+        self.assertIsNone(fpga_slow.placement_warning(base))
+        self.assertEqual(fpga_slow.placement_warning(base, level=6)["level"], 6)
+        job = {"id": "b3"}
+        with mock.patch.object(fpga_slow.congestion_, "placement", return_value={"note": "n", **b3}):
+            fpga_slow._watch_placement(None, job, "tnca-1", "hpc-1", 14400)
+        self.assertIn("tnca-service abandon b3", job["placement"]["warning"]["choices"])
+        self.assertIn("--to-end", job["placement"]["warning"]["choices"])
+        job = {"id": "base"}
+        with mock.patch.object(fpga_slow.congestion_, "placement", return_value={"note": "n", **base}):
+            fpga_slow._watch_placement(None, job, "tnca-2", "hpc-1", 14400)
+        self.assertNotIn("warning", job["placement"])
+
     def test_placement_is_read_until_found_then_left_alone(self):
         job = {"id": "b3"}
         found = {"note": "n", "placer": {"device": {"long": {"level": 7, "direction": "north"}}}}

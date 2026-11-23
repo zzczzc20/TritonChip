@@ -383,6 +383,8 @@ class Broker:
                 return {"requests": [self._summary(j) for j in self.jobs.values()], **self.budget()}
         if op == "result":
             return self._view(request.get("id"), with_result=True)
+        if op == "abandon":
+            return self.abandon(str(request.get("id")))
         return {"error": f"unknown operation {op!r}; see `tnca-service --help`"}
 
     def budget(self) -> dict:
@@ -970,6 +972,41 @@ class Broker:
                 if job.get("kind") == "hardware" and job.get("image") and job.get("outcome") == "ok":
                     self.images[job["hardware"]] = job["image"]
         return visible, full
+
+    def abandon(self, job_id: str) -> dict:
+        """The agent ends a running flow whose placement was flagged (2026-11-24, the user): the link stops now,
+        the flow is not charged, and the request is recorded as abandoned, with what its placement said. A flow
+        without a warning, or one whose link has ended, cannot be abandoned."""
+        with self.lock:
+            job = self.jobs.get(job_id)
+            if job is None:
+                return {"error": f"no request {job_id!r}"}
+            if job["service"] not in ("fpga-slow", "flow") or job["state"] != "running":
+                return {"error": f"request {job_id} is not a running flow"}
+            if job.get("flow_finished"):
+                return {"error": f"the link of request {job_id} has already ended"}
+            placed = job.get("placement") or {}
+            if not placed.get("warning"):
+                return {"error": "only a flow whose placement was flagged (its status shows placement.warning) can "
+                                 "be abandoned"}
+            now = time.time()
+            job["_cancel_requested"] = True
+            job["state"] = "cancelled"
+            job["abandoned"] = {"at": now, "after_minutes": round((now - (job.get("flow_started") or now)) / 60.0),
+                                "warning": placed["warning"]}
+            job["note"] = "abandoned by the agent after its placement warning: stopped, not charged, recorded"
+            job["result"] = {"status": "abandoned", "charged": None, "placement": placed,
+                             "why": "you abandoned it after its placement warning; the link was stopped, not "
+                                    "charged"}
+            self._release_flow(job)
+        threading.Thread(target=self._stop_flow, args=(job,), daemon=True).start()
+        return self._view(job_id, with_result=True)
+
+    def _stop_flow(self, job: dict) -> None:
+        try:
+            job["cleanup"] = fpga_slow.cancel(job, self.site.fpga_pipeline)
+        except Exception as exc:  # noqa: BLE001 -- recorded; the request's thread settles the charge
+            job["cleanup"] = {"error": f"{type(exc).__name__}: {str(exc)[:300]}"}
 
     # -- views ---------------------------------------------------------------------------
     def _summary(self, job: dict) -> dict:

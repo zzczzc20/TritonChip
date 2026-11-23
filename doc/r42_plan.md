@@ -167,3 +167,17 @@ registered: RTL of a DSP48E2-mapped lane and its resources (screen), then a spee
   and E5M2 modes; beside the shared lanes it fits no SLR. Not an image, not a board number.
 - Consequence: the lane screens well for FP8 but the 113 points are FP16/FP32; a FP16 K-fused lane (64-bit exact field today)
   has not been built. The speed prediction (`R42-kfuse-speed`) decides whether an FP8-only wide lane is worth an image.
+
+**2026-11-23. Speed prediction for the wide lane (`R42-kfuse-speed`, TLM calibrated on RTL and checked against the ab-int2 board records).**
+Report: `evidence/r42/kfuse_speed/REPORT.md`. Model prediction, not a board result.
+- A wider lane (E4M3 G=8/16, FP16 G=4/8 timing-only) and lower K-loop instruction overhead (scalar/branch free, or all issue-free)
+  move the 113-point geometric mean by -0.5 to +0.7 %, the 37 matrix-engine GEMM points by -1.4 to +2.2 %. The matrix engine is busy
+  28-37 % of the time on the single-GEMM board points; the tensor transfer path (A tile 75 + transposed B tile 99 cycles per K step) sets
+  the step time. Model error on the GEMM points: median 8-10 %, six families outside 20 % (held constant).
+- Decision: no image for lane width or issue-rate work. The K-fused DSP lane (screened in RTL, bit-exact, OOC resources recorded) is kept
+  as a screened option; it is E4M3-only and pays only after the preparation overhead of the FP8 Hub kernel is gone.
+- xl tier (model): restructuring the Hub kernel's instruction stream (hoisting weight/activation preparation out of the K loop) is worth
+  +28 % on the 32 xl points and needs no hardware; the wider lane adds under 2 % on top.
+- Next levers, in order of expected gain: software for the FP8 Hub kernel (xl), the tensor transfer path (software first: tile sizes, B
+  layout; hardware candidate: plain-tile load slots 8 -> 32, +9.1 % on 30 GEMM points in the model), and the 1.0x families
+  (embedding, transpose, cumsum) that the board shows unchanged.

@@ -112,3 +112,19 @@ serial-grid device cycles, default knobs, 113/113 points pass on both sides
 - Slower by more than 2 %: `op.matmul/small/fp16-m64-k128-n128` (1.049), `op.gemv/hbm` (1.024),
   `op.gemv/large` (1.022). Causes not yet established.
 This is a software-only result on the R41 image. The RTL work (`R42-mtx`, `R42-fp32`) and `R42-gemm` are not in it.
+
+**2026-11-23. Numerics decision for the wide core (author, chat: "尽管数值精度有别，我们还是要比较FP8之前版本和用了DSP后的新版本。最终关注的是软件层面精度是正确的").**
+A DSP-based K-fused dot-product lane (G products aligned to the group's maximum exponent, a wide fixed-point adder
+tree, one rounding per group) may differ in bits from the sequential one-rounding-per-step fp32 FMA of ISA sec 9C.1.
+The author accepts that, and wants the previous FP8 version and the new DSP version compared. What is judged is that
+accuracy at the software level is correct. Consequences, registered here before any emulation result exists:
+1. The new lane is a NEW mode/opcode beside the existing one; the sequential contract stays available and
+   reproducible, so the two versions can be compared on the same image and the same points.
+2. Accuracy gate (no tolerance is changed after results are seen): every point of the 113 set and of the `xl` tier
+   stays inside its frozen tolerance with the new lane, AND the relative L2 error of each GEMM-based point against
+   its binary64 reference is at most 1.5x the error of the sequential path on the same inputs, AND the end-to-end
+   checks the R41 contract names (rel L2 <= max(0.05, 2x CPU rounding floor) with the chosen-token match, and the
+   registered chat-quality check) still pass. A failure is a result and is kept.
+3. Order of work: a bit-accurate Python model of the lane and an accuracy study on CPU first (no hardware, no board);
+   RTL and resources only after the gate is met in the model; speed is then measured on the board with the same
+   A/B recipe as the software rounds.

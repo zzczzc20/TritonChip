@@ -981,6 +981,25 @@ run:
   a check's log is the container's; a check with `in_workspace` adds that text, how to run the check in the
   agent's working directory, whose script the task then shows). Point names, cycles, logs and records stay
   in the run record. A failed request's error text stays there too.
+- **Routing congestion** (`congestion.py`, 2026-11-23): after every flow that got past placement, the
+  build record's `congestion` holds what the implementation run's own log says (the timing estimate after
+  placement, the placer's estimated congestion levels for the device and each SLR, the router's initial
+  estimate, whether it routed, and the routing resources it was still fighting over when it stopped, with
+  the nets on each and the modules those nets belong to). After a flow that failed in placement or routing
+  on a build machine with a batch queue, a job of its own opens the run's last checkpoint and adds Vivado's
+  attribution of each congested window to the cells that fill it (`report_design_analysis -congestion`,
+  about 8 minutes to open the checkpoint on the cluster; capped at 45 minutes). The platform's flow is not
+  changed for it. v++'s "first 10 conflicted nets" are no longer passed on: they are the first in name order
+  (R41-HPC-demo's b3 named `device/control`, while the overlaps were in tile 1's home-cache pipe and the
+  placer's level-7 window in tile 0's transfer engine, next to the LSU path b3 had widened).
+  While a link runs, its log is read every 10 minutes until placement has ended; from then on the request's
+  status carries `placement` (the timing estimate after placement and the placer's congestion levels, with
+  the minutes into the link it was seen), about four hours before the link's end on the cluster. A placement
+  the placer puts at congestion level 7 or above (`services.fpga_slow.placement_warning_level`, default 7: AMD's
+  "above 6") carries `placement.warning`; `tnca-service wait ID` returns on it (`--to-end` waits through it).
+  The agent then decides: `tnca-service abandon ID` stops the link, the flow is not charged, and the request
+  is recorded as abandoned (`abandoned`: when, how far into the link, the warning); left running, a design
+  failure is charged as any. Only a flagged flow can be abandoned.
 - **At the run's end** a slow request still running runs to its end, unseen by
   the agent; with `certify_after_run` the harness then certifies the run's
   candidate on the card itself (`certify.after_run`: all validation and final
@@ -1176,9 +1195,10 @@ off unless a task asks for it.
 - **Predictions.** `tnca-service submit score|flow --prediction FILE` (point id or stand-in id -> expected
   speedup over the base, and "score") is kept and graded when the card measures exactly that snapshot:
   measured over expected per point, the median error, how often the direction agreed (`predictions.py`).
-- **The placed design.** With `fpga_slow.post_place_report`, a running flow looks every 10 minutes for the end
-  of placement in the build machine's runme.log; `status` then shows `placed_design` (the placer's estimated
-  WNS/TNS, the post-placement congestion level per direction). The flow is never stopped for it.
+- **The placed design.** A running flow's placement is read from the build machine's log as §12.5 "Routing
+  congestion" describes (`placement`, with a warning at level 7 that the agent may act on); the 2026-11-23
+  form behind `fpga_slow.post_place_report` (`placed_design`) was merged into it on 2026-11-24, and that key
+  is read by nothing now.
 - **After the run.** `islands.final_candidates: per_island` gives each island's best commit the final
   evaluation, all of them, then certifies in the in-run order; `evaluation.certify.board_final` measures the
   card's held-out set in the certification session and scores it against the base on the card.
@@ -1399,6 +1419,8 @@ service request's snapshot; each role's CPU time.
 | 2026-11-20 | A build machine may be an LSF cluster (§12.5c): the link is a job (`bsub`), waited for with `bjobs`, its verdict read after the job ends; several links at once are several pool entries. Asked for by the user; the first cluster is the NICE HPC |
 | 2026-11-23 | A board check may carry `in_workspace`, the text that tells the agent how to run it in its working directory: the task text names each check with it, and a failed check's view gives it beside the result (`{"result": "fail", "in_workspace": ...}`); the log stays hidden. R41-DIR shows `fp8_cases.py` and what it imports (`fp8_block_reference.py`, `archbench/__init__.py`, `archbench/provenance.py`); none is under `design`, so the card still runs the base's copy. In R41-DIR-smoke the matrix island failed `fp8` three times knowing only `fail`: its compiler change left one `_scaled_mm` case (e4m3 32x48x64, bias, `use_fast_accum=True`) without any MMA, numbers still exact. Run the agent's way (agent image, the task's visible tree, CA and Event Model), the base and that candidate give the card's verdicts (49/49; that one case) once the models' count of matrix commands is set aside: this base's models leave it at 0, so on a model every `_scaled_mm` case says `fail` with `dynamic 0`, and the text says so. Decided by the user ("Make it visible") |
 | 2026-11-23 | The cycle-model-alignment skill finds a calibration case for the agent's own change: `touched.py` runs the same cases on the base commit's tree and model and on the agent's and lists the mechanisms whose CA counters moved; `mechanisms.py` lists what one case reaches (CALIBRATION.json's mechanisms, same rules, and the matrix instructions of the compiled code, since this base's models leave their matrix-command counters at 0); `shrink_case.py` bisects one dimension and keeps the measured size that still reaches the named mechanisms in the fewest model cycles (a smaller size is not always cheaper: a copy at n=32768 took 6140 model cycles, the smallest size reaching dirty writebacks 14777). Run the agent's way on Myserver on R41-DIR-smoke island 0's workspace: the copy calibration case reaches exactly its CALIBRATION.json mechanisms; shrunk to n=32768 it still reaches dirty writebacks, passes tnca_case.py, and align_case.py's uncore gate is aligned (RTL 6128 cycles in 120 s). Decided by the user ("按设计做") |
+| 2026-11-23 | A flow's routing congestion is returned to the agent (`congestion.py`, §12.5 "Routing congestion"), so that a design that does not route can be changed in its RTL; the platform's placement scripts stay as they are. AutoBridge/TAPA was looked at and not adopted: the binding's place hook already floorplans per SLR and pipelines the crossings, and b3's failure was local congestion. Decided by the user. The same day, also decided by the user: a running link's status reports its placement once placement has ended, read from its log (no platform hook, so no QoR score and no cell attribution before the link ends) |
+| 2026-11-24 | A placement at congestion level 7 or above is a warning: `wait` returns on it, and the agent chooses to abandon the flow (`tnca-service abandon`: stopped, not charged, recorded as abandoned) or to let it run (a design failure then charged as any). Decided by the user |
 | 2026-11-08 | The test-case skill carries a visible set: points of the benchmark itself (`benchmark_cases/`, 18 for the next R41 round, one an unfrozen FP8 draft), exported by `skill_cases.py` and checked bit for bit, and the classes the agent is given (`classes.json`) with a rule for covering them at milestones. Seven classes are held out entirely (none of their points or names in the skill). The leak tests now forbid every point the skill does not give and every class it does not list, derived from its own index. The test tasks `replay-mzero` and `r39-v5-main-pilot` no longer default to the skill. Decided by the user (§6.1) |
 | 2026-11-08 | R41's formal task takes the new split: simulation validation 18 (the 10 kept), final 25 (the 7 kept, 11 of them from the seven held-out classes), and the card's own sets, `board_validation` 18 (one per visible class, its largest shape under a minute of device time) and `board_final` 40 (after the run, with the 113-point board run). An in-run board request measures `board_validation`. The two FP8 block-scaled drafts wait for the base commit's registry. Decided by the user (§6.4) |
 | 2026-11-08 | The skill's protocol keeps OCP FP8 operands FP8 in the reference, as ArchBench's has since 089ba6db (2026-11-06): its copy still upcast them, so `torch._scaled_mm` refused every FP8 case in the skill. Its equivalence test now compares the reference on every registered FP8 point, not only an fp16 module. The visible cases are re-exported from the FP8 branch's tip dc80a07c (still a draft) as code only. Found by running benchmark cases the agent's way on R41 (user: "Do both", §6.3) |

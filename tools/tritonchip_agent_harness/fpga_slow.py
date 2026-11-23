@@ -36,7 +36,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import math
 import os
 import re
 import signal
@@ -47,7 +46,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from . import board, certify, evaluator, families as families_, provider, roofline as roofline_
+from . import board, certify, congestion as congestion_, evaluator, families as families_, provider, roofline as roofline_
 from .siteconfig import Site
 from .task import Task, board_points, dev_index
 
@@ -587,64 +586,6 @@ def design_timing(text: str) -> dict:
     return keep
 
 
-# -- what the placed design says, while the flow goes on (decided 2026-11-23) ------------------------------
-#
-# Once Vivado's placer has finished, its own log already says how congested the placed design is and the slack
-# it estimates; a design that does not route (R41-F5g's b22, the HPC demo's b3: congestion level 7, estimated
-# WNS -0.863 ns) shows it hours before routing fails. The flow is not stopped for it: the agent is told.
-# Levels follow UG949: an n x n region, level log2(n); 5 and above often hurt timing, above 6 the design may
-# not route.
-
-POST_PLACE_SECONDS = 600     # how often a running flow's placement is looked for
-_RUNME = "artifacts/tmp/link/vivado/vpl/prj/prj.runs/impl_1/runme.log"
-_PLACE_SCRIPT = ('L="$1"; [ -f "$L" ] || exit 3; grep -q "Ending Placer Task" "$L" || exit 4; '
-                 'sed -n "1,/Ending Placer Task/p" "$L" | grep "Estimated Timing Summary" | tail -1; '
-                 'sed -n "/Post-Placement Estimated Congestion/,/Print Estimated Congestion |/p" "$L" | head -60')
-_WNS = re.compile(r"WNS=\s*(-?[0-9.]+)\s*\|\s*TNS=\s*(-?[0-9.]+)")
-_ROW = re.compile(r"^\|\s*(North|South|East|West)\s*\|\s*(\d+)x\d+\s*\|\s*(\d+)x\d+\s*\|\s*(\d+)x\d+\s*\|")
-
-
-def parse_post_place(text: str) -> Optional[dict]:
-    """The placed design's signals from runme.log's lines: the placer's last estimated WNS/TNS before it ended,
-    and the post-placement congestion (the first table: the whole device) as levels per direction."""
-    wns = _WNS.search(text)
-    table: dict = {}
-    for line in text.splitlines():
-        m = _ROW.match(line.strip())
-        if m and m.group(1) not in table:
-            table[m.group(1)] = {k: int(round(math.log2(int(v)))) for k, v in
-                                 zip(("global", "long", "short"), m.group(2, 3, 4))}
-    if not wns and not table:
-        return None
-    out: dict = {}
-    if wns:
-        out["estimated_wns_ns"], out["estimated_tns_ns"] = float(wns.group(1)), float(wns.group(2))
-    if table:
-        out["congestion_level"] = max(v for row in table.values() for v in row.values())
-        out["congestion_by_direction"] = table
-    return out
-
-
-def post_place(site: Site, run_id: str, build_host: Optional[str]) -> Optional[dict]:
-    """What the build machine's Vivado log says of the placed design of a running flow, once placement has
-    ended; None before (or when the machine cannot be read)."""
-    if not build_host:
-        return None
-    try:
-        from tritonchip_fpga_harness.hosts import host_for, load_hosts
-        from tritonchip_fpga_harness.pipeline import remote
-        cfg = site.fpga_pipeline
-        host = host_for(load_hosts(cfg["hosts"]), build_host, "build")
-        done = remote(host, ["sh", "-c", _PLACE_SCRIPT, "post-place", f"{host.state_dir}/runs/{run_id}/{_RUNME}"],
-                      check=False, timeout=120)
-        if done.returncode != 0:
-            return None
-        got = parse_post_place(done.stdout.decode(errors="replace"))
-        return {**got, "at": round(time.time(), 1)} if got else None
-    except Exception:  # noqa: BLE001 -- a convenience for the agent; the flow goes on without it
-        return None
-
-
 def routed_timing(site: Site, run_id: str, build_host: Optional[str]) -> dict:
     """What the routed design's timing came to, for a flow that wrote no image (an infrastructure failure
     after routing, or the flow's cap reached in write_bitstream): design_timing of the run's routed timing
@@ -667,7 +608,15 @@ def routed_timing(site: Site, run_id: str, build_host: Optional[str]) -> dict:
         return {}
 
 
-def _build_visible(site: Site, pipe: dict, outcome: str, routed: dict) -> dict:
+def _conflict_line(line: str) -> str:
+    """v++'s routing-verification error lists "the first 10" conflicted nets, the first in name order: they need
+    not be where the congestion is (R41-HPC-demo b3: all in `device/control`), so they are not passed on."""
+    if "partially-conflicted nets" in line and "(Up to first" in line:
+        return line.split("(Up to first", 1)[0].rstrip() + " (nets not listed here: see congestion)"
+    return line
+
+
+def _build_visible(site: Site, pipe: dict, outcome: str, routed: dict, congestion: Optional[dict] = None) -> dict:
     build = pipe.get("build") or {}
     metrics = ((build.get("timing") or {}).get("metrics")) or {}
     visible = {"status": build.get("status") or pipe.get("status"),
@@ -691,11 +640,70 @@ def _build_visible(site: Site, pipe: dict, outcome: str, routed: dict) -> dict:
                     row[key] = _scrub(row[key], site, words)[:160]
         if build.get("error"):
             visible["error"] = _scrub(build["error"], site, words)
-        tail = [_scrub(x, site, words) for x in [*(build.get("log_tail") or []), *(build.get("log_errors") or [])]
+        tail = [_scrub(_conflict_line(str(x)), site, words)
+                for x in [*(build.get("log_tail") or []), *(build.get("log_errors") or [])]
                 if "ERROR" in str(x) or "CRITICAL" in str(x)]
         if tail:
             visible["errors"] = tail[-10:]
+    if congestion:
+        visible["congestion"] = congestion
     return visible
+
+
+PLACEMENT_POLL_SECONDS = 600   # how often a running link's log is read until placement has ended
+
+
+def _wait(proc, limit: float, watch, poll: float) -> bool:
+    """Wait for the flow's process up to `limit` seconds, calling `watch()` every `poll` seconds while it runs.
+    True when it outlived the limit (the caller stops it)."""
+    deadline = time.time() + limit
+    while True:
+        left = deadline - time.time()
+        if left <= 0:
+            return True
+        try:
+            proc.wait(timeout=min(poll, left))
+            return False
+        except subprocess.TimeoutExpired:
+            watch()
+
+
+PLACEMENT_WARNING_LEVEL = 7   # AMD's UG949: above level 6 a design is unlikely to meet timing, may not route
+
+
+def placement_warning(seen: dict, level: int = PLACEMENT_WARNING_LEVEL) -> Optional[dict]:
+    """The worst congestion the placer estimated, when it is at `level` or above: {level, where, why}."""
+    worst = None
+    for scope, kinds in (seen.get("placer") or {}).items():
+        for kind, v in (kinds or {}).items():
+            if v.get("level", -1) >= level and (worst is None or v["level"] > worst["level"]):
+                worst = {"level": v["level"], "where": f"{scope}, {kind} congestion, {v.get('direction')}"}
+    if worst is None:
+        return None
+    return {**worst, "why": f"the placer estimated congestion level {worst['level']}; AMD's methodology guide "
+                            "(UG949) says above 6 a design is unlikely to meet timing and may fail to route"}
+
+
+def _watch_placement(site: Site, job: dict, remote_id: str, host: str, elapsed: float,
+                     warn_level: int = PLACEMENT_WARNING_LEVEL) -> None:
+    """Once the running link's placement has ended, what its log says (congestion.placement) goes to the
+    request's status (2026-11-23, the user: the agent learns of a placement that will not route hours before
+    the link's end). A placement at `warn_level` or above is flagged (2026-11-24, the user): `wait` returns on
+    it, and the agent may abandon the flow, uncharged, or let it run on. Read until found, then no more."""
+    if job.get("placement") or job.get("_cancel_requested"):
+        return
+    seen = congestion_.placement(site, remote_id, host)
+    if not seen:
+        return
+    found = {**seen, "seen_after_minutes": round(elapsed / 60.0)}
+    warning = placement_warning(seen, warn_level)
+    if warning:
+        rid = job.get("id", "ID")
+        found["warning"] = {**warning, "choices": (
+            f"`tnca-service abandon {rid}`: the link stops now; the flow is not charged and is recorded as "
+            f"abandoned. `tnca-service wait {rid} --to-end`: it runs on; if it then fails on the design, it is "
+            "charged as any flow")}
+    job["placement"] = found
 
 
 def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: Path, job: dict,
@@ -739,6 +747,7 @@ def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir
             mpath, output = job_dir / f"manifest-{attempt}.json", job_dir / f"pipeline-{attempt}.json"
             mpath.write_text(json.dumps(m, indent=2, sort_keys=True) + "\n", encoding="utf-8")
             argv = _pipeline_args(tree, mpath, output, cfg, remote_id, host, command_timeout=seconds)
+            started_at = time.time()
             job["current_remote_id"] = remote_id
             with (job_dir / f"pipeline-{attempt}.log").open("wb") as log:
                 proc = subprocess.Popen(argv, cwd=tree, stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
@@ -748,23 +757,15 @@ def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir
                     # Stopped between taking the machine and starting the flow (a gate that did not pass, D3,
                     # or the agent's end): what started is stopped here and on the build host.
                     job["cleanup"] = cancel(job, cfg)
-                timed_out, until = False, time.time() + seconds + 600
-                watch = bool(((task.services or {}).get("fpga_slow") or {}).get("post_place_report"))
-                while True:
-                    left = until - time.time()
-                    if left <= 0:
-                        job["cleanup"] = cancel(job, cfg)
-                        timed_out = True
-                        break
-                    try:
-                        proc.wait(timeout=min(POST_PLACE_SECONDS, left) if watch else left)
-                        break
-                    except subprocess.TimeoutExpired:
-                        # While it runs: the placed design, once there is one (2026-11-23).
-                        if watch and not job.get("post_place"):
-                            got = post_place(site, remote_id, host)
-                            if got:
-                                job["post_place"] = got
+                job.pop("placement", None)       # an earlier attempt's, on another machine
+                warn = int(((task.services or {}).get("fpga_slow") or {}).get("placement_warning_level",
+                                                                              PLACEMENT_WARNING_LEVEL))
+                timed_out = _wait(proc, seconds + 600,
+                                  lambda: _watch_placement(site, job, remote_id, host, time.time() - started_at,
+                                                           warn),
+                                  PLACEMENT_POLL_SECONDS)
+                if timed_out:
+                    job["cleanup"] = cancel(job, cfg)
             job.pop("_process", None)
         finally:
             slot = _drop_slot(holder)
@@ -800,8 +801,14 @@ def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir
         kept = [a["routed_timing"] for a in attempts if a.get("routed_timing")]
         if kept:
             routed = {"routed_timing": kept[-1]}
+    # What the link said of routing congestion (congestion.py): its own log after every flow that got that far,
+    # and Vivado's attribution of the congested windows to cells after one that failed in placement or routing.
+    found = {} if job.get("_cancel_requested") else congestion_.collect(
+        site, pipe.get("run_id") or remote_id, job.get("build_host"),
+        analyse=outcome == "design" and failing_stage(pipe) in congestion_.ANALYSED_STAGES)
     return {"outcome": outcome, "pipeline": pipe, "attempts": attempts, "tree_commit": commit, "manifest": m,
-            "routed": routed, "visible": _build_visible(site, pipe, outcome, routed),
+            "routed": routed, "congestion": found,
+            "visible": _build_visible(site, pipe, outcome, routed, congestion_.visible(found)),
             "run_id": pipe.get("run_id") or remote_id, "build_host": job.get("build_host"),
             "outside_wait_seconds": job.get("outside_wait_seconds", 0.0)}
 

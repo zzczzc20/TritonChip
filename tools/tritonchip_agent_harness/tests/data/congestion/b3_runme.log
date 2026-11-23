@@ -1,0 +1,150 @@
+Command: place_design -directive SSI_SpreadSLLs
+INFO: [Physopt 32-619] Estimated Timing Summary | WNS=-0.863 | TNS=-120.367 |
+INFO: [Place 30-612] Post-Placement Estimated Congestion 
+ ________________________________________________________________________
+|           | Global Congestion | Long Congestion   | Short Congestion  |
+| Direction | Region Size       | Region Size       | Region Size       |
+|___________|___________________|___________________|___________________|
+|      North|              32x32|            128x128|              64x64|
+|___________|___________________|___________________|___________________|
+|      South|              32x32|              64x64|              16x16|
+|___________|___________________|___________________|___________________|
+|       East|              16x16|              16x16|              64x64|
+|___________|___________________|___________________|___________________|
+|       West|              32x32|              32x32|              64x64|
+|___________|___________________|___________________|___________________|
+
+SLR0:
+ ________________________________________________________________________
+|           | Global Congestion | Long Congestion   | Short Congestion  |
+| Direction | Region Size       | Region Size       | Region Size       |
+|___________|___________________|___________________|___________________|
+|      North|              32x32|            128x128|              64x64|
+|___________|___________________|___________________|___________________|
+|      South|              32x32|              32x32|              16x16|
+|___________|___________________|___________________|___________________|
+|       East|              16x16|              16x16|              64x64|
+|___________|___________________|___________________|___________________|
+|       West|              32x32|              32x32|              64x64|
+|___________|___________________|___________________|___________________|
+
+SLR1:
+ ________________________________________________________________________
+|           | Global Congestion | Long Congestion   | Short Congestion  |
+| Direction | Region Size       | Region Size       | Region Size       |
+|___________|___________________|___________________|___________________|
+|      North|              32x32|              64x64|              64x64|
+|___________|___________________|___________________|___________________|
+|      South|              16x16|              64x64|              16x16|
+|___________|___________________|___________________|___________________|
+|       East|                8x8|                8x8|              64x64|
+|___________|___________________|___________________|___________________|
+|       West|              32x32|              32x32|              64x64|
+|___________|___________________|___________________|___________________|
+
+SLR2:
+ ________________________________________________________________________
+|           | Global Congestion | Long Congestion   | Short Congestion  |
+| Direction | Region Size       | Region Size       | Region Size       |
+|___________|___________________|___________________|___________________|
+|      North|              16x16|              32x32|                8x8|
+|___________|___________________|___________________|___________________|
+|      South|                4x4|              16x16|                8x8|
+|___________|___________________|___________________|___________________|
+|       East|              16x16|              16x16|              16x16|
+|___________|___________________|___________________|___________________|
+|       West|              16x16|              32x32|              32x32|
+|___________|___________________|___________________|___________________|
+
+Command: phys_opt_design
+Command: route_design
+INFO: [Route 35-449] Initial Estimated Congestion
+ ________________________________________________________________________
+|           | Global Congestion | Long Congestion   | Short Congestion  |
+|           |___________________|___________________|___________________|
+| Direction | Size   | % Tiles  | Size   | % Tiles  | Size   | % Tiles  |
+|___________|________|__________|________|__________|________|__________|
+|      NORTH|   32x32|      4.73|   64x64|      8.43|   32x32|      4.64|
+|___________|________|__________|________|__________|________|__________|
+|      SOUTH|   32x32|      2.78|   32x32|      5.83|   16x16|      2.83|
+|___________|________|__________|________|__________|________|__________|
+|       EAST|   32x32|      2.37|   32x32|      4.27|   32x32|      3.80|
+|___________|________|__________|________|__________|________|__________|
+|       WEST|   32x32|      3.60|   32x32|      5.60|   32x32|      5.11|
+|___________|________|__________|________|__________|________|__________|
+Below is a list of the top 10 physical nodes with signal overlaps and up to 5 of the signals that were contending for this node resource:
+Resolution: Run report_route_status to get a full summary of the design's routing. To find the areas of the congestion, use the route congestion Metrics in the Device View and check the logfile for the Congestion Report.
+1. (491,477,243) NODE_VDOUBLE Hist: 2 Tile Name: INT_X91Y259 Node: NN2_E_BEG5 Overlapping Nets: 2
+
+Nets:
+level0_i/ulp/tnca_u50_1/inst/reset_sync[1]
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[1].u_tile/g_home_pipe.u_home_pipe/s2_tagb[8]
+
+2. (469,467,254) NODE_VSINGLE Hist: 5 Tile Name: INT_X86Y269 Node: NN1_E_BEG6 Overlapping Nets: 2
+
+Nets:
+level0_i/ulp/tnca_u50_1/inst/reset_sync[1]
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[1].u_tile/g_home_pipe.u_home_pipe/p_0_in100_in[10]
+
+3. (466,482,254) NODE_VSINGLE Hist: 7 Tile Name: INT_X85Y254 Node: NN1_E_BEG6 Overlapping Nets: 2
+
+Nets:
+level0_i/ulp/tnca_u50_1/inst/reset_sync[1]
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[1].u_tile/g_home_pipe.u_home_pipe/g_tag[1].read_tag[12]
+
+4. (469,464,263) NODE_HDOUBLE Hist: 5 Tile Name: INT_X86Y271 Node: WW2_E_BEG7 Overlapping Nets: 2
+
+Nets:
+level0_i/ulp/tnca_u50_1/inst/reset_sync[1]
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[1].u_tile/g_home_pipe.u_home_pipe/p_0_in225_in[25]
+
+5. (445,475,263) NODE_HDOUBLE Hist: 8 Tile Name: INT_X80Y261 Node: WW2_E_BEG7 Overlapping Nets: 2
+
+Nets:
+level0_i/ulp/tnca_u50_1/inst/reset_sync[1]
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[1].u_tile/g_home_pipe.u_home_pipe/p_0_in100_in[7]
+
+6. (474,460,361) NODE_HSINGLE Hist: 4 Tile Name: INT_X87Y275 Node: WW1_W_BEG6 Overlapping Nets: 2
+
+Nets:
+level0_i/ulp/tnca_u50_1/inst/reset_sync[1]
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[1].u_tile/g_home_pipe.u_home_pipe/ms_free_idx[5]
+
+7. (474,471,363) NODE_HDOUBLE Hist: 6 Tile Name: INT_X87Y265 Node: WW2_W_BEG7 Overlapping Nets: 2
+
+Nets:
+level0_i/ulp/tnca_u50_1/inst/reset_sync[1]
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[1].u_tile/g_home_pipe.u_home_pipe/p_1_in454_in[24]
+
+8. (217,133,463) NODE_INODE Hist: 6 Tile Name: INT_X38Y591 Node: INT_NODE_IMUX_0_INT_OUT0 Overlapping Nets: 2
+
+CLB Tiles: 
+	CLEL_R_X38Y591
+		InstTerms: 
+		level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_core/u_valu/q_gt[100]_i_33__1/I1
+		level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_core/u_valu/q_gt_reg[100]_i_2__1/DI[2]
+
+Nets:
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_core/g_vrf_banked.x_va_q[130]
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[2].u_tile/u_core/u_valu/q_gt[100]_i_24__1_n_0
+
+9. (474,482,557) NODE_LONG_LOCAL Hist: 4 Tile Name: INT_X87Y254 Node: INT_NODE_SDQ_34_INT_OUT1 Overlapping Nets: 2
+
+Nets:
+level0_i/ulp/tnca_u50_1/inst/reset_sync[1]
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[1].u_tile/g_home_pipe.u_home_pipe/d_bits[330]_i_4_n_0
+
+10. (458,461,616) NODE_LONG_LOCAL Hist: 2 Tile Name: INT_X83Y274 Node: INT_NODE_SDQ_10_INT_OUT0 Overlapping Nets: 2
+
+Nets:
+level0_i/ulp/tnca_u50_1/inst/reset_sync[1]
+level0_i/ulp/tnca_u50_1/inst/device/system/shell/u_system/g_tile[1].u_tile/g_home_pipe.u_home_pipe/p_0_in35_in[24]
+
+
+ Verification failed
+Phase 9 Verifying routed nets | Checksum: 2099139d9
+
+Time (s): cpu = 14:56:57 ; elapsed = 03:35:04 . Memory (MB): peak = 24076.930 ; gain = 75.352 ; free physical = 954298 ; free virtual = 984823
+CRITICAL WARNING: [Route 35-2] Design is not legally routed. There are 1928 node overlaps.
+Resolution: Run report_design_analysis -congestion and -complexity to find potential sources of congestion in the areas where nets are not fully routed and review UG906 for design closure techniques.
+

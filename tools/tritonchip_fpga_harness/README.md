@@ -922,6 +922,12 @@ transfer are file work on the login node; `workspace` and `state_dir` must be
 on the file system the nodes share. The pipeline record's `build.lsf` names
 the job, its node, and how long it was pending and running.
 
+`lsf.queue` puts a job of the controller's own (a script already on the
+cluster) in the same queue under a name, attaching to one already named so;
+`wait` and `kill` take that name as they take a run's. The agent harness uses
+it to read a failed link's checkpoint in Vivado on a node rather than on the
+login node.
+
 One such host is one link at a time (the harness's lease, §3.4). A cluster
 that should run several at once is listed as several hosts with their own
 `workspace` and `state_dir`; the scheduler decides where each runs and makes

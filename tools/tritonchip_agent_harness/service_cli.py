@@ -13,7 +13,10 @@
     tnca-service read-commit ID        on an island: one commit, as a patch against the base commit
     tnca-service status [ID]           one request, or all of them
     tnca-service result ID             a finished request's result
-    tnca-service wait ID [SECONDS]     wait for a request to finish, then print its result
+    tnca-service wait ID [SECONDS]     wait for a request to finish, then print its result; for a flow,
+                                       also returns when its placement is flagged (placement.warning)
+    tnca-service wait ID [SECONDS] --to-end    the same, through a placement warning
+    tnca-service abandon ID            stop a flow whose placement was flagged: not charged, recorded
 
 A request snapshots the working directory the way the final evaluation will:
 only changes under the task's design paths count. Requests run in the
@@ -84,11 +87,17 @@ def main(argv) -> int:
         reply = call({"op": "status", "id": rest[0]} if rest else {"op": "status"})
     elif cmd == "result" and len(rest) == 1:
         reply = call({"op": "result", "id": rest[0]})
-    elif cmd == "wait" and rest:
+    elif cmd == "abandon" and len(rest) == 1:
+        reply = call({"op": "abandon", "id": rest[0]})
+    elif cmd == "wait" and [a for a in rest if a != "--to-end"]:
+        to_end = "--to-end" in rest
+        rest = [a for a in rest if a != "--to-end"]
         limit = time.time() + (float(rest[1]) if len(rest) > 1 else 3600.0)
         while True:
             reply = call({"op": "result", "id": rest[0]})
             if reply.get("state") not in ("queued", "running") or time.time() > limit:
+                break
+            if not to_end and (reply.get("placement") or {}).get("warning"):
                 break
             time.sleep(15)
     else:

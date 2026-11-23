@@ -143,6 +143,25 @@ def submit(host: Host, commit: str, request: dict[str, Any], run_id: str, *, tim
             "queue": host.lsf["queue"], "slots": host.lsf["slots"]}
 
 
+def queue(host: Host, name: str, script_path: str, log_path: str, *, slots: int | None = None,
+          ssh_binary: str = "ssh") -> dict[str, Any]:
+    """Queue a job of the controller's own (a script already on the cluster) under ``name``, as ``submit`` does
+    a link: a job already named so is attached to, never doubled. For work after a link that must not run on
+    the login node either, such as reading the run's checkpoint in Vivado (agent harness, congestion.py)."""
+    assert host.lsf is not None
+    check_run_id(name)
+    present = job(host, name, ssh_binary=ssh_binary)
+    if present:
+        return {"name": name, "attached": True, **present}
+    n = int(slots or host.lsf["slots"])
+    code, text = _call(host, ["bsub", "-q", host.lsf["queue"], "-n", str(n), "-R", "span[hosts=1]",
+                              "-J", name, "-o", log_path, "sh", script_path], ssh_binary=ssh_binary)
+    found = _JOB.search(text)
+    if code != 0 or not found:
+        raise LsfError(f"{host.name}: bsub did not take the job ({code}): {text.strip()[-300:]}")
+    return {"name": name, "attached": False, "job_id": int(found.group(1)), "stat": "PEND", "slots": n}
+
+
 def wait(host: Host, run_id: str, *, poll_s: float = 60.0, deadline: float | None = None, ssh_binary: str = "ssh",
          sleep: Callable[[float], None] = time.sleep, log: Callable[[str], None] | None = None) -> dict[str, Any]:
     """Ask LSF until the job of ``run_id`` has ended: {job_id, stat, exec_host, pend_s, run_s}.
@@ -200,4 +219,4 @@ def log_tail(host: Host, run_id: str, *, lines: int = 30, ssh_binary: str = "ssh
     return done.stdout.decode("utf-8", errors="replace").splitlines() if done.returncode == 0 else []
 
 
-__all__ = ["LIVE", "LsfError", "job", "kill", "log_tail", "paths", "script", "submit", "wait"]
+__all__ = ["LIVE", "LsfError", "job", "kill", "log_tail", "paths", "queue", "script", "submit", "wait"]

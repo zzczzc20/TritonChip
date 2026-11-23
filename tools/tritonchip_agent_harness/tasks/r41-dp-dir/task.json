@@ -411,8 +411,7 @@
    "certify_after_run": true,
    "base_image_sha256": "dbcd81cdc060ea82bec3682d007185ab6920067ef444739bf11cf0995f88996e",
    "relay_cache_gib": 64,
-   "board_faster_than": 1.01,
-   "post_place_report": true
+   "board_faster_than": 1.01
   }
  },
  "models": true

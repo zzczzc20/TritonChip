@@ -728,27 +728,6 @@ class WorstPaths(unittest.TestCase):
         self.assertEqual([p["slack_ns"] for p in fpga_slow.worst_paths(report, n=2)], [0.05, 1.2])
 
 
-class PostPlace(unittest.TestCase):
-    """2026-11-23: the placed design's signals, read from the build machine's runme.log while the flow goes on
-    (the HPC demo's b3 and the base, 2026-11-21)."""
-
-    B3 = """INFO: [Physopt 32-619] Estimated Timing Summary | WNS=-0.863 | TNS=-120.367 |
-INFO: [Place 30-612] Post-Placement Estimated Congestion
-|      North|              32x32|            128x128|              64x64|
-|      South|              32x32|              64x64|              16x16|
-|       East|              16x16|              16x16|              64x64|
-|       West|              32x32|              32x32|              64x64|
-SLR0:
-|      North|             256x256|            256x256|             256x256|
-"""
-
-    def test_the_failed_links_placement_says_level_7(self):
-        got = fpga_slow.parse_post_place(self.B3)
-        self.assertEqual((got["estimated_wns_ns"], got["congestion_level"]), (-0.863, 7))
-        self.assertEqual(got["congestion_by_direction"]["North"], {"global": 5, "long": 7, "short": 6})
-        self.assertIsNone(fpga_slow.parse_post_place("Phase 4 Global Iteration 0\n"))
-
-
 REPO = HERE.parents[1]
 
 

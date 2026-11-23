@@ -263,6 +263,78 @@ class Services(unittest.TestCase):
         self.assertNotIn("outlived_run", job)
         self.assertEqual((broker.flows_left, job["charged"]), (3, None))
 
+    def test_a_running_flow_shows_its_placement_until_the_flow_ends(self):
+        now = time.time()
+        placed = {"note": "n", "placer": {"device": {"long": {"level": 7, "direction": "north"}}},
+                  "seen_after_minutes": 240}
+        job = {"id": "b3", "service": "flow", "state": "running", "submitted": now - 60, "kind": "hardware",
+               "flow_started": now - 4 * 3600, "placement": placed}
+        self.assertEqual(self.broker._summary(job)["placement"], placed)
+        self.assertNotIn("placement", self.broker._summary({**job, "flow_finished": now}))
+        self.assertNotIn("placement", self.broker._summary({**job, "state": "done"}))
+
+    def test_a_flow_flagged_at_placement_may_be_abandoned_uncharged_and_is_recorded(self):
+        """2026-11-24, the user: a flow whose placement Vivado rates at congestion level 7 may be stopped by the
+        agent at about four hours; it is not charged, and the abandonment is recorded."""
+        broker = self.two_at_once(runners=False)
+        release = threading.Event()
+
+        def run(site, repo, task, candidate, job_dir, job, **kw):
+            job["flow_started"] = time.time()
+            for _ in range(200):
+                if job.get("_cancel_requested") or release.is_set():
+                    break
+                time.sleep(0.02)
+            job["outcome"] = "infra" if job.get("_cancel_requested") else "design"
+            return {"status": "infeasible" if job["outcome"] == "design" else "not built"}, {}
+
+        (self.ws / "rtl/core/x.v").write_text("module x; wire a; endmodule\n")
+        with mock.patch.object(broker, "_timing_met", return_value=True), \
+                mock.patch("tritonchip_agent_harness.fpga_slow.run", side_effect=run), \
+                mock.patch("tritonchip_agent_harness.fpga_slow.cancel", return_value={"stopped": True}) as stop:
+            self.assertEqual(broker.submit("fpga-slow")["id"], "l1")
+            self.assertEqual(broker.flows_left, 2)
+            for _ in range(100):
+                if broker.jobs["l1"]["state"] == "running" and broker.jobs["l1"].get("flow_started"):
+                    break
+                time.sleep(0.02)
+            # Not flagged: refused.
+            self.assertIn("only a flow whose placement was flagged", broker.handle({"op": "abandon", "id": "l1"})["error"])
+            broker.jobs["l1"]["placement"] = {"placer": {"SLR0": {"long": {"level": 7, "direction": "north"}}},
+                                              "warning": {"level": 7, "where": "SLR0, long congestion, north"}}
+            self.assertIn("warning", broker.handle({"op": "status", "id": "l1"})["placement"])
+            reply = broker.handle({"op": "abandon", "id": "l1"})
+            self.assertEqual((reply["state"], reply["result"]["status"], reply["result"]["charged"]),
+                             ("cancelled", "abandoned", None))
+            for _ in range(200):
+                if broker.jobs["l1"].get("finished") and stop.called:
+                    break
+                time.sleep(0.02)
+        self.assertEqual(broker.flows_left, 3)                 # given back
+        self.assertEqual(broker.shared.flows, set())
+        record = {r["id"]: r for r in broker.record()["requests"]}["l1"]
+        self.assertEqual(record["abandoned"]["warning"]["level"], 7)
+        self.assertIsNone(record["charged"])
+        self.assertIn("abandoned", record["note"])
+        self.assertIn("not a running flow", broker.handle({"op": "abandon", "id": "l1"})["error"])
+        self.assertIn("no request", broker.handle({"op": "abandon", "id": "l9"})["error"])
+
+    def test_wait_returns_on_a_placement_warning_unless_told_to_go_to_the_end(self):
+        replies = [{"state": "running"}, {"state": "running", "placement": {"warning": {"level": 7}}},
+                   {"state": "running", "placement": {"warning": {"level": 7}}}, {"state": "done", "result": {}}]
+        with mock.patch.object(service_cli, "call", side_effect=list(replies)) as call_, \
+                mock.patch.object(service_cli.time, "sleep"), mock.patch("builtins.print"):
+            self.assertEqual(service_cli.main(["wait", "l1"]), 0)
+        self.assertEqual(call_.call_count, 2)
+        with mock.patch.object(service_cli, "call", side_effect=list(replies)) as call_, \
+                mock.patch.object(service_cli.time, "sleep"), mock.patch("builtins.print"):
+            self.assertEqual(service_cli.main(["wait", "l1", "--to-end"]), 0)
+        self.assertEqual(call_.call_count, 4)
+        with mock.patch.object(service_cli, "call", return_value={"state": "cancelled"}) as call_, \
+                mock.patch("builtins.print"):
+            service_cli.main(["abandon", "l1"])
+        call_.assert_called_once_with({"op": "abandon", "id": "l1"})
+
     def test_a_running_flow_says_within_how_many_minutes_it_ends(self):
         now = time.time()
         job = {"id": "l1", "service": "fpga-slow", "state": "running", "submitted": now - 60,

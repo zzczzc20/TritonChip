@@ -310,17 +310,18 @@ module tnca_kfuse_prod #(
     wire [4:0] x_d  = bd[5:1];
     wire       sg_d = bd[0];
     wire [7:0] shv  = {3'b000, x_d} + 8'd30 + W - {2'b00, tmax};
-    wire       shok = ~shv[7] & (|p1_d);
+    wire       shok = ~shv[7] & (|p1_d);                            // the term is not flushed to zero
     wire       hi   = shv[5] | shv[4];                              // sh >= 16
-    wire [5:0] sa   = shv[5:0] - (hi ? 6'd8 : 6'd0);               // 0..25
-    wire [15:0] b2  = hi ? {p1_d, 8'd0} : {8'd0, p1_d};
+    wire [5:0] sa   = shv[5:0] - (hi ? 6'd8 : 6'd0);               // 0..25 when shok
+    // a flushed term is made zero on the B side (P1 gated), so A is a 6-input function of (sa, sign) per bit
+    wire [15:0] b2  = !shok ? 16'd0 : hi ? {p1_d, 8'd0} : {8'd0, p1_d};
 
     wire signed [47:0] p2;
     generate
         if (SIGN_MODE == 0) begin : g_s0
             // ALUMODE add/subtract, written as P = C -+ A*B with C = 127 for a negative product.
             // (Vivado 2023.2 maps this to TWO DSP48E2: the multiplier, then an add/subtract DSP.)
-            wire [25:0] a2 = shok ? (26'd1 << sa[4:0]) : 26'd0;
+            wire [25:0] a2 = 26'd1 << sa[4:0];
             reg  [25:0] a2_q;
             reg  [15:0] b2_q;
             reg         neg_q;
@@ -333,8 +334,7 @@ module tnca_kfuse_prod #(
             assign p2 = p2_q;
         end else begin : g_s1
             // two's-complement A: -2^sa for a negative product; C = {7{neg}}
-            wire signed [26:0] a2 = !shok ? 27'd0 :
-                                    sg_d  ? (27'h7ffffff << sa[4:0]) : (27'd1 << sa[4:0]);
+            wire signed [26:0] a2 = sg_d ? (27'h7ffffff << sa[4:0]) : (27'd1 << sa[4:0]);
             reg  signed [26:0] a2_q;
             reg  signed [17:0] b2_q;
             reg         [6:0]  c2_q;

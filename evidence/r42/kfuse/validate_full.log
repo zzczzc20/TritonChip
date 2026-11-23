@@ -1,0 +1,17 @@
+PASS  V1 decode_array == floatfmt.decode (all encodings of 4 formats): 0 mismatches
+/home/zhongchun/r42/kfuse/tools/r42/kfuse_model.py:243: RuntimeWarning: overflow encountered in cast
+  return xi.view(np.float64).astype(np.float32)
+PASS  V2 rn32_add == exact RNE (round-to-odd TwoSum): 0 mismatches of 16000
+/home/zhongchun/r42/kfuse/tools/r42/kfuse_validate.py:101: RuntimeWarning: overflow encountered in cast
+  v = np.float32(-s * scale)
+PASS  V3 G=1, W=None == sequential FMA (fp32.fma_ref), acc_in and sum_fma: 0 mismatches of 32380
+PASS  V4 W=None, acc_in == exactly rounded group sum: 0 mismatches of 7680
+PASS  V4 W=None, acc_after == exactly rounded group sum: 0 mismatches of 7680
+PASS  V4 W=None, sum_fma == exactly rounded group sum: 0 mismatches of 7680
+PASS  V4b existing m.mma.dp oracle (fdp.lane_mac_ref, RO_48) vs sum_fma/W=None [E4M3 DP4 must be 0]: e4m3/G4: 0/2304; e4m3/G4 (exact=True, no RO_48): 0/2304; fp16/G2: 37/2304; fp16/G2 (exact=True, no RO_48): 0/2304; bf16/G2: 178/2304; bf16/G2 (exact=True, no RO_48): 0/2304; e5m2/G2: 3/2304; e5m2/G2 (exact=True, no RO_48): 0/2304; e4m3/G2: 0/2304; e4m3/G2 (exact=True, no RO_48): 0/2304
+PASS  V5 numpy lane == scalar lane (bit-exact; all formats, G, W, rounding, variants): 0 mismatches of 401250
+INFO  V5 sensitivity: acc_in trunc W in 0,3,8 differs from the exact group sum in 1343 of 16320 cases
+PASS  V6 numpy sequential chain == fp32.fma_ref chain: 0 mismatches of 640 chains of 64
+PASS  V7 lane_gemm == scalar_dot on whole dot products (K = 96): 0 mismatches of 480
+INFO  G=1 finite W: fraction of 4096 K=256 dot products equal to the sequential FMA: {"acc_in.W0": 0.060546875, "acc_after.W0": 1.0, "sum_fma.W0": 1.0, "acc_in.W3": 0.55859375, "acc_after.W3": 1.0, "sum_fma.W3": 1.0, "acc_in.W8": 0.998779296875, "acc_after.W8": 1.0, "sum_fma.W8": 1.0, "acc_in.W24": 1.0, "acc_after.W24": 1.0, "sum_fma.W24": 1.0}
+FAILED: none

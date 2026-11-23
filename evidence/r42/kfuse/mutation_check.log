@@ -1,0 +1,5 @@
+/home/zhongchun/r42/kfuse/tools/r42/kfuse_validate.py:102: RuntimeWarning: overflow encountered in cast
+  v = np.float32(-s * scale)
+FAIL  V5 numpy lane == scalar lane (bit-exact; all formats, G, W, rounding, variants): 3309 mismatches of 30450; first: [('fp16', 'acc_in.G1.W-8.trunc', [14249], [49746], '0x10c67fd9', '0xbfc1a900', '0xbfc1a800'), ('fp16', 'acc_in.G1.W-8.trunc', [14249], [49746], '0x9b08923d', '0xbfc1aa00', '0xbfc1a800'), ('fp16', 'acc_in.G1.W-8.trunc', [14249], [49746], '0x35efa25', '0xbfc1a900', '0xbfc1a800'), ('fp16', 'acc_in.G1.W-8.trunc', [14249], [49746], '0xe8a8529f', '0xe8a85400', '0xe8a85200'), ('fp16', 'acc_in.G1.W-8.trunc', [14249], [49746], '0x3fc1a888', '0xb8000000', '0x0')]
+INFO  V5 sensitivity: acc_in trunc W in 0,3,8 differs from the exact group sum in 1343 of 16320 cases
+mutated model flagged: ['V5 numpy lane == scalar lane (bit-exact; all formats, G, W, rounding, variants)']

@@ -1,0 +1,114 @@
+points 113 geomean new/old 0.6200526576511071 speedup 1.6127662508345908
+total cycles old 48181899903 new 36915323718
+family               n        cyc_old        cyc_new  sh_old  sh_new speedup   eta_o   eta_n
+llama_prefill        5    35232433420    26346007353   73.1%   71.4%   1.508  0.2223  0.3353
+matmul               9     4807800672     4372857110   10.0%   11.8%   1.205  0.3239  0.3903
+linear               5     1343226074     1335605267    2.8%    3.6%   1.006  0.6695  0.6734
+llama_decode         5     1234650559     1063243603    2.6%    2.9%   1.730  0.1102  0.1906
+mlp                  4      870920275      865267043    1.8%    2.3%   1.025  0.5191  0.5319
+resnet_block         4      751903182      635143241    1.6%    1.7%   1.253  0.0349  0.0438
+transpose            5      475370840      465559326    1.0%    1.3%   1.006     nan     nan
+gpt2_block           4      648481669      429661291    1.3%    1.2%   1.618  0.2459  0.3980
+embedding            5      319013313      318984139    0.7%    0.9%   1.000     nan     nan
+conv2d               4      346472995      314663793    0.7%    0.9%   1.240  0.0320  0.0396
+attention_prefill    4      703545312      231106258    1.5%    0.6%   2.661  0.0205  0.0546
+silu                 5      269413294      133369241    0.6%    0.4%   1.786  0.1453  0.2594
+softmax              6      266228596      131141188    0.6%    0.4%   1.729  0.0776  0.1341
+add                  6      212922898       52419587    0.4%    0.1%   2.961  0.3339  0.9887
+gemv                 5       43353440       44378102    0.1%    0.1%   0.990  0.3176  0.3143
+rmsnorm              5      114779006       34083374    0.2%    0.1%   3.117  0.1212  0.3776
+swiglu               4       61640970       30876764    0.1%    0.1%   1.696  0.1884  0.3194
+bmm                  4      252403199       30222760    0.5%    0.1%   4.632  0.0920  0.4262
+gelu_tanh            4       66247135       28155044    0.1%    0.1%   1.884  0.1163  0.2191
+attention_decode     4       28881990       19214244    0.1%    0.1%   1.564  0.0567  0.0887
+copy                 1      105258263       18383786    0.2%    0.0%   5.726     nan     nan
+argmax               4       11981418        7061942    0.0%    0.0%   1.612  0.1148  0.1850
+rope                 4        9881127        5372991    0.0%    0.0%   1.470  0.0732  0.1076
+layernorm            4        4914259        2396713    0.0%    0.0%   2.232  0.0933  0.2082
+cumsum               3         175997         149558    0.0%    0.0%   1.169  0.1979  0.2314
+geomean eta old 0.14172218627545985 new 0.23650705609968498 over 102 points with an eta ( 11 points have no FLOP bound: embedding, transpose, copy)
+
+remaining log(1/eta) mass to eta=1 (share of the geomean gap)
+conv2d             n= 4  share   8.8%   (mean log10 gap per point 1.40)
+resnet_block       n= 4  share   8.5%   (mean log10 gap per point 1.36)
+softmax            n= 6  share   8.2%   (mean log10 gap per point 0.87)
+attention_prefill  n= 4  share   7.9%   (mean log10 gap per point 1.26)
+attention_decode   n= 4  share   6.6%   (mean log10 gap per point 1.05)
+rope               n= 4  share   6.1%   (mean log10 gap per point 0.97)
+matmul             n= 9  share   5.8%   (mean log10 gap per point 0.41)
+llama_decode       n= 5  share   5.6%   (mean log10 gap per point 0.72)
+argmax             n= 4  share   4.6%   (mean log10 gap per point 0.73)
+silu               n= 5  share   4.6%   (mean log10 gap per point 0.59)
+layernorm          n= 4  share   4.3%   (mean log10 gap per point 0.68)
+gelu_tanh          n= 4  share   4.1%   (mean log10 gap per point 0.66)
+gemv               n= 5  share   3.9%   (mean log10 gap per point 0.50)
+llama_prefill      n= 5  share   3.7%   (mean log10 gap per point 0.47)
+rmsnorm            n= 5  share   3.3%   (mean log10 gap per point 0.42)
+swiglu             n= 4  share   3.1%   (mean log10 gap per point 0.50)
+cumsum             n= 3  share   3.0%   (mean log10 gap per point 0.64)
+gpt2_block         n= 4  share   2.5%   (mean log10 gap per point 0.40)
+bmm                n= 4  share   2.3%   (mean log10 gap per point 0.37)
+mlp                n= 4  share   1.7%   (mean log10 gap per point 0.27)
+linear             n= 5  share   1.3%   (mean log10 gap per point 0.17)
+add                n= 6  share   0.0%   (mean log10 gap per point 0.00)
+copy               n= 0  share  -0.0%   (mean log10 gap per point -0.00)
+embedding          n= 0  share  -0.0%   (mean log10 gap per point -0.00)
+transpose          n= 0  share  -0.0%   (mean log10 gap per point -0.00)
+
+binding term of the ArchBench strict bound (roofline points.json) and best achieved GFLOP/s per family (R42 board A/B)
+gpt2_block         n= 4  compute-side 4  memory-side 0   best 3.143 GFLOP/s
+llama_decode       n= 5  compute-side 0  memory-side 5   best 0.257 GFLOP/s
+llama_prefill      n= 5  compute-side 5  memory-side 0   best 4.099 GFLOP/s
+mlp                n= 4  compute-side 4  memory-side 0   best 3.978 GFLOP/s
+resnet_block       n= 4  compute-side 4  memory-side 0   best 0.571 GFLOP/s
+add                n= 6  compute-side 0  memory-side 6   best 0.160 GFLOP/s
+argmax             n= 4  compute-side 0  memory-side 4   best 0.118 GFLOP/s
+attention_decode   n= 4  compute-side 0  memory-side 4   best 0.094 GFLOP/s
+attention_prefill  n= 4  compute-side 3  memory-side 1   best 0.475 GFLOP/s
+bmm                n= 4  compute-side 3  memory-side 1   best 3.577 GFLOP/s
+conv2d             n= 4  compute-side 3  memory-side 1   best 0.576 GFLOP/s
+copy               n= 1  compute-side 0  memory-side 0   best 0.000 GFLOP/s
+cumsum             n= 3  compute-side 0  memory-side 3   best 0.034 GFLOP/s
+embedding          n= 5  compute-side 0  memory-side 0   best 0.000 GFLOP/s
+gelu_tanh          n= 4  compute-side 0  memory-side 4   best 0.300 GFLOP/s
+gemv               n= 5  compute-side 0  memory-side 5   best 0.287 GFLOP/s
+layernorm          n= 4  compute-side 0  memory-side 4   best 0.301 GFLOP/s
+linear             n= 5  compute-side 5  memory-side 0   best 5.294 GFLOP/s
+matmul             n= 9  compute-side 7  memory-side 2   best 4.301 GFLOP/s
+rmsnorm            n= 5  compute-side 0  memory-side 5   best 0.341 GFLOP/s
+rope               n= 4  compute-side 0  memory-side 4   best 0.061 GFLOP/s
+silu               n= 5  compute-side 0  memory-side 5   best 0.189 GFLOP/s
+softmax            n= 6  compute-side 0  memory-side 6   best 0.154 GFLOP/s
+swiglu             n= 4  compute-side 0  memory-side 4   best 0.218 GFLOP/s
+transpose          n= 5  compute-side 0  memory-side 0   best 0.000 GFLOP/s
+points with a recorded binding: compute-side 38, memory-side 64 (of 113)
+cycle share (new) of families whose points are mostly compute-side: 93.6%
+
+### markdown
+| family | n | cycles share old | cycles share new | speed-up (geo) | share of the 1.613x log-gain | eta old | eta new | share of remaining log(1/eta) | compute-side pts | best GFLOP/s |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| llama_prefill | 5 | 73.1% | 71.4% | 1.51x | 3.8% | 0.222 | 0.335 | 3.7% | 5/5 | 4.10 |
+| matmul | 9 | 10.0% | 11.8% | 1.21x | 3.1% | 0.324 | 0.390 | 5.8% | 7/9 | 4.30 |
+| linear | 5 | 2.8% | 3.6% | 1.01x | 0.1% | 0.670 | 0.673 | 1.3% | 5/5 | 5.29 |
+| llama_decode | 5 | 2.6% | 2.9% | 1.73x | 5.1% | 0.110 | 0.191 | 5.6% | 0/5 | 0.26 |
+| mlp | 4 | 1.8% | 2.3% | 1.02x | 0.2% | 0.519 | 0.532 | 1.7% | 4/4 | 3.98 |
+| resnet_block | 4 | 1.6% | 1.7% | 1.25x | 1.7% | 0.035 | 0.044 | 8.5% | 4/4 | 0.57 |
+| transpose | 5 | 1.0% | 1.3% | 1.01x | 0.1% | - | - | - | 0/5 | 0.00 |
+| gpt2_block | 4 | 1.3% | 1.2% | 1.62x | 3.6% | 0.246 | 0.398 | 2.5% | 4/4 | 3.14 |
+| embedding | 5 | 0.7% | 0.9% | 1.00x | 0.0% | - | - | - | 0/5 | 0.00 |
+| conv2d | 4 | 0.7% | 0.9% | 1.24x | 1.6% | 0.032 | 0.040 | 8.8% | 3/4 | 0.58 |
+| attention_prefill | 4 | 1.5% | 0.6% | 2.66x | 7.2% | 0.021 | 0.055 | 7.9% | 3/4 | 0.48 |
+| silu | 5 | 0.6% | 0.4% | 1.79x | 5.4% | 0.145 | 0.259 | 4.6% | 0/5 | 0.19 |
+| softmax | 6 | 0.6% | 0.4% | 1.73x | 6.1% | 0.078 | 0.134 | 8.2% | 0/6 | 0.15 |
+| add | 6 | 0.4% | 0.1% | 2.96x | 12.1% | 0.334 | 0.989 | 0.0% | 0/6 | 0.16 |
+| gemv | 5 | 0.1% | 0.1% | 0.99x | -0.1% | 0.318 | 0.314 | 3.9% | 0/5 | 0.29 |
+| rmsnorm | 5 | 0.2% | 0.1% | 3.12x | 10.5% | 0.121 | 0.378 | 3.3% | 0/5 | 0.34 |
+| swiglu | 4 | 0.1% | 0.1% | 1.70x | 3.9% | 0.188 | 0.319 | 3.1% | 0/4 | 0.22 |
+| bmm | 4 | 0.5% | 0.1% | 4.63x | 11.4% | 0.092 | 0.426 | 2.3% | 3/4 | 3.58 |
+| gelu_tanh | 4 | 0.1% | 0.1% | 1.88x | 4.7% | 0.116 | 0.219 | 4.1% | 0/4 | 0.30 |
+| attention_decode | 4 | 0.1% | 0.1% | 1.56x | 3.3% | 0.057 | 0.089 | 6.6% | 0/4 | 0.09 |
+| copy | 1 | 0.2% | 0.0% | 5.73x | 3.2% | - | - | - | 0/1 | 0.00 |
+| argmax | 4 | 0.0% | 0.0% | 1.61x | 3.5% | 0.115 | 0.185 | 4.6% | 0/4 | 0.12 |
+| rope | 4 | 0.0% | 0.0% | 1.47x | 2.9% | 0.073 | 0.108 | 6.1% | 0/4 | 0.06 |
+| layernorm | 4 | 0.0% | 0.0% | 2.23x | 5.9% | 0.093 | 0.208 | 4.3% | 0/4 | 0.30 |
+| cumsum | 3 | 0.0% | 0.0% | 1.17x | 0.9% | 0.198 | 0.231 | 3.0% | 0/3 | 0.03 |

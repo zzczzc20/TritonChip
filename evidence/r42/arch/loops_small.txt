@@ -1,0 +1,253 @@
+## model.gpt2_block_small_fp16-d128-h4-b1-s64  triton_poi_fused__scaled_dot_product_flash_attention_for_cpu  static=261 loops=2 inner=1
+   loop tiles_1      len= 215 slotA= 2.8%  vx=193 vld=8 vst=8 addr=3 inc=1 cmp=1 br=1
+## model.gpt2_block_small_fp16-d128-h4-b1-s64  triton_poi_fused__scaled_dot_product_flash_attention_for_cpu  static=273 loops=2 inner=1
+   loop tiles_1      len= 223 slotA= 2.7%  vx=201 vld=8 vst=8 addr=3 inc=1 cmp=1 br=1
+## model.gpt2_block_small_fp16-d128-h4-b1-s64  triton_poi_fused__scaled_dot_product_flash_attention_for_cpu  static=673 loops=1 inner=1
+   loop __rctx_program len= 670 slotA=53.4%  addr=225 vx=157 const=74 vld=64 vst=64 pred=49 sst=14 sys=4 mov=4 atom=4 txf=4 sld=3 bar=2 cmp=1 br=1
+## model.gpt2_block_small_fp16-d128-h4-b1-s64  triton_poi_fused__scaled_dot_product_flash_attention_for_cpu  static=269 loops=2 inner=1
+   loop tiles_1      len= 223 slotA= 2.7%  vx=201 vld=8 vst=8 addr=3 inc=1 cmp=1 br=1
+## model.gpt2_block_small_fp16-d128-h4-b1-s64  triton_red_fused__scaled_dot_product_flash_attention_for_cpu  static=203 loops=4 inner=3
+   loop for_1        len=  25 slotA=40.0%  vx=14 pred=6 inc=2 vld=1 cmp=1 br=1
+   loop for_3        len=  23 slotA=21.7%  vx=16 inc=3 vld=1 vst=1 cmp=1 br=1
+   loop for_5        len=  10 slotA=50.0%  vx=3 inc=3 vld=1 vst=1 cmp=1 br=1
+## model.gpt2_block_small_fp16-d128-h4-b1-s64  triton_red_fused_add_native_layer_norm_view_10  static=227 loops=4 inner=3
+   loop for_1        len=  19 slotA=26.3%  vx=10 vld=4 inc=3 cmp=1 br=1
+   loop for_3        len=  23 slotA=21.7%  vx=14 vld=4 inc=3 cmp=1 br=1
+   loop for_5        len=  40 slotA=20.0%  vx=22 vld=8 inc=6 vst=2 cmp=1 br=1
+## model.gpt2_block_small_fp16-d128-h4-b1-s64  triton_red_fused_native_layer_norm_0  static=163 loops=4 inner=3
+   loop for_1        len=  10 slotA=40.0%  vx=4 vld=2 inc=2 cmp=1 br=1
+   loop for_3        len=  14 slotA=28.6%  vx=8 vld=2 inc=2 cmp=1 br=1
+   loop for_5        len=  31 slotA=22.6%  vx=16 vld=6 inc=5 vst=2 cmp=1 br=1
+## model.gpt2_block_small_fp16-d128-h4-b1-s64  triton_tem_fused__scaled_dot_product_flash_attention_for_cpu  static=423 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.gpt2_block_small_fp16-d128-h4-b1-s64  triton_tem_fused__scaled_dot_product_flash_attention_for_cpu  static=932 loops=4 inner=3
+   loop for_5        len= 613 slotA= 4.6%  vx=545 mtx=32 const=15 txf=4 bar=4 mov=4 addr=3 inc=3 br=2 cmp=1
+## model.gpt2_block_small_fp16-d128-h4-b1-s64  triton_tem_fused__scaled_dot_product_flash_attention_for_cpu  static=935 loops=4 inner=3
+   loop for_5        len= 613 slotA= 4.6%  vx=545 mtx=32 const=15 txf=4 bar=4 mov=4 addr=3 inc=3 br=2 cmp=1
+## model.gpt2_block_small_fp16-d128-h4-b1-s64  triton_tem_fused_add_addmm_gelu_native_layer_norm_t_view_11  static=1208 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.gpt2_block_small_fp16-d128-h4-b1-s64  triton_tem_fused_add_addmm_gelu_t_view_12  static=620 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.gpt2_block_small_fp16-d128-h4-b1-s64  triton_tem_fused_addmm_native_layer_norm_t_view_1  static=449 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.llama_decode_small_fp16-b1-p128  triton_poi_fused__unsafe_view_add_cat_mul_select_transpose_v  static=163 loops=2 inner=1
+   loop tiles_1      len= 125 slotA= 3.2%  vx=105 vld=8 vst=8 addr=1 inc=1 cmp=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_poi_fused__unsafe_view_add_cat_mul_select_transpose_v  static=163 loops=2 inner=1
+   loop tiles_1      len= 125 slotA= 3.2%  vx=105 vld=8 vst=8 addr=1 inc=1 cmp=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_poi_fused__unsafe_view_add_cat_mul_select_transpose_v  static=163 loops=2 inner=1
+   loop tiles_1      len= 125 slotA= 3.2%  vx=105 vld=8 vst=8 addr=1 inc=1 cmp=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_poi_fused__unsafe_view_add_cat_mul_select_transpose_v  static=273 loops=2 inner=1
+   loop tiles_1      len= 236 slotA= 4.2%  vx=194 vld=16 vst=16 addr=7 inc=1 cmp=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_poi_fused__unsafe_view_add_mul_stack_transpose_view_8  static=68 loops=1 inner=1
+   loop __rctx_program len=  58 slotA=15.5%  vx=43 addr=6 vld=4 vst=2 cmp=1 mov=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_4  static=45 loops=1 inner=1
+   loop __rctx_program len=  39 slotA=12.8%  vx=32 addr=2 vld=1 vst=1 cmp=1 mov=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_6  static=44 loops=1 inner=1
+   loop __rctx_program len=  38 slotA=13.2%  vx=31 addr=2 vld=1 vst=1 cmp=1 mov=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_poi_fused__unsafe_view_cat_select_stack_transpose_vie  static=50 loops=1 inner=1
+   loop __rctx_program len=  43 slotA=18.6%  vx=32 addr=5 vst=2 vld=1 cmp=1 mov=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_poi_fused__unsafe_view_cat_select_transpose_view_11  static=47 loops=1 inner=1
+   loop __rctx_program len=  41 slotA=17.1%  vx=32 addr=4 vld=1 vst=1 cmp=1 mov=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_poi_fused__unsafe_view_neg_split_transpose_view_3  static=50 loops=1 inner=1
+   loop __rctx_program len=  44 slotA=11.4%  vx=37 addr=2 vld=1 vst=1 cmp=1 mov=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_poi_fused__unsafe_view_neg_split_transpose_view_5  static=49 loops=1 inner=1
+   loop __rctx_program len=  43 slotA=11.6%  vx=36 addr=2 vld=1 vst=1 cmp=1 mov=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_poi_fused__unsafe_view_stack_transpose_view_32  static=21 loops=1 inner=1
+   loop __rctx_program len=  15 slotA=53.3%  addr=5 vx=5 vld=1 vst=1 cmp=1 mov=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_red_fused__scaled_dot_product_flash_attention_for_cpu  static=955 loops=3 inner=2
+   loop for_1        len= 732 slotA=39.3%  vx=440 addr=192 cmp=65 pred=28 vld=4 inc=2 br=1
+   loop for_3        len=  69 slotA= 7.2%  vx=56 vld=4 vst=4 inc=3 cmp=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_red_fused__scaled_dot_product_flash_attention_for_cpu  static=121 loops=2 inner=1
+   loop for_1        len=  28 slotA=25.0%  vx=16 vld=5 inc=5 cmp=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_red_fused__scaled_dot_product_flash_attention_for_cpu  static=179 loops=2 inner=1
+   loop for_1        len=  73 slotA= 6.8%  vx=60 vld=8 pred=2 inc=1 cmp=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_red_fused__scaled_dot_product_flash_attention_for_cpu  static=63 loops=1 inner=1
+   loop __rctx_program len=  57 slotA=12.3%  vx=48 addr=3 pred=1 vld=1 vst=1 cmp=1 mov=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mu  static=1493 loops=2 inner=2
+   loop for_1        len= 676 slotA=48.4%  vx=347 addr=274 cmp=35 const=9 br=6 pred=2 vld=2 inc=1
+   loop for_5        len= 724 slotA=48.5%  vx=369 addr=277 cmp=35 const=30 br=6 vld=3 pred=2 vst=1 inc=1
+## model.llama_decode_small_fp16-b1-p128  triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mu  static=1522 loops=2 inner=2
+   loop for_1        len= 690 slotA=47.8%  vx=357 addr=276 cmp=35 const=9 br=6 pred=3 vld=3 inc=1
+   loop for_5        len= 738 slotA=48.0%  vx=379 addr=279 cmp=35 const=30 br=6 vld=4 pred=3 vst=1 inc=1
+## model.llama_decode_small_fp16-b1-p128  triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mu  static=815 loops=2 inner=2
+   loop for_1        len= 693 slotA=47.6%  vx=358 addr=280 cmp=35 br=6 pred=4 vld=4 const=4 vst=1 inc=1
+   loop for_5        len=  14 slotA=42.9%  vx=5 inc=4 vld=2 vst=1 cmp=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqr  static=104 loops=2 inner=2
+   loop for_1        len=  12 slotA=41.7%  vx=5 inc=3 vld=2 cmp=1 br=1
+   loop for_3        len=  18 slotA=38.9%  vx=7 inc=5 vld=3 vst=1 cmp=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqr  static=117 loops=2 inner=2
+   loop for_1        len=  16 slotA=37.5%  vx=7 inc=4 vld=3 cmp=1 br=1
+   loop for_3        len=  22 slotA=36.4%  vx=9 inc=6 vld=4 vst=1 cmp=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqr  static=130 loops=2 inner=2
+   loop for_1        len=  20 slotA=35.0%  vx=9 inc=5 vld=4 cmp=1 br=1
+   loop for_3        len=  26 slotA=34.6%  vx=11 inc=7 vld=5 vst=1 cmp=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqr  static=122 loops=2 inner=2
+   loop for_1        len=  26 slotA=30.8%  vx=12 inc=6 vld=5 vst=1 cmp=1 br=1
+   loop for_3        len=  14 slotA=42.9%  vx=5 inc=4 vld=2 vst=1 cmp=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqr  static=100 loops=2 inner=2
+   loop for_1        len=  12 slotA=41.7%  vx=5 inc=3 vld=2 cmp=1 br=1
+   loop for_3        len=  17 slotA=35.3%  vx=7 inc=4 vld=3 vst=1 cmp=1 br=1
+## model.llama_decode_small_fp16-b1-p128  triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0  static=1464 loops=2 inner=2
+   loop for_1        len= 663 slotA=48.9%  vx=338 addr=273 cmp=35 const=8 br=6 pred=1 vld=1 mov=1
+   loop for_5        len= 710 slotA=49.0%  vx=359 addr=276 cmp=35 const=29 br=6 vld=2 pred=1 vst=1 mov=1
+## model.llama_decode_small_fp16-b1-p128  triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_r  static=337 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.llama_decode_small_fp16-b1-p128  triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqr  static=336 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.llama_decode_small_fp16-b1-p128  triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_t_view_2  static=363 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.llama_decode_small_fp16-b1-p128  triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16  static=825 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.llama_decode_small_fp16-b1-p128  triton_tem_fused__unsafe_view_mm_mul_silu_t_view_17  static=337 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.llama_decode_small_fp16-b1-p128  triton_tem_fused_mm_t_view_15  static=363 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.llama_decode_small_fp16-b1-p128  triton_tem_fused_mm_t_view_19  static=336 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.llama_decode_small_fp16-b1-p128  triton_tem_fused_mm_t_view_2  static=337 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.llama_prefill_small_fp16-b1-s64  triton_poi_fused__scaled_dot_product_flash_attention_for_cpu  static=261 loops=2 inner=1
+   loop tiles_1      len= 215 slotA= 2.8%  vx=193 vld=8 vst=8 addr=3 inc=1 cmp=1 br=1
+## model.llama_prefill_small_fp16-b1-s64  triton_poi_fused__scaled_dot_product_flash_attention_for_cpu  static=3403 loops=1 inner=1
+   loop __rctx_program len=3400 slotA=30.0%  vx=1493 addr=785 vld=464 vst=272 pred=128 mtx=128 const=94 atom=15 sld=9 mov=6 sys=4 cmp=1 br=1
+## model.llama_prefill_small_fp16-b1-s64  triton_poi_fused__scaled_dot_product_flash_attention_for_cpu  static=312 loops=2 inner=1
+   loop tiles_1      len= 263 slotA= 2.3%  vx=241 vld=8 vst=8 addr=3 inc=1 cmp=1 br=1
+## model.llama_prefill_small_fp16-b1-s64  triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_4  static=266 loops=2 inner=1
+   loop tiles_1      len= 221 slotA= 1.8%  vx=201 vld=8 vst=8 addr=1 inc=1 cmp=1 br=1
+## model.llama_prefill_small_fp16-b1-s64  triton_poi_fused__unsafe_view_cat_neg_split_transpose_view_6  static=282 loops=2 inner=1
+   loop tiles_1      len= 237 slotA= 1.7%  vx=217 vld=8 vst=8 addr=1 inc=1 cmp=1 br=1
+## model.llama_prefill_small_fp16-b1-s64  triton_poi_fused__unsafe_view_neg_split_transpose_view_3  static=298 loops=2 inner=1
+   loop tiles_1      len= 253 slotA= 1.6%  vx=233 vld=8 vst=8 addr=1 inc=1 cmp=1 br=1
+## model.llama_prefill_small_fp16-b1-s64  triton_poi_fused__unsafe_view_neg_split_transpose_view_5  static=547 loops=2 inner=1
+   loop tiles_1      len= 533 slotA= 1.1%  vx=511 vld=8 vst=8 addr=2 const=1 mov=1 cmp=1 br=1
+## model.llama_prefill_small_fp16-b1-s64  triton_red_fused__scaled_dot_product_flash_attention_for_cpu  static=203 loops=4 inner=3
+   loop for_1        len=  25 slotA=40.0%  vx=14 pred=6 inc=2 vld=1 cmp=1 br=1
+   loop for_3        len=  23 slotA=21.7%  vx=16 inc=3 vld=1 vst=1 cmp=1 br=1
+   loop for_5        len=  10 slotA=50.0%  vx=3 inc=3 vld=1 vst=1 cmp=1 br=1
+## model.llama_prefill_small_fp16-b1-s64  triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mu  static=1995 loops=3 inner=2
+   loop for_1        len= 941 slotA=45.1%  vx=513 addr=395 br=8 const=7 pred=7 cmp=6 vld=4 inc=1
+   loop for_6        len=1002 slotA=45.6%  vx=537 addr=407 const=28 br=8 pred=7 cmp=6 vld=6 vst=2 inc=1
+## model.llama_prefill_small_fp16-b1-s64  triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mu  static=2088 loops=3 inner=2
+   loop for_1        len= 987 slotA=44.6%  vx=541 addr=403 pred=13 const=9 br=8 cmp=6 vld=6 inc=1
+   loop for_6        len=1048 slotA=45.1%  vx=565 addr=415 const=30 pred=13 br=8 vld=8 cmp=6 vst=2 inc=1
+## model.llama_prefill_small_fp16-b1-s64  triton_red_fused__to_copy__unsafe_view_add_embedding_mean_mu  static=1125 loops=3 inner=2
+   loop for_1        len= 988 slotA=45.6%  vx=527 addr=415 pred=14 br=8 vld=8 const=7 cmp=6 vst=2 inc=1
+   loop for_6        len=  24 slotA=25.0%  vx=12 vld=4 inc=4 vst=2 cmp=1 br=1
+## model.llama_prefill_small_fp16-b1-s64  triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqr  static=163 loops=3 inner=2
+   loop for_1        len=  23 slotA=21.7%  vx=14 vld=4 inc=3 cmp=1 br=1
+   loop for_3        len=  33 slotA=21.2%  vx=18 vld=6 inc=5 vst=2 cmp=1 br=1
+## model.llama_prefill_small_fp16-b1-s64  triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqr  static=187 loops=3 inner=2
+   loop for_1        len=  32 slotA=18.8%  vx=20 vld=6 inc=4 cmp=1 br=1
+   loop for_3        len=  42 slotA=19.0%  vx=24 vld=8 inc=6 vst=2 cmp=1 br=1
+## model.llama_prefill_small_fp16-b1-s64  triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqr  static=217 loops=3 inner=2
+   loop for_1        len=  41 slotA=17.1%  vx=26 vld=8 inc=5 cmp=1 br=1
+   loop for_3        len=  51 slotA=17.6%  vx=30 vld=10 inc=7 vst=2 cmp=1 br=1
+## model.llama_prefill_small_fp16-b1-s64  triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqr  static=203 loops=3 inner=2
+   loop for_1        len=  55 slotA=16.4%  vx=34 vld=10 inc=7 vst=2 cmp=1 br=1
+   loop for_3        len=  24 slotA=25.0%  vx=12 vld=4 inc=4 vst=2 cmp=1 br=1
+## model.llama_prefill_small_fp16-b1-s64  triton_red_fused__to_copy__unsafe_view_add_mean_mul_pow_rsqr  static=106 loops=2 inner=2
+   loop for_1        len=  12 slotA=41.7%  vx=5 inc=3 vld=2 cmp=1 br=1
+   loop for_3        len=  18 slotA=38.9%  vx=7 inc=5 vld=3 vst=1 cmp=1 br=1
+## model.llama_prefill_small_fp16-b1-s64  triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0  static=1905 loops=3 inner=2
+   loop for_1        len= 898 slotA=45.5%  vx=487 addr=390 br=8 cmp=6 const=3 vld=2 pred=1 mov=1
+   loop for_6        len= 961 slotA=46.1%  vx=512 addr=401 const=26 br=8 cmp=6 vld=4 vst=2 pred=1 mov=1
+## model.llama_prefill_small_fp16-b1-s64  triton_tem_fused__scaled_dot_product_flash_attention_for_cpu  static=932 loops=4 inner=3
+   loop for_5        len= 613 slotA= 4.6%  vx=545 mtx=32 const=15 txf=4 bar=4 mov=4 addr=3 inc=3 br=2 cmp=1
+## model.llama_prefill_small_fp16-b1-s64  triton_tem_fused__scaled_dot_product_flash_attention_for_cpu  static=935 loops=4 inner=3
+   loop for_5        len= 613 slotA= 4.6%  vx=545 mtx=32 const=15 txf=4 bar=4 mov=4 addr=3 inc=3 br=2 cmp=1
+## model.llama_prefill_small_fp16-b1-s64  triton_tem_fused__to_copy__unsafe_view_add_mean_mm_mul_pow_r  static=337 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.llama_prefill_small_fp16-b1-s64  triton_tem_fused__to_copy_add_embedding_mean_mm_mul_pow_rsqr  static=357 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.llama_prefill_small_fp16-b1-s64  triton_tem_fused__unsafe_view_mm_mul_silu_t_view_15  static=828 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.llama_prefill_small_fp16-b1-s64  triton_tem_fused__unsafe_view_mm_mul_silu_t_view_16  static=358 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.llama_prefill_small_fp16-b1-s64  triton_tem_fused_mm_t_view_14  static=383 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.llama_prefill_small_fp16-b1-s64  triton_tem_fused_mm_t_view_2  static=355 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.mlp_small_fp16-t64-d128  triton_tem_fused_addmm_gelu_t_0  static=1208 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.mlp_small_fp16-t64-d128  triton_tem_fused_addmm_gelu_t_1  static=424 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## model.resnet_block_small_fp32-n1-c16-hw16  triton_poi_fused__native_batch_norm_legit_no_training_relu_3  static=610 loops=2 inner=1
+   loop tiles_1      len= 593 slotA= 6.1%  vx=461 vld=80 const=25 vst=16 addr=8 mov=1 cmp=1 br=1
+## model.resnet_block_small_fp32-n1-c16-hw16  triton_poi_fused_convolution_0  static=446 loops=1 inner=1
+   loop __rctx_program len= 443 slotA=54.6%  addr=140 vx=124 pred=49 const=45 vld=32 vst=32 sst=7 sys=4 sld=3 mov=2 atom=2 txf=1 cmp=1 br=1
+## model.resnet_block_small_fp32-n1-c16-hw16  triton_poi_fused_convolution_1  static=697 loops=1 inner=1
+   loop __rctx_program len= 694 slotA=17.0%  vx=508 addr=88 vst=32 vld=32 pred=16 const=5 sys=4 sld=3 mov=3 atom=1 cmp=1 br=1
+## model.resnet_block_small_fp32-n1-c16-hw16  triton_tem_fused__native_batch_norm_legit_no_training_add_co  static=4069 loops=2 inner=1
+   loop for_1        len=1748 slotA=20.5%  vx=1116 mtx=144 addr=134 const=120 vld=96 pred=96 vst=32 cmp=4 br=2 mov=2 atom=2
+## model.resnet_block_small_fp32-n1-c16-hw16  triton_tem_fused_convolution_2  static=2421 loops=2 inner=1
+   loop for_1        len=1748 slotA=20.5%  vx=1116 mtx=144 addr=134 const=120 vld=96 pred=96 vst=32 cmp=4 br=2 mov=2 atom=2
+## op.add_small_fp16-n16384  triton_poi_fused_add_0  static=141 loops=2 inner=1
+   loop tiles_1      len= 126 slotA=11.1%  vx=64 vld=32 vst=16 addr=11 inc=1 cmp=1 br=1
+## op.argmax_small_fp16-r8-v2048  triton_red_fused_argmax_0  static=359 loops=2 inner=1
+   loop for_1        len=  22 slotA=50.0%  vx=10 pred=7 inc=2 vld=1 cmp=1 br=1
+## op.attention_decode_small_fp16-b1-h4-l256-d32  triton_red_fused__scaled_dot_product_flash_attention_for_cpu  static=70 loops=2 inner=1
+   loop for_1        len=  15 slotA=26.7%  vx=9 vld=2 inc=2 cmp=1 br=1
+## op.attention_decode_small_fp16-b1-h4-l256-d32  triton_red_fused__scaled_dot_product_flash_attention_for_cpu  static=949 loops=3 inner=2
+   loop for_1        len= 724 slotA=39.2%  vx=436 addr=192 cmp=65 pred=24 vld=4 inc=2 br=1
+   loop for_3        len=  53 slotA= 9.4%  vx=40 vld=4 vst=4 inc=3 cmp=1 br=1
+## op.attention_decode_small_fp16-b1-h4-l256-d32  triton_red_fused__scaled_dot_product_flash_attention_for_cpu  static=135 loops=2 inner=1
+   loop for_1        len=  17 slotA=23.5%  vx=11 vld=2 inc=2 cmp=1 br=1
+## op.attention_decode_small_fp16-b1-h4-l256-d32  triton_red_fused__scaled_dot_product_flash_attention_for_cpu  static=63 loops=1 inner=1
+   loop __rctx_program len=  57 slotA=12.3%  vx=48 addr=3 pred=1 vld=1 vst=1 cmp=1 mov=1 br=1
+## op.attention_prefill_small_fp16-b1-h4-s64-d32  triton_poi_fused__scaled_dot_product_flash_attention_for_cpu  static=97 loops=2 inner=1
+   loop tiles_1      len=  78 slotA=17.9%  vx=32 vld=16 vst=16 addr=11 inc=1 cmp=1 br=1
+## op.attention_prefill_small_fp16-b1-h4-s64-d32  triton_poi_fused__scaled_dot_product_flash_attention_for_cpu  static=862 loops=1 inner=1
+   loop __rctx_program len= 859 slotA=21.5%  vx=573 addr=135 vst=48 vld=48 pred=32 const=9 sys=4 sld=3 mov=3 atom=2 cmp=1 br=1
+## op.attention_prefill_small_fp16-b1-h4-s64-d32  triton_poi_fused__scaled_dot_product_flash_attention_for_cpu  static=76 loops=2 inner=1
+   loop tiles_1      len=  62 slotA=22.6%  vld=16 vx=16 vst=16 addr=11 inc=1 cmp=1 br=1
+## op.attention_prefill_small_fp16-b1-h4-s64-d32  triton_poi_fused__scaled_dot_product_flash_attention_for_cpu  static=261 loops=2 inner=1
+   loop tiles_1      len= 215 slotA= 2.8%  vx=193 vld=8 vst=8 addr=3 inc=1 cmp=1 br=1
+## op.attention_prefill_small_fp16-b1-h4-s64-d32  triton_red_fused__scaled_dot_product_flash_attention_for_cpu  static=203 loops=4 inner=3
+   loop for_1        len=  25 slotA=40.0%  vx=14 pred=6 inc=2 vld=1 cmp=1 br=1
+   loop for_3        len=  23 slotA=21.7%  vx=16 inc=3 vld=1 vst=1 cmp=1 br=1
+   loop for_5        len=  10 slotA=50.0%  vx=3 inc=3 vld=1 vst=1 cmp=1 br=1
+## op.attention_prefill_small_fp16-b1-h4-s64-d32  triton_tem_fused__scaled_dot_product_flash_attention_for_cpu  static=932 loops=4 inner=3
+   loop for_5        len= 613 slotA= 4.6%  vx=545 mtx=32 const=15 txf=4 bar=4 mov=4 addr=3 inc=3 br=2 cmp=1
+## op.attention_prefill_small_fp16-b1-h4-s64-d32  triton_tem_fused__scaled_dot_product_flash_attention_for_cpu  static=935 loops=4 inner=3
+   loop for_5        len= 613 slotA= 4.6%  vx=545 mtx=32 const=15 txf=4 bar=4 mov=4 addr=3 inc=3 br=2 cmp=1
+## op.bmm_small_fp16-b8-m64-k32-n64  triton_tem_fused_bmm_0  static=400 loops=4 inner=3
+   loop gemm_pipe    len=  46 slotA=60.9%  bar=8 txf=8 mov=8 inc=6 addr=6 const=3 br=3 mtx=2 cmp=2
+## op.conv2d_small_fp32-n1-cin16-h16-w16-cout16  triton_tem_fused_convolution_2  static=2472 loops=2 inner=1
+   loop for_1        len=1748 slotA=20.5%  vx=1116 mtx=144 addr=134 const=120 vld=96 pred=96 vst=32 cmp=4 br=2 mov=2 atom=2
+## op.cumsum_small_fp32-r64-c256  triton_red_fused_cumsum_0  static=134 loops=2 inner=1
+   loop for_1        len=  98 slotA= 5.1%  vx=91 inc=3 vld=1 vst=1 cmp=1 br=1
+## op.embedding_small_fp16-v1024-d128-t64  triton_poi_fused_embedding_0  static=695 loops=1 inner=1
+   loop __rctx_program len= 681 slotA=47.1%  vx=356 addr=276 cmp=35 br=5 vld=3 const=3 pred=1 vst=1 mov=1
+## op.gelu_tanh_small_fp16-n16384  triton_poi_fused_gelu_0  static=590 loops=2 inner=1
+   loop tiles_1      len= 540 slotA= 2.2%  vx=496 vld=16 vst=16 addr=9 inc=1 cmp=1 br=1
+## op.gemv_small_fp16-k256-n512  triton_tem_fused_mm_t_0  static=336 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## op.layernorm_small_fp16-r64-d256  triton_red_fused_native_layer_norm_0  static=219 loops=4 inner=3
+   loop for_1        len=  16 slotA=25.0%  vx=8 vld=4 inc=2 cmp=1 br=1
+   loop for_3        len=  24 slotA=16.7%  vx=16 vld=4 inc=2 cmp=1 br=1
+   loop for_5        len=  55 slotA=12.7%  vx=32 vld=12 inc=5 vst=4 cmp=1 br=1
+## op.linear_small_fp16-m64-k256-n256  triton_tem_fused_addmm_t_0  static=422 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## op.matmul_small_fp16-m64-k128-n128  triton_tem_fused_mm_0  static=357 loops=4 inner=3
+   loop gemm_pipe    len=  38 slotA=52.6%  bar=8 txf=8 mov=8 const=3 br=3 mtx=2 inc=2 cmp=2 addr=2
+## op.matmul_small_fp32-m64-k128-n128  triton_tem_fused_mm_0  static=896 loops=4 inner=3
+   loop for_5        len= 610 slotA= 4.1%  vx=545 mtx=32 const=16 txf=4 bar=4 mov=4 br=2 cmp=1 addr=1 inc=1
+## op.rmsnorm_small_fp16-r64-d256  triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0  static=148 loops=3 inner=2
+   loop for_1        len=  20 slotA=20.0%  vx=12 vld=4 inc=2 cmp=1 br=1
+   loop for_3        len=  38 slotA=15.8%  vx=20 vld=8 vst=4 inc=4 cmp=1 br=1
+## op.rope_small_fp16-b1-h4-s64-d32  triton_poi_fused_add_mul_2  static=374 loops=2 inner=1
+   loop tiles_1      len= 336 slotA= 4.2%  vx=242 vld=64 vst=16 addr=11 inc=1 cmp=1 br=1
+## op.rope_small_fp16-b1-h4-s64-d32  triton_poi_fused_cat_neg_split_1  static=152 loops=2 inner=1
+   loop tiles_1      len= 117 slotA= 3.4%  vx=97 vld=8 vst=8 addr=1 inc=1 cmp=1 br=1
+## op.rope_small_fp16-b1-h4-s64-d32  triton_poi_fused_neg_split_0  static=192 loops=2 inner=1
+   loop tiles_1      len= 157 slotA= 2.5%  vx=137 vld=8 vst=8 addr=1 inc=1 cmp=1 br=1
+## op.silu_small_fp16-n16384  triton_poi_fused_silu_0  static=361 loops=2 inner=1
+   loop tiles_1      len= 332 slotA= 3.6%  vx=288 vld=16 vst=16 addr=9 inc=1 cmp=1 br=1
+## op.softmax_small_fp16-r64-c512  triton_red_fused__softmax_0  static=236 loops=4 inner=3
+   loop for_1        len=  16 slotA=25.0%  vx=8 vld=4 inc=2 cmp=1 br=1
+   loop for_3        len=  53 slotA= 9.4%  vx=40 vld=4 vst=4 inc=3 cmp=1 br=1
+   loop for_5        len=  25 slotA=20.0%  vx=12 vld=4 vst=4 inc=3 cmp=1 br=1
+## op.swiglu_small_fp16-n16384  triton_poi_fused_mul_silu_0  static=412 loops=2 inner=1
+   loop tiles_1      len= 382 slotA= 3.7%  vx=320 vld=32 vst=16 addr=11 inc=1 cmp=1 br=1
+## op.transpose_small_fp32-r128-c256  triton_poi_fused_clone_t_0  static=328 loops=1 inner=1
+   loop __rctx_program len= 325 slotA=43.4%  vx=118 addr=71 const=33 pred=32 mtx=32 vld=16 vst=16 sys=2 sld=2 cmp=1 mov=1 br=1

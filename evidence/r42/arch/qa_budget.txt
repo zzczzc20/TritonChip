@@ -1,0 +1,44 @@
+PEAKS (3 cores x 16 lanes x G products x 2 FLOP x 100 MHz); bubble = 1 cycle per k-group of 16 row cycles
+  legacy m.mma.async / FP32 FMA            G= 1      9.6 GFLOP/s raw       9.0 with the 16/17 bubble      16 MAC/cycle/core
+  m.mma.dp DP2 (FP16,BF16,mixed FP8)       G= 2     19.2 GFLOP/s raw      18.1 with the 16/17 bubble      32 MAC/cycle/core
+  m.mma.dp DP4 (E4M3 x E4M3)               G= 4     38.4 GFLOP/s raw      36.1 with the 16/17 bubble      64 MAC/cycle/core
+  hypothetical G=8                         G= 8     76.8 GFLOP/s raw      72.3 with the 16/17 bubble     128 MAC/cycle/core
+  hypothetical G=11                        G=11    105.6 GFLOP/s raw      99.4 with the 16/17 bubble     176 MAC/cycle/core
+  hypothetical G=16                        G=16    153.6 GFLOP/s raw     144.6 with the 16/17 bubble     256 MAC/cycle/core
+  G needed for 100 GFLOP/s peak at 100 MHz, 3 cores, 16 lanes: 10.42 ; at 130 MHz: 8.01 ; with 6 cores at 100 MHz: 5.21
+
+SLR packing, routed run-2 link (domain: routed image, not run 3 itself):
+  SLR0: CLB 52522 (95.56%) of 54962; LUT 321910 (73.21%) of 439708; DSP 269 (9.34%) of 2880 (derived); LUT/CLB 6.13
+        headroom to the highest recorded routed packing (96.74%, run 1): 649 CLB = 3975 LUT at the current density (derived)
+  SLR1: CLB 48956 (90.66%) of 54000; LUT 332407 (76.95%) of 431978; DSP 276 (8.98%) of 3073 (derived); LUT/CLB 6.79
+        headroom to the highest recorded routed packing (96.74%, run 1): 3283 CLB = 22292 LUT at the current density (derived)
+  SLR2: CLB 47553 (88.06%) of 54001; LUT 285409 (66.07%) of 431980; DSP 273 (8.89%) of 3071 (derived); LUT/CLB 6.00
+        headroom to the highest recorded routed packing (96.74%, run 1): 4687 CLB = 28133 LUT at the current density (derived)
+  total DSPs used in the three SLRs: 818 (incl. platform); device 9,024
+
+R41 shared lane (m.mma.dp): unit-screen stages {'S1': 689, 'S2+F2': 639, 'B0': 448, 'norm': 526, 'round': 490} = 2792 LUT, 8 DSP (RESOURCES.md sec 10: 2 -> 8 DSP per lane); back end (align with C, normalise, round) 1464 LUT = 52%
+pmac prototype lanes (OOC routed, evidence/r41/pmac/README.md sec 7):
+   V0 FMA lane                             2492 LUT  G=1  marginal LUT per extra product      0 (derived)  LUT per MAC/cycle   2492 (derived)
+   V3 E4M3 DP4 (38-bit exact field)        2929 LUT  G=4  marginal LUT per extra product    146 (derived)  LUT per MAC/cycle    732 (derived)
+   V1 all-FP8 DP4 (66-bit field)           3433 LUT  G=4  marginal LUT per extra product    314 (derived)  LUT per MAC/cycle    858 (derived)
+   V2D FP16 DP2 + FP8 (64-bit field)       4142 LUT  G=2  marginal LUT per extra product   1650 (derived)  LUT per MAC/cycle   2071 (derived)
+
+Budget of raising G per lane (16 lanes per core), derived from the marginal costs above:
+  E4M3 exact DSP cascade     G  4 ->  8: +   9323 LUT per core; SLR headroom SLR0 3975 / SLR1 22292 / SLR2 28133 ; peak 38.4 -> 76.8 GFLOP/s
+  E4M3 exact DSP cascade     G  4 -> 16: +  27968 LUT per core; SLR headroom SLR0 3975 / SLR1 22292 / SLR2 28133 ; peak 38.4 -> 153.6 GFLOP/s
+  mixed-FP8 66-bit field     G  4 ->  8: +  20075 LUT per core; SLR headroom SLR0 3975 / SLR1 22292 / SLR2 28133 ; peak 38.4 -> 76.8 GFLOP/s
+  mixed-FP8 66-bit field     G  4 -> 16: +  60224 LUT per core; SLR headroom SLR0 3975 / SLR1 22292 / SLR2 28133 ; peak 38.4 -> 153.6 GFLOP/s
+  FP16 exact 64-bit field    G  2 ->  4: +  52800 LUT per core; SLR headroom SLR0 3975 / SLR1 22292 / SLR2 28133 ; peak 19.2 -> 38.4 GFLOP/s
+  FP16 exact 64-bit field    G  2 ->  8: + 158400 LUT per core; SLR headroom SLR0 3975 / SLR1 22292 / SLR2 28133 ; peak 19.2 -> 76.8 GFLOP/s
+  headroom per SLR (derived): SLR0 3975 LUT, SLR1 22292 LUT, SLR2 28133 LUT
+
+Operand supply per core for G products per lane per cycle (derived; the engine holds B for 16 row cycles + 1 load cycle):
+  format     G | B bytes/grp   VRF regs  B VRF B/cycle | A B/cycle (ABUF)
+  E4M3       4 |         64          1            3.8 |            4
+  E4M3       8 |        128          2            7.5 |            8
+  E4M3      16 |        256          4           15.1 |           16
+  FP16       2 |         64          1            3.8 |            4
+  FP16       4 |        128          2            7.5 |            8
+  FP16       8 |        256          4           15.1 |           16
+  FP16      16 |        512          8           30.1 |           32
+  today (DP4 E4M3, G=4): 64 B per group = 1 register, 3.8 B/cycle of the 64 B/cycle matrix read port (BALANCE.md sec 3.1 gives 5.6-6.8 B/cycle incl. the A fill).

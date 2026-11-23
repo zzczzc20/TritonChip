@@ -1,0 +1,39 @@
+top points by achieved GFLOP/s (board, new = R42 round 1; old = run-3 base)
+  5.294   5.277  op.linear/medium/fp16-m128-k320-n256                         FLOP 2.1e+07  B 3.12e+05  AI 67.4
+  5.055   5.016  op.linear/hbm/fp16-m512-k4096-n11008                         FLOP 4.62e+10  B 1.06e+08  AI 437.0
+  4.844   4.857  op.linear/small/fp16-m64-k256-n256                           FLOP 8.4e+06  B 1.97e+05  AI 42.6
+  4.301   4.511  op.matmul/small/fp16-m64-k128-n128                           FLOP 2.1e+06  B 6.55e+04  AI 32.0
+  4.270   4.262  op.matmul/hbm/fp16-m4096-k4096-n4096                         FLOP 1.37e+11  B 1.01e+08  AI 1365.3
+  4.239   4.240  op.matmul/large/fp16-m2048-k2048-n2048                       FLOP 1.72e+10  B 2.52e+07  AI 682.7
+  4.099   3.106  model.llama_prefill/large/fp16-b1-s512                       FLOP 1.01e+12  B 2.47e+09  AI 410.0
+  4.077   4.071  op.linear/large/fp16-m512-k2048-n8192                        FLOP 1.72e+10  B 4.41e+07  AI 390.0
+  3.986   3.994  op.matmul/medium/fp16-m128-k192-n128                         FLOP 6.29e+06  B 1.31e+05  AI 48.0
+  3.978   3.952  model.mlp/large/fp16-t512-d2048                              FLOP 3.44e+10  B 7.13e+07  AI 481.8
+  3.749   3.664  model.mlp/medium/fp16-t128-d128                              FLOP 3.36e+07  B 3.29e+05  AI 102.2
+  3.665   3.561  model.mlp/small/fp16-t64-d128                                FLOP 1.68e+07  B 2.96e+05  AI 56.8
+  3.577   0.428  op.bmm/large/fp16-b32-m512-k64-n512                          FLOP 1.07e+09  B 2.1e+07  AI 51.2
+  3.143   2.085  model.gpt2_block/large/fp16-d1024-h16-b1-s512                FLOP 1.34e+10  B 2.73e+07  AI 492.0
+
+best per family (new)
+linear               5.294 (old   5.277) op.linear/medium/fp16-m128-k320-n256
+matmul               4.301 (old   4.511) op.matmul/small/fp16-m64-k128-n128
+llama_prefill        4.099 (old   3.106) model.llama_prefill/large/fp16-b1-s512
+mlp                  3.978 (old   3.952) model.mlp/large/fp16-t512-d2048
+bmm                  3.577 (old   0.428) op.bmm/large/fp16-b32-m512-k64-n512
+gpt2_block           3.143 (old   2.085) model.gpt2_block/large/fp16-d1024-h16-b1-s512
+conv2d               0.576 (old   0.524) op.conv2d/large/fp32-n8-cin64-h56-w56-cout64
+resnet_block         0.571 (old   0.483) model.resnet_block/large/fp32-n8-c64-hw56
+attention_prefill    0.475 (old   0.156) op.attention_prefill/large/fp16-b1-h32-s512-d64
+rmsnorm              0.341 (old   0.094) op.rmsnorm/medium/fp16-r128-d512
+layernorm            0.301 (old   0.101) op.layernorm/medium/fp16-r128-d512
+gelu_tanh            0.300 (old   0.127) op.gelu_tanh/large/fp16-n16777216
+gemv                 0.287 (old   0.283) op.gemv/medium/fp16-k320-n448
+llama_decode         0.257 (old   0.224) model.llama_decode/large/fp16-b1-p512
+swiglu               0.218 (old   0.109) op.swiglu/large/fp16-n16777216
+silu                 0.189 (old   0.094) op.silu/hbm/fp16-n67108864
+add                  0.160 (old   0.039) op.add/hbm/fp16-n67108864
+softmax              0.154 (old   0.076) op.softmax/hbm/fp16-r4096-c8192
+argmax               0.118 (old   0.070) op.argmax/large/fp16-r64-v128256
+attention_decode     0.094 (old   0.059) op.attention_decode/small/fp16-b1-h4-l256-d32
+rope                 0.061 (old   0.043) op.rope/small/fp16-b1-h4-s64-d32
+cumsum               0.034 (old   0.029) op.cumsum/medium/fp32-r128-c256

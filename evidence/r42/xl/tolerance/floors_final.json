@@ -1,0 +1,686 @@
+[
+ {
+  "point": "model.fp8_decoder_decode/xl/fp8-b1-p2048-layers28",
+  "seed": 0,
+  "max_rel_err": 0.03927404295051354,
+  "per_output": [
+   0.0041063211731991525,
+   0.03927404295051354,
+   0.037407063197026025
+  ],
+  "tolerance": 0.1,
+  "reference_s": 29.0,
+  "emulation_s": 3.5
+ },
+ {
+  "point": "model.fp8_decoder_decode/xl/fp8-b1-p2048-layers28",
+  "seed": 1,
+  "max_rel_err": 0.04097127611262489,
+  "per_output": [
+   0.004851903336184773,
+   0.04097127611262489,
+   0.04044465468306528
+  ],
+  "tolerance": 0.1,
+  "reference_s": 27.6,
+  "emulation_s": 3.5
+ },
+ {
+  "point": "model.fp8_decoder_decode/xl/fp8-b1-p2048-layers28",
+  "seed": 2,
+  "max_rel_err": 0.04375,
+  "per_output": [
+   0.004061465231788079,
+   0.034203980099502485,
+   0.04375
+  ],
+  "tolerance": 0.1,
+  "reference_s": 24.8,
+  "emulation_s": 3.5
+ },
+ {
+  "point": "model.fp8_decoder_prefill/xl/fp8-b1-s2048-layers4",
+  "seed": 0,
+  "max_rel_err": 0.0009277697320782042,
+  "per_output": [
+   0.0009277697320782042
+  ],
+  "tolerance": 0.1,
+  "reference_s": 37.0,
+  "emulation_s": 34.6
+ },
+ {
+  "point": "model.fp8_decoder_prefill/xl/fp8-b1-s2048-layers4",
+  "seed": 1,
+  "max_rel_err": 0.0007540809084457062,
+  "per_output": [
+   0.0007540809084457062
+  ],
+  "tolerance": 0.1,
+  "reference_s": 38.2,
+  "emulation_s": 35.7
+ },
+ {
+  "point": "model.fp8_decoder_prefill/xl/fp8-b1-s2048-layers4",
+  "seed": 2,
+  "max_rel_err": 0.0007178750897343862,
+  "per_output": [
+   0.0007178750897343862
+  ],
+  "tolerance": 0.1,
+  "reference_s": 37.4,
+  "emulation_s": 34.6
+ },
+ {
+  "point": "model.fp8_decoder_prefill/xl/fp8-b1-s512-layers28",
+  "seed": 0,
+  "max_rel_err": 0.00362632328990228,
+  "per_output": [
+   0.00362632328990228
+  ],
+  "tolerance": 0.1,
+  "reference_s": 75.5,
+  "emulation_s": 44.4
+ },
+ {
+  "point": "model.fp8_decoder_prefill/xl/fp8-b1-s512-layers28",
+  "seed": 1,
+  "max_rel_err": 0.0034982287449392712,
+  "per_output": [
+   0.0034982287449392712
+  ],
+  "tolerance": 0.1,
+  "reference_s": 73.7,
+  "emulation_s": 44.2
+ },
+ {
+  "point": "model.fp8_decoder_prefill/xl/fp8-b1-s512-layers28",
+  "seed": 2,
+  "max_rel_err": 0.004003494198312236,
+  "per_output": [
+   0.004003494198312236
+  ],
+  "tolerance": 0.1,
+  "reference_s": 77.4,
+  "emulation_s": 45.2
+ },
+ {
+  "point": "model.fp8_layer_decode/xl/fp8-b1-p2048-layers1",
+  "seed": 0,
+  "max_rel_err": 0.0013063806380638064,
+  "per_output": [
+   0.0013063806380638064,
+   0.0005104645227156713,
+   0.0
+  ],
+  "tolerance": 0.1,
+  "reference_s": 1.0,
+  "emulation_s": 0.1
+ },
+ {
+  "point": "model.fp8_layer_decode/xl/fp8-b1-p2048-layers1",
+  "seed": 1,
+  "max_rel_err": 0.000657126168224299,
+  "per_output": [
+   0.000657126168224299,
+   0.0005973715651135006,
+   0.0001339046598821639
+  ],
+  "tolerance": 0.1,
+  "reference_s": 0.9,
+  "emulation_s": 0.1
+ },
+ {
+  "point": "model.fp8_layer_decode/xl/fp8-b1-p2048-layers1",
+  "seed": 2,
+  "max_rel_err": 0.0006640106241699867,
+  "per_output": [
+   0.0006517205422314911,
+   0.0006640106241699867,
+   1.8834378013500483e-06
+  ],
+  "tolerance": 0.1,
+  "reference_s": 0.9,
+  "emulation_s": 0.1
+ },
+ {
+  "point": "model.fp8_layer_prefill/xl/fp8-b1-s512-layers1",
+  "seed": 0,
+  "max_rel_err": 0.0022984441301272984,
+  "per_output": [
+   0.0022984441301272984,
+   0.0016879219804951237,
+   0.0016501650165016502
+  ],
+  "tolerance": 0.1,
+  "reference_s": 2.6,
+  "emulation_s": 1.6
+ },
+ {
+  "point": "model.fp8_layer_prefill/xl/fp8-b1-s512-layers1",
+  "seed": 1,
+  "max_rel_err": 0.002768987341772152,
+  "per_output": [
+   0.002768987341772152,
+   0.0008143322475570033,
+   0.0004149377593360996
+  ],
+  "tolerance": 0.1,
+  "reference_s": 2.4,
+  "emulation_s": 1.6
+ },
+ {
+  "point": "model.fp8_layer_prefill/xl/fp8-b1-s512-layers1",
+  "seed": 2,
+  "max_rel_err": 0.002768987341772152,
+  "per_output": [
+   0.002768987341772152,
+   0.0011372251705837756,
+   0.0014239218877135883
+  ],
+  "tolerance": 0.1,
+  "reference_s": 2.6,
+  "emulation_s": 1.5
+ },
+ {
+  "point": "op.fp8_act_quant/xl/fp8-m2048-k2048",
+  "seed": 0,
+  "max_rel_err": 0.0,
+  "per_output": [
+   0.0,
+   0.0
+  ],
+  "tolerance": 0.08,
+  "reference_s": 0.1,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_act_quant/xl/fp8-m2048-k2048",
+  "seed": 1,
+  "max_rel_err": 0.0,
+  "per_output": [
+   0.0,
+   0.0
+  ],
+  "tolerance": 0.08,
+  "reference_s": 0.1,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_act_quant/xl/fp8-m2048-k2048",
+  "seed": 2,
+  "max_rel_err": 0.0,
+  "per_output": [
+   0.0,
+   0.0
+  ],
+  "tolerance": 0.08,
+  "reference_s": 0.1,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_act_quant/xl/fp8-m2048-k6144",
+  "seed": 0,
+  "max_rel_err": 0.0,
+  "per_output": [
+   0.0,
+   0.0
+  ],
+  "tolerance": 0.08,
+  "reference_s": 0.2,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_act_quant/xl/fp8-m2048-k6144",
+  "seed": 1,
+  "max_rel_err": 0.0,
+  "per_output": [
+   0.0,
+   0.0
+  ],
+  "tolerance": 0.08,
+  "reference_s": 0.2,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_act_quant/xl/fp8-m2048-k6144",
+  "seed": 2,
+  "max_rel_err": 0.0,
+  "per_output": [
+   0.0,
+   0.0
+  ],
+  "tolerance": 0.08,
+  "reference_s": 0.2,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m1-k2048-n12288",
+  "seed": 0,
+  "max_rel_err": 0.00012382367508667657,
+  "per_output": [
+   0.00012382367508667657
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.4,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m1-k2048-n12288",
+  "seed": 1,
+  "max_rel_err": 0.0005017561465127947,
+  "per_output": [
+   0.0005017561465127947
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.4,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m1-k2048-n12288",
+  "seed": 2,
+  "max_rel_err": 3.187149413564508e-05,
+  "per_output": [
+   3.187149413564508e-05
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.4,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m1-k2048-n151936",
+  "seed": 0,
+  "max_rel_err": 0.00046382189239332097,
+  "per_output": [
+   0.00046382189239332097
+  ],
+  "tolerance": 0.004,
+  "reference_s": 4.6,
+  "emulation_s": 0.4
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m1-k2048-n151936",
+  "seed": 1,
+  "max_rel_err": 0.00020920502092050208,
+  "per_output": [
+   0.00020920502092050208
+  ],
+  "tolerance": 0.004,
+  "reference_s": 4.6,
+  "emulation_s": 0.4
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m1-k2048-n151936",
+  "seed": 2,
+  "max_rel_err": 0.00020242914979757084,
+  "per_output": [
+   0.00020242914979757084
+  ],
+  "tolerance": 0.004,
+  "reference_s": 4.6,
+  "emulation_s": 0.4
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m1-k2048-n4096",
+  "seed": 0,
+  "max_rel_err": 1.5838824125696908e-05,
+  "per_output": [
+   1.5838824125696908e-05
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.1,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m1-k2048-n4096",
+  "seed": 1,
+  "max_rel_err": 3.563283922462942e-05,
+  "per_output": [
+   3.563283922462942e-05
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.1,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m1-k2048-n4096",
+  "seed": 2,
+  "max_rel_err": 2.945334590009425e-05,
+  "per_output": [
+   2.945334590009425e-05
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.1,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m1-k6144-n2048",
+  "seed": 0,
+  "max_rel_err": 2.413127413127413e-05,
+  "per_output": [
+   2.413127413127413e-05
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.2,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m1-k6144-n2048",
+  "seed": 1,
+  "max_rel_err": 0.00014766686355581807,
+  "per_output": [
+   0.00014766686355581807
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.2,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m1-k6144-n2048",
+  "seed": 2,
+  "max_rel_err": 0.00013455328310010763,
+  "per_output": [
+   0.00013455328310010763
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.2,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m16-k2048-n12288",
+  "seed": 0,
+  "max_rel_err": 0.00041736227045075126,
+  "per_output": [
+   0.00041736227045075126
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.4,
+  "emulation_s": 0.1
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m16-k2048-n12288",
+  "seed": 1,
+  "max_rel_err": 0.00040032025620496394,
+  "per_output": [
+   0.00040032025620496394
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.4,
+  "emulation_s": 0.1
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m16-k2048-n12288",
+  "seed": 2,
+  "max_rel_err": 0.00042158516020236085,
+  "per_output": [
+   0.00042158516020236085
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.4,
+  "emulation_s": 0.1
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m16-k2048-n151936",
+  "seed": 0,
+  "max_rel_err": 0.0003711952487008166,
+  "per_output": [
+   0.0003711952487008166
+  ],
+  "tolerance": 0.004,
+  "reference_s": 4.9,
+  "emulation_s": 0.5
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m16-k2048-n151936",
+  "seed": 1,
+  "max_rel_err": 0.0003563791874554526,
+  "per_output": [
+   0.0003563791874554526
+  ],
+  "tolerance": 0.004,
+  "reference_s": 4.9,
+  "emulation_s": 0.5
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m16-k2048-n151936",
+  "seed": 2,
+  "max_rel_err": 0.0003671071953010279,
+  "per_output": [
+   0.0003671071953010279
+  ],
+  "tolerance": 0.004,
+  "reference_s": 5.1,
+  "emulation_s": 0.5
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m16-k6144-n2048",
+  "seed": 0,
+  "max_rel_err": 9.652509652509652e-05,
+  "per_output": [
+   9.652509652509652e-05
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.2,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m16-k6144-n2048",
+  "seed": 1,
+  "max_rel_err": 0.0002420135527589545,
+  "per_output": [
+   0.0002420135527589545
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.2,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m16-k6144-n2048",
+  "seed": 2,
+  "max_rel_err": 0.00023364485981308412,
+  "per_output": [
+   0.00023364485981308412
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.2,
+  "emulation_s": 0.0
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m2048-k2048-n12288",
+  "seed": 0,
+  "max_rel_err": 0.0003455425017277125,
+  "per_output": [
+   0.0003455425017277125
+  ],
+  "tolerance": 0.004,
+  "reference_s": 4.0,
+  "emulation_s": 1.8
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m2048-k2048-n12288",
+  "seed": 1,
+  "max_rel_err": 0.00034129692832764505,
+  "per_output": [
+   0.00034129692832764505
+  ],
+  "tolerance": 0.004,
+  "reference_s": 4.1,
+  "emulation_s": 1.9
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m2048-k2048-n12288",
+  "seed": 2,
+  "max_rel_err": 0.0003681885125184094,
+  "per_output": [
+   0.0003681885125184094
+  ],
+  "tolerance": 0.004,
+  "reference_s": 4.1,
+  "emulation_s": 2.0
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m2048-k2048-n2048",
+  "seed": 0,
+  "max_rel_err": 0.00039032006245121,
+  "per_output": [
+   0.00039032006245121
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.7,
+  "emulation_s": 0.3
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m2048-k2048-n2048",
+  "seed": 1,
+  "max_rel_err": 0.0003546099290780142,
+  "per_output": [
+   0.0003546099290780142
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.7,
+  "emulation_s": 0.3
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m2048-k2048-n2048",
+  "seed": 2,
+  "max_rel_err": 0.000370919881305638,
+  "per_output": [
+   0.000370919881305638
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.7,
+  "emulation_s": 0.3
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m2048-k2048-n4096",
+  "seed": 0,
+  "max_rel_err": 0.0007704160246533128,
+  "per_output": [
+   0.0007704160246533128
+  ],
+  "tolerance": 0.004,
+  "reference_s": 1.3,
+  "emulation_s": 0.7
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m2048-k2048-n4096",
+  "seed": 1,
+  "max_rel_err": 0.00037509377344336085,
+  "per_output": [
+   0.00037509377344336085
+  ],
+  "tolerance": 0.004,
+  "reference_s": 1.3,
+  "emulation_s": 0.7
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m2048-k2048-n4096",
+  "seed": 2,
+  "max_rel_err": 0.00038580246913580245,
+  "per_output": [
+   0.00038580246913580245
+  ],
+  "tolerance": 0.004,
+  "reference_s": 1.3,
+  "emulation_s": 0.7
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m2048-k6144-n2048",
+  "seed": 0,
+  "max_rel_err": 0.00037936267071320183,
+  "per_output": [
+   0.00037936267071320183
+  ],
+  "tolerance": 0.004,
+  "reference_s": 2.1,
+  "emulation_s": 1.0
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m2048-k6144-n2048",
+  "seed": 1,
+  "max_rel_err": 0.0003773584905660377,
+  "per_output": [
+   0.0003773584905660377
+  ],
+  "tolerance": 0.004,
+  "reference_s": 2.1,
+  "emulation_s": 0.9
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m2048-k6144-n2048",
+  "seed": 2,
+  "max_rel_err": 0.00034965034965034965,
+  "per_output": [
+   0.00034965034965034965
+  ],
+  "tolerance": 0.004,
+  "reference_s": 2.0,
+  "emulation_s": 1.0
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m512-k2048-n12288",
+  "seed": 0,
+  "max_rel_err": 0.00036231884057971015,
+  "per_output": [
+   0.00036231884057971015
+  ],
+  "tolerance": 0.004,
+  "reference_s": 1.3,
+  "emulation_s": 0.5
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m512-k2048-n12288",
+  "seed": 1,
+  "max_rel_err": 0.00035536602700781805,
+  "per_output": [
+   0.00035536602700781805
+  ],
+  "tolerance": 0.004,
+  "reference_s": 1.3,
+  "emulation_s": 0.5
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m512-k2048-n12288",
+  "seed": 2,
+  "max_rel_err": 0.0003816793893129771,
+  "per_output": [
+   0.0003816793893129771
+  ],
+  "tolerance": 0.004,
+  "reference_s": 1.3,
+  "emulation_s": 0.5
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m512-k6144-n2048",
+  "seed": 0,
+  "max_rel_err": 0.00037936267071320183,
+  "per_output": [
+   0.00037936267071320183
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.7,
+  "emulation_s": 0.2
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m512-k6144-n2048",
+  "seed": 1,
+  "max_rel_err": 0.00041322314049586776,
+  "per_output": [
+   0.00041322314049586776
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.7,
+  "emulation_s": 0.2
+ },
+ {
+  "point": "op.fp8_linear/xl/fp8-m512-k6144-n2048",
+  "seed": 2,
+  "max_rel_err": 0.00041017227235438887,
+  "per_output": [
+   0.00041017227235438887
+  ],
+  "tolerance": 0.004,
+  "reference_s": 0.7,
+  "emulation_s": 0.2
+ }
+]

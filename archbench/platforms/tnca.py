@@ -509,5 +509,7 @@ def _wrapper_launches(code):
         lines = [l for l in body.splitlines() if not l.lstrip().startswith('#')]
         if any(re.match(r'\s*(for|while)\b', l) for l in lines):
             return None
-        total += sum(len(re.findall(r'\btriton_\w+\.run\(', l)) for l in lines)
+        # Inductor's own kernels are named triton_*; a user-defined Triton kernel (the Hub FP8 kernels of the xl
+        # tier, traced through torch.library.triton_op) keeps its own name with an index: <name>_<n>.run(...)
+        total += sum(len(re.findall(r'\b\w+\.run\(', l)) for l in lines)
     return total

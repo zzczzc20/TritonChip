@@ -82,8 +82,8 @@
    "id": "model.fp8_decoder_decode/xl/fp8-b1-p2048-layers28",
    "kind": "model",
    "live_bytes": 2293153224,
-   "sha256": "a82247c10117a1f44b90cd62e7605597d9f47128c361487be8c6646ad7c0795c",
-   "tolerance": 0.1,
+   "sha256": "31d06b57df86119b7227171310d82bc8052fc703034c073b4bf9796a5450a160",
+   "tolerance": 0.2,
    "track": [
     "llm"
    ]
@@ -137,8 +137,8 @@
    "id": "model.fp8_decoder_prefill/xl/fp8-b1-s2048-layers4",
    "kind": "model",
    "live_bytes": 1827554048,
-   "sha256": "8cf06a002ec6e3f7bb0b4a7eeab612cac7e4992e101d66ac7692a1ec784ee069",
-   "tolerance": 0.1,
+   "sha256": "e6f3ab3429eb841d926b5c4682551f4724ac075c6ac866788bf084178ead3a21",
+   "tolerance": 0.02,
    "track": [
     "llm"
    ]
@@ -192,8 +192,8 @@
    "id": "model.fp8_decoder_prefill/xl/fp8-b1-s512-layers28",
    "kind": "model",
    "live_bytes": 2132382464,
-   "sha256": "e6be67a278039f97d1ca315339d3acf0abef1f6228de2ca249577a4a7869bb9b",
-   "tolerance": 0.1,
+   "sha256": "706a882afdc50e9f438812765aa8ce456820ec906c897fdf3f0af3dbec51d3f2",
+   "tolerance": 0.02,
    "track": [
     "llm"
    ]
@@ -239,8 +239,8 @@
    "id": "model.fp8_layer_decode/xl/fp8-b1-p2048-layers1",
    "kind": "model",
    "live_bytes": 84409024,
-   "sha256": "405619e1a8eb5df0b11823c7ef43b3403c3230efd320b24567f9891454ff0f12",
-   "tolerance": 0.1,
+   "sha256": "154cebd2f54b4120f5dfd8edfc98cc0971068d3591a4d368c4364685054232b9",
+   "tolerance": 0.02,
    "track": [
     "llm"
    ]
@@ -286,8 +286,8 @@
    "id": "model.fp8_layer_prefill/xl/fp8-b1-s512-layers1",
    "kind": "model",
    "live_bytes": 154423296,
-   "sha256": "7ca3cdaf2f2dd327990ca5faf805a42e17bac664530ad92639dd2456966d1a9d",
-   "tolerance": 0.1,
+   "sha256": "d0d6bc105d461851fd5e903bbc1219f8b763a53ab60aec1e03ace080626aac8d",
+   "tolerance": 0.02,
    "track": [
     "llm"
    ]
@@ -596,7 +596,7 @@
    "id": "op.fp8_linear/xl/fp8-m1-k2048-n12288",
    "kind": "op",
    "live_bytes": 25200640,
-   "sha256": "31c1e6e23c9e77acc1797db1ca5e9d64135112512c754b1b738e29d54f0cffba",
+   "sha256": "15911313ef57875f40cc0fac4789603f01a76fc5d8315bff3990548e963c1fa2",
    "tolerance": 0.004,
    "track": [
     "llm"
@@ -627,7 +627,7 @@
    "id": "op.fp8_linear/xl/fp8-m1-k2048-n151936",
    "kind": "op",
    "live_bytes": 311548864,
-   "sha256": "8aeef9cfc42d9564a610ec3f0d2c17aa07ce701f9b4316c5a215de13149099a9",
+   "sha256": "0203308e11757d663ae934bf8fb030485e177eca623fa4f8ec3e41c4baa2e0a0",
    "tolerance": 0.004,
    "track": [
     "llm"
@@ -658,7 +658,7 @@
    "id": "op.fp8_linear/xl/fp8-m1-k2048-n4096",
    "kind": "op",
    "live_bytes": 8402944,
-   "sha256": "2ee28f291f6a1458533e9fc039ec393958d74e319ad02999906793f85a8fa38d",
+   "sha256": "15da736bea87d9e3a743ad7c76fad926f38ea50d5ee3b9eadf09f5a9fd0038b7",
    "tolerance": 0.004,
    "track": [
     "llm"
@@ -689,7 +689,7 @@
    "id": "op.fp8_linear/xl/fp8-m1-k6144-n2048",
    "kind": "op",
    "live_bytes": 12602368,
-   "sha256": "ec3e94fc6277279edcc22ba12050490b973e6e454537cb766a10da36ac3f7ebb",
+   "sha256": "45a8f1faada427eccf968fdf4d01e1d98203eb3223f5ccb30c31d3cee97e7ada",
    "tolerance": 0.004,
    "track": [
     "llm"
@@ -720,7 +720,7 @@
    "id": "op.fp8_linear/xl/fp8-m16-k2048-n12288",
    "kind": "op",
    "live_bytes": 25630720,
-   "sha256": "e3a2ffe526fa8fa3995687526da72b9ffb2c84daa54a20c5c3403c075819d5b8",
+   "sha256": "9ec66448679d1cfc90376d647695adf9681b0a633fab65370f519efb5372b0e7",
    "tolerance": 0.004,
    "track": [
     "llm"
@@ -751,7 +751,7 @@
    "id": "op.fp8_linear/xl/fp8-m16-k2048-n151936",
    "kind": "op",
    "live_bytes": 316168384,
-   "sha256": "33bc667df4c1ef002ea83414729e9231c89aea1fd8ea00fbadcf6b25f746ddd5",
+   "sha256": "393aefe8d652e4b5964cf849ca1e38fb8edca53c13a3f71c3a95906eee5da93e",
    "tolerance": 0.004,
    "track": [
     "llm"
@@ -782,7 +782,7 @@
    "id": "op.fp8_linear/xl/fp8-m16-k6144-n2048",
    "kind": "op",
    "live_bytes": 12848128,
-   "sha256": "402817ff10c4d43b7352fd1f31a93c958869fd589a48088af1ee59c99db5967d",
+   "sha256": "c67f1591f965117c51068db4de405eb4e8cd403a13a1b7eb0e9dd3c9ed5c97fd",
    "tolerance": 0.004,
    "track": [
     "llm"
@@ -813,7 +813,7 @@
    "id": "op.fp8_linear/xl/fp8-m2048-k2048-n12288",
    "kind": "op",
    "live_bytes": 83892224,
-   "sha256": "ee51c3029c70d01dc9611570fd2c9ae8c15745736c06429eb983372b41eb93dc",
+   "sha256": "22a5dce846e071c04fbd3edcadf613b27fbb2edb4731dde47dc70b64a98e0410",
    "tolerance": 0.004,
    "track": [
     "llm"
@@ -844,7 +844,7 @@
    "id": "op.fp8_linear/xl/fp8-m2048-k2048-n2048",
    "kind": "op",
    "live_bytes": 20972544,
-   "sha256": "5eb4d0dcfc451b87d09e6db0bd1ee1367b6a7bda1c5c27868c0c03bc1bc829ce",
+   "sha256": "b13e6a796e6dea3389bd9737c5bbce9473eaada75066613c82dbc132a12dc6fc",
    "tolerance": 0.004,
    "track": [
     "llm"
@@ -875,7 +875,7 @@
    "id": "op.fp8_linear/xl/fp8-m2048-k2048-n4096",
    "kind": "op",
    "live_bytes": 33556480,
-   "sha256": "2c110432fc8abca47f50c669f177e6462295f6f2b25620d08342876e1c00bf48",
+   "sha256": "9b3cfa8a19e9aff1fbf995ba8ccdc2ddb1355fd5a35a0ead830d5e0510e2fab7",
    "tolerance": 0.004,
    "track": [
     "llm"
@@ -906,7 +906,7 @@
    "id": "op.fp8_linear/xl/fp8-m2048-k6144-n2048",
    "kind": "op",
    "live_bytes": 46140416,
-   "sha256": "d65e865e5c376a7b412b2b0cc972ab13be17fa5334931e2ca2b2f93556472b6f",
+   "sha256": "660d244e9261ca32d82dc40b89e6393d00a3e1b977169f6515ab004208012c83",
    "tolerance": 0.004,
    "track": [
     "llm"
@@ -937,7 +937,7 @@
    "id": "op.fp8_linear/xl/fp8-m512-k2048-n12288",
    "kind": "op",
    "live_bytes": 39852032,
-   "sha256": "7b1d546441de0f0a79d18cb9b488dfbd802865449f91df0a6d4e0b3db515328a",
+   "sha256": "bfbfd2099bc44d5704025f9ad2e2a93860d169f66d0994ee0a6aaef9612d12bc",
    "tolerance": 0.004,
    "track": [
     "llm"
@@ -968,7 +968,7 @@
    "id": "op.fp8_linear/xl/fp8-m512-k6144-n2048",
    "kind": "op",
    "live_bytes": 20974592,
-   "sha256": "016eb74ea9676a11546f6628dcc273f85ce8e4c397001c788b4243e5c5b5c32a",
+   "sha256": "49ee5e8c31716478c815832a3fef42799f54f20dd94b3d6e3a1550802062dbf3",
    "tolerance": 0.004,
    "track": [
     "llm"
@@ -1132,7 +1132,7 @@
  ],
  "rules": "archbench/xl.py (module docstring), archbench/PROTOCOL.md 4.1-4.2",
  "schema": "archbench-suite/1",
- "sha256": "1bf98a4ea73a0c64396c5d9a094788a6424d532b56401998d0be8ba948c91927",
+ "sha256": "2fd48cb3da4817c1129e4fef95e6ea6ef177c6d791da68bc5f4dd0c0cd8779d2",
  "status": "frozen: registered before any xl result exists; every point is reported, favourable or not; a changed definition is a different suite",
  "tier": "xl"
 }

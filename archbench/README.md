@@ -23,8 +23,10 @@ This document describes the contents and how to run them.
 | General operators | `transpose`, `cumsum`, `conv2d`; FP32 `add`, `softmax` (row length not a multiple of 16), `matmul` | Patterns outside decoder inference |
 | LLM models | `llama_prefill`, `llama_decode` | LLaMA-2/3 architecture: RMSNorm, grouped-query attention with RoPE, SwiGLU MLP. Prefill returns the logits of the last position; decode generates one token against a *P*-entry KV cache and returns the new K/V entries |
 | Other models | `gpt2_block`, `mlp`, `resnet_block` | GPT-2 block (LayerNorm, biased QKV, GELU); two-layer MLP; ResNet basic block (general track) |
+| FP8 matrix points (`xl`) | `fp8_linear`, `fp8_act_quant`, `fp8_layer_prefill`, `fp8_layer_decode`, `fp8_decoder_prefill`, `fp8_decoder_decode` | Block-wise W8A8 FP8 through the Hub kernels `kernels-community/finegrained-fp8` (`matmul_2d`, `fp8_act_quant`, unchanged): E4M3 weights with 128 x 128 fp32 scales, activations quantised per row and 128-wide K block, fp16 in and out. The 2B-class decoder of the R41 FP8 work (hidden 2048, MLP 6144, 16/8 heads of 128, 28 layers, vocabulary 151936): projections at 512/2048 prefill tokens and at 1/16 decode tokens, the 151936-wide head, one layer, and the whole 28-layer decoder |
+| Real-scale fp16 kernels (`xl`) | `attention_prefill`, `attention_decode` (grouped-query), `rmsnorm_residual`, `swiglu`, `rope`, `gemv`, `linear`, `embedding`, `argmax` | The decoder's own kernels at 1k-8k sequence and the 151936-row tied table |
 
-Points are defined across five tiers ([PROTOCOL.md §1.1](PROTOCOL.md#11-points-tiers-tracks)):
+Points are defined across these tiers ([PROTOCOL.md §1.1](PROTOCOL.md#11-points-tiers-tracks)); `membound` (R41, `membound.py`) is the registered memory-bound bandwidth suite:
 
 | Tier | Sized for | Example (`llama_decode`) |
 |---|---|---|
@@ -33,6 +35,7 @@ Points are defined across five tiers ([PROTOCOL.md §1.1](PROTOCOL.md#11-points-
 | `medium` | Moderately bigger load for the board (2–8× `small`), staying within the same device heap (≤352 KiB arguments) | dim 192, 4 layers, 256-entry cache |
 | `large` | GPU-realistic shapes; Llama-3.2-1B for the LLaMA models (capacity-exceeded on TNCA without external memory) | dim 2048, 16 layers, 512-entry cache |
 | `hbm` | Working sets ≥ 32 MiB (streaming, GEMM, transpose, gather, and 4-layer 211 MiB decoder) requiring external memory | dim 1024, 4 layers, 512-entry cache |
+| `xl` (R42) | AI-practical points beyond `large`: 32 points, 18 of them built on block-wise FP8 matrix multiplication (56 %); every point's live device bytes (arguments + outputs + scratch) declared by the point and at most 3 GiB of the 4 GiB a launch sees; device time estimated at the R41 run-3 baseline in `suites/xl.json` (R42 plan, "XL tier registration") | the whole 28-layer FP8 decoder, one token against a 2048-entry cache: 2.1 GiB live |
 
 Weights are drawn from the point's seed. Neither timing nor agreement with
 the reference depends on trained weights, and no model download is needed.
@@ -48,6 +51,9 @@ archbench/
   bounds.py        strict lower bounds: TNCA in cycles, GPU in seconds
   generate.py      multi-step greedy LLaMA generation chaining prefill and decode
   hbm.py           HBM tier points (working sets >= 32 MiB)
+  xl.py            xl tier (R42): FP8 matrix points and real-scale fp16 kernels, memory accounting, references
+  fp8_hub.py       loads the Hub FP8 kernels unchanged and refuses a source tree that differs from the pinned build
+  xl_estimate.py   xl tier: device-time planning estimates (suites/xl_eta.json: efficiencies from the R41 board baseline)
   specs/           GPU peak-rate specifications with their sources
   platforms/       tnca.py (Inductor → tnca → Session), gpu.py (CUPTI timing), common.py
   provenance.py    record provenance (software tree digest, per-point bundles)
@@ -113,6 +119,21 @@ python -m archbench.selftest
 python -m archbench.suite --check
 ```
 
+The `xl` tier needs the Hub FP8 kernels. Where the `kernels` package has a build for the installed torch
+(a CUDA wheel) they load as transformers loads them (`get_kernel(..., version=4)`); elsewhere point
+`ARCHBENCH_FINEGRAINED_FP8` at a copy of the repository's `build/torch-cuda` folder. Either way the files must be the
+pinned build (`fp8_hub.FILES`, sha256), and a source tree that differs is refused.
+
+```sh
+# xl on the board (one process per point; the live device bytes of every point are at most 3 GiB)
+python -m archbench.run --platform tnca --backend fpga-u280-multicore --profile core-vrf-sync-v5-x8-g2c4-dp \
+    --tier xl --set TNCA_TORCH_DEVICE=native --set TNCA_TRANSFER_POLICY=resident --set TNCA_ACTIVE_CORES=3 ... --out results/xl.jsonl
+
+# compile coverage of every xl point on the CPU-tensor path, cold caches, kernel dump per point
+sh tools/r42/xl_compile_only.sh results/xl_compile 2
+python tools/r42/xl_compile_summary.py results/xl_compile
+```
+
 Equivalent Makefile targets: `archbench-selftest`, `archbench-coverage`,
 `archbench-tiny`, `archbench-u50sim`, `archbench-gpu` (records under
 `sim/build/archbench/`).
@@ -131,7 +152,7 @@ traceback.
 
 ## Adding a point
 
-1. Register a `Point` in `ops.py`, `models.py`, or `hbm.py`: a `make(seed)` returning
+1. Register a `Point` in `ops.py`, `models.py`, `hbm.py` or `xl.py`: a `make(seed)` returning
    `(module, inputs)`, the dtype, and the semantic `Demand` per [PROTOCOL.md §4](PROTOCOL.md#4-lower-bound-and-efficiency).
 2. Run `python -m archbench.selftest`. It checks that declared MACs never
    exceed PyTorch's FLOP counter, that dense families match it exactly, and

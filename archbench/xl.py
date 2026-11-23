@@ -56,6 +56,17 @@ from .registry import Demand, Point, register
 H, INTER, NQ, NKV, HD, VOCAB, LAYERS = 2048, 6144, 16, 8, 128, 151936, 28
 BLOCK = 128                      # weight scale block and activation quantisation block
 EPS = 1e-6
+# Initialisation of the decoder points (fixed here, before any device output; the CPU measurements that chose it are in
+# evidence/r42/xl/tolerance/): block-wise FP8 re-quantises every activation, so a rounding difference of one fp16 ulp
+# upstream flips a few E4M3 codes downstream, and the disagreement of two correct implementations grows with depth in
+# proportion to (branch noise / residual stream). With unit-variance branches over a 0.02-std embedding it reached 26% of the
+# largest logit after 28 layers, measured on the CPU between binary64 and fp16 eager arithmetic; with the GPT-2 style
+# depth-scaled output projections (o, down: std 0.02 / sqrt(2 x depth)) over a unit-variance embedding it is 0.5% of the
+# largest logit (4% of the largest new K/V entry). All other weights are N(0, 1/K); the tied head's final norm weight is
+# H^-1/2, so the logits are O(1).
+RESID_STD = 0.02 / math.sqrt(2 * 28)
+EMBED_STD = 1.0
+FINAL_NORM = H ** -0.5
 GiB = 1 << 30
 CAP_BYTES = 3 * GiB              # live device bytes of one point (the board exposes 4 GiB to a launch)
 FP16 = torch.float16
@@ -102,9 +113,10 @@ def _randn(g, shape, std, dtype, device='cpu'):
     return out
 
 
-def _fp8_weight(g, n, k, device='cpu'):
+def _fp8_weight(g, n, k, device='cpu', std=None):
     """(N, K) E4M3 weights with (ceil(N/128), K/128) fp32 block scales, as a block-wise FP8
-    checkpoint stores them: scale = amax / 448 of the 128 x 128 block of N(0, 1/K) values."""
+    checkpoint stores them: scale = amax / 448 of the 128 x 128 block of N(0, std^2) values
+    (default std = K^-1/2: unit-variance outputs from unit-variance inputs)."""
     nb, kb = -(-n // BLOCK), k // BLOCK
     assert k % BLOCK == 0
     if device == 'meta':
@@ -112,7 +124,7 @@ def _fp8_weight(g, n, k, device='cpu'):
                 torch.empty((nb, kb), dtype=torch.float32, device='meta'))
     w = torch.empty((n, k), dtype=E4M3)
     s = torch.empty((nb, kb), dtype=torch.float32)
-    std = k ** -0.5
+    std = k ** -0.5 if std is None else std
     for i in range(nb):
         r0, r1 = i * BLOCK, min(n, (i + 1) * BLOCK)
         blk = (torch.randn((r1 - r0, k), generator=g) * std).reshape(r1 - r0, kb, BLOCK)
@@ -128,8 +140,9 @@ def _ids(g, shape, high, device='cpu'):
     return torch.randint(0, high, shape, generator=g)
 
 
-def _ones(shape, device='cpu'):
-    return torch.ones(shape, dtype=FP16) if device != 'meta' else torch.empty(shape, dtype=FP16, device='meta')
+def _final_norm(device='cpu'):
+    return (torch.full((H,), FINAL_NORM, dtype=FP16) if device != 'meta'
+            else torch.empty((H,), dtype=FP16, device='meta'))
 
 
 def _norm_weight(g, d, device='cpu'):
@@ -179,31 +192,36 @@ class _Hub:
     call, so the loader (files, environment, hashes) must have run before."""
     matmul_2d = None
     fp8_act_quant = None
+    error = 'not bound: build the module with a device (not meta)'
 
 
 def _bind_kernels():
     try:
         k = fp8_hub.kernels()
     except RuntimeError as e:                              # no Hub source on this host
-        return str(e)
+        _Hub.error = str(e)
+        return
     _Hub.matmul_2d, _Hub.fp8_act_quant = k.matmul_2d, k.fp8_act_quant
-    return None
+
+
+def _need_hub(fn):
+    if fn is None:
+        raise RuntimeError(f'the Hub FP8 kernels are not loaded: {_Hub.error}')
 
 
 def linear_fp8(x, w, s):
     """x (..., K) fp16 -> (..., N) fp16 through the block-wise W8A8 kernel."""
     m = _MODE[0]
     if m == 'device':
-        if _Hub.matmul_2d is None:
-            raise RuntimeError('the Hub FP8 kernels are not loaded (xl modules bind them when built)')
+        _need_hub(_Hub.matmul_2d)
         return _Hub.matmul_2d(x, w, s, [BLOCK, BLOCK], x.dtype)
     return _block_matmul_cpu(x, w, s, exact=(m == 'ref'))
 
 
 class FP8Linear(torch.nn.Module):
-    def __init__(self, n, k, g, device='cpu'):
+    def __init__(self, n, k, g, device='cpu', std=None):
         super().__init__()
-        w, s = _fp8_weight(g, n, k, device)
+        w, s = _fp8_weight(g, n, k, device, std)
         self.register_buffer('weight', w)
         self.register_buffer('scale', s)
         if device != 'meta':
@@ -223,8 +241,7 @@ class ActQuant(torch.nn.Module):
 
     def forward(self, x):
         if _MODE[0] == 'device':
-            if _Hub.fp8_act_quant is None:
-                raise RuntimeError('the Hub FP8 kernels are not loaded (xl modules bind them when built)')
+            _need_hub(_Hub.fp8_act_quant)
             return _Hub.fp8_act_quant(x, BLOCK)
         m, k = x.shape
         q, a_s = _quantise(x.to(FP16).float())
@@ -295,11 +312,11 @@ class Fp8Layer(torch.nn.Module):
         self.q = FP8Linear(NQ * HD, H, g, device)
         self.k = FP8Linear(NKV * HD, H, g, device)
         self.v = FP8Linear(NKV * HD, H, g, device)
-        self.o = FP8Linear(H, NQ * HD, g, device)
+        self.o = FP8Linear(H, NQ * HD, g, device, RESID_STD)
         self.mlp_norm = torch.nn.Parameter(_norm_weight(g, H, device), requires_grad=False)
         self.gate = FP8Linear(INTER, H, g, device)
         self.up = FP8Linear(INTER, H, g, device)
-        self.down = FP8Linear(H, INTER, g, device)
+        self.down = FP8Linear(H, INTER, g, device, RESID_STD)
 
     def forward(self, x, cos, sin, past_k=None, past_v=None):
         dt = x.dtype
@@ -371,9 +388,9 @@ class Fp8DecoderPrefill(torch.nn.Module):
 
     def __init__(self, g, layers, s, device='cpu'):
         super().__init__()
-        self.tok = torch.nn.Parameter(_randn(g, (VOCAB, H), 0.02, FP16, device), requires_grad=False)
+        self.tok = torch.nn.Parameter(_randn(g, (VOCAB, H), EMBED_STD, FP16, device), requires_grad=False)
         self.layers = torch.nn.ModuleList(Fp8Layer(g, device) for _ in range(layers))
-        self.norm = torch.nn.Parameter(_ones((H,), device), requires_grad=False)
+        self.norm = torch.nn.Parameter(_final_norm(device), requires_grad=False)
         cos, sin = _rope(s, 0, device)
         self.register_buffer('cos', cos, persistent=False)
         self.register_buffer('sin', sin, persistent=False)
@@ -391,9 +408,9 @@ class Fp8DecoderDecode(torch.nn.Module):
 
     def __init__(self, g, layers, p, device='cpu'):
         super().__init__()
-        self.tok = torch.nn.Parameter(_randn(g, (VOCAB, H), 0.02, FP16, device), requires_grad=False)
+        self.tok = torch.nn.Parameter(_randn(g, (VOCAB, H), EMBED_STD, FP16, device), requires_grad=False)
         self.layers = torch.nn.ModuleList(Fp8Layer(g, device) for _ in range(layers))
-        self.norm = torch.nn.Parameter(_ones((H,), device), requires_grad=False)
+        self.norm = torch.nn.Parameter(_final_norm(device), requires_grad=False)
         cos, sin = _rope(1, p, device)
         self.register_buffer('cos', cos, persistent=False)
         self.register_buffer('sin', sin, persistent=False)
@@ -555,9 +572,19 @@ def xl(kind, family, dtype, params, make, demand, *, tol, tol_basis, mem, track=
 # doc/r42_plan.md derive them). `max|got - ref| / max(max|ref|, 1)`.
 TOL_F16 = ('registry fp16 convention, 2e-2: 40x the fp16 output rounding (2^-11 of the value), as for every other '
            'fp16 point; the reference is the same module in binary32')
-TOL_GEMM = ('4e-3 = 8x the fp16 output rounding floor (2^-11 relative to the value): the block-wise product is '
-            'exact up to binary32 accumulation (<= 1e-5), the activation codes are reproduced exactly '
-            '(IEEE binary32 division in matmul_2d), the reference is the binary64 block-wise product')
+TOL_GEMM = ('4e-3 = four fp16 ulps of the largest binade relative to max|ref| (4 x 2^-10): the block-wise product is '
+            'exact up to binary32 accumulation, the activation codes are reproduced exactly (IEEE binary32 division '
+            'in matmul_2d), so the only disagreement with the binary64 reference is an accumulation-order flip of the '
+            'fp16 rounding, one ulp (the CPU twin vs the reference: at most 7.7e-4 over 13 points and 3 seeds, '
+            'evidence/r42/xl/tolerance)')
+TOL_COMPOSITE = ('2e-2: the registry fp16 tolerance; the CPU rounding floor of the point (fp16-eager twin against the '
+                 'binary64 reference, 3 seeds, tools/r42/xl_tolerance.py) is at most 5e-3, a composite is not held '
+                 'tighter than its fp16 stages are (attention, norms), and the device rounds at stages the CPU twin '
+                 'does not reproduce')
+TOL_DEEP = ('0.2 = 3 x the largest CPU rounding floor, rounded up to 1-2-5: 4.4e-2, in the new K/V of the deepest '
+            'layers (the logits: 5e-3); 28 layers of re-quantised activations amplify a one-ulp difference upstream '
+            'into code flips downstream, so this point detects gross failure only; the one-layer and per-projection '
+            'points carry the tight numerical checks')
 TOL_ACTQ = ('8e-2 = the largest one-code deviation of an E4M3 value relative to the largest code in its block: one ulp '
             'in the top binade is 32/448 = 7.1e-2; fp8_act_quant divides with the default (faithful, <= 1 ulp) '
             'quotient, which flips about 0.5% of codes by one ulp (evidence/r41/fp8/kernels/README.md), and no '
@@ -699,7 +726,7 @@ def _model_points():
     mem = memory(layer_weight_bytes() + s * H * 2 + 2 * s * HD * 2, s * H * 2 + 2 * NKV * s * HD * 2,
                  layer_scratch(s, s, False))
     xl('model', 'fp8_layer_prefill', 'fp8', dict(b=1, s=s, layers=1), mk, layer_demand(s, None, boundary=True),
-       tol=TOL_MODEL[0], tol_basis=TOL_MODEL[1], mem=mem, fp8=True, reference=xl_reference,
+       tol=2e-2, tol_basis=TOL_COMPOSITE, mem=mem, fp8=True, reference=xl_reference,
        components=layer_components(s, None, boundary=True),
        note='one of 28 layers: 7 block-wise FP8 projections, RMSNorm, RoPE, GQA, SwiGLU')
     # a complete layer, decode against 2048 cached positions
@@ -713,7 +740,7 @@ def _model_points():
     mem = memory(layer_weight_bytes() + H * 2 + 2 * HD * 2 + 2 * NKV * p * HD * 2, H * 2 + 2 * NKV * HD * 2,
                  layer_scratch(1, p + 1, True))
     xl('model', 'fp8_layer_decode', 'fp8', dict(b=1, p=p, layers=1), mk, layer_demand(1, p, boundary=True),
-       tol=TOL_MODEL[0], tol_basis=TOL_MODEL[1], mem=mem, fp8=True, reference=xl_reference,
+       tol=2e-2, tol_basis=TOL_COMPOSITE, mem=mem, fp8=True, reference=xl_reference,
        components=layer_components(1, p, boundary=True),
        note='one token through one layer against a 2048-entry cache')
     # the whole decoder, prefill at 512 tokens; and a quarter-depth slice at 2048 tokens
@@ -724,7 +751,7 @@ def _model_points():
         wb = VOCAB * H * 2 + layers * layer_weight_bytes() + H * 2
         mem = memory(wb + 2 * s * HD * 2 + s * 8, VOCAB * 2, layer_scratch(s, s, False) + s * H * 2 + H * 2)
         xl('model', 'fp8_decoder_prefill', 'fp8', dict(b=1, s=s, layers=layers), mk,
-           decoder_demand(layers, s, None, prefill=True), tol=TOL_MODEL[0], tol_basis=TOL_MODEL[1], mem=mem,
+           decoder_demand(layers, s, None, prefill=True), tol=2e-2, tol_basis=TOL_COMPOSITE, mem=mem,
            fp8=True, reference=xl_reference, components=decoder_components(layers, s, None, prefill=True),
            note=('the whole 28-layer text decoder' if layers == LAYERS else
                  f'{layers} of 28 layers (shrunk from the real depth: the {s}-token score tensors and compile time)')
@@ -742,11 +769,8 @@ def _model_points():
     mem = memory(wb + 2 * HD * 2 + 8 + 2 * layers * NKV * p * HD * 2, VOCAB * 2 + 2 * layers * NKV * HD * 2,
                  layer_scratch(1, p + 1, True) + H * 2)
     xl('model', 'fp8_decoder_decode', 'fp8', dict(b=1, p=p, layers=layers), mk,
-       decoder_demand(layers, 1, p, prefill=False), tol=TOL_MODEL[0], tol_basis=TOL_MODEL[1], mem=mem, fp8=True,
+       decoder_demand(layers, 1, p, prefill=False), tol=0.2, tol_basis=TOL_DEEP, mem=mem, fp8=True,
        reference=xl_reference, components=decoder_components(layers, 1, p, prefill=False), note='the whole 28-layer text decoder, one token, tied embedding and head')
 
 
-# Layer and model tolerance: set by tools/r42/xl_tolerance.py from the CPU rounding floor (see PROTOCOL.md 4.2);
-# the value is written here, never changed after a device output exists.
-TOL_MODEL = (0.1, 'placeholder until xl_tolerance.py has run')
 _model_points()

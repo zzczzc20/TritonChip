@@ -8,8 +8,15 @@
 #   board_ab.sh check    NAME                       copy the registration to ~/r42/reg/NAME, run --check-only (no card)
 #   board_ab.sh launch   NAME                       detached guarded run on the FPGA host (refuses an unpushed
 #                                                   registration and an existing output directory)
+#   board_ab.sh resume   NAME                       the same guarded run again on the existing output directory (after a
+#                                                   stop on the queue budget or a card change): idle rules apply afresh,
+#                                                   completed runs are reused, nothing is overwritten
 #   board_ab.sh status   NAME                       last events, queue log tail, card state (read-only)
-#   board_ab.sh fetch    NAME                       records -> evidence/r42/board/NAME/records.tgz (small files only)
+#   board_ab.sh fetch    NAME                       records -> evidence/r42/board/NAME/records.tgz (small files only);
+#                                                   the per-run process logs -> evidence/r42/board/NAME/logs.tgz
+#
+# R42_BRANCH (default R42) names the branch that holds the registration: launch and resume refuse a registration that
+# origin/$R42_BRANCH does not hold byte for byte.
 #
 # S (helper directory with fp / gb_rsh) defaults to the R42 session scratchpad; the helpers hold the credentials
 # and are never printed or copied. The card rules of evidence/r41/SERVERS.md are enforced on the host by
@@ -39,23 +46,28 @@ register)
     TMPDIR="$S/tmp" python3 "$ROOT/tools/r42/board_ab.py" register --name "$N" --commit "$C" --src-dir "$D" "$@"
     echo "now: git add spec/r42/board/$N && commit && push origin $BRANCH, before 'board_ab.sh launch $N'"
     ;;
-check|launch)
+check|launch|resume)
     N=${1:?name}; simple "$N"; R=spec/r42/board/$N
     [ -f "$ROOT/$R/queue.json" ] || { echo "no registration $R" >&2; exit 2; }
-    if [ "$cmd" = launch ]; then
+    # registered files: the queue, the two manifests and any runner file stored with the registration (xl_board_batch.py)
+    EXTRA=$(cd "$ROOT/$R" && { ls *.py 2>/dev/null || true; } | tr '\n' ' ')
+    REG_FILES="queue.json $N.json $N-identity.json $EXTRA"
+    if [ "$cmd" != check ]; then
         git -C "$ROOT" fetch -q origin "$BRANCH"
         [ -z "$(git -C "$ROOT" status --porcelain -- "$R" tools/r42/board_ab.py)" ] \
             || { echo "registration or runner has uncommitted changes" >&2; exit 4; }
-        for f in "$R/queue.json" "$R/$N.json" "$R/$N-identity.json" tools/r42/board_ab.py; do
+        for f in $(for g in $REG_FILES; do echo "$R/$g"; done) tools/r42/board_ab.py; do
             [ "$(git -C "$ROOT" rev-parse "origin/$BRANCH:$f" 2>/dev/null)" = "$(git -C "$ROOT" hash-object "$ROOT/$f")" ] \
                 || { echo "$f is not what origin/$BRANCH holds: push the registration first" >&2; exit 4; }
         done
     fi
     fp "mkdir -p ~/r42/reg/$N ~/r42/q"
-    tar -C "$ROOT/$R" -cf - queue.json "$N.json" "$N-identity.json" -C "$ROOT/tools/r42" board_ab.py | "$S/fp" "tar xf - -C ~/r42/reg/$N"
+    tar -C "$ROOT/$R" -cf - $REG_FILES -C "$ROOT/tools/r42" board_ab.py | "$S/fp" "tar xf - -C ~/r42/reg/$N"
     fp "cd ~/r42/reg/$N && sha256sum *"
     if [ "$cmd" = check ]; then
         fp "cd ~/r42/reg/$N && ~/tc_env/torchenv/bin/python board_ab.py run --reg ~/r42/reg/$N --out ~/r42/q/$N.check --check-only"
+    elif [ "$cmd" = resume ]; then
+        fp "test -d ~/r42/q/$N || { echo 'no output directory ~/r42/q/$N to resume' >&2; exit 3; }; cd ~/r42/reg/$N || exit 6; echo \"--- resume \$(date -u +%FT%TZ)\" >> ~/r42/q/$N/launch.log; setsid nohup ~/tc_env/torchenv/bin/python -u board_ab.py run --reg ~/r42/reg/$N --out ~/r42/q/$N >> ~/r42/q/$N/launch.log 2>&1 < /dev/null & echo \$! > ~/r42/q/$N/runner.pid; sleep 3; kill -0 \$(cat ~/r42/q/$N/runner.pid) && echo runner pid \$(cat ~/r42/q/$N/runner.pid) || { echo 'runner is not alive'; tail -5 ~/r42/q/$N/launch.log; exit 5; }"
     else
         fp "test ! -e ~/r42/q/$N || { echo '~/r42/q/$N exists: results are never overwritten' >&2; exit 3; }; mkdir -p ~/r42/q/$N && cd ~/r42/reg/$N || exit 6; setsid nohup ~/tc_env/torchenv/bin/python -u board_ab.py run --reg ~/r42/reg/$N --out ~/r42/q/$N > ~/r42/q/$N/launch.log 2>&1 < /dev/null & echo \$! > ~/r42/q/$N/runner.pid; sleep 3; kill -0 \$(cat ~/r42/q/$N/runner.pid) && echo runner pid \$(cat ~/r42/q/$N/runner.pid) || { echo 'runner is not alive'; cat ~/r42/q/$N/launch.log; exit 5; }"
     fi
@@ -70,6 +82,8 @@ fetch)
         > "$ROOT/evidence/r42/board/$N/records.tgz" || true
     ls -la "$ROOT/evidence/r42/board/$N/records.tgz"; sha256sum "$ROOT/evidence/r42/board/$N/records.tgz"
     tar tzf "$ROOT/evidence/r42/board/$N/records.tgz" | wc -l
+    "$S/fp" "cd ~/r42/q/$N && tar czf - queue/*/*/logs 2>/dev/null" < /dev/null > "$ROOT/evidence/r42/board/$N/logs.tgz" || true
+    ls -la "$ROOT/evidence/r42/board/$N/logs.tgz"; sha256sum "$ROOT/evidence/r42/board/$N/logs.tgz"
     ;;
 *) echo "unknown command $cmd" >&2; exit 2 ;;
 esac

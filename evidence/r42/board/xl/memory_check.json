@@ -1,0 +1,52 @@
+{
+ "domain": "board (U280), image 791b8af2, run-3 records",
+ "records": "evidence/r42/board/b41-run3-base/records.tgz",
+ "passing_runs_with_memory": 205,
+ "heap_capacity_bytes": [
+  8589930496
+ ],
+ "windows": [
+  [
+   0,
+   8589934592,
+   131072
+  ]
+ ],
+ "largest_heap_peaks": [
+  {
+   "heap_peak_bytes": 3105139200,
+   "tensor_peak_bytes": 3098812416,
+   "point": "model.llama_prefill/large/fp16-b1-s512"
+  },
+  {
+   "heap_peak_bytes": 3014738304,
+   "tensor_peak_bytes": 3014469288,
+   "point": "model.llama_decode/large/fp16-b1-p512"
+  },
+  {
+   "heap_peak_bytes": 536871680,
+   "tensor_peak_bytes": 536870912,
+   "point": "op.transpose/hbm/fp32-r8192-c8192"
+  }
+ ],
+ "suite": {
+  "path": "/tmp/claude-1000/-home-ubuntu-TritonChip/3dd1d4a8-6f0c-47d5-bf28-f88428fc463d/scratchpad/xl_suite.json",
+  "memory_cap_bytes": 3221225472,
+  "largest_live": [
+   {
+    "live_bytes": 2293153224,
+    "point": "model.fp8_decoder_decode/xl/fp8-b1-p2048-layers28"
+   },
+   {
+    "live_bytes": 2132382464,
+    "point": "model.fp8_decoder_prefill/xl/fp8-b1-s512-layers28"
+   },
+   {
+    "live_bytes": 1827554048,
+    "point": "model.fp8_decoder_prefill/xl/fp8-b1-s2048-layers4"
+   }
+  ],
+  "heap_capacity_over_largest_live": 3.7459034163519114,
+  "over_capacity": []
+ }
+}

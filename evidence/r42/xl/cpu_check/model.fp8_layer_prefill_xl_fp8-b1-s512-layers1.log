@@ -1,0 +1,1 @@
+PASS model.fp8_layer_prefill/xl/fp8-b1-s512-layers1             err 2.298e-03 tol 0.02  [emu vs binary64 reference; ref 3.8s, module 2.2s, rss 0.96 GiB] 

@@ -1,0 +1,14 @@
+[
+ {
+  "point": "op.rope/xl/fp16-b1-h16-s2048-d128",
+  "family": "rope",
+  "path": "fp16 eager vs binary32 module",
+  "ok": true,
+  "max_rel_err": 0.0007027953299231545,
+  "tolerance": 0.02,
+  "detail": "",
+  "reference_s": 0.1,
+  "module_s": 0.1,
+  "peak_rss_gib": 0.75
+ }
+]

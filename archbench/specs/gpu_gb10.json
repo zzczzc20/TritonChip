@@ -54,6 +54,11 @@
    "unit": "MAC/s",
    "derivation": "as tensor_fp16_mac"
   },
+  "tensor_fp8_mac": {
+   "value": 155250000000000.0,
+   "unit": "MAC/s",
+   "derivation": "xl tier only (R42): the same vendor-figure derivation as tensor_fp16_mac, one doubling of operand width lower (FP4 -> FP8): 2 x tensor_fp16_mac = 1.5525e14 MAC/s. Used only by points with E4M3 matrix work; no other point's bound reads it"
+  },
   "sfu": {
    "value": 2305900000000.0,
    "unit": "op/s",

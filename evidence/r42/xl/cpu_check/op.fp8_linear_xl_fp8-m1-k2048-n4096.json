@@ -1,0 +1,14 @@
+[
+ {
+  "point": "op.fp8_linear/xl/fp8-m1-k2048-n4096",
+  "family": "fp8_linear",
+  "path": "emu vs binary64 reference",
+  "ok": true,
+  "max_rel_err": 1.5838824125696908e-05,
+  "tolerance": 0.004,
+  "detail": "",
+  "reference_s": 1.4,
+  "module_s": 0.1,
+  "peak_rss_gib": 0.68
+ }
+]

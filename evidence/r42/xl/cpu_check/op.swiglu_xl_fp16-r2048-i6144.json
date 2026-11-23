@@ -1,0 +1,14 @@
+[
+ {
+  "point": "op.swiglu/xl/fp16-r2048-i6144",
+  "family": "swiglu",
+  "path": "fp16 eager vs binary32 module",
+  "ok": true,
+  "max_rel_err": 0.0004922877607578326,
+  "tolerance": 0.02,
+  "detail": "",
+  "reference_s": 0.4,
+  "module_s": 0.4,
+  "peak_rss_gib": 1.06
+ }
+]

@@ -1,0 +1,1 @@
+PASS op.attention_decode/xl/fp16-b1-h16-kv8-l2048-d128          err 4.490e-05 tol 0.02  [fp16 eager vs binary32 module; ref 0.1s, module 0.1s, rss 0.57 GiB] 

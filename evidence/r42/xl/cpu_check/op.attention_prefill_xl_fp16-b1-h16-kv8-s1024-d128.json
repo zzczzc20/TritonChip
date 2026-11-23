@@ -1,0 +1,14 @@
+[
+ {
+  "point": "op.attention_prefill/xl/fp16-b1-h16-kv8-s1024-d128",
+  "family": "attention_prefill",
+  "path": "fp16 eager vs binary32 module",
+  "ok": true,
+  "max_rel_err": 0.0002806379988386824,
+  "tolerance": 0.02,
+  "detail": "",
+  "reference_s": 0.2,
+  "module_s": 1.4,
+  "peak_rss_gib": 0.63
+ }
+]

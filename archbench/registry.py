@@ -31,20 +31,31 @@ Tiers say where a point can be measured, not how important it is:
             copy, element-wise, casts, reductions and normalisations in
             fp32/fp16/bf16, small to 64 MiB-per-tensor sizes, contiguous,
             strided and broadcast layouts
+    xl      R42: real-LLM-scale points beyond `large`, with FP8 block-wise
+            matrix multiplication as the majority (archbench/xl.py): every
+            point's live device bytes are at most 3 GiB (the board exposes
+            4 GiB to a launch), declared by the point and asserted by the
+            selftest
 """
 from dataclasses import dataclass, field
 import hashlib
 import json
 
-TIERS = ('tiny', 'small', 'medium', 'large', 'hbm', 'membound')
+TIERS = ('tiny', 'small', 'medium', 'large', 'hbm', 'membound', 'xl')
 
 # Relative tolerance on max|got - ref| / max(max|ref|, 1), by the dtype the
 # point computes in. The reference is eager PyTorch in float32 on the CPU
 # (fp16/bf16 values upcast exactly), so the tolerance is the low-precision
 # arithmetic's, not the reference's.
-TOLERANCE = {'fp32': 2e-4, 'fp16': 2e-2, 'bf16': 6e-2}
+TOLERANCE = {'fp32': 2e-4, 'fp16': 2e-2, 'bf16': 6e-2,
+             # xl tier (archbench/xl.py): the default of a block-wise FP8 matrix multiplication with fp16
+             # activations and output -- 8x the fp16 output rounding (2^-11, relative to the value); every
+             # xl point states its own tolerance and how it was derived
+             'fp8': 4e-3}
 
-TORCH_DTYPE = {'fp32': 'float32', 'fp16': 'float16', 'bf16': 'bfloat16'}
+# 'fp8' names the matrix format of an xl point (E4M3 weights and dynamically quantised E4M3 activations,
+# fp16 everywhere else); the tensors it is made of are float8_e4m3fn weights and fp16 activations.
+TORCH_DTYPE = {'fp32': 'float32', 'fp16': 'float16', 'bf16': 'bfloat16', 'fp8': 'float8_e4m3fn'}
 
 
 @dataclass(frozen=True)
@@ -61,20 +72,28 @@ class Demand:
     read_bytes  every input byte the result depends on, once (activations,
                 weights and caches)
     write_bytes every output byte, once
+    macs_fp8    xl tier: the part of `macs` whose operands are E4M3 (a
+                block-wise FP8 matrix multiplication); zero for every other
+                point, and then absent from the definition
     """
     macs: float = 0.0
     fp_ops: float = 0.0
     sfu_ops: float = 0.0
     read_bytes: float = 0.0
     write_bytes: float = 0.0
+    macs_fp8: float = 0.0
 
     def __add__(self, o):
         return Demand(self.macs + o.macs, self.fp_ops + o.fp_ops, self.sfu_ops + o.sfu_ops,
-                      self.read_bytes + o.read_bytes, self.write_bytes + o.write_bytes)
+                      self.read_bytes + o.read_bytes, self.write_bytes + o.write_bytes,
+                      self.macs_fp8 + o.macs_fp8)
 
     def as_dict(self):
-        return dict(macs=self.macs, fp_ops=self.fp_ops, sfu_ops=self.sfu_ops,
-                    read_bytes=self.read_bytes, write_bytes=self.write_bytes)
+        d = dict(macs=self.macs, fp_ops=self.fp_ops, sfu_ops=self.sfu_ops,
+                 read_bytes=self.read_bytes, write_bytes=self.write_bytes)
+        if self.macs_fp8:
+            d['macs_fp8'] = self.macs_fp8
+        return d
 
 
 @dataclass(frozen=True)
@@ -90,6 +109,12 @@ class Point:
     track: tuple = ('llm',)   # 'llm' and/or 'general'
     tol: float = None
     note: str = ''
+    # xl tier: a reference that is not "the module in binary32" (a block-wise FP8 module cannot run on the
+    # CPU in the Hub kernel's Triton form): reference(module, inputs) -> tuple of CPU tensors, or None
+    reference: object = None
+    # xl tier: definition fields the suite hash covers beyond the above (kernel identity, memory accounting,
+    # the tolerance's derivation); None for every other tier, and then absent from the definition
+    extra: dict = None
 
     @property
     def tolerance(self):
@@ -97,9 +122,12 @@ class Point:
 
     def definition(self):
         """What the suite hash covers: everything that changes the point."""
-        return dict(id=self.id, kind=self.kind, family=self.family, tier=self.tier,
-                    dtype=self.dtype, params=self.params, demand=self.demand.as_dict(),
-                    track=list(self.track), tolerance=self.tolerance)
+        d = dict(id=self.id, kind=self.kind, family=self.family, tier=self.tier,
+                 dtype=self.dtype, params=self.params, demand=self.demand.as_dict(),
+                 track=list(self.track), tolerance=self.tolerance)
+        if self.extra is not None:
+            d['extra'] = self.extra
+        return d
 
     def definition_sha256(self):
         blob = json.dumps(self.definition(), sort_keys=True)
@@ -149,4 +177,4 @@ def _load():
     global _loaded
     if not _loaded:
         _loaded = True
-        from . import ops, models, hbm, membound    # noqa: F401  (registration side effect)
+        from . import ops, models, hbm, membound, xl    # noqa: F401  (registration side effect)

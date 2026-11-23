@@ -1,0 +1,1 @@
+PASS op.fp8_linear/xl/fp8-m1-k2048-n4096                        err 1.584e-05 tol 0.004  [emu vs binary64 reference; ref 1.4s, module 0.1s, rss 0.68 GiB] 

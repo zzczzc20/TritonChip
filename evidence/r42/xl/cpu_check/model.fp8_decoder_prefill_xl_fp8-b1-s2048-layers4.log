@@ -1,0 +1,1 @@
+PASS model.fp8_decoder_prefill/xl/fp8-b1-s2048-layers4          err 9.278e-04 tol 0.02  [emu vs binary64 reference; ref 37.2s, module 42.3s, rss 2.48 GiB] 

@@ -1,0 +1,1 @@
+PASS op.argmax/xl/fp16-r16-v151936                              err 0.000e+00 tol 0.0  [fp16 eager vs binary32 module; ref 0.0s, module 0.0s, rss 0.54 GiB] 

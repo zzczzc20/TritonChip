@@ -1,0 +1,1 @@
+PASS op.attention_prefill/xl/fp16-b1-h16-kv8-s1024-d128         err 2.806e-04 tol 0.02  [fp16 eager vs binary32 module; ref 0.2s, module 1.4s, rss 0.63 GiB] 

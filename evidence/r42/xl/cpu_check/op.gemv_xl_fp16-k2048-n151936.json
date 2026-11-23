@@ -1,0 +1,14 @@
+[
+ {
+  "point": "op.gemv/xl/fp16-k2048-n151936",
+  "family": "gemv",
+  "path": "fp16 eager vs binary32 module",
+  "ok": true,
+  "max_rel_err": 0.00039963422773724963,
+  "tolerance": 0.02,
+  "detail": "",
+  "reference_s": 5.1,
+  "module_s": 6.3,
+  "peak_rss_gib": 2.83
+ }
+]

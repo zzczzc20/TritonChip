@@ -1,0 +1,14 @@
+[
+ {
+  "point": "model.fp8_layer_prefill/xl/fp8-b1-s512-layers1",
+  "family": "fp8_layer_prefill",
+  "path": "emu vs binary64 reference",
+  "ok": true,
+  "max_rel_err": 0.0022984441301272984,
+  "tolerance": 0.02,
+  "detail": "",
+  "reference_s": 3.8,
+  "module_s": 2.2,
+  "peak_rss_gib": 0.96
+ }
+]

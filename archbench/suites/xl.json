@@ -1,0 +1,1138 @@
+{
+ "estimate_clock_hz": 100000000.0,
+ "estimate_max_seconds": 702.7833539146582,
+ "estimate_max_seconds_pessimistic": 1977.5447484387546,
+ "estimate_profile": "core-vrf-sync-v5-x8-g2c4-dp",
+ "estimate_total_seconds": 1630.8422496126532,
+ "estimate_total_seconds_pessimistic": 4031.9031717948637,
+ "eta_table": {
+  "path": "archbench/suites/xl_eta.json",
+  "sha256": "45ac759c6c32f744ce541032d78f821d9fac9fa2ba379d9e4f182e676be720a3"
+ },
+ "families": [
+  "argmax",
+  "attention_decode",
+  "attention_prefill",
+  "embedding",
+  "fp8_act_quant",
+  "fp8_decoder_decode",
+  "fp8_decoder_prefill",
+  "fp8_layer_decode",
+  "fp8_layer_prefill",
+  "fp8_linear",
+  "gemv",
+  "linear",
+  "rmsnorm_residual",
+  "rope",
+  "swiglu"
+ ],
+ "fp8_matmul_points": 18,
+ "fp8_matmul_share": 0.5625,
+ "max_live_bytes": 2293153224,
+ "memory_cap_bytes": 3221225472,
+ "name": "xl",
+ "plan": "doc/r42_plan.md, XL tier registration",
+ "points": [
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "mem_bytes",
+    "bound_cycles": 283436705.0,
+    "cycles": 1491207902.5257213,
+    "cycles_pessimistic": 4060985390.6546454,
+    "eta_equivalent": 0.19007189039162908,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "mem_bytes",
+      "bound_cycles": 176203776.0,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_projections"
+     },
+     {
+      "basis": "board eta of the attention_decode point of tier large (run-3 image)",
+      "binding": "mem_bytes",
+      "bound_cycles": 29360128.0,
+      "eta": 0.07446184624265562,
+      "eta_pessimistic": 0.07446184624265562,
+      "part": "attention"
+     },
+     {
+      "basis": "board eta of the rmsnorm point of tier large (run-3 image)",
+      "binding": "fp_lane",
+      "bound_cycles": 44097.78125,
+      "eta": 0.15075664149363982,
+      "eta_pessimistic": 0.15075664149363982,
+      "part": "elementwise"
+     },
+     {
+      "basis": "board eta of the gemv point of tier large (run-3 image)",
+      "binding": "mem_bytes",
+      "bound_cycles": 77829216.0,
+      "eta": 0.3609907793412999,
+      "eta_pessimistic": 0.3609907793412999,
+      "part": "head"
+     }
+    ],
+    "seconds": 14.912079025257214,
+    "seconds_pessimistic": 40.609853906546455
+   },
+   "family": "fp8_decoder_decode",
+   "id": "model.fp8_decoder_decode/xl/fp8-b1-p2048-layers28",
+   "kind": "model",
+   "live_bytes": 2293153224,
+   "sha256": "31d06b57df86119b7227171310d82bc8052fc703034c073b4bf9796a5450a160",
+   "tolerance": 0.2,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "fp_lane",
+    "bound_cycles": 5642515532.8125,
+    "cycles": 70278335391.46582,
+    "cycles_pessimistic": 146072999025.85098,
+    "eta_equivalent": 0.08028812152966408,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "fp_lane",
+      "bound_cycles": 5197067059.2,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_projections"
+     },
+     {
+      "basis": "board eta of the attention_prefill point of tier large (run-3 image)",
+      "binding": "fp_lane",
+      "bound_cycles": 1091051520.0,
+      "eta": 0.024801026166675972,
+      "eta_pessimistic": 0.024801026166675972,
+      "part": "attention"
+     },
+     {
+      "basis": "board eta of the rmsnorm point of tier large (run-3 image)",
+      "binding": "fp_lane",
+      "bound_cycles": 12845760.03125,
+      "eta": 0.15075664149363982,
+      "eta_pessimistic": 0.15075664149363982,
+      "part": "elementwise"
+     },
+     {
+      "basis": "board eta of the gemv point of tier large (run-3 image)",
+      "binding": "mem_bytes",
+      "bound_cycles": 77829216.0,
+      "eta": 0.3609907793412999,
+      "eta_pessimistic": 0.3609907793412999,
+      "part": "head"
+     }
+    ],
+    "seconds": 702.7833539146582,
+    "seconds_pessimistic": 1460.7299902585098
+   },
+   "family": "fp8_decoder_prefill",
+   "id": "model.fp8_decoder_prefill/xl/fp8-b1-s2048-layers4",
+   "kind": "model",
+   "live_bytes": 1827554048,
+   "sha256": "e6f3ab3429eb841d926b5c4682551f4724ac075c6ac866788bf084178ead3a21",
+   "tolerance": 0.02,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "fp_lane",
+    "bound_cycles": 9298962457.6125,
+    "cycles": 65113813483.70138,
+    "cycles_pessimistic": 197754474843.87546,
+    "eta_equivalent": 0.1428109023278159,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "fp_lane",
+      "bound_cycles": 9094867353.6,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_projections"
+     },
+     {
+      "basis": "board eta of the attention_prefill point of tier large (run-3 image)",
+      "binding": "fp_lane",
+      "bound_cycles": 478033920.0,
+      "eta": 0.024801026166675972,
+      "eta_pessimistic": 0.024801026166675972,
+      "part": "attention"
+     },
+     {
+      "basis": "board eta of the rmsnorm point of tier large (run-3 image)",
+      "binding": "fp_lane",
+      "bound_cycles": 22479936.03125,
+      "eta": 0.15075664149363982,
+      "eta_pessimistic": 0.15075664149363982,
+      "part": "elementwise"
+     },
+     {
+      "basis": "board eta of the gemv point of tier large (run-3 image)",
+      "binding": "mem_bytes",
+      "bound_cycles": 77829216.0,
+      "eta": 0.3609907793412999,
+      "eta_pessimistic": 0.3609907793412999,
+      "part": "head"
+     }
+    ],
+    "seconds": 651.1381348370138,
+    "seconds_pessimistic": 1977.5447484387546
+   },
+   "family": "fp8_decoder_prefill",
+   "id": "model.fp8_decoder_prefill/xl/fp8-b1-s512-layers28",
+   "kind": "model",
+   "live_bytes": 2132382464,
+   "sha256": "706a882afdc50e9f438812765aa8ce456820ec906c897fdf3f0af3dbec51d3f2",
+   "tolerance": 0.02,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "mem_bytes",
+    "bound_cycles": 7344192.0,
+    "cycles": 45564423.0303636,
+    "cycles_pessimistic": 137342190.46353948,
+    "eta_equivalent": 0.16118259623535486,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "mem_bytes",
+      "bound_cycles": 6292992.0,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_projections"
+     },
+     {
+      "basis": "board eta of the attention_decode point of tier large (run-3 image)",
+      "binding": "mem_bytes",
+      "bound_cycles": 1048576.0,
+      "eta": 0.07446184624265562,
+      "eta_pessimistic": 0.07446184624265562,
+      "part": "attention"
+     },
+     {
+      "basis": "board eta of the rmsnorm point of tier large (run-3 image)",
+      "binding": "mem_bytes",
+      "bound_cycles": 2624.0,
+      "eta": 0.15075664149363982,
+      "eta_pessimistic": 0.15075664149363982,
+      "part": "elementwise"
+     }
+    ],
+    "seconds": 0.455644230303636,
+    "seconds_pessimistic": 1.3734219046353948
+   },
+   "family": "fp8_layer_decode",
+   "id": "model.fp8_layer_decode/xl/fp8-b1-p2048-layers1",
+   "kind": "model",
+   "live_bytes": 84409024,
+   "sha256": "154cebd2f54b4120f5dfd8edfc98cc0971068d3591a4d368c4364685054232b9",
+   "tolerance": 0.02,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "fp_lane",
+    "bound_cycles": 331966886.4,
+    "cycles": 2317908590.99555,
+    "cycles_pessimistic": 7055075068.144624,
+    "eta_equivalent": 0.1432182820710022,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "fp_lane",
+      "bound_cycles": 324816691.2,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_projections"
+     },
+     {
+      "basis": "board eta of the attention_prefill point of tier large (run-3 image)",
+      "binding": "fp_lane",
+      "bound_cycles": 17072640.0,
+      "eta": 0.024801026166675972,
+      "eta_pessimistic": 0.024801026166675972,
+      "part": "attention"
+     },
+     {
+      "basis": "board eta of the rmsnorm point of tier large (run-3 image)",
+      "binding": "mem_bytes",
+      "bound_cycles": 820224.0,
+      "eta": 0.15075664149363982,
+      "eta_pessimistic": 0.15075664149363982,
+      "part": "elementwise"
+     }
+    ],
+    "seconds": 23.1790859099555,
+    "seconds_pessimistic": 70.55075068144623
+   },
+   "family": "fp8_layer_prefill",
+   "id": "model.fp8_layer_prefill/xl/fp8-b1-s512-layers1",
+   "kind": "model",
+   "live_bytes": 154423296,
+   "sha256": "d0d6bc105d461851fd5e903bbc1219f8b763a53ab60aec1e03ace080626aac8d",
+   "tolerance": 0.02,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "estimate": {
+    "binding": "mem_bytes",
+    "bound_cycles": 607760.0,
+    "cycles": 3495017.145524715,
+    "cycles_pessimistic": 3495017.145524715,
+    "eta_equivalent": 0.17389328140441943,
+    "parts": [
+     {
+      "basis": "board eta of the argmax point of tier large (run-3 image)",
+      "binding": "mem_bytes",
+      "bound_cycles": 607760.0,
+      "eta": 0.17389328140441943,
+      "eta_pessimistic": 0.17389328140441943,
+      "part": "argmax"
+     }
+    ],
+    "seconds": 0.03495017145524715,
+    "seconds_pessimistic": 0.03495017145524715
+   },
+   "family": "argmax",
+   "id": "op.argmax/xl/fp16-r16-v151936",
+   "kind": "op",
+   "live_bytes": 4862080,
+   "sha256": "177dbcda727575d007402b026732e324512ff6750ed4e7f7dc7de25f49cd9184",
+   "tolerance": 0.0,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "estimate": {
+    "binding": "mem_bytes",
+    "bound_cycles": 1049600.0,
+    "cycles": 14095809.50463641,
+    "cycles_pessimistic": 14095809.50463641,
+    "eta_equivalent": 0.07446184624265562,
+    "parts": [
+     {
+      "basis": "board eta of the attention_decode point of tier large (run-3 image)",
+      "binding": "mem_bytes",
+      "bound_cycles": 1049600.0,
+      "eta": 0.07446184624265562,
+      "eta_pessimistic": 0.07446184624265562,
+      "part": "attention_decode"
+     }
+    ],
+    "seconds": 0.1409580950463641,
+    "seconds_pessimistic": 0.1409580950463641
+   },
+   "family": "attention_decode",
+   "id": "op.attention_decode/xl/fp16-b1-h16-kv8-l2048-d128",
+   "kind": "op",
+   "live_bytes": 25567232,
+   "sha256": "919f0bc578929bfd3edb09a2cc8e17e3c157e803b71ca3d2e00af5ad4c389b2e",
+   "tolerance": 0.02,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "estimate": {
+    "binding": "mem_bytes",
+    "bound_cycles": 2098176.0,
+    "cycles": 28177867.000000004,
+    "cycles_pessimistic": 28177867.000000004,
+    "eta_equivalent": 0.07446184624265562,
+    "parts": [
+     {
+      "basis": "board eta of the attention_decode point of tier large (run-3 image)",
+      "binding": "mem_bytes",
+      "bound_cycles": 2098176.0,
+      "eta": 0.07446184624265562,
+      "eta_pessimistic": 0.07446184624265562,
+      "part": "attention_decode"
+     }
+    ],
+    "seconds": 0.28177867000000006,
+    "seconds_pessimistic": 0.28177867000000006
+   },
+   "family": "attention_decode",
+   "id": "op.attention_decode/xl/fp16-b1-h16-kv8-l4096-d128",
+   "kind": "op",
+   "live_bytes": 51126272,
+   "sha256": "fdbd8009cf7f7ba251aa06178a6088f67eccb6b3d87a220104a0b025efdbecfd",
+   "tolerance": 0.02,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "estimate": {
+    "binding": "mem_bytes",
+    "bound_cycles": 4195328.0,
+    "cycles": 56341981.99072719,
+    "cycles_pessimistic": 56341981.99072719,
+    "eta_equivalent": 0.07446184624265562,
+    "parts": [
+     {
+      "basis": "board eta of the attention_decode point of tier large (run-3 image)",
+      "binding": "mem_bytes",
+      "bound_cycles": 4195328.0,
+      "eta": 0.07446184624265562,
+      "eta_pessimistic": 0.07446184624265562,
+      "part": "attention_decode"
+     }
+    ],
+    "seconds": 0.563419819907272,
+    "seconds_pessimistic": 0.563419819907272
+   },
+   "family": "attention_decode",
+   "id": "op.attention_decode/xl/fp16-b1-h16-kv8-l8192-d128",
+   "kind": "op",
+   "live_bytes": 102244352,
+   "sha256": "f208cc72607767eae0713c3ca72ae0f45062e16d473964e9bcd29a9dc606e0dc",
+   "tolerance": 0.02,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "estimate": {
+    "binding": "fp_lane",
+    "bound_cycles": 68224000.0,
+    "cycles": 2750853917.9588275,
+    "cycles_pessimistic": 2750853917.9588275,
+    "eta_equivalent": 0.024801026166675972,
+    "parts": [
+     {
+      "basis": "board eta of the attention_prefill point of tier large (run-3 image)",
+      "binding": "fp_lane",
+      "bound_cycles": 68224000.0,
+      "eta": 0.024801026166675972,
+      "eta_pessimistic": 0.024801026166675972,
+      "part": "attention_prefill"
+     }
+    ],
+    "seconds": 27.508539179588276,
+    "seconds_pessimistic": 27.508539179588276
+   },
+   "family": "attention_prefill",
+   "id": "op.attention_prefill/xl/fp16-b1-h16-kv8-s1024-d128",
+   "kind": "op",
+   "live_bytes": 222298112,
+   "sha256": "d98d9b3e9982f2b6aebcb419f1b7e89b456e7a1b8c7b147991aef0bbf3c4de8b",
+   "tolerance": 0.02,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "estimate": {
+    "binding": "fp_lane",
+    "bound_cycles": 272762880.0,
+    "cycles": 10998048151.99539,
+    "cycles_pessimistic": 10998048151.99539,
+    "eta_equivalent": 0.024801026166675972,
+    "parts": [
+     {
+      "basis": "board eta of the attention_prefill point of tier large (run-3 image)",
+      "binding": "fp_lane",
+      "bound_cycles": 272762880.0,
+      "eta": 0.024801026166675972,
+      "eta_pessimistic": 0.024801026166675972,
+      "part": "attention_prefill"
+     }
+    ],
+    "seconds": 109.9804815199539,
+    "seconds_pessimistic": 109.9804815199539
+   },
+   "family": "attention_prefill",
+   "id": "op.attention_prefill/xl/fp16-b1-h16-kv8-s2048-d128",
+   "kind": "op",
+   "live_bytes": 847249408,
+   "sha256": "aac61a910b2acb27ef42a365fe430d42a43813ecc1ed1d0baaf3ae764dbc97c6",
+   "tolerance": 0.02,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "estimate": {
+    "binding": "mem_bytes",
+    "bound_cycles": 2099200.0,
+    "cycles": 74882368.0,
+    "cycles_pessimistic": 74882368.0,
+    "eta_equivalent": 0.028033301510977857,
+    "parts": [
+     {
+      "basis": "board eta of the embedding point of tier large (run-3 image)",
+      "binding": "mem_bytes",
+      "bound_cycles": 2099200.0,
+      "eta": 0.028033301510977857,
+      "eta_pessimistic": 0.028033301510977857,
+      "part": "embedding"
+     }
+    ],
+    "seconds": 0.74882368,
+    "seconds_pessimistic": 0.74882368
+   },
+   "family": "embedding",
+   "id": "op.embedding/xl/fp16-v151936-d2048-t2048",
+   "kind": "op",
+   "live_bytes": 630734848,
+   "sha256": "ee1fd5113fcf6150f4123973ea42b442f9a5f8d7470eb8f01071d291f9ac5e7f",
+   "tolerance": 0.0,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "mem_bytes",
+    "bound_cycles": 1589248.0,
+    "cycles": 7946240.0,
+    "cycles_pessimistic": 31124027.821379703,
+    "eta_equivalent": 0.2,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "mem_bytes",
+      "bound_cycles": 1589248.0,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_act_quant"
+     }
+    ],
+    "seconds": 0.0794624,
+    "seconds_pessimistic": 0.311240278213797
+   },
+   "family": "fp8_act_quant",
+   "id": "op.fp8_act_quant/xl/fp8-m2048-k2048",
+   "kind": "op",
+   "live_bytes": 12713984,
+   "sha256": "8a2ec384ac3de2a4a14715b5e97852d3f6019a58a10a1fa80dae2c11926ac0f8",
+   "tolerance": 0.08,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "mem_bytes",
+    "bound_cycles": 4767744.0,
+    "cycles": 23838720.0,
+    "cycles_pessimistic": 93372083.4641391,
+    "eta_equivalent": 0.2,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "mem_bytes",
+      "bound_cycles": 4767744.0,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_act_quant"
+     }
+    ],
+    "seconds": 0.2383872,
+    "seconds_pessimistic": 0.933720834641391
+   },
+   "family": "fp8_act_quant",
+   "id": "op.fp8_act_quant/xl/fp8-m2048-k6144",
+   "kind": "op",
+   "live_bytes": 38141952,
+   "sha256": "03133e5f67ae8b9c5db94576d49c53246f5d6d313c9c0c565718c75ef86f63c5",
+   "tolerance": 0.08,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "mem_bytes",
+    "bound_cycles": 3150080.0,
+    "cycles": 15750400.0,
+    "cycles_pessimistic": 61691553.21231914,
+    "eta_equivalent": 0.2,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "mem_bytes",
+      "bound_cycles": 3150080.0,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_linear"
+     }
+    ],
+    "seconds": 0.157504,
+    "seconds_pessimistic": 0.6169155321231914
+   },
+   "family": "fp8_linear",
+   "id": "op.fp8_linear/xl/fp8-m1-k2048-n12288",
+   "kind": "op",
+   "live_bytes": 25200640,
+   "sha256": "15911313ef57875f40cc0fac4789603f01a76fc5d8315bff3990548e963c1fa2",
+   "tolerance": 0.004,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "mem_bytes",
+    "bound_cycles": 38943608.0,
+    "cycles": 194718040.0,
+    "cycles_pessimistic": 762676397.1745789,
+    "eta_equivalent": 0.2,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "mem_bytes",
+      "bound_cycles": 38943608.0,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_linear"
+     }
+    ],
+    "seconds": 1.9471804,
+    "seconds_pessimistic": 7.626763971745789
+   },
+   "family": "fp8_linear",
+   "id": "op.fp8_linear/xl/fp8-m1-k2048-n151936",
+   "kind": "op",
+   "live_bytes": 311548864,
+   "sha256": "0203308e11757d663ae934bf8fb030485e177eca623fa4f8ec3e41c4baa2e0a0",
+   "tolerance": 0.004,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "mem_bytes",
+    "bound_cycles": 1050368.0,
+    "cycles": 5251840.0,
+    "cycles_pessimistic": 20570535.78465221,
+    "eta_equivalent": 0.2,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "mem_bytes",
+      "bound_cycles": 1050368.0,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_linear"
+     }
+    ],
+    "seconds": 0.0525184,
+    "seconds_pessimistic": 0.2057053578465221
+   },
+   "family": "fp8_linear",
+   "id": "op.fp8_linear/xl/fp8-m1-k2048-n4096",
+   "kind": "op",
+   "live_bytes": 8402944,
+   "sha256": "15da736bea87d9e3a743ad7c76fad926f38ea50d5ee3b9eadf09f5a9fd0038b7",
+   "tolerance": 0.004,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "mem_bytes",
+    "bound_cycles": 1575296.0,
+    "cycles": 7876480.0,
+    "cycles_pessimistic": 30850790.141568944,
+    "eta_equivalent": 0.2,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "mem_bytes",
+      "bound_cycles": 1575296.0,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_linear"
+     }
+    ],
+    "seconds": 0.0787648,
+    "seconds_pessimistic": 0.30850790141568946
+   },
+   "family": "fp8_linear",
+   "id": "op.fp8_linear/xl/fp8-m1-k6144-n2048",
+   "kind": "op",
+   "live_bytes": 12602368,
+   "sha256": "45a8f1faada427eccf968fdf4d01e1d98203eb3223f5ccb30c31d3cee97e7ada",
+   "tolerance": 0.004,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "fp_lane",
+    "bound_cycles": 5073616.0,
+    "cycles": 25368080.0,
+    "cycles_pessimistic": 99362318.24044907,
+    "eta_equivalent": 0.2,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "fp_lane",
+      "bound_cycles": 5073616.0,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_linear"
+     }
+    ],
+    "seconds": 0.2536808,
+    "seconds_pessimistic": 0.9936231824044907
+   },
+   "family": "fp8_linear",
+   "id": "op.fp8_linear/xl/fp8-m16-k2048-n12288",
+   "kind": "op",
+   "live_bytes": 25630720,
+   "sha256": "9ec66448679d1cfc90376d647695adf9681b0a633fab65370f519efb5372b0e7",
+   "tolerance": 0.004,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "fp_lane",
+    "bound_cycles": 62723801.6,
+    "cycles": 313619008.0,
+    "cycles_pessimistic": 1228390626.2969031,
+    "eta_equivalent": 0.2,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "fp_lane",
+      "bound_cycles": 62723801.6,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_linear"
+     }
+    ],
+    "seconds": 3.13619008,
+    "seconds_pessimistic": 12.283906262969031
+   },
+   "family": "fp8_linear",
+   "id": "op.fp8_linear/xl/fp8-m16-k2048-n151936",
+   "kind": "op",
+   "live_bytes": 316168384,
+   "sha256": "393aefe8d652e4b5964cf849ca1e38fb8edca53c13a3f71c3a95906eee5da93e",
+   "tolerance": 0.004,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "fp_lane",
+    "bound_cycles": 2538864.0,
+    "cycles": 12694320.0,
+    "cycles_pessimistic": 49721424.07648105,
+    "eta_equivalent": 0.2,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "fp_lane",
+      "bound_cycles": 2538864.0,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_linear"
+     }
+    ],
+    "seconds": 0.1269432,
+    "seconds_pessimistic": 0.4972142407648105
+   },
+   "family": "fp8_linear",
+   "id": "op.fp8_linear/xl/fp8-m16-k6144-n2048",
+   "kind": "op",
+   "live_bytes": 12848128,
+   "sha256": "c67f1591f965117c51068db4de405eb4e8cd403a13a1b7eb0e9dd3c9ed5c97fd",
+   "tolerance": 0.004,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "fp_lane",
+    "bound_cycles": 649422848.0,
+    "cycles": 3247114240.0,
+    "cycles_pessimistic": 12718376734.777481,
+    "eta_equivalent": 0.2,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "fp_lane",
+      "bound_cycles": 649422848.0,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_linear"
+     }
+    ],
+    "seconds": 32.4711424,
+    "seconds_pessimistic": 127.1837673477748
+   },
+   "family": "fp8_linear",
+   "id": "op.fp8_linear/xl/fp8-m2048-k2048-n12288",
+   "kind": "op",
+   "live_bytes": 83892224,
+   "sha256": "22a5dce846e071c04fbd3edcadf613b27fbb2edb4731dde47dc70b64a98e0410",
+   "tolerance": 0.004,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "fp_lane",
+    "bound_cycles": 108324864.0,
+    "cycles": 541624320.0,
+    "cycles_pessimistic": 2121447427.2631915,
+    "eta_equivalent": 0.2,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "fp_lane",
+      "bound_cycles": 108324864.0,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_linear"
+     }
+    ],
+    "seconds": 5.4162432,
+    "seconds_pessimistic": 21.214474272631914
+   },
+   "family": "fp8_linear",
+   "id": "op.fp8_linear/xl/fp8-m2048-k2048-n2048",
+   "kind": "op",
+   "live_bytes": 20972544,
+   "sha256": "b13e6a796e6dea3389bd9737c5bbce9473eaada75066613c82dbc132a12dc6fc",
+   "tolerance": 0.004,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "fp_lane",
+    "bound_cycles": 216544460.8,
+    "cycles": 1082722304.0,
+    "cycles_pessimistic": 4240833288.76605,
+    "eta_equivalent": 0.2,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "fp_lane",
+      "bound_cycles": 216544460.8,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_linear"
+     }
+    ],
+    "seconds": 10.82722304,
+    "seconds_pessimistic": 42.4083328876605
+   },
+   "family": "fp8_linear",
+   "id": "op.fp8_linear/xl/fp8-m2048-k2048-n4096",
+   "kind": "op",
+   "live_bytes": 33556480,
+   "sha256": "9b3cfa8a19e9aff1fbf995ba8ccdc2ddb1355fd5a35a0ead830d5e0510e2fab7",
+   "tolerance": 0.004,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "fp_lane",
+    "bound_cycles": 324974592.0,
+    "cycles": 1624872960.0,
+    "cycles_pessimistic": 6364342281.789575,
+    "eta_equivalent": 0.2,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "fp_lane",
+      "bound_cycles": 324974592.0,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_linear"
+     }
+    ],
+    "seconds": 16.2487296,
+    "seconds_pessimistic": 63.64342281789575
+   },
+   "family": "fp8_linear",
+   "id": "op.fp8_linear/xl/fp8-m2048-k6144-n2048",
+   "kind": "op",
+   "live_bytes": 46140416,
+   "sha256": "660d244e9261ca32d82dc40b89e6393d00a3e1b977169f6515ab004208012c83",
+   "tolerance": 0.004,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "fp_lane",
+    "bound_cycles": 162355712.0,
+    "cycles": 811778560.0,
+    "cycles_pessimistic": 3179594183.6943703,
+    "eta_equivalent": 0.2,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "fp_lane",
+      "bound_cycles": 162355712.0,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_linear"
+     }
+    ],
+    "seconds": 8.1177856,
+    "seconds_pessimistic": 31.7959418369437
+   },
+   "family": "fp8_linear",
+   "id": "op.fp8_linear/xl/fp8-m512-k2048-n12288",
+   "kind": "op",
+   "live_bytes": 39852032,
+   "sha256": "bfbfd2099bc44d5704025f9ad2e2a93860d169f66d0994ee0a6aaef9612d12bc",
+   "tolerance": 0.004,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp8",
+   "estimate": {
+    "binding": "fp_lane",
+    "bound_cycles": 81243648.0,
+    "cycles": 406218240.0,
+    "cycles_pessimistic": 1591085570.4473937,
+    "eta_equivalent": 0.2,
+    "parts": [
+     {
+      "basis": "fp8 matrix: eta 0.2 (brief); pessimistic: TLM model of the Hub kernel",
+      "binding": "fp_lane",
+      "bound_cycles": 81243648.0,
+      "eta": 0.2,
+      "eta_pessimistic": 0.05106177160361984,
+      "part": "fp8_linear"
+     }
+    ],
+    "seconds": 4.0621824,
+    "seconds_pessimistic": 15.910855704473937
+   },
+   "family": "fp8_linear",
+   "id": "op.fp8_linear/xl/fp8-m512-k6144-n2048",
+   "kind": "op",
+   "live_bytes": 20974592,
+   "sha256": "49ee5e8c31716478c815832a3fef42799f54f20dd94b3d6e3a1550802062dbf3",
+   "tolerance": 0.004,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "estimate": {
+    "binding": "mem_bytes",
+    "bound_cycles": 77829728.0,
+    "cycles": 215600321.26586708,
+    "cycles_pessimistic": 215600321.26586708,
+    "eta_equivalent": 0.3609907793412999,
+    "parts": [
+     {
+      "basis": "board eta of the gemv point of tier large (run-3 image)",
+      "binding": "mem_bytes",
+      "bound_cycles": 77829728.0,
+      "eta": 0.3609907793412999,
+      "eta_pessimistic": 0.3609907793412999,
+      "part": "gemv"
+     }
+    ],
+    "seconds": 2.156003212658671,
+    "seconds_pessimistic": 2.156003212658671
+   },
+   "family": "gemv",
+   "id": "op.gemv/xl/fp16-k2048-n151936",
+   "kind": "op",
+   "live_bytes": 622637824,
+   "sha256": "1515c5e68d528438da6a4cf12202ce9e593259cfc1ea426e3903a7eb8074fffb",
+   "tolerance": 0.02,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "estimate": {
+    "binding": "fp_lane",
+    "bound_cycles": 805306368.0,
+    "cycles": 1261445072.023426,
+    "cycles_pessimistic": 1261445072.023426,
+    "eta_equivalent": 0.6383998684209413,
+    "parts": [
+     {
+      "basis": "board eta of the linear point of tier large (run-3 image)",
+      "binding": "fp_lane",
+      "bound_cycles": 805306368.0,
+      "eta": 0.6383998684209413,
+      "eta_pessimistic": 0.6383998684209413,
+      "part": "linear"
+     }
+    ],
+    "seconds": 12.614450720234261,
+    "seconds_pessimistic": 12.614450720234261
+   },
+   "family": "linear",
+   "id": "op.linear/xl/fp16-m2048-k2048-n6144-bias0",
+   "kind": "op",
+   "live_bytes": 58720256,
+   "sha256": "3d50cb30e3e6d7d57030682ffa0857d79343d80543f334021428d249ca2bed81",
+   "tolerance": 0.02,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "estimate": {
+    "binding": "mem_bytes",
+    "bound_cycles": 4194816.0,
+    "cycles": 27825082.586341463,
+    "cycles_pessimistic": 27825082.586341463,
+    "eta_equivalent": 0.15075664149363982,
+    "parts": [
+     {
+      "basis": "board eta of the rmsnorm point of tier large (run-3 image)",
+      "binding": "mem_bytes",
+      "bound_cycles": 4194816.0,
+      "eta": 0.15075664149363982,
+      "eta_pessimistic": 0.15075664149363982,
+      "part": "rmsnorm_residual"
+     }
+    ],
+    "seconds": 0.27825082586341465,
+    "seconds_pessimistic": 0.27825082586341465
+   },
+   "family": "rmsnorm_residual",
+   "id": "op.rmsnorm_residual/xl/fp16-r2048-d2048",
+   "kind": "op",
+   "live_bytes": 41947136,
+   "sha256": "0fee763e28d951843e6325cc3d4aff44483b83cc823ae7dd6fe291de38351511",
+   "tolerance": 0.02,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "estimate": {
+    "binding": "mem_bytes",
+    "bound_cycles": 2228224.0,
+    "cycles": 39189405.57575758,
+    "cycles_pessimistic": 39189405.57575758,
+    "eta_equivalent": 0.056857815709722606,
+    "parts": [
+     {
+      "basis": "board eta of the rope point of tier large (run-3 image)",
+      "binding": "mem_bytes",
+      "bound_cycles": 2228224.0,
+      "eta": 0.05685781570972261,
+      "eta_pessimistic": 0.05685781570972261,
+      "part": "rope"
+     }
+    ],
+    "seconds": 0.3918940557575758,
+    "seconds_pessimistic": 0.3918940557575758
+   },
+   "family": "rope",
+   "id": "op.rope/xl/fp16-b1-h16-s2048-d128",
+   "kind": "op",
+   "live_bytes": 34603008,
+   "sha256": "9b1dc9aa7718bf1f42d3dec58ff805f482f792e7317a1f4f4c16493aab921cc0",
+   "tolerance": 0.02,
+   "track": [
+    "llm"
+   ]
+  },
+  {
+   "dtype": "fp16",
+   "estimate": {
+    "binding": "mem_bytes",
+    "bound_cycles": 9437184.0,
+    "cycles": 46046422.49999999,
+    "cycles_pessimistic": 46046422.49999999,
+    "eta_equivalent": 0.2049493421557343,
+    "parts": [
+     {
+      "basis": "board eta of the swiglu point of tier large (run-3 image)",
+      "binding": "mem_bytes",
+      "bound_cycles": 9437184.0,
+      "eta": 0.20494934215573427,
+      "eta_pessimistic": 0.20494934215573427,
+      "part": "swiglu"
+     }
+    ],
+    "seconds": 0.46046422499999995,
+    "seconds_pessimistic": 0.46046422499999995
+   },
+   "family": "swiglu",
+   "id": "op.swiglu/xl/fp16-r2048-i6144",
+   "kind": "op",
+   "live_bytes": 100663296,
+   "sha256": "b8f2e4d6541cf1a41d51518719cb1b6c057bbc3ffb0fcdc0a9882ca8cf561bb4",
+   "tolerance": 0.02,
+   "track": [
+    "llm"
+   ]
+  }
+ ],
+ "rules": "archbench/xl.py (module docstring), archbench/PROTOCOL.md 4.1-4.2",
+ "schema": "archbench-suite/1",
+ "sha256": "2fd48cb3da4817c1129e4fef95e6ea6ef177c6d791da68bc5f4dd0c0cd8779d2",
+ "status": "frozen: registered before any xl result exists; every point is reported, favourable or not; a changed definition is a different suite",
+ "tier": "xl"
+}

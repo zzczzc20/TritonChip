@@ -1,0 +1,1 @@
+PASS op.fp8_act_quant/xl/fp8-m2048-k2048                        err 0.000e+00 tol 0.08  [emu vs binary64 reference; ref 1.4s, module 0.1s, rss 0.92 GiB] 

@@ -61,6 +61,14 @@ def wave_fn(tables, mclass, variant, kind='fp8_linear'):
     return lambda k_it, a=a, b=b: a + b * k_it
 
 
+def other_factor(fam, family, part, variant):
+    """cycle factor of a non-FP8 part: the factor measured on the analogous 113-point family (gemv for the head and the
+    gemv point, linear for the fp16 linear point), 1.0 for kernels without matrix commands (attention, norms, rope, ...)"""
+    key = 'gemv' if (part == 'head' or family == 'gemv') else 'linear' if family == 'linear' else None
+    g = fam.get(key, {}).get(variant) if key else None
+    return 1.0 / g['geo'] if g else 1.0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--collected', required=True)
@@ -78,6 +86,14 @@ def main():
         except Exception:
             pass
     variants = sorted({v for (_t, v) in tables})
+    # S1-ref: the existing stream (Hub activation quantisation once + blockwise torch._scaled_mm template), K = 1024 proxies:
+    # its cycle ratio to the Hub kernel's at the same shape, applied to every launch of that M class
+    s1ref = {}
+    for mc, m in ((1, 1), (16, 48)):
+        h = tables.get(('xss2', 'cal'), {}).get(f'op.fp8_linear/xl/fp8-m{m}-k1024-n1536')
+        s = tables.get(('xss5', 'cal'), {}).get(f'op.fp8_linear_s1ref/xl/fp8-m{m}-k1024-n1536')
+        if h and s:
+            s1ref[mc] = s['device_cycles'] / h['device_cycles']
     fam = json.loads(Path(a.families).read_text())['by_family'] if a.families else {}
     out = dict(variants=variants, points={})
     for p in inputs['points']:
@@ -102,11 +118,28 @@ def main():
                     totv += cv
                 else:
                     tot0 += cyc
-                    totv += cyc * p.get('other_factor', {}).get(v, 1.0)
+                    totv += cyc * other_factor(fam, family, part, v)
             if ok:
                 res[v] = dict(s0=tot0, v=totv, factor=totv / tot0)
+        if p['fp8_shapes'] and p['m_class'] in s1ref and 'cal' in res:
+            tot0 = totv = 0.0
+            for part, cyc in parts.items():
+                if family == 'fp8_linear' or part == 'fp8_projections':
+                    f0 = wave_fn(tables, 1 if p['m_class'] == 1 else 16, 'cal')
+                    c0 = sum(fp8_cycles(m, n, k, f0) for (m, n, k) in p['fp8_shapes'])
+                    tot0 += c0
+                    totv += c0 * s1ref[p['m_class']]
+                else:
+                    tot0 += cyc
+                    totv += cyc
+            res['s1ref_stream'] = dict(s0=tot0, v=totv, factor=totv / tot0)
+        elif s1ref and 'cal' in res and not p['fp8_shapes']:
+            res['s1ref_stream'] = dict(s0=res['cal']['s0'], v=res['cal']['s0'], factor=1.0)   # no FP8 projection: unchanged
         row['variants'] = res
         out['points'][pid] = row
+    variants = variants + (['s1ref_stream'] if s1ref else [])
+    out['variants'] = variants
+    out['s1ref_ratio'] = s1ref
     for v in variants:
         fs = [r['variants'][v]['factor'] for r in out['points'].values() if v in r['variants']]
         out.setdefault('geo_speedup', {})[v] = 1 / math.exp(sum(math.log(x) for x in fs) / len(fs)) if fs else None

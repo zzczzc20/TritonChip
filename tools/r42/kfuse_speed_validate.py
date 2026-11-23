@@ -19,6 +19,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 GEMM_FAMILIES = {'matmul', 'linear', 'mlp', 'gemv', 'bmm', 'gpt2_block', 'llama_prefill', 'llama_decode',
                  'attention_prefill', 'attention_decode'}
+# families whose compiled kernels contain m.mma.dp commands (FP16 only; the attention kernels and the FP32 points contain none)
+ENGINE_FAMILIES = {'matmul', 'linear', 'mlp', 'gemv', 'bmm', 'gpt2_block', 'llama_prefill', 'llama_decode'}
+
+
+def engine_point(r):
+    return r['family'] in ENGINE_FAMILIES and 'fp32' not in r['point']
 
 
 def board_records(which='ab-int2'):
@@ -86,12 +92,13 @@ def main():
     for r in ok:
         fam[r['family']].append(r)
     summary = dict(all=stats(ok) if ok else None,
+                   engine_gemm=stats([r for r in ok if engine_point(r)]) if any(engine_point(r) for r in ok) else None,
                    gemm_shaped=stats([r for r in ok if r['family'] in GEMM_FAMILIES]) if ok else None,
                    other=stats([r for r in ok if r['family'] not in GEMM_FAMILIES]) if any(
                        r['family'] not in GEMM_FAMILIES for r in ok) else None,
                    by_family={k: stats(v) for k, v in sorted(fam.items())})
     print()
-    for k in ('all', 'gemm_shaped', 'other'):
+    for k in ('all', 'gemm_shaped', 'engine_gemm', 'other'):
         s = summary[k]
         if s:
             print(f'{k:<12} n={s["n"]:>3} geo(model/board)={s["geo_ratio"]:.3f} median|err|={s["median_abs_err"]:.3f} '

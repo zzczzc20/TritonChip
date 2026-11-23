@@ -38,13 +38,13 @@ def main():
         n = vs.get('cal_s1', vs.get('cal_g8', {})).get('n', 0)
         print(f'{f:<20}{n:>3}' + ''.join(f'{vs[v]["geo"]:>10.3f}' if v in vs else f'{"-":>10}' for v in MAIN[1:]))
     print('\n3. per point: board cycles (ab-int2) and predicted board cycles')
-    print(f'{"point":<58}{"src":>7}{"board":>14}' + ''.join(f'{LABEL[v]:>13}' for v in MAIN[1:]))
+    print(f'{"point":<58}{"src":>7}{"board":>15}' + ''.join(f'{LABEL[v]:>16}' for v in MAIN[1:]))
     for r in rows:
         if not r['factor'] or 'cal_s1' not in r['factor'] and 'cal_g8' not in r['factor']:
             continue
         b = r['board']
-        print(f'{r["point"]:<58}{r["source"][:6]:>7}{b:>14,}' + ''.join(
-            f'{b * r["factor"][v]:>13,.0f}' if v in r['factor'] else f'{"-":>13}' for v in MAIN[1:]))
+        print(f'{r["point"]:<58}{r["source"][:6]:>7}{b:>15,}' + ''.join(
+            f'{b * r["factor"][v]:>16,.0f}' if v in r['factor'] else f'{"-":>16}' for v in MAIN[1:]))
     if len(sys.argv) > 2:
         x = json.loads(Path(sys.argv[2]).read_text())
         print('\n4. xl tier: predicted device cycles per point (S0 = Hub kernel as compiled, today G=4) and speed-up per scenario')

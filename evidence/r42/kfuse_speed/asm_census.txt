@@ -1,0 +1,16 @@
+== triton_tem_fused_addmm_t_0.s: 413 instructions
+   matrix commands (static): Counter({'m.mma.dp.async.k16.f16': 2})
+   innermost matrix loop [146..183]: 38 instructions/iteration, mma 2, scalar-branch 20, window-barrier-transfer 16
+      mnemonics: {'s.mov': 8, 'mb.arm': 4, 'w.def': 4, 'mb.wait': 4, 's.movz': 3, 'br.nz': 3, 'm.mma.dp.async.k16.f16': 2, 's.add': 2, 's.cmp.ge': 2, 's.mul': 2, 't.ld.async.h': 2, 't.ld.async.h.t': 2}
+== hub_m16.s: 10904 instructions
+   matrix commands (static): Counter({'m.mma.dp.async.k32.e4m3': 32})
+   innermost matrix loop [685..9319]: 8635 instructions/iteration, matrix-other 392, mma 32, scalar-branch 2534, vector-other 5446, window-barrier-transfer 231
+      mnemonics: {'s.addi': 1377, '@p1': 578, 'v.ld.w': 576, 'vf.fms': 516, 'v.extract': 472, 's.movz': 393, 'v.st.w': 392, 'vf.mul': 385, 's.add': 370, 'v.splat': 349, 'vf.neg': 258, 'vf.cmp.o': 258}
+== hub_m1.s: 6734 instructions
+   matrix commands (static): Counter({'m.mma.dp.async.k32.e4m3': 32})
+   innermost matrix loop [627..5146]: 4520 instructions/iteration, matrix-other 392, mma 32, scalar-branch 1715, vector-other 2117, window-barrier-transfer 264
+      mnemonics: {'s.addi': 818, 's.movz': 387, 'v.ld.w': 356, 'v.st.w': 305, 'vf.mul': 265, 'a.vread': 256, 'v.splat': 229, 'v.extract': 210, 's.mov': 164, 'vf.add': 128, 'a.vwrite': 128, 's.add': 117}
+== scaledmm_tem.s: 6709 instructions
+   matrix commands (static): Counter({'m.mma.dp.async.k32.e4m3': 32})
+   innermost matrix loop [371..5487]: 5117 instructions/iteration, matrix-other 392, mma 32, scalar-branch 2140, vector-other 2330, window-barrier-transfer 223
+      mnemonics: {'s.addi': 984, 's.movz': 393, 's.add': 372, 'v.extract': 328, 'v.ld.w': 320, 'v.st.w': 264, 'a.vread': 256, 'vf.mul': 256, 'v.movi': 226, 'v.splat': 221, 's.mov': 163, 'v.st.b': 160}

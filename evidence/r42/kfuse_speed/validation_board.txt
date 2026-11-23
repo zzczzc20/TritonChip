@@ -94,6 +94,7 @@ op.transpose/tiny/fp32-r32-c32                                         2,083    
 
 all          n= 92 geo(model/board)=0.817 median|err|=0.195 max|err|=0.740 within10%=27 within20%=48
 gemm_shaped  n= 48 geo(model/board)=0.948 median|err|=0.101 max|err|=0.366 within10%=24 within20%=36
+engine_gemm  n= 37 geo(model/board)=0.947 median|err|=0.079 max|err|=0.337 within10%=22 within20%=31
 other        n= 44 geo(model/board)=0.695 median|err|=0.238 max|err|=0.740 within10%=3 within20%=12
   add                n= 4 geo=0.664 med|err|=0.275 max=0.558
   argmax             n= 3 geo=0.813 med|err|=0.206 max=0.257

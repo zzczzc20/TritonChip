@@ -1,0 +1,34 @@
+variant         geo speed-up (113)  modelled pts  geo (modelled pts)  sum-cycles
+cal                         1.0000            45              1.0000      1.0000
+cal_s1                      1.0017            45              1.0044      1.0078
+cal_s2                      0.9954            45              0.9886      0.9822
+cal_g8                      1.0042            45              1.0105      0.9993
+cal_g8_s1                   1.0062            45              1.0157      1.0114
+cal_g8_s2                   0.9997            45              0.9992      0.9794
+cal_g16                     1.0052            45              1.0132      1.0002
+cal_g16_s1                  1.0070            45              1.0177      1.0123
+cal_g16_s2                  1.0003            45              1.0009      0.9803
+cal_g4                      1.0028            30              1.0106      1.0000
+cal_g4_s1                   1.0038            30              1.0143      1.0000
+cal_g4_s2                   1.0002            30              1.0006      1.0000
+cal_g8_pf                   1.0041            30              1.0155      1.0000
+cal_g16_pf                  1.0046            30              1.0176      1.0000
+cal_s1_pf                   1.0014            30              1.0051      1.0000
+cal_u32                     1.0233            30              1.0906      1.0000
+cal_u32_s1                  1.0241            30              1.0940      1.0000
+cal_u32_g8                  1.0282            30              1.1103      1.0001
+cal_u32_g8_s1               1.0293            30              1.1150      1.0001
+cal_u32_g8_s2               1.0255            30              1.0994      1.0000
+ideal                       1.1081            30              1.4722      1.0002
+ideal_s1                    1.1089            30              1.4760      1.0002
+ideal_s2                    1.1040            30              1.4514      1.0002
+ideal_g8                    1.1160            30              1.5122      1.0002
+ideal_g8_s1                 1.1179            30              1.5218      1.0002
+ideal_g8_s2                 1.1120            30              1.4918      1.0002
+ideal_g16                   1.1173            30              1.5186      1.0002
+ideal_g16_s1                1.1193            30              1.5287      1.0002
+ideal_g16_s2                1.0000             0                 nan      1.0000
+ideal_g8_pf                 1.0000             0                 nan      1.0000
+ideal_g16_pf                1.0000             0                 nan      1.0000
+sensitivity cal_u32: n=30, S0 variant vs calibrated S0 1.0906; relative to its own S0: cal_u32 1.0000, cal_u32_s1 1.0031, cal_u32_g8 1.0181, cal_u32_g8_s1 1.0224, cal_u32_g8_s2 1.0080
+sensitivity ideal: n=30, S0 variant vs calibrated S0 1.4722; relative to its own S0: ideal 1.0000, ideal_s1 1.0026, ideal_s2 0.9859, ideal_g8 1.0271, ideal_g8_s1 1.0337, ideal_g8_s2 1.0133, ideal_g16 1.0316, ideal_g16_s1 1.0383

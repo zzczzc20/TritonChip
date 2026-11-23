@@ -34,7 +34,11 @@ ROOT = Path(__file__).resolve().parents[2]
 MAIN = ['cal', 'cal_s1', 'cal_s2', 'cal_g8', 'cal_g8_s1', 'cal_g8_s2', 'cal_g16', 'cal_g16_s1', 'cal_g16_s2']
 EXTRA = ['cal_g4', 'cal_g4_s1', 'cal_g4_s2', 'cal_g8_pf', 'cal_g16_pf', 'cal_s1_pf',
          'cal_u32', 'cal_u32_s1', 'cal_u32_g8', 'cal_u32_g8_s1', 'cal_u32_g8_s2',
-         'cal_lat0', 'cal_lat0_s1', 'cal_lat0_g8', 'cal_lat0_g8_s1']
+         'ideal', 'ideal_s1', 'ideal_s2', 'ideal_g8', 'ideal_g8_s1', 'ideal_g8_s2', 'ideal_g16', 'ideal_g16_s1',
+         'ideal_g16_s2', 'ideal_g8_pf', 'ideal_g16_pf']
+SENS = {'cal_u32': ['cal_u32', 'cal_u32_s1', 'cal_u32_g8', 'cal_u32_g8_s1', 'cal_u32_g8_s2'],
+        'ideal': ['ideal', 'ideal_s1', 'ideal_s2', 'ideal_g8', 'ideal_g8_s1', 'ideal_g8_s2', 'ideal_g16', 'ideal_g16_s1',
+                  'ideal_g16_s2', 'ideal_g8_pf', 'ideal_g16_pf']}
 VARIANTS = MAIN + EXTRA
 
 
@@ -89,6 +93,14 @@ def main():
                     f[v] = t[v][key]['device_cycles'] / base
             if 'matrix_engine_commands' in (t['cal'][key].get('counters_total') or {}):
                 r['mma_commands'] = t['cal'][key]['counters_total'].get('mma_commands')
+        # G = 16 with S1/S2 was not run on the reduced-grid proxies: factor(g16_sX) = factor(g8_sX) x factor(g16) / factor(g8)
+        # (the G = 8 -> 16 step of the same proxy; on the 30 tiny/small/medium points the two sides agree to 0.3 %)
+        r['extrapolated'] = []
+        if src == 'proxy':
+            for sx in ('s1', 's2'):
+                if f'cal_g16_{sx}' not in f and all(k in f for k in (f'cal_g8_{sx}', 'cal_g16', 'cal_g8')):
+                    f[f'cal_g16_{sx}'] = f[f'cal_g8_{sx}'] * f['cal_g16'] / f['cal_g8']
+                    r['extrapolated'].append(f'cal_g16_{sx}')
         r['factor'] = f
         rows.append(r)
     # geometric-mean effect on the 113 points (others held constant)
@@ -105,11 +117,29 @@ def main():
             if v in r['factor']:
                 fam[r['family']][v].append(1 / r['factor'][v])
     famsum = {f: {v: dict(n=len(xs), geo=geo(xs)) for v, xs in d.items()} for f, d in fam.items()}
+    # sensitivity families (a different transfer path or memory): speed-up of each variant relative to ITS OWN S0 variant,
+    # over the 30 tiny/small/medium GEMM points, and of that S0 variant relative to the calibrated S0
+    sens = {}
+    for base, vs in SENS.items():
+        pts = [r for r in rows if base in r['factor']]
+        if not pts:
+            continue
+        sens[base] = dict(n=len(pts), s0_vs_cal=1 / geo([r['factor'][base] for r in pts]))
+        for v in vs:
+            have = [r for r in pts if v in r['factor']]
+            if have:
+                sens[base][v] = 1 / geo([r['factor'][v] / r['factor'][base] for r in have])
+        sens[base]['by_family'] = {f: {v: 1 / geo([r['factor'][v] / r['factor'][base] for r in pts if r['family'] == f and v in r['factor']])
+                                       for v in vs if any(r['family'] == f and v in r['factor'] for r in pts)}
+                                   for f in sorted({r['family'] for r in pts})}
     print(f'{"variant":<14}{"geo speed-up (113)":>20}{"modelled pts":>14}{"geo (modelled pts)":>20}{"sum-cycles":>12}')
     for v, s in summary.items():
         print(f'{v:<14}{s["geo_speedup_113"]:>20.4f}{s["n_with_model"]:>14}{(s["geo_speedup_modelled"] or float("nan")):>20.4f}{s["sum_cycles_speedup"]:>12.4f}')
+    for base, s in sens.items():
+        print(f'sensitivity {base}: n={s["n"]}, S0 variant vs calibrated S0 {s["s0_vs_cal"]:.4f}; relative to its own S0: ' +
+              ', '.join(f'{v} {x:.4f}' for v, x in s.items() if v not in ('n', 's0_vs_cal', 'by_family')))
     if a.out:
-        Path(a.out).write_text(json.dumps(dict(summary=summary, by_family=famsum, rows=rows), indent=1))
+        Path(a.out).write_text(json.dumps(dict(summary=summary, by_family=famsum, sensitivity=sens, rows=rows), indent=1))
 
 
 if __name__ == '__main__':

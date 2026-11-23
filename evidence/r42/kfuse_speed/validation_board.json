@@ -8,6 +8,14 @@
    "within20": 48,
    "within10": 27
   },
+  "engine_gemm": {
+   "n": 37,
+   "geo_ratio": 0.9473331328101062,
+   "median_abs_err": 0.07918163708639536,
+   "max_abs_err": 0.3370677982764755,
+   "within20": 31,
+   "within10": 22
+  },
   "gemm_shaped": {
    "n": 48,
    "geo_ratio": 0.9482354815908203,

@@ -16,7 +16,8 @@ unchanged); only two functions it calls are replaced for the duration of a candi
                                         binary32 accumulate), times the scale, rounded to fp16; causal mask; softmax in
                                         binary32; probabilities rounded to fp16; P V through the engine (K = the cache
                                         length); rounded to fp16. The same fp16 stage boundaries for every candidate.
-Everything else (RMSNorm, RoPE, SwiGLU, residuals) is the module's own torch CPU code in fp16.
+For the decoder points the tied fp16 head (`xl._head`) is also replaced: logits through the attention engine, rounded to
+fp16. Everything else (RMSNorm, RoPE, SwiGLU, residuals, the embedding gather) is the module's own torch CPU code in fp16.
 
 The reference is the point's own `reference(module, inputs)` (xl.xl_reference: binary64, exact block-wise FP8
 arithmetic, fp16 stage boundaries), the metric is archbench.platforms.common.compare (max|got - ref| / max(max|ref|, 1)
@@ -70,7 +71,8 @@ def emu_linear_factory(engine, xl, torch):
         key = id(w)
         if key not in cache:
             sb = s.repeat_interleave(128, dim=0)[:N]
-            cache[key] = (w.reshape(N, kb, 128).to(torch.float64).numpy(), sb.numpy())
+            # E4M3 values are exact in binary32; the products with the binary64 activations stay exact in binary64
+            cache[key] = (w.reshape(N, kb, 128).to(torch.float32).numpy(), sb.numpy())
         wf, sb = cache[key]
         a_s = a_s.numpy()
         M = x2.shape[0]
@@ -114,6 +116,23 @@ def emu_sdpa_factory(engine, torch, F_orig):
     return emu_sdpa
 
 
+def emu_head_factory(engine, xl, torch, head_orig):
+    """The tied fp16 head of the decoder points: logits = h . tok^T, tok (V, H) fp16, through the ATTENTION engine
+    (fp16 operands, binary32 accumulate, K = H), rounded to fp16, in column chunks."""
+    def emu_head(h, tok):
+        if h.dtype == torch.float64:
+            return head_orig(h, tok)
+        hv = np.ascontiguousarray(h.reshape(1, -1).to(torch.float64).numpy())
+        V = tok.shape[0]
+        out = torch.empty((1, 1, V), dtype=torch.float16)
+        step = 1 << 14
+        for r0 in range(0, V, step):
+            B = np.ascontiguousarray(tok[r0:r0 + step].to(torch.float64).numpy().T)
+            out[0, 0, r0:r0 + step] = torch.from_numpy(engine(hv, B).astype(np.float32).astype(np.float16))
+        return out
+    return emu_head
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--point', required=True)
@@ -152,11 +171,14 @@ def main():
         orig_lin = xl.linear_fp8
         xl.linear_fp8 = emu_lin
         torch.nn.functional.scaled_dot_product_attention = emu_sdpa_factory(attn_engine, torch, F_orig)
+        orig_head = xl._head
+        xl._head = emu_head_factory(attn_engine, xl, torch, orig_head)
         try:
             with xl.mode('emu'), torch.no_grad():
                 got = tuple(t.detach().cpu() for t in flatten(module(*inputs)))
         finally:
             xl.linear_fp8 = orig_lin
+            xl._head = orig_head
             torch.nn.functional.scaled_dot_product_attention = F_orig
         cmp = compare(got, ref, P.tolerance)
         per = []

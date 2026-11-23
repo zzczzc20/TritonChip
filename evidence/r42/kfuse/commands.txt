@@ -1,0 +1,16 @@
+# all commands run on THOR from ~/r42/kfuse (a rsync of tools/ of this branch, nice -n 19, OMP_NUM_THREADS=1 ...)
+# PYTHONPATH=$HOME/r42/kfuse/xl_tree:$HOME/r42/kfuse/tools/r42   python = ~/tc_env/torchenv/bin/python
+
+python tools/r42/kfuse_validate.py --out validate_full.json            # log: validate_full.log
+python mutation_check.py                                               # a deliberately mutated model must be flagged: mutation_check.log
+
+bash tools/r42/kfuse_run_all.sh OUT/study "0 1 2"                      # 26 points x 3 seeds, 130 candidates each (seq, seqrev, 128 lane configs)
+NPROC=3 bash tools/r42/kfuse_run_list.sh OUT/study_v2 "<the 15 points whose records lacked out_exp_rel_l2>" "0 1 2"
+NPROC=2 bash tools/r42/kfuse_run_list.sh OUT/study_fine "<all 26 points>" "0 1 2" --only-ws=-6,-4,-2
+
+# whole layers (xl points; projections and attention matmuls through the emulated lane); job lists in layer.tar.gz
+NPROC=4 bash tools/r42/kfuse_layer_run.sh OUT/layer < jobs.txt         # line: POINT SEED ATTN_ENGINE PROJ_ENGINE1,PROJ_ENGINE2,...
+
+# reports (local, seconds)
+python tools/r42/kfuse_report.py study study_v2 study_fine --out-json agg.json --out-txt tables.txt
+python tools/r42/kfuse_layer_report.py layer --out-json layer_agg.json --out-txt layer_tables.txt

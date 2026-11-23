@@ -988,6 +988,9 @@ class Broker:
                 if any(a.get("outcome") == "infra" for a in tried):
                     out["note"] = ("an earlier attempt ended on the build machine's side, not the design's (not "
                                    "charged); the flow is tried again on another build machine")
+            if job.get("placement") and not job.get("flow_finished"):
+                # The running link's own log once placement has ended (fpga_slow._watch_placement).
+                out["placement"] = job["placement"]
             board_s = self.board_seconds if self.slow_mode == "board" else 0
             if job.get("flow_started") and not job.get("flow_finished"):
                 end = job["flow_started"] + self.flow_seconds + board_s

@@ -300,6 +300,41 @@ report_design_analysis -congestion -file $out
 """
 
 
+# Where the Vitis link of the U280 binding leaves its implementation run's log (flow/fpga/link.sh's --temp_dir):
+# read in place while the link runs, without searching the run's tree every poll.
+IMPL_LOG = "artifacts/tmp/link/vivado/vpl/prj/prj.runs/impl_1/runme.log"
+# Placement has ended once the placer closed its task or the next step began.
+_PLACED = ("Ending Placer Task", "Command: phys_opt_design", "Command: route_design")
+PLACEMENT_NOTE = ("Read from the link's own log while it runs, once placement has ended: Vivado's timing estimate "
+                  "after placement and its estimated congestion for the device and each SLR (a window of 2^n x 2^n "
+                  "interconnect tiles is level n; AMD's UG949: level 5 and above often costs timing, above 6 a "
+                  "design is unlikely to meet timing and may fail to route). The link goes on; its result brings "
+                  "the full congestion record.")
+
+
+def placement(site, run_id: str, build_host: Optional[str], *, ssh_binary: str = "ssh") -> dict:
+    """What a running link's log says once placement has ended: {note, post_place_estimate, placer}; {} before
+    that, or when the log cannot be read. One read of one file; never raises."""
+    try:
+        from tritonchip_fpga_harness.hosts import host_for, load_hosts
+        from tritonchip_fpga_harness.pipeline import remote
+        if not build_host:
+            return {}
+        host = host_for(load_hosts(site.fpga_pipeline["hosts"]), build_host, "build")
+        done = remote(host, ["tail", "-c", str(REPORT_BYTES), f"{host.state_dir}/runs/{run_id}/{IMPL_LOG}"],
+                      ssh_binary=ssh_binary, check=False, timeout=120)
+        if done.returncode != 0:
+            return {}
+        text = done.stdout.decode(errors="replace")
+        if "Post-Placement Estimated Congestion" not in text or not any(m in text for m in _PLACED):
+            return {}
+        log = parse_log(text)
+        seen = {k: log[k] for k in ("post_place_estimate", "placer") if log.get(k)}
+        return {"note": PLACEMENT_NOTE, **seen} if seen else {}
+    except Exception:  # noqa: BLE001 -- the flow goes on without it
+        return {}
+
+
 def _job_script(host, folder: str, dcp: str) -> str:
     q = shlex.quote
     lines = ["#!/bin/sh"] + [f"export {k}={q(v)}" for k, v in sorted(host.remote_env().items())]
@@ -374,5 +409,5 @@ def collect(site, run_id: str, build_host: Optional[str], *, analyse: bool, wait
         return {"error": f"{type(exc).__name__}: {str(exc)[:200]}"}
 
 
-__all__ = ["ANALYSED_STAGES", "NOTE", "collect", "level", "module_of", "parse_design_analysis", "parse_log",
-           "rank", "short", "visible"]
+__all__ = ["ANALYSED_STAGES", "IMPL_LOG", "NOTE", "PLACEMENT_NOTE", "collect", "level", "module_of",
+           "parse_design_analysis", "parse_log", "placement", "rank", "short", "visible"]

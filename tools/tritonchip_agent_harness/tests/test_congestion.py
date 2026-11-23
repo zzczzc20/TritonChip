@@ -10,11 +10,13 @@ from __future__ import annotations
 import json
 import os
 import stat
+import subprocess
 import sys
 import tempfile
 import types
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE.parent))
@@ -177,9 +179,57 @@ class Collect(unittest.TestCase):
         self.assertEqual(congestion.collect(self.site, "tnca-ffffffffffffffff", "hpc", analyse=True,
                                             ssh_binary=str(self.ssh)), {})
 
+    def test_a_running_link_reports_its_placement_once_placement_has_ended(self):
+        impl = self.tmp / "hpc-state" / "runs" / self.run_id / congestion.IMPL_LOG
+        full = read("b3_runme.log")
+        seen = congestion.placement(self.site, self.run_id, "hpc", ssh_binary=str(self.ssh))
+        self.assertEqual(seen["post_place_estimate"]["wns_ns"], -0.863)
+        self.assertEqual(seen["placer"]["SLR0"]["long"]["level"], 7)
+        self.assertEqual(set(seen), {"note", "post_place_estimate", "placer"})
+        # Placement still running: the tables are not there yet, or not closed.
+        impl.write_text(full.split("INFO: [Place 30-612]")[0], encoding="utf-8")
+        self.assertEqual(congestion.placement(self.site, self.run_id, "hpc", ssh_binary=str(self.ssh)), {})
+        impl.write_text(full.split("Command: phys_opt_design")[0], encoding="utf-8")
+        self.assertEqual(congestion.placement(self.site, self.run_id, "hpc", ssh_binary=str(self.ssh)), {})
+        impl.unlink()
+        self.assertEqual(congestion.placement(self.site, self.run_id, "hpc", ssh_binary=str(self.ssh)), {})
+
     def test_an_unknown_machine_is_not_an_error_for_the_flow(self):
         self.assertIn("error", self.collect("nowhere", analyse=True))
         self.assertEqual(congestion.collect(self.site, self.run_id, None, analyse=True), {})
+
+
+class Watch(unittest.TestCase):
+    def test_the_wait_looks_at_the_link_between_polls_and_says_when_it_outlived_its_cap(self):
+        class Proc:
+            def __init__(self, ends_after):
+                self.calls, self.ends_after = 0, ends_after
+
+            def wait(self, timeout):
+                self.calls += 1
+                if self.calls > self.ends_after:
+                    return 0
+                raise subprocess.TimeoutExpired("link", timeout)
+
+        looked = []
+        self.assertFalse(fpga_slow._wait(Proc(3), 10.0, lambda: looked.append(1), 0.01))
+        self.assertEqual(len(looked), 3)
+        self.assertTrue(fpga_slow._wait(Proc(10 ** 6), 0.05, lambda: None, 0.01))
+
+    def test_placement_is_read_until_found_then_left_alone(self):
+        job = {"id": "b3"}
+        found = {"note": "n", "placer": {"device": {"long": {"level": 7, "direction": "north"}}}}
+        with mock.patch.object(fpga_slow.congestion_, "placement", side_effect=[{}, found]) as read_:
+            fpga_slow._watch_placement(None, job, "tnca-1", "hpc-1", 600)
+            self.assertNotIn("placement", job)
+            fpga_slow._watch_placement(None, job, "tnca-1", "hpc-1", 14400)
+            fpga_slow._watch_placement(None, job, "tnca-1", "hpc-1", 15000)
+        self.assertEqual(read_.call_count, 2)
+        self.assertEqual(job["placement"]["seen_after_minutes"], 240)
+        job2 = {"id": "b4", "_cancel_requested": True}
+        with mock.patch.object(fpga_slow.congestion_, "placement") as read_:
+            fpga_slow._watch_placement(None, job2, "tnca-2", "hpc-1", 600)
+        read_.assert_not_called()
 
 
 if __name__ == "__main__":

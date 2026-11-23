@@ -263,6 +263,16 @@ class Services(unittest.TestCase):
         self.assertNotIn("outlived_run", job)
         self.assertEqual((broker.flows_left, job["charged"]), (3, None))
 
+    def test_a_running_flow_shows_its_placement_until_the_flow_ends(self):
+        now = time.time()
+        placed = {"note": "n", "placer": {"device": {"long": {"level": 7, "direction": "north"}}},
+                  "seen_after_minutes": 240}
+        job = {"id": "b3", "service": "flow", "state": "running", "submitted": now - 60, "kind": "hardware",
+               "flow_started": now - 4 * 3600, "placement": placed}
+        self.assertEqual(self.broker._summary(job)["placement"], placed)
+        self.assertNotIn("placement", self.broker._summary({**job, "flow_finished": now}))
+        self.assertNotIn("placement", self.broker._summary({**job, "state": "done"}))
+
     def test_a_running_flow_says_within_how_many_minutes_it_ends(self):
         now = time.time()
         job = {"id": "l1", "service": "fpga-slow", "state": "running", "submitted": now - 60,

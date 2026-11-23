@@ -646,6 +646,35 @@ def _build_visible(site: Site, pipe: dict, outcome: str, routed: dict, congestio
     return visible
 
 
+PLACEMENT_POLL_SECONDS = 600   # how often a running link's log is read until placement has ended
+
+
+def _wait(proc, limit: float, watch, poll: float) -> bool:
+    """Wait for the flow's process up to `limit` seconds, calling `watch()` every `poll` seconds while it runs.
+    True when it outlived the limit (the caller stops it)."""
+    deadline = time.time() + limit
+    while True:
+        left = deadline - time.time()
+        if left <= 0:
+            return True
+        try:
+            proc.wait(timeout=min(poll, left))
+            return False
+        except subprocess.TimeoutExpired:
+            watch()
+
+
+def _watch_placement(site: Site, job: dict, remote_id: str, host: str, elapsed: float) -> None:
+    """Once the running link's placement has ended, what its log says (congestion.placement) goes to the
+    request's status (2026-11-23, the user: the agent learns of a placement that will not route hours before
+    the link's end). Read until found, then no more."""
+    if job.get("placement") or job.get("_cancel_requested"):
+        return
+    seen = congestion_.placement(site, remote_id, host)
+    if seen:
+        job["placement"] = {**seen, "seen_after_minutes": round(elapsed / 60.0)}
+
+
 def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: Path, job: dict,
           seconds: int) -> dict:
     """One Vivado flow, tried again on an infrastructure failure, each attempt on a build machine taken for it
@@ -687,6 +716,7 @@ def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir
             mpath, output = job_dir / f"manifest-{attempt}.json", job_dir / f"pipeline-{attempt}.json"
             mpath.write_text(json.dumps(m, indent=2, sort_keys=True) + "\n", encoding="utf-8")
             argv = _pipeline_args(tree, mpath, output, cfg, remote_id, host, command_timeout=seconds)
+            started_at = time.time()
             job["current_remote_id"] = remote_id
             with (job_dir / f"pipeline-{attempt}.log").open("wb") as log:
                 proc = subprocess.Popen(argv, cwd=tree, stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
@@ -696,12 +726,12 @@ def build(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir
                     # Stopped between taking the machine and starting the flow (a gate that did not pass, D3,
                     # or the agent's end): what started is stopped here and on the build host.
                     job["cleanup"] = cancel(job, cfg)
-                try:
-                    proc.wait(timeout=seconds + 600)
-                    timed_out = False
-                except subprocess.TimeoutExpired:
+                job.pop("placement", None)       # an earlier attempt's, on another machine
+                timed_out = _wait(proc, seconds + 600,
+                                  lambda: _watch_placement(site, job, remote_id, host, time.time() - started_at),
+                                  PLACEMENT_POLL_SECONDS)
+                if timed_out:
                     job["cleanup"] = cancel(job, cfg)
-                    timed_out = True
             job.pop("_process", None)
         finally:
             slot = _drop_slot(holder)

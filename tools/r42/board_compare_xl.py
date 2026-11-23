@@ -154,13 +154,60 @@ def read_side(path):
     return meta, points
 
 
+def single(a):
+    """One side alone: the per-point table (cycles, eta, tolerance margin, memory) and the failures, same rules."""
+    meta, pts = read_side(a.new)
+    rows, failed = [], []
+    for cid, p in pts.items():
+        if p['outcome'] != 'pass':
+            failed.append(dict(point=cid, family=p.get('family'), **{k: p.get(k) for k in (
+                'outcome', 'failure_kind', 'failure_detail', 'status', 'max_rel_err', 'tol', 'failed_run', 'runs')
+                if p.get(k) is not None}))
+            continue
+        rows.append(dict(point=cid, family=p['family'], cycles=p['cycles'], samples=p['samples'],
+                         seconds=p['cycles']/p['clock_hz'], eta=p.get('eta'), bound_cycles=p.get('bound_cycles'),
+                         bound_binding=p.get('bound_binding'), max_rel_err=p['max_rel_err'], tol=p['tol'],
+                         err_over_tol=(p['max_rel_err']/p['tol'] if p['tol'] else None),
+                         launches=p['launches'], heap_peak_bytes=p.get('heap_peak_bytes'),
+                         first_call_s=p.get('first_call_s'),
+                         wall_seconds=sum(r['wall_seconds'] for r in p['runs'])))
+    fams = collections.defaultdict(list)
+    for r in rows:
+        fams[r['family']].append(r)
+    summary = dict(schema='r42-board-xl-single/1', domain='board (U280), device-cycles-serial-grid', meta=meta,
+                   scope=('all %d registered points pass' % len(pts)) if not failed else
+                         ('%d of %d registered points do not pass' % (len(failed), len(pts))),
+                   rows=rows, failed_points=failed,
+                   total_device_seconds=sum(r['seconds'] for r in rows),
+                   by_family={k: dict(points=len(v), device_seconds=sum(x['seconds'] for x in v),
+                                      geomean_eta=geo(x['eta'] for x in v if x['eta']))
+                              for k, v in sorted(fams.items())},
+                   max_heap_peak_bytes=max((r['heap_peak_bytes'] or 0 for r in rows), default=None),
+                   max_err_over_tol=max((r['err_over_tol'] or 0 for r in rows), default=None))
+    if a.out:
+        a.out.parent.mkdir(parents=True, exist_ok=True)
+        a.out.write_text(json.dumps(summary, indent=1) + '\n')
+    print(summary['scope'], '| batch', meta['batch_status'], '| tree', meta['software_tree'])
+    print(f"runs {meta['runs']} (failed {meta['failed_runs']}), process wall {meta['process_wall_seconds']} s, "
+          f"device seconds of the formal records {summary['total_device_seconds']:.1f}, "
+          f"max heap peak {summary['max_heap_peak_bytes']}, max err/tol {summary['max_err_over_tol']:.3f}")
+    print('point                                                          cycles    seconds   eta     err/tol  samples')
+    for r in rows:
+        print(f"  {r['point']:62s} {r['cycles']:>14} {r['seconds']:>9.3f}  {r['eta'] or 0:.3f}  "
+              f"{r['err_over_tol'] if r['err_over_tol'] is not None else 0:.3f}  {len(r['samples'])}")
+    for f in failed:
+        print('FAILED', f['point'], json.dumps({k: v for k, v in f.items() if k not in ('point', 'runs')}))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--old', type=Path, required=True, help='baseline records (xl-base)')
+    ap.add_argument('--old', type=Path, help='baseline records (xl-base); omitted: report the --new side alone')
     ap.add_argument('--new', type=Path, required=True, help='candidate records (xl-cand)')
     ap.add_argument('--out', type=Path)
     ap.add_argument('--threshold', type=float, default=0.02)
     a = ap.parse_args()
+    if a.old is None:
+        return single(a)
     (old_meta, old), (new_meta, new) = read_side(a.old), read_side(a.new)
     if old_meta['clock_hz'] != new_meta['clock_hz'] or old_meta['image_sha256'] != new_meta['image_sha256']:
         raise SystemExit('the two runs have a different image or clock; cycles are not comparable as device time')

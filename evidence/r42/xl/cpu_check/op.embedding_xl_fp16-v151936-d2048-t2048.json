@@ -1,0 +1,14 @@
+[
+ {
+  "point": "op.embedding/xl/fp16-v151936-d2048-t2048",
+  "family": "embedding",
+  "path": "fp16 eager vs binary32 module",
+  "ok": true,
+  "max_rel_err": 0.0,
+  "tolerance": 0.0,
+  "detail": "",
+  "reference_s": 4.9,
+  "module_s": 4.5,
+  "peak_rss_gib": 2.33
+ }
+]

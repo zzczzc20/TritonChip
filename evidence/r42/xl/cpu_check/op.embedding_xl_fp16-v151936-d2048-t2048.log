@@ -1,0 +1,1 @@
+PASS op.embedding/xl/fp16-v151936-d2048-t2048                   err 0.000e+00 tol 0.0  [fp16 eager vs binary32 module; ref 4.9s, module 4.5s, rss 2.33 GiB] 

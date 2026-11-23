@@ -1,0 +1,1 @@
+PASS op.linear/xl/fp16-m2048-k2048-n6144-bias0                  err 3.381e-04 tol 0.02  [fp16 eager vs binary32 module; ref 0.9s, module 0.9s, rss 1.0 GiB] 

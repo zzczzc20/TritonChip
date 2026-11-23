@@ -1,0 +1,1 @@
+PASS model.fp8_layer_decode/xl/fp8-b1-p2048-layers1             err 1.306e-03 tol 0.02  [emu vs binary64 reference; ref 2.1s, module 0.9s, rss 0.83 GiB] 

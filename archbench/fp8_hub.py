@@ -13,14 +13,14 @@ is identified by the sha256 of its files, pinned below from the `metadata.json`
 digests of the `torch-cuda` build of kernel commit fe2bb66fee6c (the build
 validated in evidence/r41/fp8), and a source tree whose files differ is refused.
 
-Two ways to find the files:
-  1. `kernels.get_kernel(repo, version=4)` when the `kernels` package exists
-     (the way transformers loads it), or
-  2. a directory named by ARCHBENCH_FINEGRAINED_FP8 (the repository's
-     `build/torch-cuda` folder), imported as a package: hosts without a CUDA
-     build of torch (the board host, thor) have no torch-cuda variant for the
-     `kernels` package to pick, and this is the same import `kernels.
-     get_local_kernel` performs.
+Where the files come from, in this order:
+  1. a directory named by ARCHBENCH_FINEGRAINED_FP8 (a `build/torch-cuda`
+     folder), imported as a package, the same import `kernels.get_local_kernel`
+     performs;
+  2. `kernels.get_kernel(repo, version=4)` when the `kernels` package exists and
+     finds a build for the installed torch (the way transformers loads it;
+     a CPU-only torch has no variant to pick);
+  3. the unchanged copy in archbench/third_party/finegrained_fp8 (see its README).
 """
 import hashlib
 import importlib.util
@@ -46,6 +46,7 @@ FILES = {
     'utils.py': '2cb87f98ab385e41c95fdf1e1bec777a25c8e0bb003a357a72c07a53c2b7b5d0',
 }
 ENV = 'ARCHBENCH_FINEGRAINED_FP8'
+VENDORED = Path(__file__).resolve().parent / 'third_party' / 'finegrained_fp8'
 # What a point's definition records about its kernels (hashed into the suite).
 IDENTITY = dict(repo=REPO, hub_version=HUB_VERSION, kernel_commit=KERNEL_COMMIT,
                 build='torch-cuda', matmul_py=FILES['matmul.py'], utils_py=FILES['utils.py'])
@@ -90,13 +91,15 @@ def kernels():
         return _module
     try:
         import kernels as hub
-    except ImportError as e:
-        raise RuntimeError(f'the xl tier needs {REPO}: install the `kernels` package or point {ENV} at a '
-                           f'copy of its build/torch-cuda folder') from e
-    mod = hub.get_kernel(REPO, version=HUB_VERSION)
-    verify(Path(mod.__file__).parent)
-    _module = mod
-    return mod
+        mod = hub.get_kernel(REPO, version=HUB_VERSION)
+        verify(Path(mod.__file__).parent)
+        _module = mod
+        return mod
+    except Exception:                                      # noqa: BLE001  (no package, no network, no build for this torch)
+        pass
+    verify(VENDORED)
+    _module = _import_dir(VENDORED)
+    return _module
 
 
 def matmul_2d(a, w, ws, block_size, output_dtype):

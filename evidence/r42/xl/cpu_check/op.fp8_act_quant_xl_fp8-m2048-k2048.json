@@ -1,0 +1,14 @@
+[
+ {
+  "point": "op.fp8_act_quant/xl/fp8-m2048-k2048",
+  "family": "fp8_act_quant",
+  "path": "emu vs binary64 reference",
+  "ok": true,
+  "max_rel_err": 0.0,
+  "tolerance": 0.08,
+  "detail": "",
+  "reference_s": 1.4,
+  "module_s": 0.1,
+  "peak_rss_gib": 0.92
+ }
+]

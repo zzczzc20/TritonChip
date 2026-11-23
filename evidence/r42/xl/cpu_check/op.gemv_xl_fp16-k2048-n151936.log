@@ -1,0 +1,1 @@
+PASS op.gemv/xl/fp16-k2048-n151936                              err 3.996e-04 tol 0.02  [fp16 eager vs binary32 module; ref 5.1s, module 6.3s, rss 2.83 GiB] 

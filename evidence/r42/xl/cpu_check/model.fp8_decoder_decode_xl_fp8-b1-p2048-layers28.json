@@ -1,0 +1,14 @@
+[
+ {
+  "point": "model.fp8_decoder_decode/xl/fp8-b1-p2048-layers28",
+  "family": "fp8_decoder_decode",
+  "path": "emu vs binary64 reference",
+  "ok": true,
+  "max_rel_err": 0.03927404295051354,
+  "tolerance": 0.2,
+  "detail": "",
+  "reference_s": 29.1,
+  "module_s": 28.6,
+  "peak_rss_gib": 3.53
+ }
+]

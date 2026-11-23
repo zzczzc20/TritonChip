@@ -1,0 +1,1 @@
+PASS op.swiglu/xl/fp16-r2048-i6144                              err 4.923e-04 tol 0.02  [fp16 eager vs binary32 module; ref 0.4s, module 0.4s, rss 1.06 GiB] 

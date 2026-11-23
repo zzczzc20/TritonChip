@@ -125,9 +125,10 @@ The `xl` tier needs the Hub FP8 kernels. Where the `kernels` package has a build
 pinned build (`fp8_hub.FILES`, sha256), and a source tree that differs is refused.
 
 ```sh
-# xl on the board (one process per point; the live device bytes of every point are at most 3 GiB)
+# xl on the board: exactly as the 113 original points (evidence/r42/board/RECIPE.md section 1: the run-3 image, its
+# backend arguments, TNCA_ACTIVE_CORES=3, TNCA_TORCH_DEVICE=native, TNCA_TRANSFER_POLICY=resident, one process per point)
 python -m archbench.run --platform tnca --backend fpga-u280-multicore --profile core-vrf-sync-v5-x8-g2c4-dp \
-    --tier xl --set TNCA_TORCH_DEVICE=native --set TNCA_TRANSFER_POLICY=resident --set TNCA_ACTIVE_CORES=3 ... --out results/xl.jsonl
+    --backend-args '{...}' --point <an id of suites/xl.json> --warmup 0 --timed 1 --out results/xl.jsonl
 
 # compile coverage of every xl point on the CPU-tensor path, cold caches, kernel dump per point
 sh tools/r42/xl_compile_only.sh results/xl_compile 2

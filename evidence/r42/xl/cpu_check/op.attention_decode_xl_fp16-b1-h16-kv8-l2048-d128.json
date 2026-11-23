@@ -1,0 +1,14 @@
+[
+ {
+  "point": "op.attention_decode/xl/fp16-b1-h16-kv8-l2048-d128",
+  "family": "attention_decode",
+  "path": "fp16 eager vs binary32 module",
+  "ok": true,
+  "max_rel_err": 4.490464925765991e-05,
+  "tolerance": 0.02,
+  "detail": "",
+  "reference_s": 0.1,
+  "module_s": 0.1,
+  "peak_rss_gib": 0.57
+ }
+]

@@ -1,0 +1,14 @@
+[
+ {
+  "point": "model.fp8_decoder_prefill/xl/fp8-b1-s2048-layers4",
+  "family": "fp8_decoder_prefill",
+  "path": "emu vs binary64 reference",
+  "ok": true,
+  "max_rel_err": 0.0009277697320782042,
+  "tolerance": 0.02,
+  "detail": "",
+  "reference_s": 37.2,
+  "module_s": 42.3,
+  "peak_rss_gib": 2.48
+ }
+]

@@ -1,0 +1,1435 @@
+{
+ "schema": "archbench-xl-compile-only/1",
+ "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+ "domain": "compile coverage on the CPU-tensor path (TNCA_LAUNCH=skip); no kernel launched, no device time",
+ "points": [
+  {
+   "point": "model.fp8_decoder_decode/xl/fp8-b1-p2048-layers28",
+   "point_sha256": "31d06b57df86119b7227171310d82bc8052fc703034c073b4bf9796a5450a160",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 60.55,
+   "process_s": 93.3,
+   "launches": 618,
+   "expected_launches": 618,
+   "kernels": 50,
+   "kernel_names": [
+    "triton_poi_fused_add_cat_mul_select_transpose_view_14",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_17",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_20",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_22",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_23",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_24",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_25",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_26",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_27",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_28",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_29",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_30",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_31",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_32",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_33",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_34",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_35",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_36",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_37",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_38",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_39",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_40",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_41",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_42",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_43",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_44",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_45",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_5",
+    "triton_poi_fused_add_mul_stack_transpose_view_6",
+    "triton_poi_fused_cat_neg_split_transpose_view_2",
+    "triton_poi_fused_cat_neg_split_transpose_view_4",
+    "triton_poi_fused_cat_select_transpose_view_9",
+    "triton_poi_fused_mul_silu_12",
+    "triton_poi_fused_neg_split_transpose_view_1",
+    "triton_poi_fused_neg_split_transpose_view_3",
+    "triton_poi_fused_stack_transpose_view_48",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_8",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_7",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_15",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_21",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_46",
+    "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_t_view_47",
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "triton_poi_fused_add_cat_mul_select_transpose_view_14": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_17": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_20": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_22": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_23": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_24": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_25": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_26": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_27": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_28": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_29": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_30": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_31": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_32": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_33": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_34": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_35": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_36": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_37": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_38": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_39": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_40": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_41": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_42": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_43": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_44": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_45": 48,
+    "triton_poi_fused_add_cat_mul_select_transpose_view_5": 47,
+    "triton_poi_fused_add_mul_stack_transpose_view_6": 69,
+    "triton_poi_fused_cat_neg_split_transpose_view_2": 45,
+    "triton_poi_fused_cat_neg_split_transpose_view_4": 45,
+    "triton_poi_fused_cat_select_transpose_view_9": 48,
+    "triton_poi_fused_mul_silu_12": 50,
+    "triton_poi_fused_neg_split_transpose_view_1": 50,
+    "triton_poi_fused_neg_split_transpose_view_3": 50,
+    "triton_poi_fused_stack_transpose_view_48": 21,
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_8": 326,
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_7": 167,
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": 140,
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": 1455,
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": 1492,
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": 1529,
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_15": 874,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": 163,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": 195,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": 232,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_21": 220,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_46": 156,
+    "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_t_view_47": 398,
+    "w8a8_block_dynamic_fp8_matmul_kernel": 6734
+   },
+   "assembly_sha256": {
+    "triton_poi_fused_add_cat_mul_select_transpose_view_14": "bddc7e2d8d8d8029c001db8e85bab62de858f1ccabea88a05ce1f131647aa842",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_17": "644997ab266a178c8a0213a63f1c494ebd03e890022aec978849a550e673bf11",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_20": "a0815d46b2a78fdc86899004d71401e6825f2d02e0685103fee3b00174fb6d16",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_22": "86c768d00f764e6ae3738161bd5b780d1c3c04a6db3dbeabf69b2efa9a515361",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_23": "2ade9edff10b1925f1b798b5a82476c3cdb7abfb1755ddf8a165e35c9b211ca6",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_24": "a345cded7a9564b022990bd0dc8fb5af987c0a8622443fa8b57800c7802d1446",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_25": "c2a2e64a6ce60219b2b08b40d29f47f35d1287ba96f383e0f4fc368175fffec5",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_26": "719b87bec7644655ac8b50f90c707d5e45584cd8387d98e410d1413b287eee69",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_27": "7662ef70963b4d446ae6b98b299e6e56876675f3a96d02eea7a70ab58fbd8786",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_28": "5f384f848c5a59a57d2a5ef1b8bf951077fc718a89d57d618d29195c4e3c0e09",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_29": "f7daf53b3922a52504f1400af7eb488c19cc8409bdffabda50e546a22845337d",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_30": "dfb11397f44fbb2c59d48189ae72fddb4de440d6d5737798f1fffd1e6eff1ca6",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_31": "7dfe5275ebe94e643470a9b590769b3f99e6fa3d81e57c826fba38abda5f5b34",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_32": "dc6403cf253ca4ab44afcccdccbd8085433e1b2ff55ad468c01f19b3cddbabcd",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_33": "1922ad441f0c3f2379fee3df62c4fd5e5b9d7e3352bc25bd80e762ebcd795f18",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_34": "2f2e11891067c0b4d5d483b2c978310a6710d5834b6438ed117b2477d929caea",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_35": "d60c1f322056db25eecf2ba8211b040b3ba25bb28062cdd5fb00749c58b1db79",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_36": "a13d7690819f1544a2b6b9e8edf41489156e310fa43a107090a5d19b25ee3830",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_37": "fc5e5024bcc4a45d752259cf9dbf6a3236a4557e8c3ab2ae724574414f4d12e1",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_38": "522770e4297dd40c2a3742fa9c81f5f3f7c94377233bb14942d7bf40900678d4",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_39": "ca957475a02e474a86a0f77cfcfd524d456b81ee4ee04c4eeb3bc838eebda34d",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_40": "6b0024c0cc25748c86abd45a875d9ddadf52f8fecafb97aa1b566d3eb1847f6a",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_41": "00296c2197f4520c0852d5f7374699312845296a482ca41e671fc2768121a20c",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_42": "40dad2b6472fd2f8b1c02446a1aea3b1d103b85918e5c0abb4bdb04b153094e3",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_43": "07559d2ac8f13495c19ef216ce4caa56f0521b5b1c25c1acadbc3fce0e56831c",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_44": "38e6c6804dba5900c07bde3006d848e67dbfc90dede975289881381c634a4572",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_45": "81a56559e722e1ce59dfec8b346f6242565392d4a79940eece5c6fa00ad339f2",
+    "triton_poi_fused_add_cat_mul_select_transpose_view_5": "425e52d97f1754daea8b19930dc309afbb60435e1c97515eb32e53d1547d94e8",
+    "triton_poi_fused_add_mul_stack_transpose_view_6": "ae76792f168f9d1dd68d50bf0295c9de791405a7c35c003c808833cc8bf004b8",
+    "triton_poi_fused_cat_neg_split_transpose_view_2": "e20bb68f1e39d8231d24c051be97552b72b57890d3cdcfce4129f1ecd59e8552",
+    "triton_poi_fused_cat_neg_split_transpose_view_4": "0aa93c98ceefb1bb41b6d06aafd85f135ee77c10302e97727d9ab8b00134d5e3",
+    "triton_poi_fused_cat_select_transpose_view_9": "66c5b1cbd6457cbd1669bf27d01ee95c515d54a26f0d1424a0ef37735908ef7f",
+    "triton_poi_fused_mul_silu_12": "13b810deb67fa2a046932e156d893a7b2f091679fe2a17e75c3bb149d7109490",
+    "triton_poi_fused_neg_split_transpose_view_1": "4264702459c56f218d061a1128f9df671423518e37d6718d50ebd78ab4ac72bb",
+    "triton_poi_fused_neg_split_transpose_view_3": "7e7057e437070c09442fe1c182056383d2fa7314f88ca3bce36d89a2a624ff4f",
+    "triton_poi_fused_stack_transpose_view_48": "e2cbc46524feb5c049699727f14a0a24efdc9d5c8d9a5f6c671aee7378acea2d",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_8": "6677ecaf30f2c154fc38c0ef2a5e427b2d5e59011124e1ecc1cadbafd39db304",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_7": "8a3f940ce0d95058f1a25e498dc5ac9645a20b59a0e3cafd92aa1cc705f2cf91",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": "b3f0a86c59c12a758a7c0428ee1ad97c3091342d753f8ad189b178b4662fd9a2",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": "d8c7834ec00fef7af0c5009e7220627c1fbcf15e45aeb97a7b1ece7e3e224c29",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": "6de767b9dc4995f98df047a824e67c5a57c36a24979b8845b02523b1a693f145",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": "64b778625ed6033c4d677b7f61af701a7f942761df0861a57893f50df1a03edb",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_15": "d614bd5fe21be05062ccf9b7e13e15bdb8cbaf2ddcbe8bebfea5975f1a838860",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": "c649a58b2f3706401e0063b7d3fa9030c9fe8c9e4abe11bde4f8596dadcd5266",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": "db21fc09ffa1aba9b73af108e1295b261d564e3c8883414edaeb4f407f9d4204",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_19": "5dd1a0a25ca1cecf25dbd71d87aa06dbb83058588860f0ed21adae4447a6138a",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_21": "c750784babe13153531d3120ae65aeea438ca659b03d24ffcc579566f2042358",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_46": "00c0e6a2a2281cf5fa9cc627a8418e569ae184435c9a226ad46b0d150f72188e",
+    "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_t_view_47": "ea75cc25b4910588aef4e3cfa4297b57fe522fd290b6b5e5f94845b0f42df41d",
+    "w8a8_block_dynamic_fp8_matmul_kernel": "2b0e64f80a336d024d8458548ba4160f7607aa7cb2e3005ad6e044e8ac3b60af"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k16.f16": 1,
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 622637824,
+   "max_launch_kernel": "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_t_view_47",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 622637824 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "model.fp8_decoder_prefill/xl/fp8-b1-s2048-layers4",
+   "point_sha256": "e6f3ab3429eb841d926b5c4682551f4724ac075c6ac866788bf084178ead3a21",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 43.85,
+   "process_s": 56.2,
+   "launches": 82,
+   "expected_launches": 82,
+   "kernels": 22,
+   "kernel_names": [
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_5",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_8",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_transpose_view_10",
+    "triton_poi_fused_cat_neg_split_transpose_view_2",
+    "triton_poi_fused_cat_neg_split_transpose_view_4",
+    "triton_poi_fused_mul_silu_12",
+    "triton_poi_fused_neg_split_transpose_view_1",
+    "triton_poi_fused_neg_split_transpose_view_3",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_7",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_slice_19",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_6",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_9",
+    "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20",
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_5": 2895,
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_8": 84,
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_transpose_view_10": 71,
+    "triton_poi_fused_cat_neg_split_transpose_view_2": 71,
+    "triton_poi_fused_cat_neg_split_transpose_view_4": 72,
+    "triton_poi_fused_mul_silu_12": 48,
+    "triton_poi_fused_neg_split_transpose_view_1": 75,
+    "triton_poi_fused_neg_split_transpose_view_3": 76,
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_7": 867,
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": 1017,
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": 1077,
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": 1129,
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": 713,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": 211,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": 256,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": 311,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": 292,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_slice_19": 160,
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_6": 2524,
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_9": 2514,
+    "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": 398,
+    "w8a8_block_dynamic_fp8_matmul_kernel": 10900
+   },
+   "assembly_sha256": {
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_5": "02cba0ca53455d46e82be449678e51d2ea14383d6c148fd8044fa40c2ece6847",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_8": "8532e2062d084490ed611b66dc38be4d57274dc794ce21f59bffce0e311b9730",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_transpose_view_10": "d9868e8590b82238275456766dc76fadb7b21d84830f405b1aff72164c737900",
+    "triton_poi_fused_cat_neg_split_transpose_view_2": "73bd217e40200c602e766a459334cac51c57f89e66b2ca15c6c3abacb6bb80f0",
+    "triton_poi_fused_cat_neg_split_transpose_view_4": "30f965bba23db70423333ac60ec749e0f9a2196b2844eacfbb1d797e30a843cc",
+    "triton_poi_fused_mul_silu_12": "32e729d156defdc68a8e6f705134c7e4bda5695743cdf81d88e7572b1f7ac7ef",
+    "triton_poi_fused_neg_split_transpose_view_1": "2b619bc5bd3ec592e9490379b2c96a8734102a2e58d7c5e0a5299a90661ed2cf",
+    "triton_poi_fused_neg_split_transpose_view_3": "a349a2ce89d0714f87aa5bf9052bef611c947229313f7b53b743f3a477d5e8fe",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_7": "352f559cabff8c5a5e101629e4a3f3490f41117360188bb5dfb0a3cba471f676",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": "21c6b25aaaaa621236fdd2848f23c7847bddb6f27cc2c5059e26d4b0411a1a85",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": "d617285aff64d8f0e85515a0425c578e97e43d593f3015b245246252ff679eb6",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": "a9974b0d7a94c10ef4d871557f119a112112628ea1ac3b57fb52687809f6d920",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": "caae54d46f015a46f38f0aa7a9b519658deb0687c9c4584d32b75626d6b90aaa",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": "e1b8a77a0616260b7482aabdd2085f5a41978c39f504cfe481761baa240f56c4",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": "6d5b0809993c8f2bd869f805141d1c889c4b2eb3c33aa8aa5ccb341c04ba5488",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": "96dc9b2ce35affb35fbd817e535956904375a14366d1737945745c3ed41948db",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": "845f746b38ba5f7bded3423c2e3e959b92bef37034d25cb13f68a3e0090d2043",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_slice_19": "846ed1fb90aaaaecfca810e8ebcae5052e31a8c8c88a429879d6112f4aee5755",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_6": "eb9121c5fb6e1e4fe00cc436b1f405877be04262ef400ec70ff0160b64ce1fd5",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_9": "534f95797ff29e4e36ce8f26489de4bcfbfc96d18a6411f975f060eb49c61bc8",
+    "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": "ea75cc25b4910588aef4e3cfa4297b57fe522fd290b6b5e5f94845b0f42df41d",
+    "w8a8_block_dynamic_fp8_matmul_kernel": "4bbfe14888ccf77e628ac233f74188007ceb1c87558a3391d18447f4dbd361c0"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k16.f16": 1,
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 672681984,
+   "max_launch_kernel": "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 672681984 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "model.fp8_decoder_prefill/xl/fp8-b1-s512-layers28",
+   "point_sha256": "706a882afdc50e9f438812765aa8ce456820ec906c897fdf3f0af3dbec51d3f2",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 80.48,
+   "process_s": 111.6,
+   "launches": 562,
+   "expected_launches": 562,
+   "kernels": 22,
+   "kernel_names": [
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_5",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_8",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_transpose_view_10",
+    "triton_poi_fused_cat_neg_split_transpose_view_2",
+    "triton_poi_fused_cat_neg_split_transpose_view_4",
+    "triton_poi_fused_mul_silu_12",
+    "triton_poi_fused_neg_split_transpose_view_1",
+    "triton_poi_fused_neg_split_transpose_view_3",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_7",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_slice_19",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_6",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_9",
+    "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20",
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_5": 2897,
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_8": 84,
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_transpose_view_10": 71,
+    "triton_poi_fused_cat_neg_split_transpose_view_2": 72,
+    "triton_poi_fused_cat_neg_split_transpose_view_4": 72,
+    "triton_poi_fused_mul_silu_12": 48,
+    "triton_poi_fused_neg_split_transpose_view_1": 76,
+    "triton_poi_fused_neg_split_transpose_view_3": 76,
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_7": 867,
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": 1017,
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": 1081,
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": 1136,
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": 720,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": 218,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": 265,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": 324,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": 302,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_slice_19": 160,
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_6": 2513,
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_9": 2516,
+    "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": 398,
+    "w8a8_block_dynamic_fp8_matmul_kernel": 10900
+   },
+   "assembly_sha256": {
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_5": "9a6f370766163e101049d6aaa19351a5bdfeedb833adfef3ff71fff9efdd5869",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_8": "455feba5e227e0eeed4a12ccea259728dc62e7e5c121696bdcdfa6b4a8e71544",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_transpose_view_10": "955758fbb7b04eaa3e15fe8139454bebf8110bd9516c15c3e115b1c02143027d",
+    "triton_poi_fused_cat_neg_split_transpose_view_2": "f80731d82ffbf65c2e6139a4702fa7b8f3bf11c2565c69b031d624f131cced44",
+    "triton_poi_fused_cat_neg_split_transpose_view_4": "9a73922a784c094c9f0578414e8dd6ceb297f4fd9ae2eb1f9b146f53fc274d71",
+    "triton_poi_fused_mul_silu_12": "32e729d156defdc68a8e6f705134c7e4bda5695743cdf81d88e7572b1f7ac7ef",
+    "triton_poi_fused_neg_split_transpose_view_1": "9620d121b726923d904e90ddf17b1165a7d4cb82d068e60acfdbd5cbaa72f05d",
+    "triton_poi_fused_neg_split_transpose_view_3": "79ad746dda2b88185204fb7918d55263d81da62ed16619fa1ad0c810113a8332",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_7": "4e6091053ff0e8d641d97fd4a47b244f9aafce9ff3132fff761a0c4d0525d44b",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_0": "21c6b25aaaaa621236fdd2848f23c7847bddb6f27cc2c5059e26d4b0411a1a85",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_11": "eb7181f427adf57f9ec90eda1187efff9dbcbceb1f19c8946420e32ed3346d6c",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_13": "3c91e53e342119f914469307bee463f660daeaf84add0f23dc928a31922a3aff",
+    "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14": "82011d395075b11e2d5449562510046685e39437c80aa965a4899e274c3243e4",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_15": "f7b0456bf6f18318d5f0bc8f5b961cf2963a4d3476af53f93d5ecf32fb1f72b7",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_16": "43d2ecc90e6bcfcc19ebe799f66d07da8f2573e84bfbe40f6b12117d91a9478c",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_17": "61feb0a4867178e6837f53f3ec49ac1fd3c92d23f5e6117f6adc36a90e3137be",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_18": "77e406ca5ca247c4dd18a233646ec4c318c32fb4e28a5689e3d46d3cb659d472",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_slice_19": "b598501226e6a34d69936c6f2a8b82e631e785c67a57b9896f652606175a7ec2",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_6": "c946593452cd2b385482f7dbd2cef82b8c2069c3287ce5e32ed40ec7c91d1aa6",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_9": "86e2f08ef6cf3d5f0593f77b790864e3a02713be11780b8ac22bfa3c8ddd2d70",
+    "triton_tem_fused__to_copy_add_mean_mm_mul_pow_rsqrt_slice_t_view_20": "ea75cc25b4910588aef4e3cfa4297b57fe522fd290b6b5e5f94845b0f42df41d",
+    "w8a8_block_dynamic_fp8_matmul_kernel": "4bbfe14888ccf77e628ac233f74188007ceb1c87558a3391d18447f4dbd361c0"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k16.f16": 1,
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 634920960,
+   "max_launch_kernel": "triton_red_fused__to_copy_add_embedding_mean_mul_pow_rsqrt_14",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 634920960 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "model.fp8_layer_decode/xl/fp8-b1-p2048-layers1",
+   "point_sha256": "154cebd2f54b4120f5dfd8edfc98cc0971068d3591a4d368c4364685054232b9",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 14.38,
+   "process_s": 19.8,
+   "launches": 22,
+   "expected_launches": 22,
+   "kernels": 15,
+   "kernel_names": [
+    "triton_poi_fused_add_13",
+    "triton_poi_fused_add_cat_mul_transpose_view_5",
+    "triton_poi_fused_cat_6",
+    "triton_poi_fused_cat_neg_split_transpose_view_2",
+    "triton_poi_fused_cat_neg_split_transpose_view_4",
+    "triton_poi_fused_cat_transpose_view_9",
+    "triton_poi_fused_mul_silu_12",
+    "triton_poi_fused_neg_split_transpose_view_1",
+    "triton_poi_fused_neg_split_transpose_view_3",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_8",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_7",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_11",
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "triton_poi_fused_add_13": 33,
+    "triton_poi_fused_add_cat_mul_transpose_view_5": 69,
+    "triton_poi_fused_cat_6": 47,
+    "triton_poi_fused_cat_neg_split_transpose_view_2": 45,
+    "triton_poi_fused_cat_neg_split_transpose_view_4": 45,
+    "triton_poi_fused_cat_transpose_view_9": 48,
+    "triton_poi_fused_mul_silu_12": 50,
+    "triton_poi_fused_neg_split_transpose_view_1": 50,
+    "triton_poi_fused_neg_split_transpose_view_3": 50,
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_8": 326,
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_7": 167,
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": 140,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0": 96,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_11": 135,
+    "w8a8_block_dynamic_fp8_matmul_kernel": 6734
+   },
+   "assembly_sha256": {
+    "triton_poi_fused_add_13": "899ae3138e7304dd0ce54363c41fd9f5b69297f0379420c11b8c2263a5d05c06",
+    "triton_poi_fused_add_cat_mul_transpose_view_5": "8d7ce135bff793b48e01604cb14a9034b99c347d75fe8c74c0dd376b6485a97a",
+    "triton_poi_fused_cat_6": "425e52d97f1754daea8b19930dc309afbb60435e1c97515eb32e53d1547d94e8",
+    "triton_poi_fused_cat_neg_split_transpose_view_2": "e20bb68f1e39d8231d24c051be97552b72b57890d3cdcfce4129f1ecd59e8552",
+    "triton_poi_fused_cat_neg_split_transpose_view_4": "0aa93c98ceefb1bb41b6d06aafd85f135ee77c10302e97727d9ab8b00134d5e3",
+    "triton_poi_fused_cat_transpose_view_9": "66c5b1cbd6457cbd1669bf27d01ee95c515d54a26f0d1424a0ef37735908ef7f",
+    "triton_poi_fused_mul_silu_12": "13b810deb67fa2a046932e156d893a7b2f091679fe2a17e75c3bb149d7109490",
+    "triton_poi_fused_neg_split_transpose_view_1": "4264702459c56f218d061a1128f9df671423518e37d6718d50ebd78ab4ac72bb",
+    "triton_poi_fused_neg_split_transpose_view_3": "7e7057e437070c09442fe1c182056383d2fa7314f88ca3bce36d89a2a624ff4f",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_8": "6677ecaf30f2c154fc38c0ef2a5e427b2d5e59011124e1ecc1cadbafd39db304",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_7": "8a3f940ce0d95058f1a25e498dc5ac9645a20b59a0e3cafd92aa1cc705f2cf91",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": "b3f0a86c59c12a758a7c0428ee1ad97c3091342d753f8ad189b178b4662fd9a2",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0": "655f40a1d19add1b4b420b01cfcd6b62fce09903773f86bfa2267387da2ec0c4",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_11": "68e32409a4da8d0ec34b2a57abe33bf7cb13e9986710cc2a97254a11a0533417",
+    "w8a8_block_dynamic_fp8_matmul_kernel": "2b0e64f80a336d024d8458548ba4160f7607aa7cb2e3005ad6e044e8ac3b60af"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 12602368,
+   "max_launch_kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 12602368 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "model.fp8_layer_prefill/xl/fp8-b1-s512-layers1",
+   "point_sha256": "d0d6bc105d461851fd5e903bbc1219f8b763a53ab60aec1e03ace080626aac8d",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 32.45,
+   "process_s": 37.7,
+   "launches": 23,
+   "expected_launches": 23,
+   "kernels": 17,
+   "kernel_names": [
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_7",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_add_mul_transpose_view_6",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_transpose_view_12",
+    "triton_poi_fused_add_15",
+    "triton_poi_fused_add_mul_transpose_view_5",
+    "triton_poi_fused_cat_neg_split_transpose_view_2",
+    "triton_poi_fused_cat_neg_split_transpose_view_4",
+    "triton_poi_fused_mul_silu_14",
+    "triton_poi_fused_neg_split_transpose_view_1",
+    "triton_poi_fused_neg_split_transpose_view_3",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_9",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_13",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_8",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_11",
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": 84,
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_7": 910,
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_add_mul_transpose_view_6": 101,
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_transpose_view_12": 71,
+    "triton_poi_fused_add_15": 31,
+    "triton_poi_fused_add_mul_transpose_view_5": 86,
+    "triton_poi_fused_cat_neg_split_transpose_view_2": 72,
+    "triton_poi_fused_cat_neg_split_transpose_view_4": 72,
+    "triton_poi_fused_mul_silu_14": 48,
+    "triton_poi_fused_neg_split_transpose_view_1": 76,
+    "triton_poi_fused_neg_split_transpose_view_3": 76,
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_9": 867,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0": 111,
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_13": 176,
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_8": 2513,
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_11": 2516,
+    "w8a8_block_dynamic_fp8_matmul_kernel": 10900
+   },
+   "assembly_sha256": {
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_10": "455feba5e227e0eeed4a12ccea259728dc62e7e5c121696bdcdfa6b4a8e71544",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_7": "1696bacc70e78397ce67fd4e3ebfa9d22c71411514d556b65327d17d762beb4e",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_add_mul_transpose_view_6": "36979d5611271ef2837151c1d7f4a4cd94e0b5f285507c95ee68453e25dd2f08",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_transpose_view_12": "955758fbb7b04eaa3e15fe8139454bebf8110bd9516c15c3e115b1c02143027d",
+    "triton_poi_fused_add_15": "780b0345de3933d92b977a46d9313c60a4c3bff247f0db6b2aad494583accb86",
+    "triton_poi_fused_add_mul_transpose_view_5": "a5242adbeaf34372382db6c87d130489d4290eef176ca7f2be34f5d18f047a46",
+    "triton_poi_fused_cat_neg_split_transpose_view_2": "f80731d82ffbf65c2e6139a4702fa7b8f3bf11c2565c69b031d624f131cced44",
+    "triton_poi_fused_cat_neg_split_transpose_view_4": "9a73922a784c094c9f0578414e8dd6ceb297f4fd9ae2eb1f9b146f53fc274d71",
+    "triton_poi_fused_mul_silu_14": "32e729d156defdc68a8e6f705134c7e4bda5695743cdf81d88e7572b1f7ac7ef",
+    "triton_poi_fused_neg_split_transpose_view_1": "9620d121b726923d904e90ddf17b1165a7d4cb82d068e60acfdbd5cbaa72f05d",
+    "triton_poi_fused_neg_split_transpose_view_3": "79ad746dda2b88185204fb7918d55263d81da62ed16619fa1ad0c810113a8332",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_9": "4e6091053ff0e8d641d97fd4a47b244f9aafce9ff3132fff761a0c4d0525d44b",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0": "7f5c2293c8e5db2c7cf8f301dd7c4c31f39915714ef346ae59676e9a0e90f0e2",
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_13": "fe2baac31fedecac9018a5f26a2f587e25bb7b4e9f8605cd65861c59abfca4ef",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_add_clone_expand_mul_transpose_unsqueeze_view_8": "c946593452cd2b385482f7dbd2cef82b8c2069c3287ce5e32ed40ec7c91d1aa6",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_transpose_unsqueeze_view_11": "86e2f08ef6cf3d5f0593f77b790864e3a02713be11780b8ac22bfa3c8ddd2d70",
+    "w8a8_block_dynamic_fp8_matmul_kernel": "4bbfe14888ccf77e628ac233f74188007ceb1c87558a3391d18447f4dbd361c0"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 33554432,
+   "max_launch_kernel": "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_9",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 33554432 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.argmax/xl/fp16-r16-v151936",
+   "point_sha256": "177dbcda727575d007402b026732e324512ff6750ed4e7f7dc7de25f49cd9184",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 2.56,
+   "process_s": 6.9,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "triton_red_fused_argmax_0"
+   ],
+   "instructions": {
+    "triton_red_fused_argmax_0": 409
+   },
+   "assembly_sha256": {
+    "triton_red_fused_argmax_0": "4a239bf480781e773f4e065c4b62adb863c9745c0a77c55f8ec192c479fea567"
+   },
+   "static_matrix_commands": {},
+   "max_launch_bytes": 4862080,
+   "max_launch_kernel": "triton_red_fused_argmax_0",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 4862080 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.attention_decode/xl/fp16-b1-h16-kv8-l2048-d128",
+   "point_sha256": "919f0bc578929bfd3edb09a2cc8e17e3c157e803b71ca3d2e00af5ad4c389b2e",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 3.03,
+   "process_s": 7.3,
+   "launches": 3,
+   "expected_launches": 3,
+   "kernels": 3,
+   "kernel_names": [
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_1",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_0",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2"
+   ],
+   "instructions": {
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_1": 378,
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_0": 108,
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2": 193
+   },
+   "assembly_sha256": {
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_1": "b9de088207859d0657d1629ccd715518ca18aed8811ab567e1257efbbf4d7f2a",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_0": "160ce031635545802a31a7fc18687cad9eb67ac105202a0aaac3e00e917ec08f",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2": "884930943c58bd80dde89e97f55baeb21bdbb1863f95be81b285c07ba12de0b3"
+   },
+   "static_matrix_commands": {},
+   "max_launch_bytes": 4329552,
+   "max_launch_kernel": "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 4329552 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.attention_decode/xl/fp16-b1-h16-kv8-l4096-d128",
+   "point_sha256": "fdbd8009cf7f7ba251aa06178a6088f67eccb6b3d87a220104a0b025efdbecfd",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 3.0,
+   "process_s": 7.5,
+   "launches": 3,
+   "expected_launches": 3,
+   "kernels": 3,
+   "kernel_names": [
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_1",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_0",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2"
+   ],
+   "instructions": {
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_1": 378,
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_0": 108,
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2": 193
+   },
+   "assembly_sha256": {
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_1": "16b253805971913eb93a294f12c9d4ae9de54d17f91a93c49cce79e191cc41cf",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_0": "8f55aaf6836cc4773590d0ff9be505943cbb84c53feaee44cf9b10eff5b76931",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2": "0d1ccc2fa28991b9d4a23cdfbfcb8ec09fddd32edbde6d6c2c456240871b5fbb"
+   },
+   "static_matrix_commands": {},
+   "max_launch_bytes": 8654928,
+   "max_launch_kernel": "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 8654928 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.attention_decode/xl/fp16-b1-h16-kv8-l8192-d128",
+   "point_sha256": "f208cc72607767eae0713c3ca72ae0f45062e16d473964e9bcd29a9dc606e0dc",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 2.91,
+   "process_s": 7.6,
+   "launches": 3,
+   "expected_launches": 3,
+   "kernels": 3,
+   "kernel_names": [
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_1",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_0",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2"
+   ],
+   "instructions": {
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_1": 379,
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_0": 108,
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2": 193
+   },
+   "assembly_sha256": {
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_1": "4ea3c2e2211b7bd6ceb5e574eba09b1eda874f44eecccbdbf71ce0714bb03ec7",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_0": "786392adc0107885196c535c24cfce4b132268258cc8f96bb3bb0d71312ba919",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2": "3044ab44bfa64560322df12da7b4e283ead936610efe5518b2b79f32c2422afa"
+   },
+   "static_matrix_commands": {},
+   "max_launch_bytes": 17305680,
+   "max_launch_kernel": "triton_red_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 17305680 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.attention_prefill/xl/fp16-b1-h16-kv8-s1024-d128",
+   "point_sha256": "d98d9b3e9982f2b6aebcb419f1b7e89b456e7a1b8c7b147991aef0bbf3c4de8b",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 6.99,
+   "process_s": 11.6,
+   "launches": 7,
+   "expected_launches": 7,
+   "kernels": 7,
+   "kernel_names": [
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_0",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_6",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_1",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_4",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_3",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_5"
+   ],
+   "instructions": {
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_0": 24,
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_6": 72,
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_1": 919,
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_4": 58,
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_3": 867,
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2": 2521,
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_5": 2516
+   },
+   "assembly_sha256": {
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_0": "4c4c3f7b716ebbd7e9507b8b4b291ac06553bdd9da8f07ad49cb5c3589f52ee8",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_6": "892aa5947b76c6d731613896c450d27b51ad47bbf13102e6824328649b525b96",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_1": "8c7590134227ba18effe013dc66116fbda9f4e740fcd92470c4c0dffde6c7a8d",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_4": "03adf3c0f9560d74e7a81c3c15bdf9097aaa6fe279018e971cd64f92625529bf",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_3": "389eb6487ec1612ce9309c3f544f0592b9fe5a98b5cbd2f26a1772c5a218560d",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2": "f7fccbd1f64ceb97564065b5f3befad8c91dd36f5dfc65a8fb4b981b4a759301",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_5": "dbff3d7917620ee7fd28fa0f6b8cce6d2ac22b6d7a8887b3b051fb9efb0e4ebe"
+   },
+   "static_matrix_commands": {},
+   "max_launch_bytes": 134217728,
+   "max_launch_kernel": "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_3",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 134217728 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.attention_prefill/xl/fp16-b1-h16-kv8-s2048-d128",
+   "point_sha256": "aac61a910b2acb27ef42a365fe430d42a43813ecc1ed1d0baaf3ae764dbc97c6",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 6.79,
+   "process_s": 11.4,
+   "launches": 7,
+   "expected_launches": 7,
+   "kernels": 7,
+   "kernel_names": [
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_0",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_6",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_1",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_4",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_3",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_5"
+   ],
+   "instructions": {
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_0": 24,
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_6": 72,
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_1": 923,
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_4": 58,
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_3": 867,
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2": 2524,
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_5": 2514
+   },
+   "assembly_sha256": {
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_0": "4c4c3f7b716ebbd7e9507b8b4b291ac06553bdd9da8f07ad49cb5c3589f52ee8",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_6": "19d621534648992a805410db87ff072c49d96f4d122f9f500edbc8877e5fdb46",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_1": "e5ab9b9d1928c9d77ebdc97bf374a6c6438ee6e38cb5b432a27a96342ca6c031",
+    "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_4": "99d37c637a9b2a627fe5e9b6f6311e1267913aab4e98349f20bef0d9e5bf13be",
+    "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_3": "352f559cabff8c5a5e101629e4a3f3490f41117360188bb5dfb0a3cba471f676",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2": "eb9121c5fb6e1e4fe00cc436b1f405877be04262ef400ec70ff0160b64ce1fd5",
+    "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_5": "534f95797ff29e4e36ce8f26489de4bcfbfc96d18a6411f975f060eb49c61bc8"
+   },
+   "static_matrix_commands": {},
+   "max_launch_bytes": 536870912,
+   "max_launch_kernel": "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_3",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 536870912 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.embedding/xl/fp16-v151936-d2048-t2048",
+   "point_sha256": "ee1fd5113fcf6150f4123973ea42b442f9a5f8d7470eb8f01071d291f9ac5e7f",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 2.65,
+   "process_s": 11.7,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "triton_poi_fused_embedding_0"
+   ],
+   "instructions": {
+    "triton_poi_fused_embedding_0": 695
+   },
+   "assembly_sha256": {
+    "triton_poi_fused_embedding_0": "e03981407f1f9105f885cb415963331b30ccfb13ba6900139e0e7956297abb8a"
+   },
+   "static_matrix_commands": {},
+   "max_launch_bytes": 631933952,
+   "max_launch_kernel": "triton_poi_fused_embedding_0",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 631933952 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.fp8_act_quant/xl/fp8-m2048-k2048",
+   "point_sha256": "8a2ec384ac3de2a4a14715b5e97852d3f6019a58a10a1fa80dae2c11926ac0f8",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 2.47,
+   "process_s": 7.1,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "_fp8_act_quant_kernel"
+   ],
+   "instructions": {
+    "_fp8_act_quant_kernel": 234
+   },
+   "assembly_sha256": {
+    "_fp8_act_quant_kernel": "7c724bcaeadf81ef436636fbfb7b459a70d2736d08b86591403777f8f1b1f05e"
+   },
+   "static_matrix_commands": {},
+   "max_launch_bytes": 12713984,
+   "max_launch_kernel": "_fp8_act_quant_kernel",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 12713984 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.fp8_act_quant/xl/fp8-m2048-k6144",
+   "point_sha256": "03133e5f67ae8b9c5db94576d49c53246f5d6d313c9c0c565718c75ef86f63c5",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 2.51,
+   "process_s": 7.4,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "_fp8_act_quant_kernel"
+   ],
+   "instructions": {
+    "_fp8_act_quant_kernel": 234
+   },
+   "assembly_sha256": {
+    "_fp8_act_quant_kernel": "7c724bcaeadf81ef436636fbfb7b459a70d2736d08b86591403777f8f1b1f05e"
+   },
+   "static_matrix_commands": {},
+   "max_launch_bytes": 38141952,
+   "max_launch_kernel": "_fp8_act_quant_kernel",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 38141952 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.fp8_linear/xl/fp8-m1-k2048-n12288",
+   "point_sha256": "15911313ef57875f40cc0fac4789603f01a76fc5d8315bff3990548e963c1fa2",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 11.96,
+   "process_s": 17.1,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": 6734
+   },
+   "assembly_sha256": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": "2b0e64f80a336d024d8458548ba4160f7607aa7cb2e3005ad6e044e8ac3b60af"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 25200640,
+   "max_launch_kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 25200640 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.fp8_linear/xl/fp8-m1-k2048-n151936",
+   "point_sha256": "0203308e11757d663ae934bf8fb030485e177eca623fa4f8ec3e41c4baa2e0a0",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 11.98,
+   "process_s": 21.0,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": 6734
+   },
+   "assembly_sha256": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": "2b0e64f80a336d024d8458548ba4160f7607aa7cb2e3005ad6e044e8ac3b60af"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 311548864,
+   "max_launch_kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 311548864 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.fp8_linear/xl/fp8-m1-k2048-n4096",
+   "point_sha256": "15da736bea87d9e3a743ad7c76fad926f38ea50d5ee3b9eadf09f5a9fd0038b7",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 11.76,
+   "process_s": 16.5,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": 6734
+   },
+   "assembly_sha256": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": "2b0e64f80a336d024d8458548ba4160f7607aa7cb2e3005ad6e044e8ac3b60af"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 8402944,
+   "max_launch_kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 8402944 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.fp8_linear/xl/fp8-m1-k6144-n2048",
+   "point_sha256": "45a8f1faada427eccf968fdf4d01e1d98203eb3223f5ccb30c31d3cee97e7ada",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 11.88,
+   "process_s": 16.7,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": 6734
+   },
+   "assembly_sha256": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": "2b0e64f80a336d024d8458548ba4160f7607aa7cb2e3005ad6e044e8ac3b60af"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 12602368,
+   "max_launch_kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 12602368 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.fp8_linear/xl/fp8-m16-k2048-n12288",
+   "point_sha256": "9ec66448679d1cfc90376d647695adf9681b0a633fab65370f519efb5372b0e7",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 24.16,
+   "process_s": 29.3,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": 10904
+   },
+   "assembly_sha256": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": "7658a1ecdd57ba542a254d81400637da39047ea70cd7b01ea377487f3147351e"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 25630720,
+   "max_launch_kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 25630720 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.fp8_linear/xl/fp8-m16-k2048-n151936",
+   "point_sha256": "393aefe8d652e4b5964cf849ca1e38fb8edca53c13a3f71c3a95906eee5da93e",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 24.2,
+   "process_s": 33.5,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": 10904
+   },
+   "assembly_sha256": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": "7658a1ecdd57ba542a254d81400637da39047ea70cd7b01ea377487f3147351e"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 316168384,
+   "max_launch_kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 316168384 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.fp8_linear/xl/fp8-m16-k6144-n2048",
+   "point_sha256": "c67f1591f965117c51068db4de405eb4e8cd403a13a1b7eb0e9dd3c9ed5c97fd",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 24.27,
+   "process_s": 29.6,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": 10904
+   },
+   "assembly_sha256": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": "7658a1ecdd57ba542a254d81400637da39047ea70cd7b01ea377487f3147351e"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 12848128,
+   "max_launch_kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 12848128 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.fp8_linear/xl/fp8-m2048-k2048-n12288",
+   "point_sha256": "22a5dce846e071c04fbd3edcadf613b27fbb2edb4731dde47dc70b64a98e0410",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 24.85,
+   "process_s": 30.1,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": 10900
+   },
+   "assembly_sha256": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": "4bbfe14888ccf77e628ac233f74188007ceb1c87558a3391d18447f4dbd361c0"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 83892224,
+   "max_launch_kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 83892224 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.fp8_linear/xl/fp8-m2048-k2048-n2048",
+   "point_sha256": "b13e6a796e6dea3389bd9737c5bbce9473eaada75066613c82dbc132a12dc6fc",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 24.97,
+   "process_s": 30.3,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": 10900
+   },
+   "assembly_sha256": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": "4bbfe14888ccf77e628ac233f74188007ceb1c87558a3391d18447f4dbd361c0"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 20972544,
+   "max_launch_kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 20972544 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.fp8_linear/xl/fp8-m2048-k2048-n4096",
+   "point_sha256": "9b3cfa8a19e9aff1fbf995ba8ccdc2ddb1355fd5a35a0ead830d5e0510e2fab7",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 24.64,
+   "process_s": 29.7,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": 10900
+   },
+   "assembly_sha256": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": "4bbfe14888ccf77e628ac233f74188007ceb1c87558a3391d18447f4dbd361c0"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 33556480,
+   "max_launch_kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 33556480 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.fp8_linear/xl/fp8-m2048-k6144-n2048",
+   "point_sha256": "660d244e9261ca32d82dc40b89e6393d00a3e1b977169f6515ab004208012c83",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 25.39,
+   "process_s": 30.4,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": 10900
+   },
+   "assembly_sha256": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": "4bbfe14888ccf77e628ac233f74188007ceb1c87558a3391d18447f4dbd361c0"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 46140416,
+   "max_launch_kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 46140416 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.fp8_linear/xl/fp8-m512-k2048-n12288",
+   "point_sha256": "bfbfd2099bc44d5704025f9ad2e2a93860d169f66d0994ee0a6aaef9612d12bc",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 24.72,
+   "process_s": 29.9,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": 10900
+   },
+   "assembly_sha256": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": "4bbfe14888ccf77e628ac233f74188007ceb1c87558a3391d18447f4dbd361c0"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 39852032,
+   "max_launch_kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 39852032 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.fp8_linear/xl/fp8-m512-k6144-n2048",
+   "point_sha256": "49ee5e8c31716478c815832a3fef42799f54f20dd94b3d6e3a1550802062dbf3",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 24.87,
+   "process_s": 30.0,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "w8a8_block_dynamic_fp8_matmul_kernel"
+   ],
+   "instructions": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": 10900
+   },
+   "assembly_sha256": {
+    "w8a8_block_dynamic_fp8_matmul_kernel": "4bbfe14888ccf77e628ac233f74188007ceb1c87558a3391d18447f4dbd361c0"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k32.e4m3": 32
+   },
+   "max_launch_bytes": 20974592,
+   "max_launch_kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 20974592 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.gemv/xl/fp16-k2048-n151936",
+   "point_sha256": "1515c5e68d528438da6a4cf12202ce9e593259cfc1ea426e3903a7eb8074fffb",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 2.54,
+   "process_s": 11.9,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "triton_tem_fused_mm_t_0"
+   ],
+   "instructions": {
+    "triton_tem_fused_mm_t_0": 398
+   },
+   "assembly_sha256": {
+    "triton_tem_fused_mm_t_0": "ea75cc25b4910588aef4e3cfa4297b57fe522fd290b6b5e5f94845b0f42df41d"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k16.f16": 1
+   },
+   "max_launch_bytes": 622637824,
+   "max_launch_kernel": "triton_tem_fused_mm_t_0",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 622637824 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.linear/xl/fp16-m2048-k2048-n6144-bias0",
+   "point_sha256": "3d50cb30e3e6d7d57030682ffa0857d79343d80543f334021428d249ca2bed81",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 2.48,
+   "process_s": 7.1,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "triton_tem_fused_mm_t_0"
+   ],
+   "instructions": {
+    "triton_tem_fused_mm_t_0": 388
+   },
+   "assembly_sha256": {
+    "triton_tem_fused_mm_t_0": "ec4501482fecb7f106f46df267f8105c6b3400f3d654b219344e93f0653cdef4"
+   },
+   "static_matrix_commands": {
+    "m.mma.dp.async.k16.f16": 1
+   },
+   "max_launch_bytes": 58720256,
+   "max_launch_kernel": "triton_tem_fused_mm_t_0",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 58720256 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.rmsnorm_residual/xl/fp16-r2048-d2048",
+   "point_sha256": "0fee763e28d951843e6325cc3d4aff44483b83cc823ae7dd6fe291de38351511",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 2.57,
+   "process_s": 6.9,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0"
+   ],
+   "instructions": {
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0": 152
+   },
+   "assembly_sha256": {
+    "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0": "1b68f94f26173061be2ae42c94252736e003ab9fff25bdc0209ea62929b9d9c3"
+   },
+   "static_matrix_commands": {},
+   "max_launch_bytes": 33558528,
+   "max_launch_kernel": "triton_red_fused__to_copy_add_mean_mul_pow_rsqrt_0",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 33558528 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.rope/xl/fp16-b1-h16-s2048-d128",
+   "point_sha256": "9b1dc9aa7718bf1f42d3dec58ff805f482f792e7317a1f4f4c16493aab921cc0",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 2.6,
+   "process_s": 6.9,
+   "launches": 3,
+   "expected_launches": 3,
+   "kernels": 3,
+   "kernel_names": [
+    "triton_poi_fused_add_mul_2",
+    "triton_poi_fused_cat_neg_split_1",
+    "triton_poi_fused_neg_split_0"
+   ],
+   "instructions": {
+    "triton_poi_fused_add_mul_2": 48,
+    "triton_poi_fused_cat_neg_split_1": 42,
+    "triton_poi_fused_neg_split_0": 47
+   },
+   "assembly_sha256": {
+    "triton_poi_fused_add_mul_2": "0f1f6aefb05916e8974a7f023e70ddc7f40c4d058cc635005806943fe4013f05",
+    "triton_poi_fused_cat_neg_split_1": "11eef910b59d0416c3026d326698c9f3cdd05536c5784acc18aa6d7eabcaefc8",
+    "triton_poi_fused_neg_split_0": "f8b62aac4018e367d629a0533eaa032a0fc6960df1746684b6747721a5b0b6b0"
+   },
+   "static_matrix_commands": {},
+   "max_launch_bytes": 26214400,
+   "max_launch_kernel": "triton_poi_fused_add_mul_2",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 26214400 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  },
+  {
+   "point": "op.swiglu/xl/fp16-r2048-i6144",
+   "point_sha256": "b8f2e4d6541cf1a41d51518719cb1b6c057bbc3ffb0fcdc0a9882ca8cf561bb4",
+   "status": "capacity-exceeded",
+   "verdict": "compiles",
+   "compile_s": 2.23,
+   "process_s": 6.8,
+   "launches": 1,
+   "expected_launches": 1,
+   "kernels": 1,
+   "kernel_names": [
+    "triton_poi_fused_mul_silu_0"
+   ],
+   "instructions": {
+    "triton_poi_fused_mul_silu_0": 48
+   },
+   "assembly_sha256": {
+    "triton_poi_fused_mul_silu_0": "32e729d156defdc68a8e6f705134c7e4bda5695743cdf81d88e7572b1f7ac7ef"
+   },
+   "static_matrix_commands": {},
+   "max_launch_bytes": 75497472,
+   "max_launch_kernel": "triton_poi_fused_mul_silu_0",
+   "fallbacks": [],
+   "problems": [
+    "compile-only (TNCA_LAUNCH=skip): all kernels compiled, none launched",
+    "the largest launch needs 75497472 bytes of arguments; the device heap is 393216"
+   ],
+   "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "software_tree": "files:64bf16ee59c87eda46c3a0455fcde562b88600c55659860f86163bc0fe5bbccb"
+  }
+ ],
+ "compiles": 32,
+ "total": 32
+}

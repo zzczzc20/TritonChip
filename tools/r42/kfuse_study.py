@@ -31,6 +31,10 @@ Candidates: `seq` (the contract), `seqrev` (control: the same contract in decrea
 Metrics per candidate (output = the point's output dtype: fp16, or bf16 for the bf16 points; reference = the binary64
 result rounded once to that dtype, as the xl points define their reference):
   out_rel_l2   ||out - ref|| / ||ref||        (the registered gate's metric)
+  out_exp_rel_l2  the noise-free EXPECTATION of out_rel_l2 over the position of the exact value in the output grid
+               (expected_out_err2): the measured out_rel_l2 is one realisation with a few hundred flips (FP16) or a
+               few tens (BF16); this has no sampling noise. Added after the first 37 jobs had run (K >= 4096 jobs
+               carry it only where re-run, see kfuse_report.py).
   out_tol      max|out - ref| / max(max|ref|, 1)   (the frozen-tolerance criterion of PROTOCOL.md sec 2)
   out_flips    number of outputs that differ from the reference
   acc_rel_l2   the same relative L2 on the binary32 accumulator BEFORE the output rounding (diagnostic)
@@ -57,7 +61,22 @@ WS_EXPLORE = (-8, -16)            # beyond the menu (windows narrower than a bin
                                   # accumulator is not in the window ('acc_after', 'sum_fma'); reported as exploratory
 
 
+_ONLY = {}                        # set by --only-ws: {'ws': [...], 'variants': [...]}
+_FILTER = []                      # set by --cfg-filter: a regular expression the lane tags must match
+
+
 def lane_configs(quick=False):
+    import re
+    for c in _lane_configs(quick):
+        if not _FILTER or re.search(_FILTER[0], c.tag()):
+            yield c
+
+
+def _lane_configs(quick=False):
+    if _ONLY:
+        for variant, rnd, G, W in itertools.product(_ONLY['variants'], km.ROUNDINGS, GS, _ONLY['ws']):
+            yield km.Cfg(G, W, rnd, variant)
+        return
     if quick:
         yield from (km.Cfg(4, 8, 'trunc', 'acc_in'), km.Cfg(16, 0, 'trunc', 'acc_in'))
         return
@@ -182,12 +201,34 @@ def metrics(acc32, acc64, out_dtype, tol):
     return metrics_pair(acc32, acc64, out, ref, tol)
 
 
-def metrics_pair(acc32, acc64, out, ref, tol):
+def _ulp(ref, out_dtype):
+    """Spacing of the output grid at the exact values (float64 array)."""
+    e = np.frexp(np.abs(ref))[1] - 1                    # floor(log2|v|)
+    if out_dtype == 'fp16':
+        return np.exp2(np.maximum(e, -14) - 10.0)
+    return np.exp2(np.maximum(e, -126) - 7.0)
+
+
+def expected_out_err2(acc32, acc64, ref, out_dtype):
+    """Noise-free expectation of sum (out - ref)^2 over the position of the exact value in the output grid.
+    With e = acc - exact and u the grid spacing: an error smaller than u flips the rounding with probability |e|/u
+    and then costs u, so E = |e| u; a larger one costs e^2 + u^2/6. The measured out_rel_l2 is one realisation of
+    this (a few hundred flips in a few hundred thousand outputs: +-10 % for FP16, more for BF16, whose outputs flip
+    ten times less often); this is its mean."""
+    e = np.abs(acc32.astype(np.float64) - acc64)
+    u = _ulp(ref, out_dtype)
+    return float(np.where(e <= u, e * u, e * e + u * u / 6.0).sum())
+
+
+def metrics_pair(acc32, acc64, out, ref, tol, out_dtype=None):
     d = out - ref
     nref = float(np.linalg.norm(ref))
     nacc = float(np.linalg.norm(acc64))
     dacc = acc32.astype(np.float64) - acc64
-    return dict(out_rel_l2=float(np.linalg.norm(d)) / nref,
+    exp = {}
+    if out_dtype is not None:
+        exp['out_exp_rel_l2'] = float(np.sqrt(expected_out_err2(acc32, acc64, ref, out_dtype))) / nref
+    return dict(out_rel_l2=float(np.linalg.norm(d)) / nref, **exp,
                 out_tol=float(np.abs(d).max()) / max(float(np.abs(ref).max()), 1.0),
                 out_flips=int((d != 0).sum()),
                 out_max_abs=float(np.abs(d).max()),
@@ -313,18 +354,18 @@ def run_job(job, seed, out_path, quick=False):
     t1 = time.time()
     acc, ex = cand(None)
     out = _round_out(acc.astype(np.float64), p['out'])
-    emit('seq', None, dict(metrics_pair(acc, acc64, out, out_ref, p['tol']), **ex), time.time() - t1)
+    emit('seq', None, dict(metrics_pair(acc, acc64, out, out_ref, p['tol'], p['out']), **ex), time.time() - t1)
     # control for the noise of the gate metric: the sequential contract in DECREASING k has the same accuracy
     # (statistically) as the increasing-k contract, so its ratio to `seq` shows what a ratio of 1 looks like
     t1 = time.time()
     acc, ex = cand('rev')
     out = _round_out(acc.astype(np.float64), p['out'])
-    emit('seqrev', None, dict(metrics_pair(acc, acc64, out, out_ref, p['tol']), **ex), time.time() - t1)
+    emit('seqrev', None, dict(metrics_pair(acc, acc64, out, out_ref, p['tol'], p['out']), **ex), time.time() - t1)
     for cfg in lane_configs(quick):
         t1 = time.time()
         acc, ex = cand(cfg)
         out = _round_out(acc.astype(np.float64), p['out'])
-        emit(cfg.tag(), cfg, dict(metrics_pair(acc, acc64, out, out_ref, p['tol']), **ex), time.time() - t1)
+        emit(cfg.tag(), cfg, dict(metrics_pair(acc, acc64, out, out_ref, p['tol'], p['out']), **ex), time.time() - t1)
     print(f'{job} seed {seed}: {len(recs)} candidates in {time.time() - t0:.0f} s', flush=True)
 
 
@@ -335,7 +376,15 @@ def main():
     ap.add_argument('--seed', type=int, default=0)
     ap.add_argument('--out')
     ap.add_argument('--quick', action='store_true')
+    ap.add_argument('--only-ws', help='comma-separated W values: run only these windows (variants acc_after, sum_fma), '
+                                      'plus seq and seqrev; the fine sweep below the registered menu')
+    ap.add_argument('--cfg-filter', help='regular expression: run only the lane configurations whose tag matches '
+                                         '(seq and seqrev always run)')
     a = ap.parse_args()
+    if a.cfg_filter:
+        _FILTER.append(a.cfg_filter)
+    if a.only_ws:
+        _ONLY.update(ws=[int(x) for x in a.only_ws.split(',')], variants=['acc_after', 'sum_fma'])
     if a.list:
         for k in POINTS:
             print(k)

@@ -1,0 +1,148 @@
+1. tlm (config cal): cycles of the 24 GEMM-shaped points of tiny/small/medium, and against the board
+   base = TNCA_GEMM_AUTO=0 semantics (16x16x16 tile) on the R42 head; auto12 = the committed default (N blocking, >= 12 programs)
+point                                                            board    tlm base    tlm auto auto/base base/board
+model.gpt2_block/medium/fp16-d160-h5-b1-s64                    1321735     1343632     1201197    0.894    1.017
+model.gpt2_block/small/fp16-d128-h4-b1-s64                      971894      988797      893145    0.903    1.017
+model.gpt2_block/tiny/fp16-d64-h4-b1-s16                         95907       98293       98293    1.000    1.025
+model.llama_decode/medium/fp16-b1-p256                         2713623     1865263     1764617    0.946    0.687
+model.llama_decode/small/fp16-b1-p128                          1375795      983966      974730    0.991    0.715
+model.llama_decode/tiny/fp16-b1-p16                             181750      164029      164029    1.000    0.902
+model.llama_prefill/medium/fp16-b1-s64                         7945725     7758533     6873637    0.886    0.976
+model.llama_prefill/small/fp16-b1-s64                          4792320     4767186     4351433    0.913    0.995
+model.llama_prefill/tiny/fp16-b1-s16                            343560      334624      334624    1.000    0.974
+model.mlp/medium/fp16-t128-d128                                 881036      889751      770726    0.866    1.010
+model.mlp/small/fp16-t64-d128                                   454418      457685      399886    0.874    1.007
+model.mlp/tiny/fp16-t16-d64                                      42979       46005       46005    1.000    1.070
+op.bmm/medium/fp16-b16-m64-k32-n64                              133410      157199      157199    1.000    1.178
+op.bmm/small/fp16-b8-m64-k32-n64                                 66505       79101       79101    1.000    1.189
+op.bmm/tiny/fp16-b2-m16-k16-n16                                   1518        1649        1649    1.000    1.086
+op.gemv/medium/fp16-k320-n448                                    87227       77597       63798    0.822    0.890
+op.gemv/small/fp16-k256-n512                                     79611       70440       59387    0.843    0.885
+op.gemv/tiny/fp16-k64-n64                                         4554        4761        4761    1.000    1.045
+op.linear/medium/fp16-m128-k320-n256                            388684      391697      284488    0.726    1.008
+op.linear/small/fp16-m64-k256-n256                              166574      173095      138198    0.798    1.039
+op.linear/tiny/fp16-m16-k64-n64                                   4793        5397        5397    1.000    1.126
+op.matmul/medium/fp16-m128-k192-n128                            153021      149949      123131    0.821    0.980
+op.matmul/small/fp16-m64-k128-n128                               46305       48766       35986    0.738    1.053
+op.matmul/tiny/fp16-m16-k32-n16                                   1759        1941        1941    1.000    1.103
+geometric mean auto/base 0.913 (speed-up 1.095); model/board of the base 0.992; max_rel_err identical at 24 of 24 points
+
+2. tlm (config cal): the large and hbm tiers through reduced-grid proxies (M or batch reduced, K, N, epilogue kept)
+proxy point                                                        base         auto    ratio
+model.gpt2_block/large/fp16-d1024-h16-b1-s64                   46222587     31533697    0.682   max_rel_err equal: True
+model.llama_decode/large/fp16-b1-p480                          34071236     27825515    0.817   max_rel_err equal: True
+model.llama_prefill/large/fp16-b1-s48                          23793434     18711611    0.786   max_rel_err equal: True
+model.mlp/large/fp16-t48-d2048                                 86739380     57519354    0.663   max_rel_err equal: True
+op.linear/large/fp16-m48-k2048-n8192                           43471552     28116177    0.647   max_rel_err equal: True
+op.linear/large/fp16-m48-k4096-n11008                          72147519     53463702    0.741   max_rel_err equal: True
+op.matmul/large/fp16-m48-k2048-n2048                            8409455      6652899    0.791   max_rel_err equal: True
+op.matmul/large/fp16-m48-k4096-n4096                           33355808     26251835    0.787   max_rel_err equal: True
+geometric mean auto/base 0.737 (speed-up 1.358)
+
+3. rtl-1c (profile core-vrf-sync-v5-x8-g2c4-dp, default knobs): cycles, base = TNCA_GEMM_AUTO=0
+point                                                  base       auto    ratio   K32 tile    ratio
+op.gemv_small_fp16-k256-n512                         107642     105371    0.979          -        -
+op.linear_small_fp16-m64-k256-n256                   237890     239832    1.008     338557    1.423
+op.matmul_small_fp16-m64-k128-n128                    57824      55408    0.958      87643    1.516
+
+4. rtl-3c (three-core board-top stand-in at the R41 run-2 image geometry, line engine): cycles of the timed call
+   base_tiny    op.linear_tiny_fp16-m16-k64-n64                  4974
+   base_tiny    op.matmul_tiny_fp16-m16-k32-n16                  1952
+   k32_tiny     op.linear_tiny_fp16-m16-k64-n64                  4969
+   k32_tiny     op.matmul_tiny_fp16-m16-k32-n16                  1953
+   base_small   op.linear_small_fp16-m64-k256-n256               159177
+
+5. tlm K32 and hardware what-ifs (cycles / base cycles; FAIL = compile failure of the K32 tile)
+point                                                         auto12       k32    ab_k32   le_base   le_auto    le_k32  leab_k32
+model.gpt2_block/medium/fp16-d160-h5-b1-s64                    0.894      FAIL      FAIL     0.737     0.737      FAIL      FAIL
+model.gpt2_block/small/fp16-d128-h4-b1-s64                     0.903      FAIL      FAIL     0.740     0.740      FAIL      FAIL
+model.gpt2_block/tiny/fp16-d64-h4-b1-s16                       1.000      FAIL      FAIL     0.793     0.793      FAIL      FAIL
+model.llama_decode/medium/fp16-b1-p256                         0.946     2.303     2.167     0.839     0.839     1.789     1.652
+model.llama_decode/small/fp16-b1-p128                          0.991     2.172     2.042     0.841     0.841     1.679     1.545
+model.llama_decode/tiny/fp16-b1-p16                            1.000     1.802     1.703     0.785     0.785     1.351     1.250
+model.llama_prefill/medium/fp16-b1-s64                         0.886      FAIL      FAIL     0.755     0.755      FAIL      FAIL
+model.llama_prefill/small/fp16-b1-s64                          0.913      FAIL      FAIL     0.780     0.780      FAIL      FAIL
+model.llama_prefill/tiny/fp16-b1-s16                           1.000      FAIL      FAIL     0.864     0.864      FAIL      FAIL
+model.mlp/medium/fp16-t128-d128                                0.866     1.096     1.059     0.763     0.763     0.807     0.633
+model.mlp/small/fp16-t64-d128                                  0.874     1.105     1.058     0.752     0.752     0.816     0.636
+model.mlp/tiny/fp16-t16-d64                                    1.000     1.045     1.011     0.814     0.814     0.841     0.702
+op.bmm/medium/fp16-b16-m64-k32-n64                             1.000     1.270     1.157     0.623     0.623     0.673     0.553
+op.bmm/small/fp16-b8-m64-k32-n64                               1.000     1.271     1.145     0.623     0.623     0.674     0.550
+op.bmm/tiny/fp16-b2-m16-k16-n16                                1.000     2.169     2.033     0.579     0.579     1.539     1.403
+op.gemv/medium/fp16-k320-n448                                  0.822     3.493     3.200     0.773     0.773     2.565     2.303
+op.gemv/small/fp16-k256-n512                                   0.843     3.656     3.381     0.766     0.647     2.578     2.299
+op.gemv/tiny/fp16-k64-n64                                      1.000     2.508     2.325     0.619     0.619     1.735     1.547
+op.linear/medium/fp16-m128-k320-n256                           0.726     1.189     1.153     0.602     0.602     0.738     0.488
+op.linear/small/fp16-m64-k256-n256                             0.798     1.073     0.997     0.827     0.669     0.699     0.474
+op.linear/tiny/fp16-m16-k64-n64                                1.000     1.058     0.998     0.669     0.669     0.740     0.574
+op.matmul/medium/fp16-m128-k192-n128                           0.821     1.121     1.075     0.721     0.721     0.767     0.654
+op.matmul/small/fp16-m64-k128-n128                             0.738     1.087     1.047     0.820     0.640     0.725     0.585
+op.matmul/tiny/fp16-m16-k32-n16                                1.000     1.206     1.090     0.594     0.594     0.700     0.585
+geometric mean (points that compiled)                          0.913     1.546     1.451     0.731     0.712     1.056     0.877
+   k32 = TNCA_GEMM_TILE=16,16,32 (this branch, gemm_kmerge); ab_k32 adds mtx_abuf_k32=1 (A buffer of 16 registers, WHAT-IF hardware);
+   le_* = config cal_le (line engine with the rtl eligibility rule and the transposed line buffer; NOT validated: it predicts
+   0.59-0.67 of the cal cycles on the tiny points where rtl-3c agrees with cal); leab_k32 = cal_le + A buffer of 16.
+
+6. rtl-eng: tnca_tensor.v alone, ideal memory of fixed latency, cycles per K step of KS elements of ONE operand
+operand                    KS    lat=12 word/line  lat=24 word/line  lat=40 word/line  lat=60 word/line
+A tile 16 x KS (plain)     16       136 / 136         232 / 232         360 / 360         520 / 520    
+A tile 16 x KS (plain)     32       256 / 38          448 / 50          704 / 66         1024 / 86     
+W^T tile (transposed)      16       144 / 108         192 / 120         256 / 136         336 / 156    
+W^T tile (transposed)      32       280 / 196         376 / 208         504 / 224         664 / 244    
+B tile KS x 16 (plain)     16       136 / 136         232 / 232         360 / 360       ---   
+B tile KS x 16 (plain)     32       256 / 256         448 / 448         704 / 704       ---   
+   word = the word engine (single-core device, TENSOR_LINE 0); line = the line engine (board image, TENSOR_LINE 1).
+
+7. census of one K step (rtl-1c event logs, tools/census.py)
+   base_linear_tiny
+     transfer commands 32 completions 36 | matrix commands 20 completions 20
+       transfer window w0   n=4   cycles median 75 min 75 max 75
+       transfer window w1   n=4   cycles median 99 min 99 max 99
+       transfer window w2   n=4   cycles median 75 min 75 max 75
+       transfer window w3   n=4   cycles median 99 min 99 max 99
+       transfer window w8   n=4   cycles median 75 min 75 max 75
+       transfer window w9   n=4   cycles median 99 min 99 max 99
+       transfer window w10  n=4   cycles median 75 min 75 max 75
+       transfer window w11  n=4   cycles median 99 min 99 max 99
+       m.mma commands n=16: cycles median 169 min 169 max 169
+
+      launch summary: S end=15658 run=6318 mtx=2756 mma_busy=2688 txf=3144 both=2107 none=2525 n_mma=16 n_txf=32 x_valid=1522
+   k32_linear_tiny
+     transfer commands 16 completions 20 | matrix commands 12 completions 12
+       transfer window w0   n=4   cycles median 139 min 139 max 139
+       transfer window w1   n=4   cycles median 191 min 191 max 191
+       transfer window w8   n=4   cycles median 139 min 139 max 139
+       transfer window w9   n=4   cycles median 191 min 191 max 191
+       m.mma commands n=8: cycles median 553 min 553 max 553
+
+      launch summary: S end=17431 run=8299 mtx=4484 mma_busy=4416 txf=3016 both=1735 none=2534 n_mma=8 n_txf=16 x_valid=1410
+   matmul_small_base
+     transfer commands 512 completions 516 | matrix commands 288 completions 288
+       transfer window w0   n=64  cycles median 75 min 75 max 75
+       transfer window w1   n=64  cycles median 75 min 75 max 75
+       transfer window w2   n=64  cycles median 75 min 75 max 75
+       transfer window w3   n=64  cycles median 75 min 75 max 75
+       transfer window w8   n=64  cycles median 75 min 75 max 75
+       transfer window w9   n=64  cycles median 75 min 75 max 75
+       transfer window w10  n=64  cycles median 75 min 75 max 75
+       transfer window w11  n=64  cycles median 75 min 75 max 75
+       m.mma commands n=256: cycles median 169 min 169 max 169
+
+      launch summary: S end=93526 run=57822 mtx=43552 mma_busy=43008 txf=38280 both=33711 none=9701 n_mma=256 n_txf=512 x_valid=11862
+   matmul_small_auto
+     transfer commands 384 completions 388 | matrix commands 288 completions 288
+       transfer window w0   n=32  cycles median 75 min 75 max 75
+       transfer window w1   n=32  cycles median 75 min 75 max 75
+       transfer window w2   n=32  cycles median 75 min 75 max 75
+       transfer window w3   n=32  cycles median 75 min 75 max 75
+       transfer window w4   n=32  cycles median 75 min 75 max 75
+       transfer window w5   n=32  cycles median 75 min 75 max 76
+       transfer window w8   n=32  cycles median 75 min 75 max 75
+       transfer window w9   n=32  cycles median 75 min 75 max 76
+       transfer window w10  n=32  cycles median 75 min 75 max 75
+       transfer window w11  n=32  cycles median 75 min 75 max 75
+       transfer window w12  n=32  cycles median 75 min 75 max 75
+       transfer window w13  n=32  cycles median 75 min 75 max 75
+       m.mma commands n=256: cycles median 169 min 169 max 171
+
+      launch summary: S end=91461 run=55405 mtx=43555 mma_busy=43011 txf=28810 both=25025 none=8065 n_mma=256 n_txf=384 x_valid=8708

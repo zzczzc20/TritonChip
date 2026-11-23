@@ -1,0 +1,20 @@
+# R42 xfer: commands in the order they were run. Hosts: GB10 (gx10-6646, nice -n 19, at most 3-4 processes of this branch), local host for edits only.
+# Trees: ~/r42/xfer (mirror of branch R42-xfer), outputs ~/r42/xfer_out. Helper scripts: evidence/r42/xfer/tools/ (no credentials).
+#
+# 1. single-core RTL census of one K step (domain rtl-1c): probe top tools/xf_probe.v built by tools/xf_mkprobe.sh, event log with +gprobe_ev
+tools/xf_pt.sh TREE OUT op.linear/tiny/fp16-m16-k64-n64 PROBE=2           # -> census/base_linear_tiny.probe ; tools/census.py FILE
+tools/xf_pt.sh TREE OUT op.linear/tiny/fp16-m16-k64-n64 PROBE=2 TNCA_GEMM_TILE=16,16,32      # -> census/k32_linear_tiny.probe
+tools/xf_pt.sh TREE OUT op.matmul/small/fp16-m64-k128-n128 PROBE=2 TNCA_GEMM_AUTO=0 ; ... (default)   # -> census/matmul_small_{base,auto}.probe
+# 2. the transfer engine alone behind a fixed-latency memory (domain rtl-eng)
+rtl_microbench/run_xp.sh OUT ; rtl_microbench/run_xp2.sh OUT     # iverilog -g2012 tb_xfer_perf.v rtl/core/tnca_tensor.v ; xp_AB.txt, xp_per_operand.txt
+# 3. TLM (domain tlm), config files in tlm_cfg/ (cal = the validated model; cal_le, cal_ab, cal_le_ab are what-ifs)
+cmake -S tools/performance_harness/systemc -B ~/r42/xfer_out/tlm-xfer2 ... --target tnca-chip         # binary with the keys dma_line_elig, dma_xpose_line_buffer, mtx_abuf_k32
+tools/xf_jobs.sh JOBS TREE CFG BINARY IDFILE      # one TLM run per job line; tools/xf_tlm.sh runs tools/r42/kfuse_speed_tlm_run.py with default knobs
+#    large/hbm: XF_PM=tools/r42/kfuse_speed_proxies.py (reduced-grid proxies, R42-kfuse-speed)
+# 4. compile audit of the 113 points (compile-only kernel dumps, both arms) and its comparison
+tools/xf_alldump.sh TREE ad_ctrl IDS113 TNCA_GEMM_AUTO=0 ; tools/xf_alldump.sh TREE ad_auto IDS113 ; python3 tools/xf_audit_cmp.py ad_ctrl ad_auto   # audit/
+# 5. single-core RTL screen, default knobs, base = TNCA_GEMM_AUTO=0 (domain rtl-1c)
+tools/xf_rtlq.sh JOBFILE NPAR  (-> tools/xf_pt.sh)  ; ~/r42/r42_cmp.py BASE.jsonl CAND.jsonl
+# 6. three-core stand-in at the run-2 image geometry (domain rtl-3c)
+tools/xf_mc2.sh TREE OUT "ENV=VAL" POINT...   (tools/r41/link_budget_rtl.py --image r41_run2_sim.tcl --profile core-vrf-sync-v5-x8-g2c4-dp)
+# 7. tables: python3 tools/make_tables.py > tables.txt   (reads only the raw files in this directory)

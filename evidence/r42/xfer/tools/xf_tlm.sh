@@ -12,7 +12,8 @@ rm -rf $OUT; mkdir -p $(dirname $OUT)
 OUTSTAND=$(grep '^outstanding=' $CFG | cut -d= -f2)
 ARGS=()
 for ID in "$@"; do ARGS+=(--point "$ID"); done
-nice -n 19 $PY tools/r42/kfuse_speed_tlm_run.py --source-root $PWD --binary $BIN --config $CFG --out $OUT \
+PM=""; [ -n "$XF_PM" ] && PM="--points-module $PWD/$XF_PM"
+nice -n 19 $PY tools/r42/kfuse_speed_tlm_run.py --source-root $PWD $PM --binary $BIN --config $CFG --out $OUT \
   "${ARGS[@]}" --active-cores 3 --profile core-vrf-sync-v5-x8-g2c4-dp \
   --env TNCA_RTL_MEM_PORTS=3 --env TNCA_RTL_OUTSTANDING=$OUTSTAND --env TNCA_TRANSFER_POLICY=resident \
   $XF_ENV --jobs 1 --timeout 7200

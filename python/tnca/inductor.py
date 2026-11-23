@@ -137,6 +137,36 @@ def _with_fallback(configs, cap, rows=None):
     return wide
 
 
+# R42 xfer: the GEMM tile is chosen from the problem when TNCA_GEMM_TILE is not set (the default); setting it
+# keeps the one fixed tile it names, and TNCA_GEMM_AUTO=0 keeps the 16x16x16 tile (the ablation).
+_GEMM_AUTO = [False]
+# A GEMM kernel is blocked along N (one A fragment feeds BLOCKED_BN / 16 matrix commands a K step) only while
+# the grid keeps at least this many programs: two full waves of the image's three cores, each core running two
+# programs at a time (RCTX SPMD). Below that the tail of the last wave costs more than the blocking saves
+# (TLM, 24 GEMM points of the tiny/small/medium tiers: evidence/r42/xfer/REPORT.md).
+GEMM_MIN_PROGRAMS = 12
+BLOCKED_BN = 32
+
+
+def _gemm_blocking(op_name, m, n, k, dtypes):
+    """The (BLOCK_M, BLOCK_N, BLOCK_K) of an mm/addmm kernel (R42 xfer).
+
+    The matrix engine takes one 16x16 output fragment per command, and a K step of the 16x16x16 tile moves an
+    A fragment and a B fragment for it. A tile BLOCK_N = 32 holds two accumulators across K: the A fragment is
+    moved once and read by both commands, so a K step moves 3 fragments for 2 commands instead of 4
+    (tnca_cc/gemm_pipeline.py overlaps them with the matrix engine). Legal when N is a whole number of such
+    tiles (no padded fragment), and worth it while every core still gets programs: a grid below
+    GEMM_MIN_PROGRAMS programs is kept at 16x16 so the cores stay busy. FP32 and FP8 GEMMs keep their tile.
+    The accumulation order of every output element is the same in both tiles (K in increasing order), so the
+    results are bit-identical."""
+    tile = (16, 16, 16)
+    if op_name not in ('mm', 'addmm') or any(d not in ('torch.float16', 'torch.bfloat16') for d in dtypes):
+        return tile
+    if n % BLOCKED_BN == 0 and ((m + 15) // 16) * (n // BLOCKED_BN) >= GEMM_MIN_PROGRAMS:
+        return (16, BLOCKED_BN, 16)
+    return tile
+
+
 def _register(cap, reduction_rows=1, gemm_tile=(16,16,16)):
     global _registered
     if _registered:
@@ -192,6 +222,17 @@ def _register(cap, reduction_rows=1, gemm_tile=(16,16,16)):
     from torch._inductor.kernel.mm import mm_template
     from torch._inductor.kernel.bmm import bmm_template
 
+    def _choose_gemm_tile(self, kernel_inputs, op_name):
+        # One configuration per problem (nothing is benchmarked): the fixed tile, or the blocking of
+        # _gemm_blocking when the tile is automatic.
+        if not _GEMM_AUTO[0]:
+            return
+        m, n, k = kernel_inputs.mnk_hinted()
+        dtypes = [str(node.get_dtype()) for node in kernel_inputs.nodes()[:2]]
+        bm, bn, bk = _gemm_blocking(op_name, int(m), int(n), int(k), dtypes)
+        self.mm_configs = [tt.GemmConfig(bm, bn, bk, 1, 1, group_m=1)]
+        self.exhaustive_configs = list(self.mm_configs)
+
     def one_fragment(self):
         # These dimensions describe legal TNCA fragments. The inherited
         # CPU heuristic halves them for CPU compile cost, which would make
@@ -211,6 +252,10 @@ def _register(cap, reduction_rows=1, gemm_tile=(16,16,16)):
             super().__init__()
             one_fragment(self)
 
+        def _get_template_configs_impl(self, kernel_inputs, op_name, **kwargs):
+            _choose_gemm_tile(self, kernel_inputs, op_name)
+            yield from super()._get_template_configs_impl(kernel_inputs, op_name, **kwargs)
+
     @register_template_heuristic(mm_template.uid, 'tnca', op_name='addmm')
     @register_template_heuristic(bmm_template.uid, 'tnca', op_name='baddbmm')
     @register_template_heuristic(mm_template.uid, 'cpu', op_name='addmm')
@@ -221,6 +266,10 @@ def _register(cap, reduction_rows=1, gemm_tile=(16,16,16)):
         def __init__(self):
             super().__init__()
             one_fragment(self)
+
+        def _get_template_configs_impl(self, kernel_inputs, op_name, **kwargs):
+            _choose_gemm_tile(self, kernel_inputs, op_name)
+            yield from super()._get_template_configs_impl(kernel_inputs, op_name, **kwargs)
 
     @register_template_heuristic(mm_template.uid, 'tnca', op_name='scaled_mm')
     @register_template_heuristic(mm_template.uid, 'cpu', op_name='scaled_mm')
@@ -643,6 +692,7 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
         # On for the standard path since R39-02a's ablation passed.
         no_x_dim = os.environ.get('TNCA_NO_X_DIM', '1') != '0'
     gemm_tile = tuple(int(n) for n in os.environ.get('TNCA_GEMM_TILE', '16,16,16').split(','))
+    _GEMM_AUTO[0] = 'TNCA_GEMM_TILE' not in os.environ and os.environ.get('TNCA_GEMM_AUTO', '1') != '0'
     window_reuse = int(os.environ.get('TNCA_WINDOW_REUSE', '0'))
     if window_reuse not in (0, 1):
         raise ValueError('TNCA_WINDOW_REUSE must be 0 or 1')
@@ -720,7 +770,7 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
             cache_identity = configure_persistent_cache(dict(max_block=max_block,
                 tensor_descriptors=bool(tensor_descriptors), no_x_dim=bool(no_x_dim),
                 reduction_rows=reduction_rows, gemm_tile=gemm_tile, sdpa_mode=sdpa_mode,
-                reduction_block=reduction_block))
+                reduction_block=reduction_block, gemm_auto=_GEMM_AUTO[0]))
         except OSError as error:
             # An incomplete installed package or unwritable cache must not
             # silently reuse stale code or stop ordinary compilation.
@@ -748,7 +798,7 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
                max_autotune_gemm_backends=config.max_autotune_gemm_backends,
                tensor_descriptors=bool(tensor_descriptors),
                no_x_dim=bool(no_x_dim), reduction_rows=reduction_rows, gemm_tile=gemm_tile,
-               reduction_block=reduction_block)
+               gemm_tile_auto=_GEMM_AUTO[0], reduction_block=reduction_block)
     return out
 
 

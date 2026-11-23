@@ -128,3 +128,19 @@ accuracy at the software level is correct. Consequences, registered here before 
 3. Order of work: a bit-accurate Python model of the lane and an accuracy study on CPU first (no hardware, no board);
    RTL and resources only after the gate is met in the model; speed is then measured on the board with the same
    A/B recipe as the software rounds.
+
+**2026-11-23. Second board A/B (`ab-int2`).** Board, U280, run-3 image `791b8af2` on both sides, 100 MHz, serial-grid
+device cycles, default knobs, 113/113 points pass on both sides (`evidence/r42/board/ab-int2/comparison.json`).
+- Candidate: `R42` at `5327118c` (`ab-int1` plus `R42-gemm`: broadcast-row fragment and the GEMM software pipeline).
+  Queue ran 14:07-16:10 UTC, 5,432 s of board time, no failed configuration, no missing formal record.
+- Result: geometric mean speed-up **1.638x** over the 113 points (`ab-int1`: 1.613x); sum of cycles 1.312x
+  (`ab-int1`: 1.305x). By tier (new/old): hbm 0.567, large 0.581, medium 0.537, small 0.584, tiny 0.774.
+- No point is slower than the baseline by more than 2 % (largest ratio 1.019). The three `ab-int1` regressions are
+  gone: `op.gemv/hbm` and `op.gemv/large` now 1.19x and 1.17x faster, `op.matmul/small/fp16-m64-k128-n128` within noise.
+  Family gemv 0.99 -> 1.17, llama_decode 1.73 -> 1.91.
+- What the GEMM pipeline did not do: fp16 GEMM points are unchanged to within 1-4 % (matmul fp16 large 1.04x, hbm
+  1.04x, linear 1.02, mlp 1.03). Those points are bound by the matrix engine and the transfer rate, not by the issue of
+  software around them; the software headroom there is exhausted on this image.
+- Remaining gap to the target: the families at 1.0x (embedding, transpose, linear, mlp, fp16 matmul) are the bulk of
+  what the run-3 image cannot give more of in software; each needs hardware (matrix engine rate, line path), which
+  is the case for the next image. The K-fused DSP lane study (`R42-kfuse`) and the `xl` tier board A/B are open.

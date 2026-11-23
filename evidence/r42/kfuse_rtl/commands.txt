@@ -1,0 +1,34 @@
+# Commands behind every result in REPORT.md (R42-kfuse-rtl). S = the scratchpad helper directory; secrets are in the helpers, not here.
+# Source: branch R42-kfuse-rtl; RTL commit 7cde3e27 (rtl/core/tnca_kfuse_lane.v sha256 in sim/final_tool_sha256.txt).
+
+## GB10 (RTL simulation; nice 19, at most 3-4 processes)
+$S/r42_sync /home/ubuntu/r42-wt/kfuse-rtl kfuse-rtl                 # mirror of the sparse worktree to ~/r42/kfuse-rtl
+# list of runs: sim/list_f.txt; each line TAG G W N SEED "iverilog -P overrides" "vvp plusargs"
+OUT=~/r42/kfuse-rtl_out/final bash ~/r42/kfuse-rtl/tools/r42/kfuse_rtl/sim_matrix.sh ~/r42/kfuse-rtl_out/list_f.txt 3
+#   per vector file: python3 tools/r42/kfuse_rtl_vectors.py --G G --W W --N N --seed SEED --procs 4 --out vec_G<G>_W<W>_N<N>_s<SEED>.hex
+#   per run: iverilog -g2005 -Ptb_kfuse_lane.G=.. -Ptb_kfuse_lane.W=.. tools/r42/kfuse_rtl/tb_kfuse_lane.v rtl/core/tnca_kfuse_lane.v \
+#              rtl/gen/tnca_mac_b0_xls.v rtl/gen/tnca_fmad_norm_xls.v rtl/gen/tnca_fma_round_xls.v ; vvp -n tb.vvp +VEC=<vector file> +N=<lines> [+BUBBLE=pct]
+# bench sensitivity
+python3 tools/r42/kfuse_rtl_vectors.py --G 4 --W 0 --N 100000 --seed 21 --procs 1 --out mutation/vec_G4_W0_N100000_s21.hex
+python3 tools/r42/kfuse_rtl/mutation_check.py mutation/vec_G4_W0_N100000_s21.hex 4 0 mutation/work
+# result classes of the vector files
+python3 tools/r42/kfuse_rtl/result_classes.py <G> vec_G<G>_W0_N1000000_s1.hex vec_G<G>_W3_N1000000_s1.hex
+# post-synthesis netlist simulation (xsim needs /usr/bin/gcc, absent on the x86 host): netlists from the x86 host (below), then on GB10
+iverilog -g2012 -DXIL_ENABLE_GLBL -s tb_kfuse_lane -s glbl -DNETLIST -Ptb_kfuse_lane.G=<G> -Ptb_kfuse_lane.W=<W> -Ptb_kfuse_lane.NMAX=30000 \
+    tools/r42/kfuse_rtl/tb_kfuse_lane.v netlist_<n>.v unisim/*.v          # unisim/: CARRY8 DSP48E2 FDRE GND VCC LUT1-6 LUT6_2 MUXF7 MUXF8 glbl from Vivado 2023.2 data/verilog/src
+vvp -n <n>_unisim.vvp +VEC=nl_<G>_<W>.hex +N=20000 +LAT=<LAT> +LATF=<LAT_FRONT> +MAXERR=20
+#   nl_*.hex = first 5,000 lines + last 15,000 lines of a 24,000-line extract (first 6,000 + last 18,000 lines) of the 1,000,000-vector file of that (G, W)
+
+## x86 host (Vivado 2023.2, OOC; at most two jobs; tree root ~/r42_kfuse_rtl, files shipped with tar through $S/vx)
+bash tools/r42/kfuse_rtl/run_queue.sh ~/r42_kfuse_out/queue2.txt         # ooc/queue2.txt: the final RTL's runs (p2_*, h2_*)
+bash tools/r42/kfuse_rtl/run_ooc.sh p_mac kfuse_ooc_mac                  # R41 shared lane, all modes (control)
+bash tools/r42/kfuse_rtl/run_ooc.sh p_mac4 kfuse_ooc_mac4                # R41 shared lane, DP4 tied (control)
+#   run_ooc.sh NAME TOP GENERICS... with env SYNTH_ONLY, FLATTEN, PERIOD; generics are the module parameters, e.g. "G=16 W=0 CUTS=59 C_LATE=1"
+#   (CUTS=59 is 8'b00111011, the default). The first RTL's runs are in ooc_v1/ (queue1.txt and the p_*/h_*/s_* runs of 2026-11-23 20:2x-20:5x UTC).
+bash tools/r42/kfuse_rtl/run_netlist.sh nl_g4 4 0 20000                 # with VEC=... LAT=12 LATF=10: synthesises the functional netlist (its xsim step fails here: no gcc)
+#   same for nl_g16 (16 0, LAT 14, LATF 12) and nl_g8w3 (8 3, LAT 13, LATF 11)
+
+## local (tables and report from the raw files)
+bash tools/r42/kfuse_rtl/collect.sh                                       # raw reports -> evidence/r42/kfuse_rtl/{ooc,ooc_v1,netlist,sim}
+python3 tools/r42/kfuse_rtl/make_tables.py evidence/r42/kfuse_rtl          # -> tables.md
+bash tools/r42/kfuse_rtl/build_report.sh                                   # -> REPORT.md

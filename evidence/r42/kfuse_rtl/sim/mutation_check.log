@@ -1,0 +1,20 @@
+mutant                   mismatches expected verdict
+c_offset_0               7378       KILL     killed
+c_offset_126             0          EQUIV    survived (EQUIV: no E4M3 product is 127 mod 128 (127 is prime and above 15x15))
+c_offset_125             15         KILL     killed
+shift_plus1              123284     KILL     killed
+xpb_minus1               122726     KILL     killed
+nz_without_lsb           4          KILL     killed
+msb_6_as_5               50267      KILL     killed
+subnormal_exp_0          15712      KILL     killed
+negzero_ignores_sign     892        KILL     killed
+hi_threshold_24          0          EQUIV    survived (EQUIV: any threshold from 8 to 24 keeps A below 2^26 and B within 16 bits (one-hot range 0..25 plus the 8-bit pre-shift))
+drop_6_bits              132948     KILL     killed
+s_zero_never             3984       KILL     killed
+c_delay_short            127053     KILL     killed
+max_is_min               120999     KILL     killed
+nan_dropped              4188       KILL     killed
+no_flush_gate            3805       KILL     killed
+abs_without_plus1        49207      KILL     killed
+sign_of_zero_sum         1553       KILL     killed
+unexpected results: 0

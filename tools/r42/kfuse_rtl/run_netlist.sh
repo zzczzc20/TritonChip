@@ -1,6 +1,6 @@
 #!/bin/bash
 # run_netlist.sh NAME G W NVEC [GENERICS...]  (x86 host, from the tree root)
-# Synthesises tnca_kfuse_lane (OOC) to a functional netlist and simulates it with xsim on the first NVEC vectors of a
+# Synthesises tnca_kfuse_lane (OOC) to a functional netlist and simulates it with xsim on NVEC vectors of a
 # vector file made by kfuse_rtl_vectors.py (pass VEC=path). The bench is the same tb_kfuse_lane.v (-d NETLIST).
 set -u
 NAME=$1; G=$2; W=$3; NV=$4; shift 4
@@ -13,7 +13,7 @@ R=$ROOT/rtl
 FILES="$R/core/tnca_kfuse_lane.v $R/gen/tnca_mac_b0_xls.v $R/gen/tnca_fmad_norm_xls.v $R/gen/tnca_fma_round_xls.v"
 ( cd $OUT && OOC_GENERICS="G=$G W=$W $*" nice -n 5 vivado -mode batch -nojournal -nolog -source $ROOT/tools/r42/kfuse_rtl/netlist.tcl \
     -tclargs $OUT $FILES > $OUT/vivado.log 2>&1 )
-head -$NV ${VEC:?VEC} > $OUT/vec.hex
+( head -n $((NV/4)) ${VEC:?VEC}; tail -n $((NV - NV/4)) $VEC ) > $OUT/vec.hex     # a quarter from the directed prefix, the rest random
 LAT=${LAT:?LAT}; LATF=${LATF:?LATF}
 cd $OUT
 GLBL=$(dirname $(which vivado))/../data/verilog/src/glbl.v

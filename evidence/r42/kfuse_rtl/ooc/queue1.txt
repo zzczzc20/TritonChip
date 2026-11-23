@@ -1,0 +1,8 @@
+h_g8|SYNTH_ONLY=1 FLATTEN=none|kfuse_ooc_lane|G=8 W=0 CUTS=59 C_LATE=1
+h_g4|SYNTH_ONLY=1 FLATTEN=none|kfuse_ooc_lane|G=4 W=0 CUTS=59 C_LATE=1
+p_g16_sm0|-|kfuse_ooc_lane|G=16 W=0 CUTS=59 C_LATE=1 SIGN_MODE=0
+p_g16_tree1|-|kfuse_ooc_lane|G=16 W=0 CUTS=59 C_LATE=1 TREE=1
+p4_g16|PERIOD=4|kfuse_ooc_lane|G=16 W=0 CUTS=59 C_LATE=1
+p_g16_c0|-|kfuse_ooc_lane|G=16 W=0 CUTS=59 C_LATE=0
+p_g16_w3|-|kfuse_ooc_lane|G=16 W=3 CUTS=59 C_LATE=1
+p_g16_fast|PERIOD=10|kfuse_ooc_lane|G=16 W=0 CUTS=0 C_LATE=1

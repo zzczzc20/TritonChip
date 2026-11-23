@@ -82,6 +82,9 @@ module tb_kfuse_lane;
                  G, W, CUTS, IN_REG, C_LATE, SIGN_MODE, TREE, lat, latf, nvec, bubble);
         errs = 0; checked = 0; issued = 0; cyc = 0;
         for (n = 0; n < 4096; n = n + 1) begin iss[n] = 0; cq[n] = 0; end
+`ifdef NETLIST
+        #250;   // a netlist run: glbl's GSR pulse (100 ns) holds every flop at INIT until then
+`endif
         repeat (4) @(negedge clk);
         rst_n = 1;
         @(negedge clk);

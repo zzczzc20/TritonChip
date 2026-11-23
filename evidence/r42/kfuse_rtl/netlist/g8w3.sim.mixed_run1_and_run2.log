@@ -1,0 +1,16 @@
+tb_kfuse_lane G=8 W=3 CUTS=00111011 IN_REG=1 C_LATE=0 SIGN_MODE=1 TREE=0 LAT=13 LAT_FRONT=11 N=20000 bubble=0%
+RESULT G=8 W=3 total=20000 mismatches=0
+/home/zhongchun/r42/kfuse-rtl/tools/r42/kfuse_rtl/tb_kfuse_lane.v:135: $finish called at 200420000 (1ps)
+
+real	3m51.023s
+user	3m50.932s
+sys	0m0.060s
+0000000 exp=bf800000 valid=0
+MISMATCH vec=3 a=0 b=300000000000000 c=80000000 got=00000000 exp=00000000 valid=0
+MISMATCH vec=4 a=0 b=4 c=00000001 got=00000000 exp=00000001 valid=0
+RESULT G=8 W=3 total=20000 mismatches=5
+/home/zhongchun/r42/kfuse-rtl/tools/r42/kfuse_rtl/tb_kfuse_lane.v:132: $finish called at 200180000 (1ps)
+
+real	3m17.470s
+user	3m17.023s
+sys	0m0.125s

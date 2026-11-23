@@ -1,0 +1,16 @@
+# First netlist simulation of tnca_kfuse_lane G=4 (20,000 vectors), kept as it ran: 5 mismatches in vectors 0-4 with valid_out low.
+# Cause: the bench released reset at 50 ns, inside glbl's 100 ns GSR pulse, which holds every flop at INIT; the bench now waits 250 ns under NETLIST (rerun: g4.sim.log).
+# The first lines are the vector copies of that command, the rest is the simulator's output.
+20000 /home/zhongchun/r42/kfuse-rtl_out/nlsim/nl_G4_W0.hex
+20000 /home/zhongchun/r42/kfuse-rtl_out/nlsim/nl_G16_W0.hex
+20000 /home/zhongchun/r42/kfuse-rtl_out/nlsim/nl_G8_W3.hex
+MISMATCH vec=3 a=0 b=3000000 c=80000000 got=00000000 exp=00000000 valid=0
+MISMATCH vec=4 a=0 b=4 c=00000001 got=00000000 exp=00000001 valid=0
+RESULT G=4 W=0 total=20000 mismatches=5
+/home/zhongchun/r42/kfuse-rtl/tools/r42/kfuse_rtl/tb_kfuse_lane.v:132: $finish called at 200170000 (1ps)
+
+real	2m28.832s
+user	2m28.773s
+sys	0m0.051s
+
+[exited with code 0]

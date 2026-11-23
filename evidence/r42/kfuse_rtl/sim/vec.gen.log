@@ -1,0 +1,2 @@
+G=4 W=0 vectors=168714 sha256=c1cebb0cc0a3c10c43f2aa48c770318b9064d58165e782c0cd860fe302da3e45
+classes: cancel=7959 ctrunc=5982 directed=68714 equal_exp=5960 nan=2987 negzero=4064 normal=14112 spread=13996 subnormal=8085 trunc_sens=13004 uniform=2997 uniform_nonan=13883 zeros=6971

@@ -1,0 +1,68 @@
+2026-11-23T20:15:18Z start s_g4 top=kfuse_ooc_lane generics=G=4 W=0 CUTS=59 period=10 synth_only=1
+2026-11-23T20:16:39Z end s_g4 exit 0
+2026-11-23T20:17:29Z start s_g4_sm1 top=kfuse_ooc_lane generics=G=4 W=0 CUTS=59 SIGN_MODE=1 period=10 synth_only=1
+2026-11-23T20:17:29Z start s_g4_hier top=kfuse_ooc_lane generics=G=4 W=0 CUTS=59 period=10 synth_only=1
+2026-11-23T20:18:41Z end s_g4_hier exit 0
+2026-11-23T20:18:41Z end s_g4_sm1 exit 0
+2026-11-23T20:20:15Z start s_g16_c1 top=kfuse_ooc_lane generics=G=16 W=0 CUTS=63 C_LATE=1 period=10 synth_only=1
+2026-11-23T20:20:15Z start s_g8_c1 top=kfuse_ooc_lane generics=G=8 W=0 CUTS=59 C_LATE=1 period=10 synth_only=1
+2026-11-23T20:21:27Z end s_g8_c1 exit 0
+2026-11-23T20:21:35Z end s_g16_c1 exit 0
+2026-11-23T20:26:53Z start p_g16 top=kfuse_ooc_lane generics=G=16 W=0 CUTS=59 C_LATE=1 period=10 synth_only=0
+2026-11-23T20:27:25Z start p_g4 top=kfuse_ooc_lane generics=G=4 W=0 CUTS=59 C_LATE=1 period=10 synth_only=0
+2026-11-23T20:30:05Z end p_g4 exit 0
+2026-11-23T20:30:06Z end p_g16 exit 0
+2026-11-23T20:30:57Z start p_g8 top=kfuse_ooc_lane generics=G=8 W=0 CUTS=59 C_LATE=1 period=10 synth_only=0
+2026-11-23T20:30:59Z start p_mac top=kfuse_ooc_mac generics= period=10 synth_only=0
+2026-11-23T20:33:40Z end p_g8 exit 0
+2026-11-23T20:33:49Z end p_mac exit 0
+2026-11-23T20:34:46Z start p_arr16 top=kfuse_ooc_array generics=G=16 W=0 CUTS=59 C_LATE=1 NL=16 period=10 synth_only=0
+2026-11-23T20:34:48Z start p_arr8 top=kfuse_ooc_array generics=G=8 W=0 CUTS=59 C_LATE=1 NL=16 period=10 synth_only=0
+2026-11-23T20:41:25Z end p_arr8 exit 0
+2026-11-23T20:41:50Z start p_mac4 top=kfuse_ooc_mac4 generics= period=10 synth_only=0
+2026-11-23T20:43:01Z end p_arr16 exit 0
+2026-11-23T20:43:27Z start p5_g16 top=kfuse_ooc_lane generics=G=16 W=0 CUTS=59 C_LATE=1 period=5 synth_only=0
+2026-11-23T20:44:32Z end p_mac4 exit 0
+2026-11-23T20:45:02Z start p_arr4 top=kfuse_ooc_array generics=G=4 W=0 CUTS=59 C_LATE=1 NL=16 period=10 synth_only=0
+2026-11-23T20:46:16Z end p5_g16 exit 0
+2026-11-23T20:46:40Z start h_g16 top=kfuse_ooc_lane generics=G=16 W=0 CUTS=59 C_LATE=1 period=10 synth_only=1
+2026-11-23T20:48:06Z end h_g16 exit 0
+2026-11-23T20:48:23Z start h_g8 top=kfuse_ooc_lane generics=G=8 W=0 CUTS=59 C_LATE=1 period=10 synth_only=1
+2026-11-23T20:49:40Z end h_g8 exit 0
+2026-11-23T20:50:13Z end p_arr4 exit 0
+2026-11-23T20:52:14Z start h2_g16 top=kfuse_ooc_lane generics=G=16 W=0 CUTS=59 C_LATE=1 period=10 synth_only=1
+2026-11-23T20:52:15Z start s2_g16 top=kfuse_ooc_lane generics=G=16 W=0 CUTS=59 C_LATE=1 period=10 synth_only=1
+2026-11-23T20:53:47Z end s2_g16 exit 0
+2026-11-23T20:53:47Z end h2_g16 exit 0
+2026-11-23T20:54:18Z start p2_arr16 top=kfuse_ooc_array generics=G=16 W=0 CUTS=59 C_LATE=1 NL=16 period=10 synth_only=0
+2026-11-23T20:54:26Z start p2_arr8 top=kfuse_ooc_array generics=G=8 W=0 CUTS=59 C_LATE=1 NL=16 period=10 synth_only=0
+2026-11-23T21:01:01Z end p2_arr8 exit 0
+2026-11-23T21:01:05Z start p2_g16 top=kfuse_ooc_lane generics=G=16 W=0 CUTS=59 C_LATE=1 period=10 synth_only=0
+2026-11-23T21:02:43Z end p2_arr16 exit 0
+2026-11-23T21:02:53Z start p2_g8 top=kfuse_ooc_lane generics=G=8 W=0 CUTS=59 C_LATE=1 period=10 synth_only=0
+2026-11-23T21:04:08Z end p2_g16 exit 0
+2026-11-23T21:04:11Z start p2_g4 top=kfuse_ooc_lane generics=G=4 W=0 CUTS=59 C_LATE=1 period=10 synth_only=0
+2026-11-23T21:05:40Z end p2_g8 exit 0
+2026-11-23T21:05:49Z start p2_arr4 top=kfuse_ooc_array generics=G=4 W=0 CUTS=59 C_LATE=1 NL=16 period=10 synth_only=0
+2026-11-23T21:06:54Z end p2_g4 exit 0
+2026-11-23T21:06:57Z start h2_g8 top=kfuse_ooc_lane generics=G=8 W=0 CUTS=59 C_LATE=1 period=10 synth_only=1
+2026-11-23T21:08:10Z end h2_g8 exit 0
+2026-11-23T21:08:15Z start h2_g4 top=kfuse_ooc_lane generics=G=4 W=0 CUTS=59 C_LATE=1 period=10 synth_only=1
+2026-11-23T21:09:31Z end h2_g4 exit 0
+2026-11-23T21:09:33Z start p2_g16_t5 top=kfuse_ooc_lane generics=G=16 W=0 CUTS=59 C_LATE=1 period=5 synth_only=0
+2026-11-23T21:10:59Z end p2_arr4 exit 0
+2026-11-23T21:11:01Z start p2_g16_t4 top=kfuse_ooc_lane generics=G=16 W=0 CUTS=59 C_LATE=1 period=4 synth_only=0
+2026-11-23T21:12:34Z end p2_g16_t5 exit 0
+2026-11-23T21:12:39Z start p2_g16_sm0 top=kfuse_ooc_lane generics=G=16 W=0 CUTS=59 C_LATE=1 SIGN_MODE=0 period=10 synth_only=0
+2026-11-23T21:14:08Z end p2_g16_t4 exit 0
+2026-11-23T21:14:17Z start p2_g16_tree1 top=kfuse_ooc_lane generics=G=16 W=0 CUTS=59 C_LATE=1 TREE=1 period=10 synth_only=0
+2026-11-23T21:15:34Z end p2_g16_sm0 exit 0
+2026-11-23T21:15:35Z start p2_g16_c0 top=kfuse_ooc_lane generics=G=16 W=0 CUTS=59 C_LATE=0 period=10 synth_only=0
+2026-11-23T21:17:08Z end p2_g16_tree1 exit 0
+2026-11-23T21:17:13Z start p2_g16_w3 top=kfuse_ooc_lane generics=G=16 W=3 CUTS=59 C_LATE=1 period=10 synth_only=0
+2026-11-23T21:18:27Z end p2_g16_c0 exit 0
+2026-11-23T21:18:31Z start p2_g16_cuts0 top=kfuse_ooc_lane generics=G=16 W=0 CUTS=0 C_LATE=1 period=10 synth_only=0
+2026-11-23T21:20:03Z end p2_g16_w3 exit 0
+2026-11-23T21:20:09Z start p2_g8_t4 top=kfuse_ooc_lane generics=G=8 W=0 CUTS=59 C_LATE=1 period=4 synth_only=0
+2026-11-23T21:22:09Z end p2_g16_cuts0 exit 0
+2026-11-23T21:23:01Z end p2_g8_t4 exit 0

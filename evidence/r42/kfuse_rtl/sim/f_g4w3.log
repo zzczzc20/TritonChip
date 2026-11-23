@@ -1,0 +1,7 @@
+tb_kfuse_lane G=4 W=3 CUTS=00111011 IN_REG=1 C_LATE=0 SIGN_MODE=1 TREE=0 LAT=12 LAT_FRONT=10 N=1068714 bubble=0%
+RESULT G=4 W=3 total=1068714 mismatches=0
+/home/zhongchun/r42/kfuse-rtl/tools/r42/kfuse_rtl/tb_kfuse_lane.v:132: $finish called at 10687310000 (1ps)
+
+real	1m11.295s
+user	1m11.244s
+sys	0m0.047s

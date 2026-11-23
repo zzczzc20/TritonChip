@@ -1,6 +1,6 @@
 ---
 name: cycle-model-alignment
-description: How to keep the TNCA cycle-aligned model (CA model, C++/SystemC) cycle-equal to the RTL and how to read a divergence. Use it when you change the RTL and want the model to keep predicting it, when you change the model's timing, or to find out why a model trace and an RTL trace differ. Its script records one test case of your own on both sides and compares them with the trace gate.
+description: How to keep the TNCA cycle-aligned model (CA model, C++/SystemC) cycle-equal to the RTL and how to read a divergence. Use it when you change the RTL and want the model to keep predicting it, when you change the model's timing, or to find out why a model trace and an RTL trace differ. Its scripts record one test case of your own on both sides and compare them with the trace gate, show which mechanisms of the machine your change moves and what a case reaches on the CA model, and cut a case down to a cheaper size that still reaches them.
 ---
 
 # Cycle-model alignment
@@ -141,3 +141,45 @@ A change of the machine is a change on both sides: the RTL (or the device
 description's parameters) and the model's configuration or code. A model that
 was exact for one machine says nothing yet about the next until the gate has
 seen it.
+
+## Cases that cover your change
+
+The gate holds the model to the RTL on the programs it has seen, and no
+further. A change is covered when a case the gate passes reaches what the
+change touches. Three scripts find such a case and keep it small enough for
+the RTL simulator (some tens of device cycles per second of wall time). Each
+runs a case on the CA model built from your tree, as `align_case.py` does,
+one process per run:
+
+```
+python /opt/tnca-skills/cycle-model-alignment/scripts/touched.py CASE_OR_POINT [...]
+python /opt/tnca-skills/cycle-model-alignment/scripts/mechanisms.py CASE.py [...] [--list]
+python /opt/tnca-skills/cycle-model-alignment/scripts/shrink_case.py CASE.py --dim NAME [--reach MECHANISM ...]
+```
+
+- `touched.py` runs the same cases (case files, or development point ids) on
+  the base commit's tree and model and on yours, and lists every mechanism
+  with its count on each side, those that moved first, then the raw counters
+  that moved most: what your change reaches on those programs.
+- `mechanisms.py` lists what one case reaches: the mechanisms of the task's
+  `CALIBRATION.json` (`--list` prints each with the counters it reads) and
+  the matrix instructions of the case's compiled code.
+- `shrink_case.py` bisects one dimension of a case down to the smallest size
+  that still reaches the mechanisms you name, and writes the case at the size
+  it measured that reaches them in the fewest model cycles (a smaller size is
+  not always a cheaper program).
+
+`/opt/tnca-task/dev_cases/CALIBRATION.json` lists, for every mechanism the
+development points reach, the cases that reach it, smallest first. One way
+through: `touched.py` on development points your change moves; a calibration
+case, or a case of your own (the test-case skill), that reaches the moved
+mechanisms; `shrink_case.py` to cut it to a size the simulator runs in
+minutes; `align_case.py` on it.
+
+What they read is the CA model's event counters: whether a path was taken
+and how often, not how long it took, so a case's coverage holds whatever the
+model's cycle error. This base's models leave their matrix-command counters
+(`*_mma_commands`, `*_matrix_engine_commands`, `*_matrix_dp_commands`) at 0;
+the scripts count matrix instructions from the compiled code instead. The
+model sees your machine only through its configuration and code: an RTL
+change the configuration does not carry moves nothing in `touched.py`.

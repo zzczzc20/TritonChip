@@ -152,3 +152,18 @@ The `sum_fma` structure (the existing `m.mma.dp` back end) is never worse than t
 29-bit adder tree and W=0 is enough. The numerics are therefore not what blocks a wider DSP-mapped lane; area, issue rate and
 the transfer path are. Not covered: end-to-end token match (needs the model), the two prefill decoders. Next, in the order
 registered: RTL of a DSP48E2-mapped lane and its resources (screen), then a speed prediction, then the board.
+
+**2026-11-23. K-fused E4M3 lane on DSP48E2 (`R42-kfuse-rtl`, RTL sim + OOC screen).** Report: `evidence/r42/kfuse_rtl/REPORT.md`.
+- Bit-exact to the numerics model (`sum_fma`, `trunc`, W=0): 10,175,920 vectors over 20 configurations, 0 mismatches; netlist
+  simulation clean; 16 of 16 non-equivalent mutants caught (RTL sim, iverilog).
+- Mapping: 3G-1 DSP48E2 per lane (two per product: one forms the 4x4 mantissa product, one aligns/truncates by a one-hot
+  multiply; a DSP adder tree sums), because the window anchor needs the exact leading one of each product, so a PCIN
+  cascade cannot align first. The unchanged R41 back end (1,437 LUT/lane) is 53 % of the G=16 lane.
+- OOC place and route at 10 ns, one lane: G=4 1,734 LUT / 11 DSP, G=8 1,979 / 23, G=16 2,538 / 47 (434, 247, 159 LUT per
+  MAC/cycle); R41 DP4 path in the same flow 1,729 LUT / 4 DSP (432 per MAC/cycle). G=16 closes at 4 ns (+0.224 ns);
+  latency 12/13/14 cycles for G=4/8/16.
+- Per core, derived: a 16-lane E4M3 array is 28.0k / 31.9k / 40.7k LUT (176 / 368 / 752 DSP) for G=4/8/16 against 44.7k LUT
+  for the shared-lane array, at 64 / 128 / 256 MAC/cycle. It is E4M3 only: as a replacement it would drop the FP32, FP16/BF16
+  and E5M2 modes; beside the shared lanes it fits no SLR. Not an image, not a board number.
+- Consequence: the lane screens well for FP8 but the 113 points are FP16/FP32; a FP16 K-fused lane (64-bit exact field today)
+  has not been built. The speed prediction (`R42-kfuse-speed`) decides whether an FP8-only wide lane is worth an image.

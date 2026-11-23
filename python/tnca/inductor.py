@@ -164,6 +164,13 @@ def _register(cap, reduction_rows=1, gemm_tile=(16,16,16)):
                 # the longer block: mode 2's block is the next candidate, before the narrow one
                 if mode2.kwargs['XBLOCK'] < configs[0].kwargs['XBLOCK']:
                     configs.insert(1, mode2)
+            # A program the tile planner cannot take at this width (an indirect load, an assert,
+            # 64-bit index arithmetic: pointwise_tiles refuses it) is lowered as register chunks,
+            # which reach 128 lanes: the next candidate is that width, before the 16 lanes below.
+            if _MID_BLOCK[0] and pcap > _MID_BLOCK[0] and configs and list(configs[0].kwargs) == ['XBLOCK']:
+                mid = _clamp(copy.deepcopy(original), _MID_BLOCK[0])
+                if mid and not any(c.kwargs == mid[0].kwargs for c in configs):
+                    configs.insert(1, mid[0])
             # Padding and multi-axis gathers can exhaust scalar/predicate
             # registers even at VLEN. Retile the same pointwise program,
             # keeping the first legal configuration without benchmarking.
@@ -364,6 +371,7 @@ _BLOCK_CAP = [STAGE1_MAX_BLOCK]
 _REDUCTION_BLOCK = [STAGE1_MAX_BLOCK]   # set by configure() from TNCA_REDUCTION_BLOCK
 _POINTWISE_CAP = [0]   # 0: the block cap; set by configure() from TNCA_TILED_POINTWISE
 _STREAM = [False]      # TNCA_TILED_POINTWISE=3
+_MID_BLOCK = [0]       # lanes of the candidate between a tiled block and 16 (TNCA_POINTWISE_MID)
 # With tiling on, a 1-D pointwise block also leaves at least this many
 # programs, so that every context of every core has one (3 cores x 2 role
 # contexts on the image, rounded up to a power of two).
@@ -671,6 +679,7 @@ def configure(max_block=None, tensor_descriptors=None, no_x_dim=None):
     if tiled not in (0, 1, 2, 3):
         raise ValueError('TNCA_TILED_POINTWISE must be 0, 1, 2 or 3')
     _STREAM[0] = tiled == 3
+    _MID_BLOCK[0] = int(os.environ.get('TNCA_POINTWISE_MID', '128')) if tiled else 0
     _POINTWISE_CAP[0] = (max(max_block, TILED_STREAM_BLOCK if tiled == 3 else TILED_POINTWISE_BLOCK)
                          if tiled else 0)
     _install_narrow_blocks()

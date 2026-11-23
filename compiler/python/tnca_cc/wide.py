@@ -134,11 +134,18 @@ def lower(imp, op):
         return False  # constants remain lazy until read by lane()
     if wide_result:
         _track_form(imp, name, operands, dst, shape, count)
+        f = getattr(imp, '_wide_form', {}).get(dst.id())
+        if f is not None and isinstance(shape, int) and name in _FORM_OPS:
+            imp._wide[dst.id()] = _form_pair(imp, f)
+            return True
 
     def lane(src, i, signed=False):
         dims, typ = _parse_type(str(src.get_type()))
         if dims is None:
             return imp._value(src)
+        u = _uniform(imp, src) if isinstance(dims, int) else None
+        if u is not None:
+            return _scalar64(imp, u)
         if src.id() in imp._wide:
             lo, hi = imp._wide[src.id()]
             return b.sbin('or', b.vextract(lo, i), b.sbini('shl', b.vextract(hi, i), 32))
@@ -165,7 +172,8 @@ def lower(imp, op):
         offs = operands[1]
         if offs.id() in imp._wide:
             oshape, _ = _parse_type(str(offs.get_type()))
-            if index64(imp) and _rebase(imp, dst, operands[0], offs, oshape):
+            if (index64(imp) or (isinstance(oshape, int) and offs.id() in getattr(imp, '_wide_form', {}))) \
+                    and _rebase(imp, dst, operands[0], offs, oshape):
                 return True
             lo, hi = imp._wide[offs.id()]
             _check_narrow(imp, lo, hi, _count(oshape, vlen))
@@ -176,6 +184,12 @@ def lower(imp, op):
         if count is None:
             raise Unsupported(f'a 64-bit compare over a {shape} block')
         cc = _CMP_I[op.get_int_attr('predicate')]
+        ua, ub = _uniform(imp, operands[0]), _uniform(imp, operands[1])
+        if isinstance(shape, int) and ua is not None and ub is not None:
+            # Both sides the same in every lane: one 64-bit scalar compare.
+            flag = b.scmp(cc, _scalar64(imp, ua), _scalar64(imp, ub))
+            _publish(imp, dst, b.vcmp('ne', b.splat(flag), b.vmovi(0)), shape, 'i1')
+            return True
         flags = b.vmovi(0)
         for i in range(count):
             b.vinsert(flags, i, b.scmp(cc, lane(operands[0], i, True), lane(operands[1], i, True)))
@@ -577,23 +591,77 @@ def _uop(imp, op, a, c):
     b = imp.b
     if isinstance(a, int) and isinstance(c, int):
         return {'add': a + c, 'sub': a - c, 'mul': a * c}[op]
+    fits = lambda k: -(1 << 15) <= k < (1 << 15)      # an i16s immediate
     if op == 'mul':
         if isinstance(a, int):
             a, c = c, a
-        return a if c == 1 else b.sbini('mul', a, c)
+        if isinstance(c, int):
+            return a if c == 1 else (b.sbini('mul', a, c) if fits(c) else b.sbin('mul', a, b.const(c)))
+        return b.sbin('mul', a, c)
     if isinstance(c, int):
         if c == 0:
             return a
-        return b.sbini('add', a, c if op == 'add' else -c)
+        k = c if op == 'add' else -c
+        return b.sbini('add', a, k) if fits(k) else b.sbin('add', a, b.const(k))
     if isinstance(a, int):
         a = b.const(a)
     return b.sbin(op, a, c)
 
 
+# Operations whose 1-D 64-bit result _track_form describes exactly (an invariant
+# part and a 32-bit lane term), so the result is built from that description.
+_FORM_OPS = frozenset({'arith.extsi', 'arith.extui', 'tt.splat', 'arith.addi', 'arith.subi',
+                       'arith.muli', 'tt.broadcast', 'tt.expand_dims', 'tt.reshape'})
+
+
+def _uniform(imp, v):
+    """The scalar (an int, or a 64-bit scalar register) a 1-D 64-bit value is in
+    every lane, or None when its lanes can differ."""
+    f = _form(imp, v)
+    return f[0] if f is not None and f[1] is None else None
+
+
+def _scalar64(imp, x):
+    return imp.b.const(x) if isinstance(x, int) else x
+
+
+def _form_pair(imp, f):
+    """The (low, high) 32-bit vectors of `invariant + sext(lane term)`.
+
+    Plain vector arithmetic on the two halves, instead of the lane loop (an
+    extract, an or, a shift and two inserts a lane) the generic path takes:
+    a value only an address reads (`_rebase`) then costs nothing, because
+    an unread vector value is removed with the other dead pure values."""
+    b = imp.b
+    inv, lane = f
+    if isinstance(inv, int):
+        lo32, hi32 = inv & 0xFFFFFFFF, (inv >> 32) & 0xFFFFFFFF
+        inv_lo = None if lo32 == 0 else imp._const_scalar(lo32)
+        inv_hi = None if hi32 == 0 else imp._const_scalar(hi32)
+    else:
+        inv_lo, inv_hi = inv, b.sbini('lshr', inv, 32)
+    if lane is None:
+        zero = b.vmovi(0)
+        return (b.splat(inv_lo) if inv_lo is not None else zero,
+                b.splat(inv_hi) if inv_hi is not None else b.vmovi(0))
+    lv = _vector(imp, lane, 'i32')
+    sign = b.vbin('ashr', lv, b.vmovi(31))
+    if inv_lo is None and inv_hi is None:
+        return lv, sign
+    lo = b.vbin('add', lv, b.splat(inv_lo), dtype='i32') if inv_lo is not None else lv
+    hi = sign
+    if inv_lo is not None:
+        carry = b.vselect(b.vcmp('ltu', lo, lv), b.vmovi(1), b.vmovi(0))
+        hi = b.vbin('add', hi, carry, dtype='i32')
+    if inv_hi is not None:
+        hi = b.vbin('add', hi, b.splat(inv_hi), dtype='i32')
+    return lo, hi
+
+
 def _track_form(imp, name, operands, dst, shape, count):
     """Record `_form` of a 1-D 64-bit result in an index64 kernel."""
     from .frontend import _parse_type
-    if not isinstance(shape, int) or not index64(imp):
+    if not isinstance(shape, int):
         return
     f = None
     if name in ('arith.extsi', 'arith.extui'):
@@ -872,7 +940,7 @@ def _check_narrow(imp, lo, hi, count):
     b.label(ok)
 
 
-def _words(imp, ptr, mask_value, shape):
+def _words(imp, ptr, mask_value, shape, resolved=None):
     """(base address, 32-bit word index vector, mask) for an access of
     8-byte elements: element i is the word pair (2i, 2i+1)."""
     from .frontend import _parse_type
@@ -890,7 +958,7 @@ def _words(imp, ptr, mask_value, shape):
             mask = (imp._row_getter(mask_value, 1, 'i1')(0) if isinstance(mdims, tuple)
                     else imp._value(mask_value))
     else:
-        addr, _size, _elem, kind, index = imp._address(ptr)
+        addr, _size, _elem, kind, index = resolved or imp._address(ptr)
         mask = imp._value(mask_value) if mask_value is not None else None
         if kind == 'broadcast':
             idx = b.vmovi(0)
@@ -906,7 +974,26 @@ def _words(imp, ptr, mask_value, shape):
 def _load(imp, operands, shape, dst):
     b = imp.b
     mask_value = operands[1] if len(operands) > 1 else None
-    addr, widx, mask = _words(imp, operands[0], mask_value, shape)
+    resolved = None
+    if isinstance(shape, int) and operands[0].id() not in imp._ptr2d:
+        resolved = imp._address(operands[0])
+        if resolved[3] == 'broadcast' and len(operands) < 3:
+            # Every lane reads the same 8 bytes (an embedding's token id, a
+            # row index): one scalar load, guarded when the access is masked.
+            # A masked-off lane's value is undefined in Triton unless `other`
+            # is given, so every lane may hold the loaded one. The block is
+            # then lane-invariant, and what is computed from it stays in
+            # scalar registers (_form, _uniform).
+            mask = imp._value(mask_value) if mask_value is not None else None
+            s = imp._uniform_sload(resolved[0], 'd', 'i64',
+                                   imp._shape_mask(shape, mask) if mask is not None else None,
+                                   other=None, safe=imp._arg_value(imp._ptr_base[operands[0].id()][0]))
+            if not hasattr(imp, '_wide_form'):
+                imp._wide_form = {}
+            imp._wide_form[dst.id()] = (s, None)
+            imp._wide[dst.id()] = _form_pair(imp, (s, None))
+            return
+    addr, widx, mask = _words(imp, operands[0], mask_value, shape, resolved)
     other = imp._const.get(operands[2].id(), 0) if len(operands) > 2 else 0
     lo = b.gather(addr, widx, mask=mask, other=other & 0xFFFFFFFF, dtype='i32', size='w')
     hi = b.gather(b.sbini('add', addr, 4), widx, mask=mask,

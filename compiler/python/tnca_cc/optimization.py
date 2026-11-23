@@ -31,7 +31,7 @@ from .upstream.bridge import PureScalarBridge, BridgeError, _is_pure
 # machine does with exception state, and section 7's R35-OPT-03 owns
 # that question. Nothing here needs it, so nothing here assumes it.
 PURE_NO_EFFECT = frozenset(_is_pure.__globals__['PURE_KINDS']) | {
-    'splat', 'vmovi', 'arange', 'scmp', 'vcmp',
+    'splat', 'vmovi', 'arange', 'scmp', 'vcmp', 'vselect', 'pbin', 'pun',
 }
 
 

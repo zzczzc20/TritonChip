@@ -963,7 +963,11 @@ def _lower_imported(module, kernel_name, params, target, prov, options, stages, 
         prov.record('opt_unobserved_load_other', dlo['sites'])
         sr = strength_reduce(kernel)
         cse = pure_scalar_cse(kernel)
-        dead = drop_dead_pure(kernel, flat_control=getattr(imp, 'tiled_pointwise_plan', None) is not None)
+        # Labels, branches and register assignments in one flat list hide no use (a role with
+        # a nested region still stays out): a definition nothing names is dead whatever the
+        # control flow around it -- the unused halves of a 64-bit value beside a trap check,
+        # the unread operand of a guarded load.
+        dead = drop_dead_pure(kernel, flat_control=True)
         if loop_opt:
             # R42: the loops of a looped kernel (every Inductor reduction),
             # which the passes above leave alone (tnca_cc/loop_opt.py).

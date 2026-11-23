@@ -147,15 +147,16 @@ Addressing:
 - **Reductions and scans:**
   - ISA §8.7 lane reductions.
   - Multi-operand folds (argmax/argmin) are unrolled across lanes; 2-D folds only along axis 1.
-  - Scans are inclusive, along lanes, not reversed.
+  - Scans are inclusive, along lanes, not reversed. A one-register scan takes log2(n) `v.shuffle.up` steps (Hillis-Steele; the combiner is applied to whole vectors, earlier operands first), so a floating-point combiner associates in a tree and not left to right (R42-copy); the sequential fold remains for multi-row scans.
   - NaN-propagating `maximumf`/`minimumf` are built from a reduction plus a NaN test.
 - **Transcendentals and division** (`mathlib.py`): SFU exp2/log2/reciprocal/rsqrt (≤ 2⁻²² relative error), with Newton refinement where a function's stated accuracy needs it.
 - **64-bit integers** (`wide.py`):
   - Covers 1-D blocks and one-row 2-D blocks. Integer arithmetic is per lane in scalar registers; reductions and scans support add only.
+  - A 1-D block that is the same in every lane (a data-dependent row index loaded from a lane-invariant address: an embedding's token id) is one 64-bit scalar (`wide._form`): its arithmetic and compares are scalar, and a pointer built from it plus a lane term stays a contiguous access with a scalar base (R42-copy).
   - A 64-bit offset reaching a pointer is narrowed to a 32-bit gather index with a check: unless every lane's high word equals the sign of its low word, the kernel traps (`TRAP_USER`, code 0xA5564) instead of wrapping.
 - **`tl.device_assert`** is a real check. Any failing active lane raises `TRAP_USER` 0xA55E7, which the runtime reports as a kernel fault.
 - **Transpose:**
-  - By default, one gather per output row.
+  - A 16x16 tile read down its columns (`base + r + c*S`) is 16 contiguous vector loads and a register transpose (`v.shuffle.xor` butterfly) when its mask is the separable bound form Inductor writes and the tile is whole at run time (one scalar test; a tile the bounds cut takes the gather under a branch); a whole tile is stored without masks (R42-copy). Otherwise one gather per output row.
   - On profiles with `tensor_transpose` (`core-xpose-v1`), a descriptor load whose only use is `tt.trans` becomes one transposed `t.ld.async`. This is the R38 three-layer case: ISA bit, RTL and compiler selection together.
 
 ### 5.3 Tensor descriptors (rank 1–5)
@@ -315,6 +316,7 @@ There is one `Session` per (profile, backend, arguments), kept for the life of t
 | `TNCA_TENSOR_DESCRIPTORS` | on (since R39) | `tnca.inductor.configure()` turns on Inductor's tensor-descriptor code generation (§9), the standard path; `0` turns it off |
 | `TNCA_MAX_BLOCK` | 16 | the block-dimension cap `tnca.inductor.configure()` gives Inductor (an R39 ablation knob) |
 | `TNCA_TILED_POINTWISE` | 2 (since R42; 0 before) | a 1-D element-wise program runs as a loop over register tiles of a block of up to 1,024 lanes, through the vector load/store unit (`tnca_cc/pointwise_tiles.py`); `0` turns it off, `1`/`3` use the tensor transfer engine |
+| `TNCA_POINTWISE_MID` | 128 (since R42-copy; 0 turns it off) | the lane block of the candidate between a tiled block and 16 lanes (`tnca.inductor`): a 1-D element-wise program the tile planner refuses (an indirect load such as an embedding's, an assert, 64-bit index arithmetic) is lowered as register chunks of this many lanes before the 16-lane fallback is tried. A program the planner takes is unaffected |
 | `TNCA_REDUCTION_BLOCK` | 64 (since R42; 16 before) | the widest lane block of a looped reduction (16/32/64/128). A row keeps at least four blocks (`tnca.inductor._reduction_block`), so a short row stays at 16 lanes; scans, sorts and argmax/argmin keep 16 |
 | `TNCA_LOOP_OPT` | 1 (since R42) | loop optimisation of looped kernels on TNCA IR (`tnca_cc/loop_opt.py`): unused TensorMaps, all-true masks, copies, invariant hoisting, induction pointers, loop rotation. `0` turns it off; a kernel that does not fit its registers with it is compiled without it (`opt_loops_refused` in the provenance) |
 | `TNCA_SCHEDULE` | 1 on the Triton/Inductor path, 0 for `compile_aot` | `1` list-schedules every basic block against the measured machine model (`tnca_cc.schedule`, `spec/r39_sched_model.json`; R39-01). The compile option `schedule` overrides it. A schedule the allocator cannot fit is compiled in program order, and the provenance records `schedule_fallback` |

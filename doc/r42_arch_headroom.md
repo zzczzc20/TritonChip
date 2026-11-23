@@ -14,88 +14,40 @@ The author asked three questions on 2026-11-23. Short answers first; the evidenc
 
 ### Q-A. "The matrix peak of about 10 GFLOP/s is too low; mainstream FPGA works reach at least 100 GFLOP/s. Am I wrong?"
 
-**You are right about the FPGA and the sustained number, and the 9.6 is not the peak of the run-3 image.**
+**Partly. 100 GFLOP/s is ordinary for this device and 5 GFLOP/s sustained is low; but 9.6 is not the peak of the run-3 image, and the arithmetic is not what limits the suite.**
 
-- **9.6 GFLOP/s is the 1-product-per-lane rate.** 3 cores x 16 lanes x 2 FLOP x 100 MHz = 9.6 GFLOP/s is the legacy
-  `m.mma.async` and also the vector-FMA rate (`BALANCE.md:52`). The run-3 image's default matrix opcode is
-  `m.mma.dp.async` (`codegen.py:1429`; the FP16 GEMM dumps contain `m.mma.dp.async.k16.f16`), so the structural matrix
-  peak is **19.2 GFLOP/s for FP16/BF16/mixed FP8 (2 products per lane per cycle) and 38.4 GFLOP/s for E4M3 x E4M3
-  (4 per lane per cycle)**; 18.1 and 36.1 after the one-cycle B-row load per 16 rows (`tnca_matrix.v:203`, `BALANCE.md:52-54`).
-- **Sustained is far below any of them.** The best board point of the 113 (R42 software round 1) reaches **5.29 GFLOP/s**
-  (`op.linear/medium/fp16-m128-k320-n256`), the large FP16 GEMMs 4.1-4.3, everything that is not GEMM-shaped 0.03-0.6
-  (`evidence/r42/arch/achieved_gflops.txt`). That is 28 % of the 19.2 GFLOP/s FP16 peak at best.
-- **What limits it is the design, not the FPGA.** The image uses 818 of 9,024 DSP48E2 (9 %, routed run-2 link,
-  `utilization_slr.rpt.gz`); the arithmetic is built from LUTs (about 2,400 LUTs and 2 DSPs per FP32 FMA,
-  `RESOURCES.md:136`; 2,792 LUTs and 8 DSPs per shared MAC lane, `fma_dslx/README.md:52-58`), SLR0 is at 95.56 % CLB,
-  the clock is 100 MHz, and there are 48 lanes in total. 100 GFLOP/s of FP16 MACs is 500 MAC/cycle at 100 MHz, about
-  500 DSPs (5.5 % of the device; **inference**: one 11x11 FP16 mantissa product per DSP per cycle).
-- **A K-fused wide engine already exists in two sizes** (`m.mma.dp`, groups of 2 and 4 with one rounding per group,
-  ISA sec 9C.4). 100 GFLOP/s of *peak* at 48 lanes and 100 MHz needs a group of **G >= 10.4 products per lane per cycle**
-  (2.6x the E4M3 group, 5.2x the FP16 group). Derived cost from the recorded lane screens: **E4M3, exact sum:
-  about +146 to +314 LUTs per extra product, +16k to +35k LUTs per core for G = 4 -> 11**; **FP16, exact sum: +1,650 LUTs
-  per extra product (+52.8k LUTs per core for G = 2 -> 4), not feasible.** Recorded SLR headroom to the highest packing
-  that ever routed (96.74 %): SLR0 about 4k LUTs, SLR1 about 22k, SLR2 about 28k (derived). So an FP8-only G = 8 engine
-  (peak 76.8 GFLOP/s) fits SLR1 and SLR2 and not SLR0; G >= 11 (105.6 GFLOP/s) fits only at the low per-product cost and
-  needs 12k to 31k LUTs removed from SLR0 or an asymmetric image.
-- **Clock:** the run-3 kernel clock closed at +0.111 ns at 10 ns; the ten worst paths are the hybrid LSU (24-25 logic
-  levels) and a reset/enable net into `u_vfpu` (one LUT, 9.2-9.5 ns of routing). 75-98 % of their delay is routing. The matrix lane's own
-  stages are 6.2/6.5/4.9/4.6/5.2 ns in a unit screen, about 1.54x that in the chip, so they already use the period.
-  Nothing recorded supports more than about 100-110 MHz without re-pipelining the core and lowering the packing.
-- **Verdict.** 100 GFLOP/s *sustained* on the suite is not realistic: the matrix engine is not what limits the suite
-  (a 4x engine gave 0.99-1.04x on FP8 linears in the TLM, 1.09x geometric mean on 59 GEMM cases, `pmac/README.md:148`,
-  `mma_dp/README.md:79`). 100 GFLOP/s *peak* is realistic only for E4M3 x E4M3, only with a new group-of-8..16 lane,
-  and only if SLR0 loses about 12-31k LUTs or the wide cores live in SLR1/SLR2.
-  Confidence: peak arithmetic **high**; area **medium-low** (no screen of a G > 4 lane exists: linear extrapolation);
-  clock **medium**.
+- **Peak.** 9.6 GFLOP/s = 3 cores x 16 lanes x 2 FLOP x 100 MHz is the one-product-per-lane rate (legacy `m.mma.async`, and the FP32 vector FMA). The run-3 profile compiles every matrix command to `m.mma.dp.async`
+  (`codegen.py:1429`; the FP16 GEMM dumps contain `m.mma.dp.async.k16.f16`), so the structural peak is **19.2 GFLOP/s (FP16/BF16/mixed FP8) and 38.4 GFLOP/s (E4M3 x E4M3)**, 18.1 / 36.1 after the 16/17 B-load bubble (`tnca_matrix.v:203`, `BALANCE.md:52-54`).
+- **Sustained.** Best board point 5.29 GFLOP/s (`op.linear/medium`, 28 % of 19.2), large FP16 GEMMs 4.1-4.3, everything else 0.03-0.6 (R42 round 1, `achieved_gflops.txt`). R41's TLM: a 4x engine gave 0.99-1.04x on FP8 linears, 1.09x geometric mean on 59 GEMM cases.
+- **FPGA vs design.** 818 of 9,024 DSP48E2 are used (9 %); the FP32 datapaths are LUT-built (2,400 LUTs + 2 DSPs per FMA, 2,792 LUTs + 8 DSPs per shared MAC lane); SLR0 is at 95.56 % CLB; 100 MHz; 48 lanes. 100 GFLOP/s of FP16 MACs is 500 MAC/cycle = about 500 DSPs (5.5 %, inference).
+- **What 100 GFLOP/s peak needs.** G >= 10.4 products per lane per cycle (2.6x the E4M3 group, 5.2x the FP16 group), a new K-fused opcode (one rounding per group of G; `m.mma.dp` with G = 2/4 is the existing precedent). Derived from the recorded lane screens
+  (no G > 4 lane was ever screened): E4M3 exact +146 to +314 LUTs per extra product = **+16k to +35k LUTs per core for G = 4 -> 11**; FP16 exact **+1,650 per product (+52.8k per core for G = 2 -> 4)**. Headroom to the highest packing that routed (96.74 %):
+  **SLR0 about 4k, SLR1 22k, SLR2 28k LUTs**. So G = 8 FP8 (76.8 GFLOP/s) fits SLR1/SLR2 only; G = 11 (105.6) needs 12-31k LUTs out of SLR0 or an asymmetric image; FP16 does not fit.
+- **Clock.** Run-3 kernel clock +0.111 ns at 10 ns; worst paths are the hybrid LSU (24-25 levels) and a high-fanout enable into `u_vfpu` (97.7 % routing); the lane's stages already fill 10 ns in the chip (6.2-6.5 ns OOC x 1.54). About 100-110 MHz is what the recorded evidence supports.
+- **Verdict.** 100 GFLOP/s **sustained**: not realistic. 100 GFLOP/s **peak**: realistic only for E4M3 x E4M3, with a new G >= 11 lane, 12-31k LUTs freed in SLR0 (or wide cores only in SLR1/SLR2), command overlap, register blocking and the line-wide path (the wide engine needs 42 B/cycle/core of operands with 16 x 16 tiles).
+  Confidence: peak arithmetic **high**; area **medium-low** (linear extrapolation); clock **medium**.
 
 ### Q-B. "Can the core fetch several instructions at once with a scoreboard, or use a very long instruction word?"
 
-**Not first. The evidence supports removing bookkeeping (compiler, then a hardware loop) before widening issue, and
-widening issue only once the matrix/transfer path is faster.**
+**Not first. Remove bookkeeping (compiler, then a hardware loop) before widening issue; widen issue only once the matrix/transfer path is faster. VLIW: no.**
 
-- **Facts verified.** Single issue, in order inside a role context, 4 contexts, F/D/R/X with a scoreboard in R, a
-  one-entry fetch buffer, one 64-bit instruction fetch per cycle from a BRAM code store (no instruction cache; no
-  extension words, every instruction is 8 bytes), the decoder carries FU classes `SALU, VALU, SFU, LSU, MATRIX, TXFER, BAR`
-  (`architecture_overview.md:103-110`, `tnca_core.v:431-470`, `tnca_defs.vh:524-531`, `tnca_asm.py:247`).
-- **Where the cycles go** (single-core RTL counters; no board counters exist, `RESOURCES.md:156`): on the GEMM families
-  (93.6 % of the suite's device cycles are in families whose points are mostly compute-side) the issue slot is busy only
-  14-34 % of the cycles for linear, gemv, mlp, bmm (B39 small tier: 14, 21, 22, 21 %; fresh R42-head tiny: 24, 24, -, 34 %; matmul 42-53 %); the rest is
-  transfer-engine and matrix-engine occupancy, barrier sleep and hazards. On the memory-side families (64 of the 113 points) the core issues
-  40-95 % of the cycles, the remainder being load/store and FPU latency stalls.
-- **Amdahl bounds of a two-slot core** (slot A = scalar/control/predicate, slot B = everything else; no dependence or structural check, so
-  upper bounds): per-point geometric mean **1.11x** for in-order pairing within a context (tiny tier, fresh run;
-  1.21x if every slot-A instruction could be paired anywhere); removing every slot-A instruction 1.22x. Cycle-weighted over the tiny points the bound is
-  dominated by `embedding` (95 % issue-bound, 1.53x). The GEMM families are bounded at 1.05-1.10x.
-- **VLIW** needs a new container/encoding, a new assembler/ISA schema/decoder/model/compiler back end and keeps the
-  scoreboard anyway (async engines have variable latency): no advantage over a binary-compatible 2-wide front end, and
-  it breaks every existing binary. **Not supported.**
-- **Cost of the 2-wide front end** (derived from recorded module sizes, **inference** for the sum): +6k to +12k LUT-equivalents per
-  core (second decoder, scoreboard check of the pair, 2 more scalar-RF read ports, writeback booking), and a longer R stage
-  on a +0.111 ns margin. It does not fit SLR0 (headroom about 4k LUTs); it fits SLR1/SLR2.
-- **Cheaper first**: constants (`.li` is 4 instructions), pointer bumps and loop control are 15-50 % of the
-  reduction/attention loop bodies and 53 % of the GEMM K-loop body (static; that includes 8 `s.mov` per two steps that the ISA's
-  "five consecutive coordinate registers" rule forces); a zero-overhead hardware loop costs about
-  0.3-0.5k LUT-equivalents (**inference**), is binary-compatible (new CTRL func) and removes the not-taken-prediction bubble;
-  descriptor-driven weight fragments remove the 56 % bookkeeping of the FP8 Hub kernel (`BALANCE.md:228`).
-- **What would make issue pay:** a matrix engine with G = 8..16. A K16 command would take 48-31 cycles instead of 150-168 while
-  a 16 x 16 tile issues 19 instructions per K step plus a 220-instruction epilogue (static, R42 head): the issue slot is busy 22 % of the tile today,
-  68 % at G = 8 and 106 % at G = 16 for K = 256 (derived, sec. 2.6).
-  Confidence: facts **high**; counters **medium** (single-core simulator, tiny/small points, no board counters);
-  hardware cost **low** (no synthesis).
+- **Facts.** Single issue, in order inside a role context, 4 contexts, F/D/R/X with the scoreboard in R, one 64-bit fetch per cycle into a one-entry buffer from a BRAM code store (no I-cache), 64-bit fixed instructions (no extension words), FU classes `SALU/VALU/SFU/LSU/MATRIX/TXFER/BAR` in the decoder,
+  scalar RF 7 read + 1 write ports (`architecture_overview.md:103-110`, `tnca_core.v:431-470`, `tnca_defs.vh:524-531`, `tnca_scalar_rf.v:4`).
+- **Cycles (single-core RTL counters; no board counters exist).** GEMM-shaped families (93.6 % of the suite's cycles) keep the issue slot busy 14-34 % (linear 14-24, gemv 21-24, mlp 22-26, bmm 21-34; matmul 42-53): transfer/matrix occupancy and barrier sleep dominate.
+  The other 16 families (70 points) keep it busy 25-95 %: `embedding`, `cumsum`, `argmax`, `transpose`, `attention_decode` 57-95 %, but the small-tier pointwise and norm kernels only 25-45 % (load/store port and the single SFU slice limit them, not issue).
+- **Amdahl bounds** (slot A = scalar/control/predicate, slot B = the rest; upper bounds, no dependence check): per-point geometric mean **1.105x** for in-order pairing within a context, **1.194x** with free reordering (also the VLIW limit), 1.199x if all slot A were removed;
+  GEMM families 1.03-1.11x; `embedding` 1.53x; small-tier pointwise (SFU-bound) 1.005-1.02x. FP8 Hub kernel: perfect pairing 11,192 -> 7,853 instructions (1.43x), still issue-bound against the engine's 5,824; descriptors/hoisting 2,652 (4.2x, `BALANCE.md`).
+- **Cost** (derived from recorded module sizes, inference for the sums): 2-wide front end +6k..12k LUT-eq per core and a longer R stage on a +0.111 ns margin: SLR1/SLR2 only (SLR0 headroom 4k). Hardware loop +0.3-0.5k, binary-compatible, fits SLR0.
+  VLIW: new container/encoding, every tool and model rewritten, scoreboard stays: no gain over the 2-wide front end.
+- **What would make issue pay:** a wider engine. A 16 x 16 tile (K = 256) issues 16 x 19 + 220 = 524 instructions; the engine takes 2,400 cycles at G = 2, 768 at G = 8, 496 at G = 16: issue slot 22 % -> 68 % -> **106 %** (derived, sec 2.6).
+  Confidence: facts **high**; counters **medium** (single-core, tiny/small points); costs **low** (no synthesis).
 
-### Q-C. What the 113 points' device cycles are made of after R42 round 1
+### Q-C. What the 113 points' device cycles are made of after R42 round 1 (board, run-3 image, `ab-int1`)
 
-- Board total 48.18 G cycles (run-3 base) -> 36.92 G (ab-int1); geometric mean 1.613x (`ab-int1/comparison.json`).
-- **One point is two thirds of the total cycles** (`llama_prefill/large`, derived 66.7 %); `llama_prefill` 71.4 % of the
-  cycles, `matmul` 11.8 %, `linear` 3.6 %; the 9 families whose points are mostly compute-side carry **93.6 %** of the cycles in 43 of the 113 points.
-- The geometric mean weights points equally, so its headroom sits in the memory-side/instruction-bound families: **64 of
-  102 points** with a recorded roofline binding are memory-side and carry 6 % of the cycles. Largest remaining distances
-  to the ArchBench bound (share of sum log(1/eta)): `conv2d` 8.8 % (eta 0.040), `resnet_block` 8.5 % (0.044), `softmax` 8.2 %
-  (0.134), `attention_prefill` 7.9 % (0.055), `attention_decode` 6.6 % (0.089), `rope` 6.1 % (0.108), `matmul` 5.8 %.
-- Geometric-mean eta 0.1417 -> 0.2365 (derived, 102 points that have a FLOP bound).
-- Compute-bound structure: `llama_prefill`, `matmul`, `linear`, `mlp`, `gpt2_block`, `bmm`, `resnet_block`, `conv2d`,
-  `attention_prefill`. `conv2d`/`resnet_block` (FP32) run on the 16-lane vector FPU (no `m.mma` in their code: `vf.fma` + `v.permute` + `a.vread/a.vwrite`), at 0.57 GFLOP/s best.
-  Confidence: **high** (board records, arithmetic on them).
+- 48.18 G -> 36.92 G cycles, geometric mean 1.613x. **One point, `llama_prefill/large`, is 66.7 % of the cycles**; `llama_prefill` 71.4 %, `matmul` 11.8 %, `linear` 3.6 %. The 9 compute-bound-structure families (`llama_prefill`, `matmul`, `linear`, `mlp`, `gpt2_block`, `bmm`, `resnet_block`, `conv2d`, `attention_prefill`)
+  hold **93.6 %** of the cycles in 43 points; their eta is 0.34-0.67 for `llama_prefill`, `matmul`, `linear`, `mlp`, `gpt2_block`, `bmm`, 0.055 for `attention_prefill` and 0.04 for the FP32 `conv2d`/`resnet_block` (vector FPU).
+- The geometric mean's headroom is in the other 70 points (6.4 % of the cycles, 62 % of the metric). Share of the remaining sum of ln(1/eta): `conv2d` 8.8 %, `resnet_block` 8.5 %, `softmax` 8.2 %, `attention_prefill` 7.9 %, `attention_decode` 6.6 %, `rope` 6.1 %, `matmul` 5.8 %, `llama_decode` 5.6 %.
+- Geometric-mean eta 0.1417 -> 0.2365 (derived). Round 1 left `linear`, `mlp`, `gemv`, `embedding`, `transpose` unchanged (1.00-1.03x). Confidence **high**.
 
 ---
 
@@ -112,7 +64,7 @@ Structural facts (RTL):
   `TNCA-ISA-v0.1.md:897-946`); `m.mma.async` keeps one rounding per k (sec 9C.1, `:826`).
 - The R41 run-3 profile `core-vrf-sync-v5-x8-g2c4-dp` has the capability `matrix_dp`, and the compiler then emits
   `m.mma.dp.async` for every matrix command (`codegen.py:1429-1440`). A small-tier FP16 GEMM dump of the R42 head contains
-  `m.mma.dp.async.k16.f16` and no `m.mma.async` (`evidence/r42/arch/loops_small.txt`, kernel dumps on thor). FP32
+  `m.mma.dp.async.k16.f16` and no `m.mma.async` (`grep m.mma` over `evidence/r42/arch/dumps_small_s.tgz`). FP32
   matmul and conv dumps contain **no `m.mma` at all**: the dump of `op.matmul/small/fp32` is 256 `vf.fma`, 256 `v.permute`, 32 `a.vread`, 16 `a.vwrite` (the vector FPU does the arithmetic).
 
 | Mode (3 cores, 16 lanes, 100 MHz) | G | raw GFLOP/s | with 16/17 B-load bubble | MAC/cycle/core | source |
@@ -206,6 +158,10 @@ opcode/mode** (ISA sec 9C.1: "An implementation that wants a faster reduction or
 sizes 4 and 2 with RO_48), with its own oracle (`tools/model/fdp.py`) and capability bit; the TLM can only model G <= 4 today
 (`tnca_model.hpp:101-103`). A truncating aligned adder tree (NVIDIA-style) would be cheaper per product than the exact field, but **no screen of one exists**
 (its cost is the missing number in this section); the FP16 row of the table is the exact-sum contract.
+What such an opcode changes, concretely: the **bits of every accumulation step** (one rounding per group of G products instead of one per product; for a truncating tree also the low bits of the group sum),
+**G becomes part of the contract** (the compiler already requires K steps of 16/32/64 to be whole numbers of groups and zero-pads a short K, which is exact, `codegen.py:1429-1440`), the oracle and the SystemC model
+(`tnca_matrix_dp.hpp`, 225 lines, 1024-bit limbs) must be extended, and the fragment-layout rule sec 9C.2 must say where the G consecutive k of a lane's B column live (today one 64-byte register per group, `tnca_model.hpp:101-103`,
+so G > 4 FP8 / G > 2 FP16 needs several registers per group and a different B-latch wiring). It changes neither the accumulator format nor the formats of A and B, and it leaves `m.mma.async` and `m.mma.dp` bit-identical.
 
 ### 1.5 What it needs from the register file and the other engines
 
@@ -215,7 +171,7 @@ sizes 4 and 2 with RO_48), with its own oracle (`tools/model/fdp.py`) and capabi
   `qa_budget.txt`), against a 64 B/cycle port: below 25 %. The problem is not bandwidth but the B reload latency per group (4 serial register reads against 16 row cycles
   unless double-buffered: `mtx_dp_b_prefetch` is a TLM what-if, R42-mtx is working on it) and the A-buffer select width (G x element bytes per cycle).
 - The accumulator file needs the same one 64 B row read and write per cycle at any G.
-- What changes is the command: a K16 command at G = 16 sweeps in about 16 cycles plus a 6-cycle drain and the A-buffer fill (8 reads), so command overhead is half of it
+- What changes is the command: a K16 command at G = 16 sweeps in 17 cycles (one group) plus a 6-cycle drain and the A-buffer fill (8 reads), so command overhead is half of it
   (`tnca_matrix.v:140-150, 530-560`); without command overlap (R42-mtx) the wide engine is idle half the time.
 - **Operands arrive through the transfer engine.** 100 GFLOP/s sustained is 167 MAC/cycle/core; with 16 x 16 tiles that is 0.125 element per MAC (0.25 B/MAC FP16), i.e.
   **42 B/cycle/core**, more than the 29 B/cycle read ceiling (`BALANCE.md:39`, the brief's figure) and 5x the 8 B/cycle word walk; a 64 x 64 blocking brings it to about 10 B/cycle/core
@@ -228,9 +184,14 @@ Run-3 routed, pre-package (`evidence/r41/hbm_bw/g4/run3/route_prepackage/timing_
 10.000 ns; the design-level WNS of -0.085 ns is in the HBM platform clock (`hbm_aclk`), not the kernel. Earlier links: +0.042 (run 1), +0.038 and +0.016 after a reroute (run 2,
 `link_1f0a5aff/README.md:9`). The ten worst kernel setup paths (`evidence/r42/arch/run3_kernel_clock_paths.txt`):
 
-- 3 x hybrid-LSU `fast/rr_reg` -> `out_vector/out_scalar` (24-25 logic levels, data path 9.8 ns, 75-78 % routing);
+- 4 x hybrid-LSU `fast/rr_reg` -> `out_vector/out_scalar` (24-25 logic levels, data path 9.79-9.86 ns, 75-78 % routing);
 - 1 x hybrid-LSU `fast/valid_reg` -> `control/rsp_status` (14 levels, 9.28 ns, 87 % routing; the clock itself crosses SLR2 -> SLR0, skew -0.351 ns, SLR compensation 0.227 ns);
-- 6 x `reset_sync_reg` -> `u_vfpu/acc_reg[..]/CE` (one LUT, **9.2-9.46 ns, 97.7 % routing**: a high-fanout enable spread over the SLR).
+- 5 x `reset_sync_reg` -> `u_vfpu/acc_reg[..]/CE` (one LUT, **9.39-9.46 ns of data path, 97.7 % routing**: a high-fanout enable spread over the SLR).
+
+The run-1 image (`evidence/r41/stage2/run1/README.md:66-79`, +0.042 ns) had a longer list of near-critical in-tile families, each of them a wide fan-out or RAM/DSP capture: F04 vector writeback (`of_d1`/`w_sdata` -> `w_vdata`, 22-24 logic levels, +0.042 to +0.065 ns),
+F07 NUCA slice data-RAM write (+0.065), **F09 matrix operand capture** (VRF bank `mem_reg` -> `u_mac a_q`, **a 16-level broadcast to all MACs**, +0.079; fixed for the run-2/3 images by registering the VRF response, `MTX_VRF_REG`), F10 LSU/NoC (+0.239).
+Its calibration rule for screens is **-0.5 ns for logic-bound families, -0.9 ns for RAM/DSP-capture families and -1.0 ns for an SLR at >= 96 % packing** (`README.md:104`). A K-fused lane with G = 8..16 widens exactly the F09 broadcast
+(a 16 x G x element-bit B latch and a G-element A word to 16 lanes), so the timing risk of Q-A is in the operand fan-out, not in the adder tree.
 
 So in the image the clock is set by placement and routing in a 95-96 % packed SLR, and by the hybrid LSU, not by the matrix. The matrix lane's five stages are 6.17, 6.45, 4.9, 4.6, 5.2 ns in a unit screen
 (`fma_dslx/README.md:52-58`); the pmac study scales OOC to in-chip by 1.54x (`lane/README.md:116,140`), giving 9.5 / 9.9 / 7.5 / 7.1 / 8.0 ns (**derived**): the two front stages already fill 10 ns.
@@ -258,6 +219,8 @@ What can be removed from SLR0 is limited by the author's earlier decisions (`RES
 contexts cut was withdrawn); capability-neutral options already taken: `AXI_LINE_LUTRAM`, `NUCA_SHARED_DATA_READ 2`, `LSU_INFLIGHT 1`, 8 barriers, 38-bit epochs, FMA rebuild. Remaining pools in
 SLR0 (recorded sizes): DCO/TMU replica 7.6k LUT cells (replicas were added to close cross-SLR TMU paths; `DCO_LOCAL_REPLICAS 0` was screened and rejected, WNS +0.198 ns, `RESOURCES.md:258,481`), NUCA slice 27.8k, `u_valu` 23.2k,
 `u_vfpu` about 49k after the FMA rebuild; each is a capability or a timing trade that is the author's to decide.
+One capability-neutral pool is unused: **URAM, 0 of 960** (`utilization_slr.rpt.gz`). The slice line array (7.3k LUTRAM per slice after `NUCA_SHARED_DATA_READ 2`, `RESOURCES.md:189`) and the accumulator file
+(2,856 LUTRAM per core, `RESOURCES.md:100`) are LUTRAM; URAM needs synchronous reads and a different port structure, and the R42 plan defers "URAM NUCA" to the image after this one (`r42_plan.md:82`).
 
 ---
 
@@ -317,42 +280,52 @@ Two sources, both **single-core RTL simulation** (no board counters exist):
 (b) **Fresh R42-head runs** (profile `core-vrf-sync-v5-x8-g2c4-dp`, the profile of the board image's cores; `qb_family.py`, the issue stream from `arch_probe.v`). "Barrier wait / front end" is `perf_x_frontend`: nothing stalled and nothing
 in R, which includes every context asleep in `mb.wait`, that is, waiting for an engine. "Slot A" = scalar ALU, predicate, control, system instructions (dynamic share of issued instructions).
 "2-wide in-order bound" = cycles / (cycles - pairs), where pairs are the greedy adjacent (slot A, slot B) pairs of one role context's issue stream (no dependence check: an upper bound).
-"All slot A removed" = cycles / (cycles - number of slot-A instructions).
+"All slot A removed" = cycles / (cycles - number of slot-A instructions). `fpu` is `perf_x_fpu`: the multicycle FP unit is busy (the single SFU slice, which a 16-lane op occupies for 16 + 8 cycles, `architecture_overview.md:135`, and lane reductions).
 
 | tier | family | n | cycles | issued | hazard | lsu | fpu | mtx | txf | fence | barrier wait / front end | slot A of issued | 2-wide in-order bound | all slot A removed |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | small | add | 1 | 28959 | 29 % | 0 % | 62 % | 0 % | 0 % | 0 % | 0 % | 0 % | 15 % | 1.01x | 1.05x |
 | small | argmax | 1 | 37205 | 68 % | 0 % | 15 % | 0 % | 0 % | 0 % | 0 % | 3 % | 49 % | 1.22x | 1.50x |
+| small | layernorm | 1 | 80478 | 39 % | 0 % | 33 % | 15 % | 0 % | 0 % | 0 % | 1 % | 22 % | 1.03x | 1.09x |
+| small | rmsnorm | 1 | 48287 | 41 % | 1 % | 35 % | 11 % | 0 % | 0 % | 0 % | 0 % | 26 % | 1.04x | 1.12x |
+| small | rope | 1 | 47848 | 45 % | 0 % | 44 % | 0 % | 0 % | 0 % | 0 % | 0 % | 5 % | 1.02x | 1.02x |
+| small | silu | 1 | 88955 | 25 % | 0 % | 13 % | 52 % | 0 % | 0 % | 0 % | 0 % | 9 % | 1.01x | 1.02x |
+| small | swiglu | 1 | 95842 | 27 % | 0 % | 16 % | 46 % | 0 % | 0 % | 0 % | 0 % | 8 % | 1.01x | 1.02x |
+| small | transpose | 1 | 71904 | 58 % | 1 % | 33 % | 0 % | 0 % | 0 % | 0 % | 2 % | 44 % | 1.25x | 1.34x |
 | tiny | add | 2 | 3201 | 41 % | 0 % | 50 % | 0 % | 0 % | 0 % | 0 % | 1 % | 24 % | 1.06x | 1.11x |
 | tiny | argmax | 1 | 2035 | 68 % | 8 % | 2 % | 0 % | 0 % | 0 % | 0 % | 6 % | 46 % | 1.18x | 1.45x |
 | tiny | attention_decode | 1 | 9521 | 59 % | 8 % | 7 % | 10 % | 0 % | 0 % | 0 % | 4 % | 24 % | 1.11x | 1.16x |
 | tiny | attention_prefill | 1 | 24890 | 49 % | 16 % | 10 % | 3 % | 0 % | 1 % | 0 % | 6 % | 25 % | 1.08x | 1.14x |
 | tiny | bmm | 1 | 1850 | 34 % | 8 % | 5 % | 0 % | 0 % | 9 % | 2 % | 37 % | 54 % | 1.11x | 1.23x |
+| tiny | conv2d | 1 | 121232 | 57 % | 7 % | 16 % | 0 % | 0 % | 0 % | 1 % | 1 % | 21 % | 1.11x | 1.13x |
 | tiny | cumsum | 1 | 2221 | 77 % | 0 % | 8 % | 0 % | 0 % | 0 % | 0 % | 1 % | 10 % | 1.03x | 1.09x |
 | tiny | embedding | 1 | 46384 | 95 % | 0 % | 2 % | 0 % | 0 % | 0 % | 0 % | 0 % | 47 % | 1.53x | 1.80x |
 | tiny | gelu_tanh | 1 | 1971 | 53 % | 1 % | 6 % | 23 % | 0 % | 0 % | 0 % | 1 % | 33 % | 1.11x | 1.21x |
 | tiny | gemv | 1 | 4843 | 24 % | 1 % | 2 % | 0 % | 17 % | 44 % | 1 % | 7 % | 53 % | 1.07x | 1.15x |
+| tiny | gpt2_block | 1 | 175819 | 35 % | 17 % | 6 % | 2 % | 6 % | 15 % | 0 % | 7 % | 28 % | 1.06x | 1.11x |
 | tiny | layernorm | 1 | 2046 | 47 % | 3 % | 20 % | 14 % | 0 % | 0 % | 0 % | 2 % | 47 % | 1.09x | 1.28x |
 | tiny | linear | 1 | 6318 | 24 % | 12 % | 5 % | 0 % | 13 % | 34 % | 1 % | 6 % | 46 % | 1.06x | 1.13x |
 | tiny | llama_decode | 1 | 204816 | 42 % | 6 % | 6 % | 3 % | 9 % | 22 % | 0 % | 4 % | 37 % | 1.11x | 1.18x |
 | tiny | matmul | 2 | 4153 | 42 % | 6 % | 4 % | 0 % | 0 % | 8 % | 1 % | 22 % | 20 % | 1.05x | 1.09x |
+| tiny | mlp | 1 | 79711 | 26 % | 23 % | 1 % | 1 % | 9 % | 21 % | 0 % | 8 % | 21 % | 1.03x | 1.06x |
 | tiny | rmsnorm | 1 | 1409 | 47 % | 4 % | 23 % | 14 % | 0 % | 0 % | 0 % | 2 % | 52 % | 1.09x | 1.32x |
 | tiny | rope | 1 | 4274 | 56 % | 0 % | 31 % | 0 % | 0 % | 0 % | 0 % | 1 % | 12 % | 1.04x | 1.07x |
 | tiny | silu | 1 | 1460 | 46 % | 3 % | 7 % | 28 % | 0 % | 0 % | 0 % | 1 % | 32 % | 1.10x | 1.17x |
 | tiny | softmax | 2 | 3810 | 41 % | 20 % | 8 % | 11 % | 0 % | 0 % | 0 % | 8 % | 46 % | 1.09x | 1.23x |
 | tiny | swiglu | 1 | 1659 | 46 % | 2 % | 10 % | 24 % | 0 % | 0 % | 0 % | 1 % | 30 % | 1.10x | 1.16x |
 | tiny | transpose | 1 | 2298 | 57 % | 1 % | 34 % | 0 % | 0 % | 0 % | 0 % | 2 % | 44 % | 1.24x | 1.33x |
-| small | **geometric mean of the per-point bound** | 2 | | | | | | | | | | | **1.108x** | **1.252x** |
-| tiny | **geometric mean of the per-point bound** | 22 | | | | | | | | | | | **1.111x** | **1.213x** |
+| small | **geometric mean of the per-point bound** | 8 | | | | | | | | | | | **1.067x** | **1.134x** |
+| tiny | **geometric mean of the per-point bound** | 25 | | | | | | | | | | | **1.105x** | **1.199x** |
 
 
 Reading (a) and (b) together:
 
 - **GEMM-shaped families are not issue-bound.** `linear`, `gemv`, `mlp`, `bmm` issue in 14-36 % of the cycles (B39 small: linear 14 %, mlp 22 %, gemv 21 %, bmm 21 %; fresh tiny: linear 24 %, gemv 24 %, bmm 34 %), `matmul` in 42-53 %;
   the rest is transfer-engine occupancy (txf 2-44 %), matrix occupancy (mtx 0-30 %), hazards and barrier sleep (up to 50 %). In `op.linear/small` the issue stream is 48,254 instructions in 244,321 cycles (19.8 %, `gemm/ANALYSIS.md:21-30`).
-  These families hold 93.6 % of the suite's cycles (Q-C). A wider issue cannot help them: there are no issue-limited cycles to remove.
-- **The memory-side families keep the issue slot busy 40-95 % of the cycles**: `embedding` 95 %, `cumsum` 77-85 %, `argmax` 68-76 %, `attention_decode` 59-73 %, `layernorm`, `rmsnorm`, `rope`, `softmax`, `resnet_block`, `conv2d` 45-70 %. The rest of their cycles are
-  `lsu` stalls (add 50 % in the tiny run, rope 31 %, transpose 34 %) and FPU/SFU latency (`silu`, `gelu`, `swiglu` 23-28 %), which a wider issue does not remove (they are latencies, not issue slots). These are the 64 memory-side points of the 102 with a recorded binding.
+  These families hold 93.6 % of the suite's cycles (Q-C). A wider issue can remove at most the issue cycles themselves (bound 1.03-1.11x for these families, table (b)); most of their cycles are not issue cycles.
+- **The families that are not GEMM-shaped (the 16 other families, 70 points, and the FP32 `conv2d`/`resnet_block` on the vector FPU) are issue-bound only in part.** The issue slot is busy 57-95 % of the cycles in `embedding` (95 %), `cumsum` (77 %), `argmax` (68 %), `transpose` (57-58 %),
+  `attention_decode` (59 %), `conv2d` (57 %); 41-56 % in the tiny norms, `rope`, `softmax`, `attention_prefill`; and only **25-45 % in the small-tier pointwise and norm kernels** (add 29, silu 25, swiglu 27, layernorm 39, rmsnorm 41, rope 45 %), where the rest is
+  `lsu` stalls (add 62 %, rope 44 %, rmsnorm 35 %, layernorm 33 %) and SFU occupancy (silu 52 %, swiglu 46 %), which a wider issue does not remove.
   R42 round 1 moved `add` from issue-bound (B39 small 62 % issued, 22 % lsu) to port-bound (fresh small 29 % issued, 62 % lsu), which is what its board eta of 0.99 says.
 - On the board these families wait **longer** for loads (HBM round trip about 73 cycles against the simulator's short memory latency, `BALANCE.md:268`), so their issue share there is lower than shown unless the four contexts hide it.
 
@@ -390,11 +363,11 @@ integer divide loops `sdiv_*` excluded; `qb_loops_table.md`). Slot A = `inc` (`s
 | op.transpose_small_fp32-r128-c256 | `__rctx_program` (fused_clone_t_0) | 325 | 43 % | 0 | 1 | 1 | 33 | 1 | 71 | 32 | vx 118, ld/st 34, mtx 32, txf 0, bar 0 |
 
 
-(`__rctx_program` is the whole program body when a kernel has no inner loop.)
+(`__rctx_program` is the whole program body when a kernel has no inner loop. `mtx` counts `m.*` and `a.*` instructions: the FP32 conv/matmul kernels have accumulator reads/writes but no `m.mma`.)
 
 - **Element-wise kernels** (`add`, `silu`, `gelu`, `swiglu`, `rope`): 126-540 instructions per iteration, 2-11 % slot A (the loop control is 3 instructions of 126-540). They are vector-issue-bound; a scalar slot has nothing to take.
 - **Reductions and norms** (`softmax`, `layernorm`, `rmsnorm`, `cumsum`): 38-98 instructions per iteration, 5-16 % slot A, of which `inc` 3-5 (pointer bumps plus the counter).
-- **Argmax, attention, embedding, transpose:** 40-50 % slot A. The `addr` column (192-279 per iteration) is scalar address arithmetic for indexed access; `cmp` 35-65 is predicate/mask construction.
+- **Argmax, attention, embedding, transpose:** 22-50 % slot A (argmax 50, attention decode 39, embedding 47, transpose 43, attention prefill 22). The `addr` column (192-279 per iteration) is scalar address arithmetic for indexed access; `cmp` 35-65 is predicate/mask construction.
 - **The GEMM K loop** (`gemm_pipe`, the R42-gemm software pipeline, unrolled by two): 38 instructions per iteration = **19 per K step and matrix command**, 53 % slot A: `br 3 + cmp 2 + inc 2` loop control, `mov 8` (the ISA wants the five transfer coordinates in *consecutive* scalar registers, so every transfer is preceded by `s.mov` copies), `const 3`, `addr 2`;
   slot B is `bar 8 + txf 8 + mtx 2`. 19 instructions per command while one command occupies the engine 168 cycles: not issue-bound today.
 - **Program entry and epilogue**: the entry computes the tile index with a software divide (`sdiv_*` loops: the ISA has no integer divide, `architecture_overview.md:126`), 2 TensorMap builds and a fence; for `op.linear/tiny` this is 557 cycles for two contexts (9 %), the epilogue
@@ -402,25 +375,34 @@ integer divide loops `sdiv_*` excluded; `qb_loops_table.md`). Slot A = `inc` (`s
 - **FP8 Hub kernel** (`BALANCE.md:195-229`, recorded assembly of the run-1 profile): 11,192 instructions per 262,144-MAC iteration, vector int/move 31.6 %, scalar/predicate/control 29.8 %, vector FP 19.5 %, vector load/store 15.2 %, matrix 3.8 %;
   **bookkeeping plus scalar address arithmetic is 6.3 k = 56 %**. Against an engine that needs 5,824 cycles per iteration the kernel is issue-bound (`BALANCE.md:18-19`).
 
-Dynamic share of issued instructions in the fresh tiny runs, per family (slot A = salu + ctrl + pred + sys):
+Dynamic share of issued instructions in the fresh runs, per family (slot A = salu + ctrl + pred + sys):
 
 | tier | family | issued | salu | ctrl | pred | sys | ld/st | vector | matrix | transfer | barrier |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | small | add | 8484 | 13.7% | 1.6% | 0.0% | 0.1% | 36.4% | 48.3% | 0.0% | 0.0% | 0.0% |
 | small | argmax | 25184 | 13.1% | 4.1% | 31.8% | 0.0% | 4.2% | 46.8% | 0.0% | 0.0% | 0.0% |
+| small | layernorm | 31536 | 18.9% | 2.7% | 0.0% | 0.0% | 19.5% | 58.9% | 0.0% | 0.0% | 0.0% |
+| small | rmsnorm | 19948 | 22.5% | 2.9% | 0.0% | 0.1% | 20.6% | 53.9% | 0.0% | 0.0% | 0.0% |
+| small | rope | 21356 | 4.5% | 0.8% | 0.0% | 0.2% | 17.0% | 77.6% | 0.0% | 0.0% | 0.0% |
+| small | silu | 22624 | 8.0% | 0.6% | 0.0% | 0.1% | 9.1% | 82.3% | 0.0% | 0.0% | 0.0% |
+| small | swiglu | 25828 | 7.5% | 0.5% | 0.0% | 0.0% | 11.9% | 80.0% | 0.0% | 0.0% | 0.0% |
+| small | transpose | 41696 | 32.5% | 0.4% | 9.8% | 0.8% | 10.4% | 36.2% | 9.8% | 0.0% | 0.0% |
 | tiny | add | 1308 | 19.9% | 2.4% | 0.0% | 1.8% | 20.2% | 55.7% | 0.0% | 0.0% | 0.0% |
 | tiny | argmax | 1378 | 11.5% | 2.6% | 31.5% | 0.4% | 2.9% | 51.1% | 0.0% | 0.0% | 0.0% |
 | tiny | attention_decode | 5638 | 19.7% | 1.3% | 2.1% | 0.6% | 5.3% | 71.1% | 0.0% | 0.0% | 0.0% |
 | tiny | attention_prefill | 12218 | 18.8% | 1.0% | 4.2% | 0.8% | 5.7% | 68.1% | 1.0% | 0.2% | 0.2% |
 | tiny | bmm | 626 | 39.6% | 1.3% | 10.2% | 3.2% | 11.8% | 23.3% | 5.8% | 1.9% | 2.9% |
+| tiny | conv2d | 68498 | 14.9% | 0.1% | 5.7% | 0.1% | 7.7% | 63.8% | 7.7% | 0.0% | 0.0% |
 | tiny | cumsum | 1712 | 8.2% | 1.4% | 0.0% | 0.7% | 2.3% | 87.4% | 0.0% | 0.0% | 0.0% |
 | tiny | embedding | 44088 | 45.8% | 0.4% | 0.4% | 0.0% | 0.6% | 52.7% | 0.0% | 0.0% | 0.0% |
 | tiny | gelu_tanh | 1044 | 30.3% | 1.1% | 0.0% | 1.1% | 3.8% | 63.6% | 0.0% | 0.0% | 0.0% |
 | tiny | gemv | 1186 | 43.3% | 3.2% | 5.4% | 1.2% | 8.8% | 18.2% | 7.1% | 5.7% | 7.1% |
+| tiny | gpt2_block | 62388 | 23.0% | 1.6% | 3.1% | 0.4% | 6.4% | 54.6% | 7.9% | 1.4% | 1.7% |
 | tiny | layernorm | 956 | 40.2% | 5.9% | 0.0% | 1.3% | 11.7% | 41.0% | 0.0% | 0.0% | 0.0% |
 | tiny | linear | 1522 | 38.8% | 2.5% | 4.2% | 0.9% | 11.3% | 26.8% | 5.5% | 4.5% | 5.5% |
 | tiny | llama_decode | 85350 | 32.7% | 1.9% | 1.9% | 0.5% | 5.4% | 50.8% | 2.9% | 1.7% | 2.2% |
 | tiny | matmul | 1750 | 16.6% | 0.9% | 1.8% | 0.8% | 4.2% | 67.4% | 5.7% | 1.1% | 1.3% |
+| tiny | mlp | 20760 | 17.6% | 1.2% | 2.5% | 0.1% | 3.5% | 48.7% | 20.8% | 2.5% | 3.2% |
 | tiny | rmsnorm | 660 | 44.2% | 6.1% | 0.0% | 1.8% | 11.5% | 36.4% | 0.0% | 0.0% | 0.0% |
 | tiny | rope | 2380 | 9.1% | 1.8% | 0.0% | 1.5% | 10.9% | 76.6% | 0.0% | 0.0% | 0.0% |
 | tiny | silu | 668 | 28.1% | 1.8% | 0.0% | 1.8% | 6.0% | 62.3% | 0.0% | 0.0% | 0.0% |
@@ -429,16 +411,21 @@ Dynamic share of issued instructions in the fresh tiny runs, per family (slot A 
 | tiny | transpose | 1312 | 32.3% | 0.6% | 9.8% | 1.2% | 10.4% | 36.0% | 9.8% | 0.0% | 0.0% |
 
 
+Dominant mnemonics of five points (dynamic, share of issued; `qb_issue.py`): `linear/tiny` s.addi 10 %, vf.cvt 8 %, s.movz 7 %, s.mov 5 %, v.splat 5 %, v.cmp 4 %, p.and 4 %, a.vread 4 %;
+`matmul/tiny` s.addi 13 %, s.movz 10 %, v.splat 6 %, v.cmp 6 %, a.vread 6 %; `softmax/tiny` s.addi 10 %, s.add 10 %, s.movk 6 %, s.cmp 6 %, br.nz 6 %, v.ld 5 %;
+`attention_decode/tiny` v.movi 15 %, v.sel 9 %, v.cmp 8 %, v.splat 7 %, v.sub 5 %, v.iota 4 %; **`embedding/tiny` v.extract 26 %, v.insert 19 %, s.shli 14 %, s.or 12 %, s.lshri 7 %**
+(a gather done lane by lane through the scalar side: 78 % of its 44,088 instructions are lane extract/insert and scalar shift/or, the case where removing slot A is worth 1.8x). The probe's issue count equals `perf_issued` in every one of the points.
+
 ### 2.4 Amdahl bounds of a two-slot core, and of the alternatives
 
-- **Two-wide in-order front end, one scalar/control slot and one vector/matrix/transfer slot (binary compatible):** per-point geometric mean of the bound **1.111x** (tiny, fresh runs); GEMM families 1.05-1.10x; `embedding` 1.53x; `argmax` 1.18x;
-  pointwise and norms 1.04-1.11x. The loose bound (any slot-A instruction pairable with any slot-B instruction) is 1.207x. These are upper bounds: they assume that every adjacent pair of different slots can issue together and that every saved issue cycle
+- **Two-wide in-order front end, one scalar/control slot and one vector/matrix/transfer slot (binary compatible):** per-point geometric mean of the bound **1.105x** (25 tiny points; 1.067x over the 8 small points); GEMM families 1.03-1.11x; `embedding` 1.53x; `argmax` 1.18-1.22x; `transpose` 1.25x;
+  norms 1.03-1.09x; pointwise activations 1.005-1.11x (small tier 1.005-1.02x: SFU-bound). The loose bound (any slot-A instruction pairable with any slot-B instruction, i.e. a pair-aware scheduler that reorders freely; the same limit holds for a VLIW) is 1.194x. These are upper bounds: they assume that every adjacent pair of different slots can issue together and that every saved issue cycle
   shortens the run, which is false in the stall-dominated families.
 - **Very long instruction word with the same two slots:** the same upper bound (it can pair no more than the 2-wide front end can); it adds nop padding for the unpaired half of each bundle, and a bundle must wait for its slowest slot unless the scoreboard stays.
   There is no number for it to beat.
-- **Removing slot A instead of hiding it:** the bound of removing *all* of them is 1.213x (geometric mean over the tiny points; `embedding` 1.80x). The reachable part is smaller:
+- **Removing slot A instead of hiding it:** the bound of removing *all* of them is 1.199x (geometric mean over the tiny points; `embedding` 1.80x). The reachable part is smaller:
   loop control (`inc` of the counter + `cmp` + `br`) is 3 instructions per iteration, 0.6-2.4 % of element-wise bodies, 5-16 % of reduction bodies, 18 % (7 of 38) of the GEMM K loop;
-  `.li` constants (4 instructions each) are hoistable by the compiler; `mov` rotation moves in the pipelined GEMM loop (8 of 38) disappear with a 2x unrolled body; the divide at program entry is removable by strength reduction;
+  `.li` constants (4 instructions each) are hoistable by the compiler; the 8 `s.mov` of the pipelined GEMM loop (38 instructions) are copies into consecutive coordinate registers (ISA sec 9E): a register-allocation artefact, since the loop-invariant coordinate can stay in its consecutive slot; the divide at program entry is removable by strength reduction;
   descriptor loads replace the Hub kernel's weight-row assembly.
 - **FP8 Hub kernel** (`BALANCE.md` classes): slot A is 3,339 of 11,192 instructions (29.8 %), slot B 7,853. A perfect two-wide pairing leaves 7,853 issue cycles per iteration (1.43x), still above the engine's 5,824: **still issue-bound**.
   The software route (descriptor weight loads, hoisted activation quantisation, no per-row bookkeeping) gives 2,652 (4.2x) and makes the kernel engine-bound at about 70 % of the DP4 peak (`BALANCE.md:19`, a projection).
@@ -454,8 +441,19 @@ Areas are LUT-equivalents per core, derived from recorded module sizes; **no uni
 | **C. VLIW, 128-bit bundle, same two slots** | same as A, no better | the scoreboard must stay (matrix, transfer, memory completions have variable latency); saves only the pair-legality logic; code store holds fewer instructions per RAMB36 (nop padding) | **new container and encoding: every binary changes**; assembler (`tnca_asm.py` 727 lines), ISA generator and schema (`tnca_isa.py` 384 lines, `isa/tnca-isa-v0.1.json`), disassembler, RTL decoder (909 lines) and fetch, the SystemC model (`tools/performance_harness/systemc`, about 4.1k header lines) and every instruction-level reference model | codegen (1,549 lines) and scheduler emit bundles; all 113 binaries regenerate | no advantage over A; not recommended |
 | **D. zero-overhead hardware loop** (`loop Sn, end` = start/end PC and count per context) | `inc` + `cmp` + `br` of every counted innermost loop (3 instr/iteration) and the not-taken-prediction bubble of the backward branch (`perf_squash` 80 in 6,262 cycles of `linear/tiny`) | 4 contexts x about 64 FF + PC comparators + a fetch-redirect input: **+0.3-0.5k** (inference) | new `CTRL` func (9 of 256 used); old binaries unchanged | frontend emits it for counted `for_N`/`tiles_N` loops, one scheduler rule (loop end ends the block) | fits any SLR incl. SLR0 |
 | E. post-increment addressing (`v.ld/v.st/s.ld` with address register += stride) | pointer bumps (`inc` minus the counter): 1-6 of 10-55 per iteration in reductions | needs a second scalar-RF write port (SRF has one): **about the price of A's write port, +2k LUTRAM** (inference) | new `mod` bits in LSU | allocator + scheduler | low value per LUT: rank below D |
-| F. macro-tile `m.mma` sweeping K from a window ring | the whole K-loop instruction stream (38 per step) | matrix-sequencer loop + ring/barrier handshake with the transfer engine: new design, the matrix port and `tnca_tensor` interact | new opcode, new oracle | new GEMM lowering | only worth it with a wide engine (sec 2.6) |
-| G. software: hoist `.li`, strength-reduce address math and the entry divide, descriptor-driven fragments (FP8 weights), epilogue with `a.vread`-based bias add, unroll by 2 to drop rotation `mov`s | slot A directly, in every family; Hub kernel 11,192 -> 2,652 | none (an A buffer of 16 registers for K32/K64 line eligibility is optional, `BALANCE.md:369`) | none | compiler passes in R42-gemm/red/attn | all images |
+| F. macro-tile `m.mma` sweeping K from a window ring | the whole K-loop instruction stream (19 per step) | matrix-sequencer loop + ring/barrier handshake with the transfer engine: new design, the matrix port and `tnca_tensor` interact | new opcode, new oracle | new GEMM lowering | only worth it with a wide engine (sec 2.6) |
+| G. software: hoist `.li`, strength-reduce address math and the entry divide, descriptor-driven fragments (FP8 weights), epilogue with `a.vread`-based bias add, keep the loop-invariant transfer coordinates in consecutive registers (drops the 8 `mov` of 38) | slot A directly, in every family; Hub kernel 11,192 -> 2,652 | none (an A buffer of 16 registers for K32/K64 line eligibility is optional, `BALANCE.md:369`) | none | compiler passes in R42-gemm/red/attn | all images |
+
+Notes on the table (structure, not measurements):
+
+- **Role-context interaction (A).** Pairing inside one context keeps its in-order semantics: the second instruction may issue with the first only if it neither reads nor writes what the first writes, is not a branch target, and the first is not a
+  branch/`mb.wait`/fence. The existing `RCTX_SWITCH` logic (an instruction held in R by a hazard is dropped and refetched once a writeback could clear it, `tnca_core.v:75-83`) then has to drop or hold the pair as one unit. Cross-context pairing (B) has no such coupling,
+  because contexts share only the barriers, the matrix/transfer engines and the memory port.
+- **Scalar RF ports.** Ports A-C serve the operands; D-G exist only for the five consecutive transfer coordinates (`tnca_scalar_rf.v:4-8`). A slot-B transfer needs five reads in the cycle that slot A needs up to three: the cheap legality rule is "never pair a transfer",
+  which loses the 1-6 % of instructions that are transfers in the GEMM families (dynamic share, table above). Scalar results of slot-B instructions (`s.ld`, `v.extract`, `p.popc/ballot`) compete with slot A for the single write port: another pairing exclusion, or the +2.1k LUTRAM.
+- **Fetch.** A branch to an odd instruction address leaves one half of the pair empty, so the bound of the table is not reached in 3-5-instruction loops; a hardware loop (D) with a loop-head buffer avoids refetch.
+- **Compiler.** `schedule.py` is a list scheduler for a single-issue in-order machine with a measured latency model (`spec/r39_sched_model.json`); for A it only needs a tie-break that places a slot-A instruction next to an independent slot-B instruction. Correctness never depends on it (binary compatible).
+  For C it must emit bundles and legalise pairs; for D it needs the loop trip count at the end of the block (it already knows it for `for_N` and `tiles_N` loops).
 
 ### 2.6 Conclusion: what the evidence supports first, and what would make issue pay
 
@@ -464,7 +462,7 @@ Areas are LUT-equivalents per core, derived from recorded module sizes; **no uni
 2. **Second: the hardware loop (D).** Binary-compatible, a few hundred LUTs, fits SLR0, and acts on the reductions/norms/attention loops where 15-50 % of the body is scalar. Its gain is bounded by the loop-control share
    (5-16 % in norms, 18 % in the GEMM K loop, 1-2 % in element-wise bodies).
 3. **Third, only with a faster engine: the 2-wide front end (A) or cross-context pairing (B).** Reason, derived from recorded numbers: one K step of the pipelined GEMM loop issues 19 instructions (static `gemm_pipe`, 38 per two steps; 20 before the pipeline,
-   `gemm/ANALYSIS.md:47`), and a 16 x 16 output tile adds a 220-instruction epilogue (static, `endfor_6` to `__rctx_next` of the R42-head `op.linear/small` dump; `gemm/ANALYSIS.md:56`: 224) and an entry of at least 142 instructions plus the software divides and a K16 command occupies the engine for `8 + (16/G) x 17 + 6` cycles (structural: A-buffer fill, one 17-cycle sweep per group of G products, drain; 150 for the G = 4 K32 E4M3 case `BALANCE.md:69`):
+   `gemm/ANALYSIS.md:47`), and a 16 x 16 output tile adds a 220-instruction epilogue (static, `endfor_6` to `__rctx_next` of the R42-head `op.linear/small` dump; `gemm/ANALYSIS.md:56`: 224) and an entry of at least 142 instructions plus the software divides, while a K16 command occupies the engine for `8 + (16/G) x 17 + 6` cycles:
 
    | engine group G (FP16 K16; E4M3 K32 at 2G) | engine cycles per K16 command | engine cycles per tile, K = 256 (16 commands) | issue demand per tile: 16 x 19 + 220 | issue slot busy |
    |---:|---:|---:|---:|---:|
@@ -473,8 +471,8 @@ Areas are LUT-equivalents per core, derived from recorded module sizes; **no uni
    | 8 | 48 | 768 | 524 | 68 % |
    | 16 | 31 | 496 | 524 | **106 %: issue-bound** |
 
-   (derived from the structural command time `8 + (16/G) x 17 + 6`: A-buffer fill, one 17-cycle sweep per group of G products, drain; the entry (>= 142 instructions + the divides, 557 cycles for two contexts in the base) is not even included.) The K loop alone is 61 % busy at G = 16 (19 per 31 cycles); the per-tile
-   epilogue and entry are what saturate the slot. With G (compiler) and D removing the `mov`, `const` and loop-control share of the K step (about 10 of 19) and the epilogue shortened (`gemm/ANALYSIS.md:99-101`: 14 instructions a row where 4-5 would do), the tile demand falls to roughly 250, 33 % at G = 16.
+   (derived from the structural command time `8 + (16/G) x 17 + 6` = A-buffer fill, one 17-cycle sweep per group of G products, drain; 150 is also the structural figure of the G = 4 K32 E4M3 command, `BALANCE.md:69`; the entry (>= 142 instructions + the divides, 557 cycles for two contexts in the base) is not even included.) The K loop alone is 61 % busy at G = 16 (19 per 31 cycles); the per-tile
+   epilogue and entry are what saturate the slot. With G (compiler) and D removing the `mov`, `const` and loop-control share of the K step (about 10 of 19) and the epilogue shortened (`gemm/ANALYSIS.md:99-101`: 14 instructions a row where 4-5 would do), the tile demand falls to roughly 220-240 instructions: 44-48 % at G = 16, and the slot has room again.
    So issue starts to bind between G = 8 and G = 16, exactly when the engine of sec 1 is widened; for G <= 4 it does not bind in the GEMM families.
 4. **VLIW (C): no.** It cannot hide more than A, it keeps the scoreboard, and it invalidates every binary and four tool chains for no gain.
 5. **SLR0 headroom** (about 4k LUTs) excludes A in tile 0; B and D are the only options that fit there. A would have to live in the SLR1/SLR2 cores (an asymmetric image) or be paid for by removals.
@@ -528,16 +526,16 @@ Observations (all derived from the table and the records):
 
 1. **Total cycles are one point.** `model.llama_prefill/large/fp16-b1-s512` is 66.7 % of the suite's new device cycles (1.01e12 FLOP at 4.10 GFLOP/s); `llama_prefill` 71.4 %, `matmul` 11.8 %.
    The nine families whose points are mostly compute-side (`llama_prefill`, `matmul`, `linear`, `mlp`, `resnet_block`, `gpt2_block`, `conv2d`, `attention_prefill`, `bmm`) hold 93.6 % of the cycles in 43 points.
-2. **The geometric mean is the other 70 points.** 64 of the 102 points with a recorded binding are memory-side (bytes bound) and hold 6 % of the cycles; with equal weights they are 62 % of the metric.
+2. **The geometric mean is the other 70 points.** They are the 59 memory-side points (bytes bound) with a recorded binding plus 11 points without a FLOP bound (`embedding`, `transpose`, `copy`); they hold 6.4 % of the cycles and, with equal weights, 62 % of the metric.
    After round 1 their eta is 0.09-0.38 (except `add`, 0.99) and they are bound by instruction issue and the load/store path, not by memory (G4 issue ceilings, `G4_DESIGN.md:14-36`): `softmax` 0.134, `attention_decode` 0.089,
    `rope` 0.108, `argmax` 0.185, `layernorm` 0.208, `gelu_tanh` 0.219, `silu` 0.259.
 3. **Round 1 closed the cheap gaps:** `add` is at eta 0.989 (its bound), `bmm` 4.63x, `rmsnorm` 3.12x, `add` 2.96x, `attention_prefill` 2.66x; five families did not move (`linear` 1.006x, `mlp` 1.025x, `gemv` 0.99x,
    `embedding` 1.00x, `transpose` 1.006x) and `matmul` moved 1.21x.
 4. **Largest remaining distance to the bound:** `conv2d` and `resnet_block` (FP32: no matrix command, vector FPU at 0.58/0.57 GFLOP/s, 6 % of the 9.6 GFLOP/s FMA peak; `R42-fp32` is the work package),
-   then `softmax`, `attention_prefill`, `attention_decode`, `rope`, then `matmul` (5.8 %: its 9 points include FP32 matmul at eta 0.1).
+   then `softmax`, `attention_prefill`, `attention_decode`, `rope`, then `matmul` (5.8 %: its FP32 points are at eta 0.30-0.36 and the tiny ones at 0.16-0.20, while FP16 small to hbm are at 0.62-0.67).
 5. **Compute-bound structure** (ArchBench binding = FLOP): `linear` (eta 0.67), `mlp` (0.53), `gpt2_block` (0.40), `matmul` (0.39), `llama_prefill` (0.34), `bmm` (0.43; 3 of 4 points). Their gap to a single-core
    spec bound is 1.5-3x and, per sec. 1.2, comes from transfer/issue/epilogue occupancy around the matrix engine, not from its width. The FP32 families (`conv2d`, `resnet_block`, FP32 `matmul`) are compute-bound on the *vector* FPU.
-   `llama_decode` is memory-side by binding (eta 0.19) but its cycles are mostly `m.mma` M=1 GEMV-like launches; `gemv` (0.31) did not move.
+   `llama_decode` (eta 0.19) and `gemv` (0.31) are memory-side by binding; `gemv` did not move.
 6. **What the dominant total point says about the two questions:** a further 1.3x on `llama_prefill/large` would save 15.4 % of the suite's total cycles and move the geometric mean by 1.3^(1/113) = 1.002x (derived);
    a 1.3x on each of the 70 memory-side points would move the geometric mean by 1.3^(70/113) = 1.18x (derived). So the width of the matrix engine (Q-A) acts on the cycle total and on 43 points;
    issue and bookkeeping (Q-B) act mostly on the metric.
@@ -547,17 +545,37 @@ Observations (all derived from the table and the records):
 ## 4. Provenance, scripts and limits
 
 Scripts and tables (all in `evidence/r42/arch/`, small): `qa_budget.py` -> `qa_budget.txt`; `achieved_gflops.py` -> `achieved_gflops.txt`; `run3_kernel_clock_paths.txt` (extract of the run-3 routed report);
-`qc_families.py` -> `qc_families.txt`; `qb_b39.py` -> `qb_b39.txt` (recorded B39 counters); `qb_issue.py`, `qb_family.py` -> `qb_tiny.txt`, `qb_small.txt` (fresh counters + dynamic instruction mix);
-`qb_loops.py` -> `loops_small.txt` (static innermost-loop classes of 109 kernels); `tools/arch_probe.v`, `arch_mkprobe.sh` (a second simulation top that logs `x_valid`, `x_major`, `x_func`; derived from `evidence/r42/gemm/tools/gemm_probe.v`; not RTL).
+`qc_families.py` -> `qc_families.txt`; `qb_b39.py` -> `qb_b39.txt` (recorded B39 counters); `qb_issue.py`, `qb_family.py`, `qb_md.py` -> `qb_tiny.txt`, `qb_small.txt`, `qb_tiny_points.txt`, `qb_small_points.txt` (fresh counters + dynamic instruction mix, per family and per point);
+`qb_loops.py`, `qb_loops_table.py` -> `loops_small.txt`, `qb_loops_table.md` (static innermost-loop classes of 109 kernels; their inputs, the 109 `.s` files, are in `dumps_small_s.tgz`); `tools/arch_probe.v`, `arch_mkprobe.sh` (a second simulation top that logs `x_valid`, `x_major`, `x_func`; derived from `evidence/r42/gemm/tools/gemm_probe.v`; not RTL).
+
+Reproduce (all scripts read recorded files only, a few seconds, from the repository root unless stated): `python3 evidence/r42/arch/qc_families.py`, `python3 evidence/r42/arch/achieved_gflops.py`, `python3 evidence/r42/arch/qb_b39.py`;
+`cd evidence/r42/arch && python3 qa_budget.py`; `python3 evidence/r42/arch/qb_family.py DIR...` and `qb_md.py fresh DIR...` on a directory of per-point outputs (`<tag>.jsonl` + `<tag>.probe`); `qb_loops.py DUMPROOT`, `qb_loops_table.py DUMPROOT` on kernel dumps.
+The per-point run scripts are the thor-side `arch_pt.sh`, `arch_all.sh`, `arch_dump.sh` (thin wrappers of `python -m archbench.run`, listed in `evidence/r42/arch/tools/`).
 
 Fresh simulations (domain **rtl**, single-core device `tb/device/tnca_device.v`, iverilog, profile `core-vrf-sync-v5-x8-g2c4-dp`, default knobs, R42 head `5327118c` mirrored to `~/r42/arch` on thor,
 `nice -n 19`, at most 4 processes): `archbench.run --platform tnca --profile P --point ID --counters` with `TNCA_DEVICE=~/r42/arch_out/probe/device.vvp`, one process per point; compile-only kernel dumps with
-`TNCA_KERNEL_DUMP=1` for the 25 small-tier points. Raw outputs stay on thor (`~/r42/arch_out/{tiny1,small1,dumps_small}`); the tables above are committed.
+`TNCA_KERNEL_DUMP=1` for the 25 small-tier points. Completed: 25 of the 27 tiny-tier points and 8 small-tier points (add, argmax, layernorm, rmsnorm, rope, silu, swiglu, transpose). **Stopped by PID because they would have run for hours at about 200 target cycles/s (preserved as not done):** `model.llama_prefill/tiny` (about 100k of an estimated 440k instructions after 30 minutes),
+`model.resnet_block/tiny`, `op.attention_decode/small`, `op.gelu_tanh/small`; not started: `op.cumsum/small`, `op.softmax/small`, `op.embedding/small`, the small-tier models and GEMMs, and every medium/large point (the tiny-tier GEMM, norm and attention points stand for them). A first attempt to run the whole tiny tier as one `archbench.run` was stopped by PID after two minutes and redone per point so that each point has its own probe file.
+`fresh_records.tgz` holds every per-point `.jsonl` (ArchBench record with counters) and `.probe` (issue stream) of the completed points; the files of the stopped points are partial and carry no counters, and the scripts ignore them. Raw outputs also stay on thor (`~/r42/arch_out/{tiny1,small1,dumps_small}`); the tables above are committed.
 
 Limits, stated once:
 - No board counters exist (`perf_*` are not wired above the tile, `RESOURCES.md:156`); every issue/stall figure is single-core simulation. The single-core device has the word transfer engine and a short memory latency, the board has the line
   engine, three cores and an HBM round trip of about 73 cycles (`BALANCE.md:268`, `LINK_BUDGET.md` sec 4): load-latency-bound families wait longer on the board, so their issue share there is lower than shown; GEMM families differ in the transfer/matrix ratio
   (`gemm/ANALYSIS.md:5-7`).
+- Recorded per-family counters: `evidence/r41` holds none (`git grep perf_x_hazard` finds only `evidence/r42/gemm/base`, an R40 harness audit and the R40 FPGA logs of single points); the recorded sets are `spec/r39/*.jsonl`, `spec/r40/b39/*.jsonl` (used in 2.2) and `evidence/r42/gemm/base`.
 - `perf_x_frontend` includes cycles in which every running context sleeps in `mb.wait` (the counter increments when a context is running, nothing stalls and R is empty, `tnca_core.v:2960-2961`); it is **not** the R39 "front-end-bound 4.3 %" fetch-bubble figure of `r42_plan.md:81`.
 - The area numbers of sections 1.4 and 2.5 are linear extrapolations of recorded unit screens, not synthesis of the proposed units. The Amdahl bounds ignore dependences and structural hazards on purpose (upper bounds).
 - Run 3's own routed SLR report is not in the recorded tree; the run-2 link (same RTL but one line) stands in for it.
+
+---
+
+## 5. The open numbers, and what would settle each (none needs a link or a card)
+
+| open number | why it matters | how |
+|---|---|---|
+| LUTs and 10 ns timing of a K-fused lane with G = 8 (E4M3, exact fixed-point cascade) and of a truncating aligned FP16 tree | sec 1.4 extrapolates from G <= 4; the 146-1,650 LUT per product range is the whole uncertainty of Q-A's budget | the unit-screen flow of `evidence/r41/pmac/lane/ooc/` (`run_ooc.sh`, `lane_ooc.tcl`) on the x86 host; an XLS lane variant is the only RTL needed |
+| end-to-end effect of G = 8/16 on the 113 points | R41's TLM stops at G = 4 (0.99-1.04x on FP8 linears); sec 1.2/2.6 say the K loop, epilogue and entry decide | extend `mtx_dp_group_16/8` beyond 2/4 in `tnca_model.hpp` (timing only, the model has the keys) and run the compiled GEMM cases with B prefetch on |
+| issue share on the board | every counter in sec 2.2 is single-core simulation; the board has HBM latency and the line engine | route a core's `perf_*` counters to the MMIO page (RTL: out of scope here); until then the three-core RTL stand-in (`~/r42/r42_mc.sh`) gives cycles but no counters |
+| run 3's own SLR packing | sec 1.4 uses the run-2 link (same RTL but one line) | read-only `report_utilization -slr` on the run-3 routed checkpoint (`e2e9f688...`, `route_prepackage/README.md`), as `RESOURCES.md` sec 8 did for run 1 |
+| dynamic class mix on the hot loops of small/medium/large points | sec 2.3 is static for the small tier and dynamic for the tiny tier | the probe `tools/arch_probe.v` on more points; the sims run at about 200 target cycles/s, so large points are not practical: use the TLM or the board with a counter build |
+

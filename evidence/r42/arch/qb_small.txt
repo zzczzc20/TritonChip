@@ -1,11 +1,23 @@
 tier   family              n    cycles | issued hazard    lsu fpu/mtx    txf  fence  front |    A/N | dual_ctx dual_min    rm_A
 small  add                 1     28959 |  29.3%   0.0%  61.6%   0.0%   0.0%   0.0%   0.2% |  15.4% |   1.009   1.047   1.047
 small  argmax              1     37205 |  67.7%   0.0%  14.6%   0.0%   0.0%   0.0%   2.8% |  49.1% |   1.217   1.497   1.497
-small  ALL (cycle-weighted)  2     66164 | issued  50.9%  A/N  40.6%  dual_ctx 1.116 dual_min 1.260 rm_A 1.260
-small  ALL (geomean)       2           | per-point geomean of bound: dual_ctx 1.108 dual_min 1.252 rm_A 1.252
+small  layernorm           1     80478 |  39.2%   0.2%  33.0%  14.9%   0.0%   0.0%   0.8% |  21.6% |   1.034   1.093   1.093
+small  rmsnorm             1     48287 |  41.3%   0.5%  34.6%  10.6%   0.0%   0.0%   0.5% |  25.5% |   1.037   1.118   1.118
+small  rope                1     47848 |  44.6%   0.0%  44.3%   0.0%   0.0%   0.0%   0.2% |   5.4% |   1.015   1.025   1.025
+small  silu                1     88955 |  25.4%   0.0%  13.2%  51.6%   0.0%   0.0%   0.1% |   8.6% |   1.005   1.022   1.022
+small  swiglu              1     95842 |  26.9%   0.0%  15.9%  46.1%   0.0%   0.0%   0.1% |   8.0% |   1.005   1.022   1.022
+small  transpose           1     71904 |  58.0%   1.2%  33.4%   0.1%   0.0%   0.0%   1.6% |  43.5% |   1.246   1.337   1.337
+small  ALL (cycle-weighted)  8    499478 | issued  39.4%  A/N  24.9%  dual_ctx 1.058 dual_min 1.108 rm_A 1.108
+small  ALL (geomean)       8           | per-point geomean of bound: dual_ctx 1.067 dual_min 1.134 rm_A 1.134
 
 tier   family                issued |   salu   ctrl   pred    sys   ldst    vec    mtx    txf    bar
 small  add                     8484 |  13.7%   1.6%   0.0%   0.1%  36.4%  48.3%   0.0%   0.0%   0.0%
 small  argmax                 25184 |  13.1%   4.1%  31.8%   0.0%   4.2%  46.8%   0.0%   0.0%   0.0%
+small  layernorm              31536 |  18.9%   2.7%   0.0%   0.0%  19.5%  58.9%   0.0%   0.0%   0.0%
+small  rmsnorm                19948 |  22.5%   2.9%   0.0%   0.1%  20.6%  53.9%   0.0%   0.0%   0.0%
+small  rope                   21356 |   4.5%   0.8%   0.0%   0.2%  17.0%  77.6%   0.0%   0.0%   0.0%
+small  silu                   22624 |   8.0%   0.6%   0.0%   0.1%   9.1%  82.3%   0.0%   0.0%   0.0%
+small  swiglu                 25828 |   7.5%   0.5%   0.0%   0.0%  11.9%  80.0%   0.0%   0.0%   0.0%
+small  transpose              41696 |  32.5%   0.4%   9.8%   0.8%  10.4%  36.2%   9.8%   0.0%   0.0%
 
-top mnemonics, small tier (all points): vf.cmp 4576, vf.cvt 4096, p.and 3432, p.or 3432, v.ld 3072, v.sel 2288, s.add 1560, v.splat 1312, s.addi 1304, v.cmp 1168, s.cmp 1160, br.nz 1160, p.xor 1144, vf.add 1024
+top mnemonics, small tier (all points): vf.cvt 22528, v.ld 15360, vf.mul 14912, s.addi 12888, v.sel 9328, v.splat 9120, vf.cmp 8992, vf.add 8576, v.st 7680, p.and 7528, vf.fms 6656, s.add 5784, v.add 5696, s.movz 5504

@@ -17,6 +17,9 @@ Failures and surprises, all kept:
    figures); the difference was not reconciled. Both are in T1; the comparison that matters here is the DP4-tied lane (1,729 LUT),
    which is E4M3 x E4M3 only like the new lane.
 
+5. Process: on GB10 up to five of my processes ran for about 20 s (three netlist simulations, the interrupted first netlist job's simulation, and two 40-vector debug
+   runs) against the limit of four; the 1-minute load stayed below 11 (limit 16). On the x86 host never more than two Vivado jobs ran at once.
+
 Not done:
 - W = 8 and 24 (registered menu) and FP16/BF16 (section 3, items 5 and 6); `sub_c`; the single-DSP-per-product form and a LUT
   product form (no measurement); an explicit-ALUMODE DSP2; a back end narrower than R41's (see below).

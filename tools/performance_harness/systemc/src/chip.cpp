@@ -23,6 +23,7 @@
 #include <deque>
 #include <functional>
 #include <unordered_map>
+#include <unordered_set>
 #include <unistd.h>
 #include <chrono>
 #include <fcntl.h>
@@ -76,6 +77,8 @@ static const char* kind_name(K k){
 struct Inst {
     u64 word=0;unsigned opcode=0,major=0,func=0,d=0,a=0,b=0,c=0,pred=0,mod=0,imm=0;bool invert=false;u64 simm=0;
     K kind=K::Refused;std::string why;
+    bool kfree=false; // kfuse-speed what-if: instruction of an innermost matrix loop (issue_free_mode)
+    bool kpre=false;  // ... and at or before the last matrix command of that loop body
 };
 static const char* timing_class(const Inst& i){
     switch(i.kind){
@@ -233,7 +236,36 @@ struct CodeCache {
         lo=std::min(lo,pc);hi=std::max(hi,pc+8);
         return decoded.emplace(pc,decode(read_word(pc))).first->second;
     }
-    void invalidate(u64 a,u64 n){if(a<hi && a+n>lo){decoded.clear();lo=UINT64_MAX;hi=0;}}
+    void invalidate(u64 a,u64 n){if(a<hi && a+n>lo){decoded.clear();lo=UINT64_MAX;hi=0;analysed.clear();}}
+    // kfuse-speed what-if (issue_free_mode > 0): mark the instructions of every INNERMOST loop (backward-branch span)
+    // that contains a matrix command. A program is scanned once from its entry to its last exit.
+    std::unordered_set<u64> analysed;
+    void analyse(u64 entry){
+        if(!analysed.insert(entry).second)return;
+        std::vector<std::pair<u64,u64>> spans;u64 maxfwd=0;
+        u64 pc=entry;
+        for(unsigned n=0;n<40000;++n,pc+=8){
+            const Inst& in=at(pc);
+            if(in.kind==K::Branch && (in.func==0 || in.func==1 || in.func==2)){
+                u64 target;
+                if(in.func==0){auto off24=std::int32_t((unsigned(in.a)<<24)|(unsigned(in.b)<<16)|(unsigned(in.c)<<8))>>8;target=pc+u64(std::int64_t(off24)*8);}
+                else target=pc+in.simm*8;
+                if(target<=pc)spans.push_back({target,pc});else maxfwd=std::max(maxfwd,target);
+            }
+            if(in.kind==K::Exit && pc+8>=maxfwd)break;
+        }
+        auto has_mma=[&](u64 a,u64 b){for(u64 q=a;q<=b;q+=8)if(at(q).kind==K::Mma)return true;return false;};
+        std::vector<std::pair<u64,u64>> mm;
+        for(auto& s:spans)if(has_mma(s.first,s.second))mm.push_back(s);
+        for(auto& s:mm){
+            bool innermost=true;
+            for(auto& o:mm)if(&o!=&s && o.first>=s.first && o.second<=s.second && (o.first>s.first || o.second<s.second)){innermost=false;break;}
+            if(innermost){
+                u64 last=s.first;for(u64 q=s.first;q<=s.second;q+=8)if(at(q).kind==K::Mma)last=q;
+                for(u64 q=s.first;q<=s.second;q+=8){decoded[q].kfree=true;decoded[q].kpre=q<=last;}
+            }
+        }
+    }
 };
 
 //==============================================================================
@@ -286,6 +318,10 @@ struct Core : sc_module {
     // What-if packed MMA (m.mma.dp, hypothetical; Config optional keys):
     // G consecutive k per lane per step, timing only (numerics stay per-K).
     u64 dp_g16=1,dp_g8=1;bool dp_pf=false;u64* c_dp=nullptr;
+    // kfuse-speed what-ifs (default off): mtx_dp_g_override (timing-only group size of m.mma.dp.async), mtx_dp_b_regs
+    // (G*bytes/4 B-register reads per step), issue_free_mode (1: scalar/branch instructions of innermost matrix loops take
+    // no issue slot and no latency; 2: every instruction of those loops takes no issue slot).
+    u64 dp_override=0,free_mode=0;bool dp_bregs=false;
     // m.mma.dp.async (ISA sec 9C.4). Profile keys, default off: mtx_dp (the
     // CAPABILITY0.MATRIX_DP bit), mtx_dp_extra_latency (cycles added to the
     // pipeline of a dp command over m.mma's; the shared MAC lane's reported
@@ -332,6 +368,7 @@ struct Core : sc_module {
         t_done=g("mtx_complete_cycles");t_zero=g("mtx_zero_cycles");t_row=g("mtx_row_cycles");t_launch=g("launch_cycles");abuf=g("mtx_abuf")!=0;
         dp_g16=x.c.get_or("mtx_dp_group_16",1);dp_g8=x.c.get_or("mtx_dp_group_8",1);dp_pf=x.c.get_or("mtx_dp_b_prefetch",0)!=0;
         mdp=x.c.get_or("mtx_dp",0)!=0;mdp_pf=x.c.get_or("mtx_dp_prefetch",0)!=0;mdp_extra=x.c.get_or("mtx_dp_extra_latency",1);
+        dp_override=x.c.get_or("mtx_dp_g_override",0);dp_bregs=x.c.get_or("mtx_dp_b_regs",0)!=0;free_mode=x.c.get_or("issue_free_mode",0);
         if(mdp){c_mdp=&x.counts[key("matrix_dp_commands")];c_mdp_steps=&x.counts[key("matrix_dp_lane_group_ops")];}
         // Bound only when a what-if key is active, so default counters are unchanged.
         if(dp_g16>1 || dp_g8>1 || dp_pf)c_dp=&x.counts[key("matrix_dp_whatif_commands")];
@@ -507,8 +544,10 @@ struct Core : sc_module {
             // the 16 A rows through the shared MAC lane; the group size is
             // decided by the two operand formats alone (sec 9C.4).
             unsigned g=tnca_matrix_dp::group_size(tnca_matrix_ops::format_of(dt),tnca_matrix_ops::format_of(dtb));
+            if(dp_override)g=unsigned(std::min<u64>(dp_override,K)); // what-if: timing only, numerics unchanged
             u64 steps=K/g,mac=16*(buffered?t_mac:t_mac_unbuf);
-            sweep=(buffered?a_regs*t_rf:0)+(mdp_pf?t_rf+steps*mac:steps*(t_rf+mac));
+            u64 brd=dp_bregs?std::max<u64>(1,(u64(g)*tnca_matrix_ops::element_bytes(dtb)+3)/4):1; // B registers per step
+            sweep=(buffered?a_regs*t_rf:0)+(mdp_pf?brd*t_rf+steps*mac:steps*(brd*t_rf+mac));
             busy=sweep+t_pipe+mdp_extra+1+t_done;
             ++*c_mdp;*c_mdp_steps+=steps*256;
         }
@@ -558,6 +597,7 @@ struct Core : sc_module {
     }
     void execute(Frame& f){
         const std::string role_key=key("role_"+std::to_string(f.role));
+        if(free_mode)code.analyse(f.pc);
         for(;;){
             if(deadline!=SC_ZERO_TIME && lt(f)>deadline)throw DeadlineExpired{};
             const Inst& in=code.at(f.pc);
@@ -583,7 +623,32 @@ struct Core : sc_module {
                     }}
             }
             // No cycle polling: issue and dependencies reserve their next event.
-            issue_slot(f);
+            // issue_free_mode 3: everything in the innermost matrix loop that precedes its last matrix command, except the
+            // engine, barrier, transfer and descriptor instructions, costs nothing at all (issue, latency, memory time): the
+            // weight and activation preparation is removed from the stream (BALANCE.md sec 6.1 projection, hypothetical).
+            const bool engine_kind=in.kind==K::Mma || in.kind==K::MZero || in.kind==K::AZero || in.kind==K::AVread ||
+                in.kind==K::ARow || in.kind==K::Barrier || in.kind==K::Xfer || in.kind==K::Desc || in.kind==K::Fence ||
+                in.kind==K::Prefetch || in.kind==K::Exit || in.kind==K::Trap;
+            const bool kfree=free_mode && in.kfree &&
+                (free_mode==2 || (free_mode==1 && (in.kind==K::Salu || in.kind==K::Branch)) || (free_mode==3 && in.kpre && !engine_kind));
+            struct LatZero{
+                Core& c;u64 sv[16];bool on;
+                LatZero(Core& core,bool enable):c(core),on(enable){
+                    if(!on)return;
+                    sv[0]=c.t_scalar;sv[1]=c.t_mul;sv[2]=c.t_vint;sv[3]=c.t_vfp;sv[4]=c.t_cvt;sv[5]=c.t_cmp;sv[6]=c.t_pred;
+                    sv[7]=c.t_shuf;sv[8]=c.t_red;sv[9]=c.t_fred;sv[10]=c.t_sfu_occ;sv[11]=c.t_sfu;sv[12]=c.t_shuf_s;sv[13]=c.t_fcmp;
+                    sv[14]=c.t_red_vec;sv[15]=c.t_fred_vec;
+                    c.t_scalar=c.t_mul=c.t_vint=c.t_vfp=c.t_cvt=c.t_cmp=c.t_pred=c.t_shuf=c.t_red=c.t_fred=c.t_sfu_occ=c.t_sfu=0;
+                    c.t_shuf_s=c.t_fcmp=c.t_red_vec=c.t_fred_vec=0;
+                }
+                ~LatZero(){
+                    if(!on)return;
+                    c.t_scalar=sv[0];c.t_mul=sv[1];c.t_vint=sv[2];c.t_vfp=sv[3];c.t_cvt=sv[4];c.t_cmp=sv[5];c.t_pred=sv[6];
+                    c.t_shuf=sv[7];c.t_red=sv[8];c.t_fred=sv[9];c.t_sfu_occ=sv[10];c.t_sfu=sv[11];c.t_shuf_s=sv[12];c.t_fcmp=sv[13];
+                    c.t_red_vec=sv[14];c.t_fred_vec=sv[15];
+                }
+            } lat_zero(*this,kfree && free_mode==3);
+            if(!kfree)issue_slot(f);
             if(pipe)last_issue=lnow(f);
             ++class_counts[unsigned(in.kind)];
             switch(in.kind){
@@ -601,7 +666,7 @@ struct Core : sc_module {
                     else if(func!=0 && func!=20 && func!=21 && func!=22 && func!=23)right=rs(b);
                     value=alu(af,left,right,64,mod&15);
                 }
-                ws(d,value,(func==3 || func==4 || func==5 || func==34)?t_mul:t_scalar);break;}
+                ws(d,value,(kfree && free_mode!=2)?0:(func==3 || func==4 || func==5 || func==34)?t_mul:t_scalar);break;}
             case K::Branch:{
                 auto off24=std::int32_t((unsigned(a)<<24)|(unsigned(b)<<16)|(unsigned(c)<<8))>>8;
                 if(func==0)next=f.pc+u64(std::int64_t(off24)*8);
@@ -609,7 +674,7 @@ struct Core : sc_module {
                 else if(func==4 || func==9)next=rs(a)&~7ULL;
                 else if(func==8){ws(d,f.pc+8,1);next=f.pc+u64(std::int64_t(off24)*8);}
                 else throw std::runtime_error("uncovered control operation");
-                if(pipe && next!=f.pc+8 && !x.functional)f.fetch_ready=lt(f)+x.cycles(1+t_branch);
+                if(pipe && next!=f.pc+8 && !x.functional && !(kfree && free_mode!=2))f.fetch_ready=lt(f)+x.cycles(1+t_branch);
                 break;}
             case K::Lsu:{
                 bool store=func==8 || func==24 || func==40,vector=func>=16,gather=func>=32;
@@ -620,7 +685,7 @@ struct Core : sc_module {
                 unsigned active=vector?mask:(mask&1);
                 if(!active)break;
                 struct Part {unsigned lane,offset,bytes,shift;};
-                if(tm && x.functional){
+                if(tm && (x.functional || (kfree && free_mode==3))){
                     std::array<u64,16> values{};
                     for(unsigned lane=0;lane<(vector?16U:1U);++lane){
                         if(!(active&(1<<lane)))continue;

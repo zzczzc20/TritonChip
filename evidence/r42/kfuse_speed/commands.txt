@@ -1,0 +1,30 @@
+# kfuse-speed: commands in the order they were run (domain: SystemC/TLM model, single-core RTL simulation; no board)
+# Host: GB10 (gx10-6646), nice -n 19, at most 4 of my processes at once. Tree: ~/r42/kfuse-speed (mirror of R42-kfuse-speed),
+# outputs: ~/r42/kfuse-speed_out. The helper scripts are in tools/r42/kfuse_speed_gb10/ (they contain no credentials).
+#
+# 1. build the model (unpatched at first: tlm-build; patched: tlm-build2 = keys 1-2; tlm-build3 = + issue_free_mode 3)
+cmake -S tools/performance_harness/systemc -B ~/r42/kfuse-speed_out/tlm-build3 -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_PREFIX_PATH=$HOME/tc_env/systemc-3.0.2/install && cmake --build ~/r42/kfuse-speed_out/tlm-build3 --target tnca-chip --parallel 3
+# 2. configurations: python3 tools/r42/kfuse_speed_tlm_cfg.py OUT  (run1, cal, cal_line); variants by appending keys
+bash tools/r42/kfuse_speed_gb10/ks_variants.sh ; bash tools/r42/kfuse_speed_gb10/ks_variants_ideal.sh
+# 3. validation against the board, tiny/small/medium of the 113 (77 points, config cal, S0)
+ks_tlm_list.sh cfg/cal.cfg cal_tsm ids_tsm.txt            # tnca-chip (unpatched build)
+# 4. what-if sweeps over the 30 GEMM points of tiny/small/medium (ids_gemm_tsm.txt): variants of ks_batch.sh
+ks_batch.sh ids_gemm_tsm.txt g cal cal_s1 cal_s2 cal_g4 cal_g8 cal_g8_s1 cal_g8_s2 cal_g4_s1 cal_g4_s2 cal_g16 cal_g16_s1 cal_g16_s2 \
+            cal_g8_pf cal_g16_pf cal_s1_pf cal_u32 cal_u32_s1 cal_u32_g8 cal_u32_g8_s1 cal_u32_g8_s2     # patched build
+ks_batch_p32.sh ids_gemm_tsm.txt g ideal ideal_s1 ideal_s2 ideal_g8 ideal_g8_s1 ideal_g8_s2 ideal_g16 ideal_g16_s1   # TNCA_RTL_MEM_PORTS=32
+# 5. heavy points: direct (ids_heavy_direct.txt, tag h) and reduced-grid proxies (ids_proxy.txt, tag p; ks_batch_px.sh)
+ks_batch_px.sh ids_heavy_direct.txt h cal cal_s1 cal_g8 cal_g8_s1 cal_g16 cal_g16_s1 cal_s2 cal_g8_s2 cal_g16_s2
+ks_batch_px.sh ids_proxy.txt p cal cal_s1 cal_g8 cal_g8_s1 cal_g16 cal_g16_s1 cal_s2 cal_g8_s2 cal_g16_s2
+# 6. xl: Hub FP8 proxies (ks_tlm_xl.sh uses the origin/R42-xl archbench in ~/r42/kfuse-speed_out/xltree); steady-state shapes
+ks_xl_batch_ids.sh xss  ids_xl_ss.txt  cal cal_s3 cal_g8 cal_g8_s3 cal_g16_s3 cal_s1 cal_s2     # K = 512
+ks_xl_batch_ids.sh xss2 ids_xl_ss2.txt cal cal_s3 cal_g8_s3                                       # K = 1024
+ks_xl_batch_ids.sh xss3 ids_xl_ss3.txt cal_g8 cal_s1 cal_s2 cal_g16_s3 cal_g16                    # K = 1024, + s1ref stream
+ks_xl_tail.sh                                                                                    # xss4 (cal_g16, K = 512), xss5 (s1ref, K = 1024)
+# 7. single-core RTL simulation (default knobs, same compiler) and the model on one core with the `ideal` memory
+ks_rtl.sh core-vrf-sync-v5-x8-g2c4-dp rtl_dp op.matmul/tiny/fp16-m16-k32-n16 op.linear/tiny/fp16-m16-k64-n64 op.matmul/small/fp16-m64-k128-n128
+ks_rtl.sh core-vrf-sync-v5-x8        rtl_g1 (same points)
+ks_tlm_1c.sh PROFILE cfg/ideal.cfg NAME tnca-chip POINTS...   # --active-cores 1
+# 8. collect, pack and compute (local, seconds)
+kfuse_speed_collect.py TLM_DIR OUT.json ; kfuse_speed_validate.py ; kfuse_speed_predict.py ; kfuse_speed_xl.py ; kfuse_speed_tables.py
+python3 tools/r42/kfuse_speed_board_util.py ; python3 tools/r42/kfuse_speed_asm.py KERNEL.s

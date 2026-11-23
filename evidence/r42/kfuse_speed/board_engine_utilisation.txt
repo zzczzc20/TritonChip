@@ -1,0 +1,12 @@
+point                                                   programs     K   commands   board cycles engine util
+op.linear/hbm/fp16-m512-k4096-n11008                       22016  4096  5,636,096    914,644,023       0.345
+op.linear/large/fp16-m512-k2048-n8192                      16384  2048  2,097,152    422,982,023       0.278
+op.linear/medium/fp16-m128-k320-n256                         128   320      2,560        388,684       0.369
+op.linear/small/fp16-m64-k256-n256                            64   256      1,024        166,574       0.344
+op.linear/tiny/fp16-m16-k64-n64                                4    64         16          4,793       0.187
+op.matmul/hbm/fp16-m4096-k4096-n4096                       65536  4096 16,777,216  3,091,122,416       0.304
+op.matmul/large/fp16-m2048-k2048-n2048                     16384  2048  2,097,152    389,016,744       0.302
+op.matmul/medium/fp16-m128-k192-n128                          64   192        768        153,021       0.281
+op.matmul/small/fp16-m64-k128-n128                            32   128        256         46,305       0.310
+op.matmul/tiny/fp16-m16-k32-n16                                1    32          2          1,759       0.064
+range 0.064..0.369

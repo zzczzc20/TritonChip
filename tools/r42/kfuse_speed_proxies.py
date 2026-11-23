@@ -98,14 +98,12 @@ def llama(kind, cfg, s_or_p, stands_for):
         _reg(f'model.llama_decode/large/fp16-b1-p{s_or_p}', stands_for)
 
 
-# large tier
-mm(192, 2048, 192, 'op.matmul/large/fp16-m2048-k2048-n2048')
-mm(192, 4096, 192, 'op.matmul/hbm/fp16-m4096-k4096-n4096')
-lin(48, 2048, 384, 'op.linear/large/fp16-m512-k2048-n8192')
-lin(48, 4096, 384, 'op.linear/hbm/fp16-m512-k4096-n11008')
-gemv(2048, 768, 'op.gemv/large/fp16-k2048-n8192')
-gemv(4096, 768, 'op.gemv/hbm/fp16-k4096-n11008')
-bmm(2, 512, 64, 512, 'op.bmm/large/fp16-b32-m512-k64-n512')
+# large tier: rows reduced, K and N kept (the weight matrix keeps its size and its reuse pattern); gemv, bmm and the
+# attention points of the large tier are run directly, not as proxies
+mm(48, 2048, 2048, 'op.matmul/large/fp16-m2048-k2048-n2048')
+mm(48, 4096, 4096, 'op.matmul/hbm/fp16-m4096-k4096-n4096')
+lin(48, 2048, 8192, 'op.linear/large/fp16-m512-k2048-n8192')
+lin(48, 4096, 11008, 'op.linear/hbm/fp16-m512-k4096-n11008')
 mlp(48, 2048, 'model.mlp/large/fp16-t512-d2048')
 gpt2(1024, 16, 64, 'model.gpt2_block/large/fp16-d1024-h16-b1-s512')
 # llama: same dimensions, one layer, a short sequence and a small vocabulary

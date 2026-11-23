@@ -43,12 +43,22 @@ def main():
     ap.add_argument('models', nargs='+')
     ap.add_argument('--out')
     ap.add_argument('--board', default='ab-int2')
+    ap.add_argument('--proxies', help='collected json of reduced-grid proxy runs: each is scaled by the ratio of the demand '
+                                      'MACs of the point it stands for to its own (evidence/r42/kfuse_speed/proxy_of.json)')
     a = ap.parse_args()
     board = board_records(a.board)
     model = {}
     for f in a.models:
         d = json.loads(Path(f).read_text())
         model.update(d['points'])
+    if a.proxies:
+        px = json.loads((ROOT / 'evidence/r42/kfuse_speed/proxy_of.json').read_text())
+        for pid, rec in json.loads(Path(a.proxies).read_text())['points'].items():
+            if pid in px and rec.get('status') == 'pass':
+                stands = px[pid]
+                scale = board[stands]['demand']['macs'] / rec['demand']['macs']
+                rec = dict(rec, device_cycles=rec['device_cycles'] * scale, scaled_proxy_of=pid, scale=scale)
+                model[stands] = rec
     rows = []
     for pid, m in sorted(model.items()):
         b = board.get(pid)
@@ -63,7 +73,7 @@ def main():
     print(f'{"point":<62}{"board":>14}{"model":>14}{"model/board":>12}')
     for r in rows:
         if r.get('ratio'):
-            print(f'{r["point"]:<62}{r["board"]:>14,}{r["model"]:>14,}{r["ratio"]:>12.3f}')
+            print(f'{r["point"]:<62}{r["board"]:>14,.0f}{r["model"]:>14,.0f}{r["ratio"]:>12.3f}')
         else:
             print(f'{r["point"]:<62}{"":>14}{"-":>14}   {r["status"]}')
 

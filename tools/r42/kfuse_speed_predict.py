@@ -31,8 +31,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kfuse_speed_validate as V   # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
-VARIANTS = ['cal', 'cal_s1', 'cal_s2', 'cal_g4', 'cal_g4_s1', 'cal_g4_s2', 'cal_g8', 'cal_g8_s1', 'cal_g8_s2',
-            'cal_g16', 'cal_g16_s1', 'cal_g16_s2', 'cal_g8_pf', 'cal_g16_pf', 'cal_s1_pf']
+MAIN = ['cal', 'cal_s1', 'cal_s2', 'cal_g8', 'cal_g8_s1', 'cal_g8_s2', 'cal_g16', 'cal_g16_s1', 'cal_g16_s2']
+EXTRA = ['cal_g4', 'cal_g4_s1', 'cal_g4_s2', 'cal_g8_pf', 'cal_g16_pf', 'cal_s1_pf',
+         'cal_u32', 'cal_u32_s1', 'cal_u32_g8', 'cal_u32_g8_s1', 'cal_u32_g8_s2',
+         'cal_lat0', 'cal_lat0_s1', 'cal_lat0_g8', 'cal_lat0_g8_s1']
+VARIANTS = MAIN + EXTRA
 
 
 def load(dir_, prefix):

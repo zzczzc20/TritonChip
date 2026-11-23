@@ -1,0 +1,12 @@
+{
+ "op.matmul/large/fp16-m48-k2048-n2048": "op.matmul/large/fp16-m2048-k2048-n2048",
+ "op.matmul/large/fp16-m48-k4096-n4096": "op.matmul/hbm/fp16-m4096-k4096-n4096",
+ "op.linear/large/fp16-m48-k2048-n8192": "op.linear/large/fp16-m512-k2048-n8192",
+ "op.linear/large/fp16-m48-k4096-n11008": "op.linear/hbm/fp16-m512-k4096-n11008",
+ "model.mlp/large/fp16-t48-d2048": "model.mlp/large/fp16-t512-d2048",
+ "model.gpt2_block/large/fp16-d1024-h16-b1-s64": "model.gpt2_block/large/fp16-d1024-h16-b1-s512",
+ "model.llama_prefill/large/fp16-b1-s64": "model.llama_prefill/large/fp16-b1-s512",
+ "model.llama_prefill/large/fp16-b1-s48": "model.llama_prefill/hbm/fp16-b1-s512",
+ "model.llama_decode/large/fp16-b1-p480": "model.llama_decode/large/fp16-b1-p512",
+ "model.llama_decode/large/fp16-b1-p496": "model.llama_decode/hbm/fp16-b1-p512"
+}

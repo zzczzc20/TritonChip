@@ -1,13 +1,19 @@
 point                                                                  board         model model/board
+model.gpt2_block/large/fp16-d1024-h16-b1-s512                    407,196,166   383,191,345       0.941
 model.gpt2_block/medium/fp16-d160-h5-b1-s64                        1,321,735     1,343,632       1.017
 model.gpt2_block/small/fp16-d128-h4-b1-s64                           971,894       988,797       1.017
 model.gpt2_block/tiny/fp16-d64-h4-b1-s16                              95,907        98,293       1.025
+model.llama_decode/hbm/fp16-b1-p512                               60,497,138    47,366,399       0.783
+model.llama_decode/large/fp16-b1-p512                            845,541,194   645,680,445       0.764
 model.llama_decode/medium/fp16-b1-p256                             2,713,623     1,865,263       0.687
 model.llama_decode/small/fp16-b1-p128                              1,375,795       983,966       0.715
 model.llama_decode/tiny/fp16-b1-p16                                  181,750       164,029       0.902
+model.llama_prefill/hbm/fp16-b1-s512                           1,591,642,640 1,055,151,160       0.663
+model.llama_prefill/large/fp16-b1-s512                        24,837,851,79119,170,972,189       0.772
 model.llama_prefill/medium/fp16-b1-s64                             7,945,725     7,758,533       0.976
 model.llama_prefill/small/fp16-b1-s64                              4,792,320     4,767,186       0.995
 model.llama_prefill/tiny/fp16-b1-s16                                 343,560       334,624       0.974
+model.mlp/large/fp16-t512-d2048                                  886,084,547   925,220,053       1.044
 model.mlp/medium/fp16-t128-d128                                      881,036       889,751       1.010
 model.mlp/small/fp16-t64-d128                                        454,418       457,685       1.007
 model.mlp/tiny/fp16-t16-d64                                           42,979        46,005       1.070
@@ -21,12 +27,15 @@ op.add/tiny/fp32-n256                                                    556    
 op.argmax/medium/fp16-r32-v4096                                      115,309        85,640       0.743
 op.argmax/small/fp16-r8-v2048                                         16,984        13,479       0.794
 op.argmax/tiny/fp16-r2-v256                                            2,249         2,052       0.912
+op.attention_decode/large/fp16-b1-h32-l2048-d64                   18,771,373    13,102,029       0.698
 op.attention_decode/medium/fp16-b1-h8-l256-d32                       291,160       205,757       0.707
 op.attention_decode/small/fp16-b1-h4-l256-d32                        143,908       104,150       0.724
 op.attention_decode/tiny/fp16-b1-h2-l16-d16                            6,355         4,030       0.634
+op.attention_prefill/large/fp16-b1-h32-s512-d64                  229,853,006   260,684,051       1.134
 op.attention_prefill/medium/fp16-b1-h4-s96-d32                       886,641       926,306       1.045
 op.attention_prefill/small/fp16-b1-h4-s64-d32                        257,309       286,912       1.115
 op.attention_prefill/tiny/fp16-b1-h2-s16-d16                          13,331        12,018       0.902
+op.bmm/large/fp16-b32-m512-k64-n512                               29,393,738    31,680,584       1.078
 op.bmm/medium/fp16-b16-m64-k32-n64                                   133,410       157,199       1.178
 op.bmm/small/fp16-b8-m64-k32-n64                                      66,505        79,101       1.189
 op.bmm/tiny/fp16-b2-m16-k16-n16                                        1,518         1,649       1.086
@@ -42,15 +51,21 @@ op.embedding/tiny/fp16-v256-d64-t16                                   19,537    
 op.gelu_tanh/medium/fp16-n65536                                      116,639        92,562       0.794
 op.gelu_tanh/small/fp16-n16384                                        33,776        26,321       0.779
 op.gelu_tanh/tiny/fp16-n256                                            1,126           815       0.724
+op.gemv/hbm/fp16-k4096-n11008                                     26,392,593    21,415,738       0.811
+op.gemv/large/fp16-k2048-n8192                                     9,949,755     8,008,299       0.805
 op.gemv/medium/fp16-k320-n448                                         87,227        77,597       0.890
 op.gemv/small/fp16-k256-n512                                          79,611        70,440       0.885
 op.gemv/tiny/fp16-k64-n64                                              4,554         4,761       1.045
 op.layernorm/medium/fp16-r128-d512                                    86,740        70,993       0.818
 op.layernorm/small/fp16-r64-d256                                      27,186        20,531       0.755
 op.layernorm/tiny/fp16-r4-d64                                          2,285         1,524       0.667
+op.linear/hbm/fp16-m512-k4096-n11008                             914,644,023   769,573,536       0.841
+op.linear/large/fp16-m512-k2048-n8192                            422,982,023   463,696,555       1.096
 op.linear/medium/fp16-m128-k320-n256                                 388,684       391,697       1.008
 op.linear/small/fp16-m64-k256-n256                                   166,574       173,095       1.039
 op.linear/tiny/fp16-m16-k64-n64                                        4,793         5,397       1.126
+op.matmul/hbm/fp16-m4096-k4096-n4096                           3,091,122,416 2,846,362,283       0.921
+op.matmul/large/fp16-m2048-k2048-n2048                           389,016,744   358,803,413       0.922
 op.matmul/medium/fp16-m128-k192-n128                                 153,021       149,949       0.980
 op.matmul/medium/fp32-m128-k192-n128                                 297,835       396,935       1.333
 op.matmul/small/fp16-m64-k128-n128                                    46,305        48,766       1.053
@@ -77,26 +92,26 @@ op.transpose/medium/fp32-r160-c256                                   122,858    
 op.transpose/small/fp32-r128-c256                                     96,728        50,886       0.526
 op.transpose/tiny/fp32-r32-c32                                         2,083         1,324       0.636
 
-all          n= 77 geo(model/board)=0.807 median|err|=0.206 max|err|=0.740 within10%=21 within20%=38
-gemm_shaped  n= 33 geo(model/board)=0.984 median|err|=0.098 max|err|=0.366 within10%=18 within20%=26
+all          n= 92 geo(model/board)=0.817 median|err|=0.195 max|err|=0.740 within10%=27 within20%=48
+gemm_shaped  n= 48 geo(model/board)=0.948 median|err|=0.101 max|err|=0.366 within10%=24 within20%=36
 other        n= 44 geo(model/board)=0.695 median|err|=0.238 max|err|=0.740 within10%=3 within20%=12
   add                n= 4 geo=0.664 med|err|=0.275 max=0.558
   argmax             n= 3 geo=0.813 med|err|=0.206 max=0.257
-  attention_decode   n= 3 geo=0.687 med|err|=0.293 max=0.366
-  attention_prefill  n= 3 geo=1.016 med|err|=0.098 max=0.115
-  bmm                n= 3 geo=1.150 med|err|=0.178 max=0.189
+  attention_decode   n= 4 geo=0.690 med|err|=0.298 max=0.366
+  attention_prefill  n= 4 geo=1.045 med|err|=0.107 max=0.134
+  bmm                n= 4 geo=1.132 med|err|=0.132 max=0.189
   conv2d             n= 3 geo=0.754 med|err|=0.238 max=0.266
   cumsum             n= 3 geo=0.794 med|err|=0.209 max=0.213
   embedding          n= 3 geo=0.867 med|err|=0.136 max=0.145
   gelu_tanh          n= 3 geo=0.765 med|err|=0.221 max=0.276
-  gemv               n= 3 geo=0.937 med|err|=0.110 max=0.115
-  gpt2_block         n= 3 geo=1.020 med|err|=0.017 max=0.025
+  gemv               n= 5 geo=0.883 med|err|=0.115 max=0.195
+  gpt2_block         n= 4 geo=0.999 med|err|=0.021 max=0.059
   layernorm          n= 3 geo=0.744 med|err|=0.245 max=0.333
-  linear             n= 3 geo=1.056 med|err|=0.039 max=0.126
-  llama_decode       n= 3 geo=0.763 med|err|=0.285 max=0.313
-  llama_prefill      n= 3 geo=0.982 med|err|=0.024 max=0.026
-  matmul             n= 6 geo=1.160 med|err|=0.149 max=0.345
-  mlp                n= 3 geo=1.029 med|err|=0.010 max=0.070
+  linear             n= 5 geo=1.017 med|err|=0.096 max=0.159
+  llama_decode       n= 5 geo=0.767 med|err|=0.236 max=0.313
+  llama_prefill      n= 5 geo=0.865 med|err|=0.026 max=0.337
+  matmul             n= 8 geo=1.095 med|err|=0.091 max=0.345
+  mlp                n= 4 geo=1.033 med|err|=0.027 max=0.070
   resnet_block       n= 3 geo=0.773 med|err|=0.227 max=0.239
   rmsnorm            n= 3 geo=0.778 med|err|=0.215 max=0.271
   rope               n= 3 geo=0.322 med|err|=0.683 max=0.740

@@ -113,6 +113,38 @@ serial-grid device cycles, default knobs, 113/113 points pass on both sides
   `op.gemv/large` (1.022). Causes not yet established.
 This is a software-only result on the R41 image. The RTL work (`R42-mtx`, `R42-fp32`) and `R42-gemm` are not in it.
 
+**2026-11-23. Numerics decision for the wide core (author, chat: "尽管数值精度有别，我们还是要比较FP8之前版本和用了DSP后的新版本。最终关注的是软件层面精度是正确的").**
+A DSP-based K-fused dot-product lane (G products aligned to the group's maximum exponent, a wide fixed-point adder
+tree, one rounding per group) may differ in bits from the sequential one-rounding-per-step fp32 FMA of ISA sec 9C.1.
+The author accepts that, and wants the previous FP8 version and the new DSP version compared. What is judged is that
+accuracy at the software level is correct. Consequences, registered here before any emulation result exists:
+1. The new lane is a NEW mode/opcode beside the existing one; the sequential contract stays available and
+   reproducible, so the two versions can be compared on the same image and the same points.
+2. Accuracy gate (no tolerance is changed after results are seen): every point of the 113 set and of the `xl` tier
+   stays inside its frozen tolerance with the new lane, AND the relative L2 error of each GEMM-based point against
+   its binary64 reference is at most 1.5x the error of the sequential path on the same inputs, AND the end-to-end
+   checks the R41 contract names (rel L2 <= max(0.05, 2x CPU rounding floor) with the chosen-token match, and the
+   registered chat-quality check) still pass. A failure is a result and is kept.
+3. Order of work: a bit-accurate Python model of the lane and an accuracy study on CPU first (no hardware, no board);
+   RTL and resources only after the gate is met in the model; speed is then measured on the board with the same
+   A/B recipe as the software rounds.
+
+**2026-11-23. Second board A/B (`ab-int2`).** Board, U280, run-3 image `791b8af2` on both sides, 100 MHz, serial-grid
+device cycles, default knobs, 113/113 points pass on both sides (`evidence/r42/board/ab-int2/comparison.json`).
+- Candidate: `R42` at `5327118c` (`ab-int1` plus `R42-gemm`: broadcast-row fragment and the GEMM software pipeline).
+  Queue ran 14:07-16:10 UTC, 5,432 s of board time, no failed configuration, no missing formal record.
+- Result: geometric mean speed-up **1.638x** over the 113 points (`ab-int1`: 1.613x); sum of cycles 1.312x
+  (`ab-int1`: 1.305x). By tier (new/old): hbm 0.567, large 0.581, medium 0.537, small 0.584, tiny 0.774.
+- No point is slower than the baseline by more than 2 % (largest ratio 1.019). The three `ab-int1` regressions are
+  gone: `op.gemv/hbm` and `op.gemv/large` now 1.19x and 1.17x faster, `op.matmul/small/fp16-m64-k128-n128` within noise.
+  Family gemv 0.99 -> 1.17, llama_decode 1.73 -> 1.91.
+- What the GEMM pipeline did not do: fp16 GEMM points are unchanged to within 1-4 % (matmul fp16 large 1.04x, hbm
+  1.04x, linear 1.02, mlp 1.03). Those points are bound by the matrix engine and the transfer rate, not by the issue of
+  software around them; the software headroom there is exhausted on this image.
+- Remaining gap to the target: the families at 1.0x (embedding, transpose, linear, mlp, fp16 matmul) are the bulk of
+  what the run-3 image cannot give more of in software; each needs hardware (matrix engine rate, line path), which
+  is the case for the next image. The K-fused DSP lane study (`R42-kfuse`) and the `xl` tier board A/B are open.
+
 ## 4. XL tier registration (2026-11-23)
 
 > **Binding:** [`engineering_discipline.md`](engineering_discipline.md) 2.3. This section is the registration of a new

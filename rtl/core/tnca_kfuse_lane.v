@@ -37,13 +37,14 @@
 //   3. DSP2 (one per product) aligns AND truncates: A = one-hot 2^sa, B = P1
 //      (shifted left 8 for the largest shifts), so the multiplier output is
 //      P1 * 2^sh at a grid 7 bits finer than the window's least significant
-//      bit. The sign is the post-adder's: ALUMODE add or subtract of the C
-//      port (SIGN_MODE 0), or a two's-complement A (SIGN_MODE 1). The C port
-//      carries +127 for negative products, so that the plain right shift by 7
-//      of P (wiring, P[47:7]) is magnitude truncation toward zero:
-//      floor((127 - X)/128) = -floor(X/128). The cascade (PCIN) cannot sum
-//      here: a truncation is a per-term operation, and PCIN adds carry across
-//      the dropped bits.
+//      bit. The sign is a two's-complement A (-2^sa for a negative product,
+//      SIGN_MODE 1, the default; SIGN_MODE 0 writes it as C -+ A*B for the
+//      post-adder's ALUMODE, which Vivado 2023.2 maps to two DSP48E2 per
+//      product). The C port carries +127 for negative products, so that the
+//      plain right shift by 7 of P (wiring, P[47:7]) is magnitude truncation
+//      toward zero: floor((127 - X)/128) = -floor(X/128). The cascade (PCIN)
+//      cannot sum the products: a truncation is a per-term operation, and PCIN
+//      adds carry across the dropped bits.
 //   4. The G truncated terms are summed by a binary tree. TREE 0: G-1 DSP48E2
 //      as two-input adders (A:B + C) with a P register per level, no LUT. TREE
 //      1: the same tree in LUT carry chains.
@@ -72,7 +73,7 @@
 //              1: c is presented LAT_FRONT cycles after a and b, when the group
 //              sum reaches the align stage (the accumulator read can then be
 //              late; the loop a row's accumulator sees is only the back end)
-//   SIGN_MODE  0: ALUMODE add/subtract; 1: sign in the A operand
+//   SIGN_MODE  1: sign in the A operand (1 DSP48E2 per DSP2); 0: add/subtract form (2 DSP48E2)
 //   TREE       0: DSP adder tree; 1: LUT adder tree
 //
 // Latency: LAT = LAT_FRONT + CUTS[4] + CUTS[5] (localparams below); one group

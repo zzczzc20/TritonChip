@@ -116,8 +116,8 @@ struct Config {
         require(get_or("tl_lsu_shared_issue",1)<=1,"tl_lsu_shared_issue must be 0|1");
         {auto n=get_or("tl_pc_stripe_bytes",0);require(n==0 || (n>=64 && n%64==0),"PC stripe must be zero or whole lines");}
         require(get_or("tl_prefetch_lines",0)<=256,"prefetch degree must be 0..256");
-        require(get_or("mtx_dp_g_override",0)<=64 && get_or("mtx_dp_b_regs",0)<=1 && get_or("issue_free_mode",0)<=2,
-                "mtx_dp_g_override 0..64, mtx_dp_b_regs 0|1, issue_free_mode 0|1|2 (kfuse-speed what-ifs)");
+        require(get_or("mtx_dp_g_override",0)<=64 && get_or("mtx_dp_b_regs",0)<=1 && get_or("issue_free_mode",0)<=3,
+                "mtx_dp_g_override 0..64, mtx_dp_b_regs 0|1, issue_free_mode 0|1|2|3 (kfuse-speed what-ifs)");
         require(get_or("tl_full_line_nofill",0)<=1 && get_or("dma_line_combine",0)<=1,"tl_full_line_nofill and dma_line_combine are 0|1");
         require(get_or("dma_line_engine",0)<=1,"dma_line_engine must be 0|1");
         require(get_or("dma_line_engine",0)==0 || (get("memory_model")==1 && get_or("tl_core_beat_bytes",8)==64),

@@ -78,6 +78,7 @@ struct Inst {
     u64 word=0;unsigned opcode=0,major=0,func=0,d=0,a=0,b=0,c=0,pred=0,mod=0,imm=0;bool invert=false;u64 simm=0;
     K kind=K::Refused;std::string why;
     bool kfree=false; // kfuse-speed what-if: instruction of an innermost matrix loop (issue_free_mode)
+    bool kpre=false;  // ... and at or before the last matrix command of that loop body
 };
 static const char* timing_class(const Inst& i){
     switch(i.kind){
@@ -259,7 +260,10 @@ struct CodeCache {
         for(auto& s:mm){
             bool innermost=true;
             for(auto& o:mm)if(&o!=&s && o.first>=s.first && o.second<=s.second && (o.first>s.first || o.second<s.second)){innermost=false;break;}
-            if(innermost)for(u64 q=s.first;q<=s.second;q+=8)decoded[q].kfree=true;
+            if(innermost){
+                u64 last=s.first;for(u64 q=s.first;q<=s.second;q+=8)if(at(q).kind==K::Mma)last=q;
+                for(u64 q=s.first;q<=s.second;q+=8){decoded[q].kfree=true;decoded[q].kpre=q<=last;}
+            }
         }
     }
 };
@@ -619,7 +623,31 @@ struct Core : sc_module {
                     }}
             }
             // No cycle polling: issue and dependencies reserve their next event.
-            const bool kfree=free_mode && in.kfree && (free_mode>=2 || in.kind==K::Salu || in.kind==K::Branch);
+            // issue_free_mode 3: everything in the innermost matrix loop that precedes its last matrix command, except the
+            // engine, barrier, transfer and descriptor instructions, costs nothing at all (issue, latency, memory time): the
+            // weight and activation preparation is removed from the stream (BALANCE.md sec 6.1 projection, hypothetical).
+            const bool engine_kind=in.kind==K::Mma || in.kind==K::MZero || in.kind==K::AZero || in.kind==K::AVread ||
+                in.kind==K::ARow || in.kind==K::Barrier || in.kind==K::Xfer || in.kind==K::Desc || in.kind==K::Fence ||
+                in.kind==K::Prefetch || in.kind==K::Exit || in.kind==K::Trap;
+            const bool kfree=free_mode && in.kfree &&
+                (free_mode==2 || (free_mode==1 && (in.kind==K::Salu || in.kind==K::Branch)) || (free_mode==3 && in.kpre && !engine_kind));
+            struct LatZero{
+                Core& c;u64 sv[16];bool on;
+                LatZero(Core& core,bool enable):c(core),on(enable){
+                    if(!on)return;
+                    sv[0]=c.t_scalar;sv[1]=c.t_mul;sv[2]=c.t_vint;sv[3]=c.t_vfp;sv[4]=c.t_cvt;sv[5]=c.t_cmp;sv[6]=c.t_pred;
+                    sv[7]=c.t_shuf;sv[8]=c.t_red;sv[9]=c.t_fred;sv[10]=c.t_sfu_occ;sv[11]=c.t_sfu;sv[12]=c.t_shuf_s;sv[13]=c.t_fcmp;
+                    sv[14]=c.t_red_vec;sv[15]=c.t_fred_vec;
+                    c.t_scalar=c.t_mul=c.t_vint=c.t_vfp=c.t_cvt=c.t_cmp=c.t_pred=c.t_shuf=c.t_red=c.t_fred=c.t_sfu_occ=c.t_sfu=0;
+                    c.t_shuf_s=c.t_fcmp=c.t_red_vec=c.t_fred_vec=0;
+                }
+                ~LatZero(){
+                    if(!on)return;
+                    c.t_scalar=sv[0];c.t_mul=sv[1];c.t_vint=sv[2];c.t_vfp=sv[3];c.t_cvt=sv[4];c.t_cmp=sv[5];c.t_pred=sv[6];
+                    c.t_shuf=sv[7];c.t_red=sv[8];c.t_fred=sv[9];c.t_sfu_occ=sv[10];c.t_sfu=sv[11];c.t_shuf_s=sv[12];c.t_fcmp=sv[13];
+                    c.t_red_vec=sv[14];c.t_fred_vec=sv[15];
+                }
+            } lat_zero(*this,kfree && free_mode==3);
             if(!kfree)issue_slot(f);
             if(pipe)last_issue=lnow(f);
             ++class_counts[unsigned(in.kind)];
@@ -638,7 +666,7 @@ struct Core : sc_module {
                     else if(func!=0 && func!=20 && func!=21 && func!=22 && func!=23)right=rs(b);
                     value=alu(af,left,right,64,mod&15);
                 }
-                ws(d,value,(kfree && free_mode==1)?0:(func==3 || func==4 || func==5 || func==34)?t_mul:t_scalar);break;}
+                ws(d,value,(kfree && free_mode!=2)?0:(func==3 || func==4 || func==5 || func==34)?t_mul:t_scalar);break;}
             case K::Branch:{
                 auto off24=std::int32_t((unsigned(a)<<24)|(unsigned(b)<<16)|(unsigned(c)<<8))>>8;
                 if(func==0)next=f.pc+u64(std::int64_t(off24)*8);
@@ -646,7 +674,7 @@ struct Core : sc_module {
                 else if(func==4 || func==9)next=rs(a)&~7ULL;
                 else if(func==8){ws(d,f.pc+8,1);next=f.pc+u64(std::int64_t(off24)*8);}
                 else throw std::runtime_error("uncovered control operation");
-                if(pipe && next!=f.pc+8 && !x.functional && !(kfree && free_mode==1))f.fetch_ready=lt(f)+x.cycles(1+t_branch);
+                if(pipe && next!=f.pc+8 && !x.functional && !(kfree && free_mode!=2))f.fetch_ready=lt(f)+x.cycles(1+t_branch);
                 break;}
             case K::Lsu:{
                 bool store=func==8 || func==24 || func==40,vector=func>=16,gather=func>=32;
@@ -657,7 +685,7 @@ struct Core : sc_module {
                 unsigned active=vector?mask:(mask&1);
                 if(!active)break;
                 struct Part {unsigned lane,offset,bytes,shift;};
-                if(tm && x.functional){
+                if(tm && (x.functional || (kfree && free_mode==3))){
                     std::array<u64,16> values{};
                     for(unsigned lane=0;lane<(vector?16U:1U);++lane){
                         if(!(active&(1<<lane)))continue;

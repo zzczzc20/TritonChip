@@ -1,0 +1,1 @@
+PASS op.rmsnorm_residual/xl/fp16-r2048-d2048                    err 5.840e-04 tol 0.02  [fp16 eager vs binary32 module; ref 0.1s, module 0.1s, rss 0.72 GiB] 

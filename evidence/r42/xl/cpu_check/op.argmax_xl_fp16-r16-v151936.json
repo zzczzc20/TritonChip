@@ -1,0 +1,14 @@
+[
+ {
+  "point": "op.argmax/xl/fp16-r16-v151936",
+  "family": "argmax",
+  "path": "fp16 eager vs binary32 module",
+  "ok": true,
+  "max_rel_err": 0.0,
+  "tolerance": 0.0,
+  "detail": "",
+  "reference_s": 0.0,
+  "module_s": 0.0,
+  "peak_rss_gib": 0.54
+ }
+]

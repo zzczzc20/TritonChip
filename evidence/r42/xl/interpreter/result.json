@@ -1,0 +1,61 @@
+{
+ "schema": "archbench-xl-interpreter-check/1",
+ "domain": "Triton CPU interpreter on the unchanged Hub kernels; exact-conversion inputs",
+ "kernel": {
+  "repo": "kernels-community/finegrained-fp8",
+  "hub_version": 4,
+  "kernel_commit": "fe2bb66fee6c2a77eccf08a0508dc57428d488ed",
+  "build": "torch-cuda",
+  "matmul_py": "0f668b5d9e0e7db0675ea4518052b9320830f64f2468f2ecbcae7d0876336807",
+  "utils_py": "2cb87f98ab385e41c95fdf1e1bec777a25c8e0bb003a357a72c07a53c2b7b5d0"
+ },
+ "torch": "2.14.0+cu130",
+ "rows": [
+  {
+   "m": 1,
+   "n": 256,
+   "k": 256,
+   "matmul_2d_vs_reference_max_rel": 0.0,
+   "matmul_2d_bit_equal_to_emu": true,
+   "act_quant_codes_equal": true,
+   "act_quant_scales_equal": true
+  },
+  {
+   "m": 16,
+   "n": 256,
+   "k": 512,
+   "matmul_2d_vs_reference_max_rel": 0.0003448275862068965,
+   "matmul_2d_bit_equal_to_emu": true,
+   "act_quant_codes_equal": true,
+   "act_quant_scales_equal": true
+  },
+  {
+   "m": 17,
+   "n": 384,
+   "k": 256,
+   "matmul_2d_vs_reference_max_rel": 1.6537891617273496e-06,
+   "matmul_2d_bit_equal_to_emu": true,
+   "act_quant_codes_equal": true,
+   "act_quant_scales_equal": true
+  },
+  {
+   "m": 32,
+   "n": 128,
+   "k": 384,
+   "matmul_2d_vs_reference_max_rel": 0.0,
+   "matmul_2d_bit_equal_to_emu": true,
+   "act_quant_codes_equal": true,
+   "act_quant_scales_equal": true
+  },
+  {
+   "m": 130,
+   "n": 128,
+   "k": 256,
+   "matmul_2d_vs_reference_max_rel": 8.440243079000676e-05,
+   "matmul_2d_bit_equal_to_emu": true,
+   "act_quant_codes_equal": true,
+   "act_quant_scales_equal": true
+  }
+ ],
+ "ok": true
+}

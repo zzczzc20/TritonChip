@@ -1,0 +1,347 @@
+{
+ "fp16_families": {
+  "add": {
+   "eta": 0.3078517498129096,
+   "rows": [
+    {
+     "binding": "mem_bytes",
+     "board_cycles": 40873284,
+     "bound_cycles": 12582912.0,
+     "eta": 0.3078517498129096,
+     "point": "op.add/large/fp16-n16777216"
+    }
+   ]
+  },
+  "argmax": {
+   "eta": 0.17389328140441943,
+   "rows": [
+    {
+     "binding": "mem_bytes",
+     "board_cycles": 11801261,
+     "bound_cycles": 2052160.0,
+     "eta": 0.1738932814044194,
+     "point": "op.argmax/large/fp16-r64-v128256"
+    }
+   ]
+  },
+  "attention_decode": {
+   "eta": 0.07446184624265562,
+   "rows": [
+    {
+     "binding": "mem_bytes",
+     "board_cycles": 28177867,
+     "bound_cycles": 2098176.0,
+     "eta": 0.07446184624265563,
+     "point": "op.attention_decode/large/fp16-b1-h32-l2048-d64"
+    }
+   ]
+  },
+  "attention_prefill": {
+   "eta": 0.024801026166675972,
+   "rows": [
+    {
+     "binding": "fp_lane",
+     "board_cycles": 698974949,
+     "bound_cycles": 17335296.0,
+     "eta": 0.02480102616667597,
+     "point": "op.attention_prefill/large/fp16-b1-h32-s512-d64"
+    }
+   ]
+  },
+  "bmm": {
+   "eta": 0.0668469762641504,
+   "rows": [
+    {
+     "binding": "fp_lane",
+     "board_cycles": 250979430,
+     "bound_cycles": 16777216.0,
+     "eta": 0.06684697626415041,
+     "point": "op.bmm/large/fp16-b32-m512-k64-n512"
+    }
+   ]
+  },
+  "conv2d": {
+   "eta": 0.08186022338102378,
+   "rows": [
+    {
+     "binding": "fp_lane",
+     "board_cycles": 344701527,
+     "bound_cycles": 28217344.0,
+     "eta": 0.08186022338102378,
+     "point": "op.conv2d/large/fp32-n8-cin64-h56-w56-cout64"
+    }
+   ]
+  },
+  "embedding": {
+   "eta": 0.028033301510977857,
+   "rows": [
+    {
+     "binding": "mem_bytes",
+     "board_cycles": 18720592,
+     "bound_cycles": 524800.0,
+     "eta": 0.028033301510977857,
+     "point": "op.embedding/large/fp16-v128256-d2048-t512"
+    }
+   ]
+  },
+  "gelu_tanh": {
+   "eta": 0.12720435168695804,
+   "rows": [
+    {
+     "binding": "mem_bytes",
+     "board_cycles": 65945920,
+     "bound_cycles": 8388608.0,
+     "eta": 0.12720435168695804,
+     "point": "op.gelu_tanh/large/fp16-n16777216"
+    }
+   ]
+  },
+  "gemv": {
+   "eta": 0.3609907793412999,
+   "rows": [
+    {
+     "binding": "mem_bytes",
+     "board_cycles": 11625959,
+     "bound_cycles": 4196864.0,
+     "eta": 0.3609907793412999,
+     "point": "op.gemv/large/fp16-k2048-n8192"
+    }
+   ]
+  },
+  "gpt2_block": {
+   "eta": 0.3270821066455904,
+   "rows": [
+    {
+     "binding": "fp_lane",
+     "board_cycles": 641621109,
+     "bound_cycles": 209862784.0,
+     "eta": 0.32708210664559045,
+     "point": "model.gpt2_block/large/fp16-d1024-h16-b1-s512"
+    }
+   ]
+  },
+  "layernorm": {
+   "eta": 0.11471545299558161,
+   "rows": [
+    {
+     "binding": "mem_bytes",
+     "board_cycles": 4579261,
+     "bound_cycles": 525312.0,
+     "eta": 0.1147154529955816,
+     "point": "op.layernorm/large/fp16-r512-d2048"
+    }
+   ]
+  },
+  "linear": {
+   "eta": 0.6383998684209413,
+   "rows": [
+    {
+     "binding": "fp_lane",
+     "board_cycles": 420687004,
+     "bound_cycles": 268566528.0,
+     "eta": 0.6383998684209413,
+     "point": "op.linear/large/fp16-m512-k2048-n8192"
+    }
+   ]
+  },
+  "llama_decode": {
+   "eta": 0.2750112002639677,
+   "rows": [
+    {
+     "binding": "mem_bytes",
+     "board_cycles": 1131180929,
+     "bound_cycles": 311087425.0,
+     "eta": 0.2750112002639677,
+     "point": "model.llama_decode/large/fp16-b1-p512"
+    }
+   ]
+  },
+  "llama_prefill": {
+   "eta": 0.47053426785069297,
+   "rows": [
+    {
+     "binding": "fp_lane",
+     "board_cycles": 33681980053,
+     "bound_cycles": 15848525824.0,
+     "eta": 0.47053426785069297,
+     "point": "model.llama_prefill/large/fp16-b1-s512"
+    }
+   ]
+  },
+  "matmul": {
+   "eta": 0.3891331789147386,
+   "rows": [
+    {
+     "binding": "fp_lane",
+     "board_cycles": 404323750,
+     "bound_cycles": 268435456.0,
+     "eta": 0.6639121644474261,
+     "point": "op.matmul/large/fp16-m2048-k2048-n2048"
+    },
+    {
+     "binding": "fp_lane",
+     "board_cycles": 1176939072,
+     "bound_cycles": 268435456.0,
+     "eta": 0.22807931386273156,
+     "point": "op.matmul/large/fp32-m2048-k2048-n2048"
+    }
+   ]
+  },
+  "mlp": {
+   "eta": 0.6206012753098756,
+   "rows": [
+    {
+     "binding": "fp_lane",
+     "board_cycles": 865293072,
+     "bound_cycles": 537001984.0,
+     "eta": 0.6206012753098756,
+     "point": "model.mlp/large/fp16-t512-d2048"
+    }
+   ]
+  },
+  "resnet_block": {
+   "eta": 0.07571378307525295,
+   "rows": [
+    {
+     "binding": "fp_lane",
+     "board_cycles": 745368752,
+     "bound_cycles": 56434688.0,
+     "eta": 0.07571378307525294,
+     "point": "model.resnet_block/large/fp32-n8-c64-hw56"
+    }
+   ]
+  },
+  "rmsnorm": {
+   "eta": 0.15075664149363982,
+   "rows": [
+    {
+     "binding": "mem_bytes",
+     "board_cycles": 3481107,
+     "bound_cycles": 524800.0,
+     "eta": 0.15075664149363982,
+     "point": "op.rmsnorm/large/fp16-r512-d2048"
+    }
+   ]
+  },
+  "rope": {
+   "eta": 0.05685781570972261,
+   "rows": [
+    {
+     "binding": "mem_bytes",
+     "board_cycles": 9509194,
+     "bound_cycles": 540672.0,
+     "eta": 0.05685781570972261,
+     "point": "op.rope/large/fp16-b1-h32-s512-d64"
+    }
+   ]
+  },
+  "silu": {
+   "eta": 0.15582098640278086,
+   "rows": [
+    {
+     "binding": "mem_bytes",
+     "board_cycles": 53834905,
+     "bound_cycles": 8388608.0,
+     "eta": 0.15582098640278086,
+     "point": "op.silu/large/fp16-n16777216"
+    }
+   ]
+  },
+  "softmax": {
+   "eta": 0.09491972758337992,
+   "rows": [
+    {
+     "binding": "mem_bytes",
+     "board_cycles": 88375812,
+     "bound_cycles": 8388608.0,
+     "eta": 0.09491972758337994,
+     "point": "op.softmax/large/fp16-r4096-c4096"
+    }
+   ]
+  },
+  "swiglu": {
+   "eta": 0.20494934215573427,
+   "rows": [
+    {
+     "binding": "mem_bytes",
+     "board_cycles": 61395230,
+     "bound_cycles": 12582912.0,
+     "eta": 0.20494934215573424,
+     "point": "op.swiglu/large/fp16-n16777216"
+    }
+   ]
+  },
+  "transpose": {
+   "eta": 0.17340698351381487,
+   "rows": [
+    {
+     "binding": "mem_bytes",
+     "board_cycles": 96750521,
+     "bound_cycles": 16777216.0,
+     "eta": 0.17340698351381487,
+     "point": "op.transpose/large/fp32-r4096-c4096"
+    }
+   ]
+  }
+ },
+ "fp8": {
+  "pessimistic": {
+   "cases": [
+    {
+     "binding": "mem_bytes",
+     "bound_cycles": 1587584.0,
+     "eta": 0.04884873846153846,
+     "k": 2048,
+     "m": 7,
+     "model_cycles": 32500000.0,
+     "n": 6144
+    },
+    {
+     "binding": "mem_bytes",
+     "bound_cycles": 1587584.0,
+     "eta": 0.04669364705882353,
+     "k": 6144,
+     "m": 7,
+     "model_cycles": 34000000.0,
+     "n": 2048
+    },
+    {
+     "binding": "fp_lane",
+     "bound_cycles": 4756772.0,
+     "eta": 0.0786243305785124,
+     "k": 2560,
+     "m": 16,
+     "model_cycles": 60500000.0,
+     "n": 9216
+    },
+    {
+     "binding": "fp_lane",
+     "bound_cycles": 6823197.0,
+     "eta": 0.03790665,
+     "k": 2048,
+     "m": 129,
+     "model_cycles": 180000000.0,
+     "n": 2048
+    }
+   ],
+   "domain": "SystemC/TLM model (uncalibrated)",
+   "eta": 0.05106177160361984
+  },
+  "primary": 0.2,
+  "primary_basis": "the planning figure of the task brief (2026-11-23): eta ~0.2 of the strict bound; no FP8 point has been run on a board"
+ },
+ "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+ "schema": "archbench-xl-eta/1",
+ "sources": {
+  "b41": {
+   "domain": "board (U280, 100 MHz, serial-grid device cycles, medians)",
+   "path": "/home/zhongchun/r42/xl_in/b41_board.json",
+   "sha256": "3fa9ead5b2e901f9c78a4bbb75561d182e49fd1fcd41fb162a885da8bd2942b9"
+  },
+  "r41_kernels_readme": {
+   "domain": "SystemC/TLM model, uncalibrated, profile core-vrf-sync-v5 (no m.mma.dp), 128-wide K blocks, bf16",
+   "path": "/home/zhongchun/r42/xl_in/r41_fp8_kernels_README.md",
+   "sha256": "06876a28a99197fe3bc069cd69537239cd2e5a9eeaa9a92ca459dca3359cbb2e"
+  }
+ }
+}

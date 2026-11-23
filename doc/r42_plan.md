@@ -144,3 +144,11 @@ device cycles, default knobs, 113/113 points pass on both sides (`evidence/r42/b
 - Remaining gap to the target: the families at 1.0x (embedding, transpose, linear, mlp, fp16 matmul) are the bulk of
   what the run-3 image cannot give more of in software; each needs hardware (matrix engine rate, line path), which
   is the case for the next image. The K-fused DSP lane study (`R42-kfuse`) and the `xl` tier board A/B are open.
+
+**2026-11-23. K-fused lane numerics study (`R42-kfuse`, model, CPU).** Report: `evidence/r42/kfuse/REPORT.md`.
+The registered gate (frozen tolerance for every point studied, rel-L2 vs binary64 at most 1.5x the sequential path, whole-layer
+xl FP8 checks) passes for E4M3, E5M2, FP16 and BF16 at every registered guard width W in {0,3,8,24} and G in {2,4,8,16}.
+The `sum_fma` structure (the existing `m.mma.dp` back end) is never worse than the sequential contract; a G=16 lane with a
+29-bit adder tree and W=0 is enough. The numerics are therefore not what blocks a wider DSP-mapped lane; area, issue rate and
+the transfer path are. Not covered: end-to-end token match (needs the model), the two prefill decoders. Next, in the order
+registered: RTL of a DSP48E2-mapped lane and its resources (screen), then a speed prediction, then the board.

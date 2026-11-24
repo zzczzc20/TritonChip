@@ -1,0 +1,57 @@
+{
+ "source": "evidence/r42/board/ab-int2/comparison.json (board, U280, run-3 image, serial-grid device cycles; copied rows of the 13 points)",
+ "rows": {
+  "op.cumsum/medium/fp32-r128-c256": {
+   "b41_run3_base_cycles": 112181,
+   "ab_int2_cycles": 95774
+  },
+  "op.cumsum/small/fp32-r64-c256": {
+   "b41_run3_base_cycles": 61237,
+   "ab_int2_cycles": 51705
+  },
+  "op.cumsum/tiny/fp32-r4-c64": {
+   "b41_run3_base_cycles": 2579,
+   "ab_int2_cycles": 2240
+  },
+  "op.embedding/hbm/fp16-v65536-d2048-t8192": {
+   "b41_run3_base_cycles": 299545530,
+   "ab_int2_cycles": 299529492
+  },
+  "op.embedding/large/fp16-v128256-d2048-t512": {
+   "b41_run3_base_cycles": 18724064,
+   "ab_int2_cycles": 18721875
+  },
+  "op.embedding/medium/fp16-v1024-d128-t256": {
+   "b41_run3_base_cycles": 579888,
+   "ab_int2_cycles": 579848
+  },
+  "op.embedding/small/fp16-v1024-d128-t64": {
+   "b41_run3_base_cycles": 144294,
+   "ab_int2_cycles": 144387
+  },
+  "op.embedding/tiny/fp16-v256-d64-t16": {
+   "b41_run3_base_cycles": 19537,
+   "ab_int2_cycles": 19537
+  },
+  "op.transpose/hbm/fp32-r8192-c8192": {
+   "b41_run3_base_cycles": 376717013,
+   "ab_int2_cycles": 375591248
+  },
+  "op.transpose/large/fp32-r4096-c4096": {
+   "b41_run3_base_cycles": 98433722,
+   "ab_int2_cycles": 98538871
+  },
+  "op.transpose/medium/fp32-r160-c256": {
+   "b41_run3_base_cycles": 121470,
+   "ab_int2_cycles": 122858
+  },
+  "op.transpose/small/fp32-r128-c256": {
+   "b41_run3_base_cycles": 96552,
+   "ab_int2_cycles": 96728
+  },
+  "op.transpose/tiny/fp32-r32-c32": {
+   "b41_run3_base_cycles": 2083,
+   "ab_int2_cycles": 2083
+  }
+ }
+}

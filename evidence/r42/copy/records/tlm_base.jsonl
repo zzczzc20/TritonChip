@@ -1,0 +1,12 @@
+{"key": "op.embedding/tiny/fp16-v256-d64-t16", "status": "pass", "launches": 1, "device_cycles": 17259, "max_rel_err": 0.0, "process_wall_s": 3.77, "model_launch_host_s": 0.027796}
+{"key": "op.embedding/small/fp16-v1024-d128-t64", "status": "pass", "launches": 1, "device_cycles": 123446, "max_rel_err": 0.0, "process_wall_s": 5.75, "model_launch_host_s": 0.117215}
+{"key": "op.embedding/medium/fp16-v1024-d128-t256", "status": "pass", "launches": 1, "device_cycles": 500891, "max_rel_err": 0.0, "process_wall_s": 5.96, "model_launch_host_s": 0.362865}
+{"key": "op.transpose/tiny/fp32-r32-c32", "status": "pass", "launches": 1, "device_cycles": 1298, "max_rel_err": 0.0, "process_wall_s": 7.43, "model_launch_host_s": 0.011278}
+{"key": "op.transpose/small/fp32-r128-c256", "status": "pass", "launches": 1, "device_cycles": 49933, "max_rel_err": 0.0, "process_wall_s": 8.56, "model_launch_host_s": 0.117006}
+{"key": "op.transpose/medium/fp32-r160-c256", "status": "pass", "launches": 1, "device_cycles": 62721, "max_rel_err": 0.0, "process_wall_s": 9.76, "model_launch_host_s": 0.117771}
+{"key": "op.cumsum/tiny/fp32-r4-c64", "status": "pass", "launches": 1, "device_cycles": 1799, "max_rel_err": 7.220447382770741e-08, "process_wall_s": 28.04, "model_launch_host_s": 0.011662}
+{"key": "op.cumsum/small/fp32-r64-c256", "status": "pass", "launches": 1, "device_cycles": 40913, "max_rel_err": 7.091776595704696e-08, "process_wall_s": 3.98, "model_launch_host_s": 0.055058}
+{"key": "op.cumsum/medium/fp32-r128-c256", "status": "pass", "launches": 1, "device_cycles": 75349, "max_rel_err": 1.4183553191409392e-07, "process_wall_s": 8.39, "model_launch_host_s": 0.105275}
+{"key": "op.embedding/large/fp16-v128256-d2048-t512", "status": "pass", "launches": 1, "device_cycles": 16144497, "max_rel_err": 0.0, "process_wall_s": 18.19, "model_launch_host_s": 10.700777}
+{"key": "op.embedding/hbm/fp16-v65536-d2048-t8192", "status": "pass", "launches": 1, "device_cycles": 258302230, "max_rel_err": 0.0, "process_wall_s": 182.94, "model_launch_host_s": 176.898132}
+{"key": "op.transpose/large/fp32-r4096-c4096", "status": "pass", "launches": 1, "device_cycles": 39248846, "max_rel_err": 0.0, "process_wall_s": 41.73, "model_launch_host_s": 34.662998}

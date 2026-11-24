@@ -1,0 +1,31 @@
+# R42-copy: commands in the order they were run (domains: single-core RTL simulation, SystemC/TLM model, static census; no board)
+# Host: GB10, nice -n 19, at most 3 of my processes at once (a few minutes at 4). Trees: ~/r42/copy_base (git archive of origin/R42 02b7578e,
+# the baseline), ~/r42/copy (worktree at the milestone), ~/r42/copy_dev, ~/r42/copy_dev2 (the final tree), ~/r42/copy_ah (the final tree plus a
+# GB10-only hook that registers extra shapes, see ah_patch below), outputs ~/r42/copy_out. Helper scripts: runpts.sh, runtier.sh, census.sh,
+# tlm.sh (copies of ~/r42/r42_run.sh style wrappers; they contain no credentials).
+#
+# 0. software environment: PYTHONPATH=$PWD/python:$PWD/compiler/python:$PWD/tools/asm; rm -rf python/tnca/data; device prepared with
+#    tnca-sim prepare --profile core-vrf-sync-v5-x8-g2c4-dp; TNCA_COMPILE_CACHE_DIR per tree.
+# 1. kernel dumps (diagnosis, and every kernel shown in the README)
+TNCA_KERNEL_DUMP=1 TNCA_DUMP_DIR=DIR TNCA_ALWAYS_COMPILE=1 python -m archbench.run --platform tnca --profile core-vrf-sync-v5-x8-g2c4-dp --point ID --compile-only --out F
+# 2. single-core RTL screens with counters (records/*.jsonl)
+python -m archbench.run --platform tnca --profile core-vrf-sync-v5-x8-g2c4-dp --jobs N --counters --point ID... --out records/X.jsonl
+python -m archbench.run --platform tnca --profile core-vrf-sync-v5-x8-g2c4-dp --jobs 2 --counters --tier tiny --out records/base_tiny.jsonl   # tree copy_base
+python -m archbench.run ... --tier tiny --out records/cand_tiny.jsonl                                                                       # first candidate tree
+#    base0 = tiny/small of the three families on copy (unmodified at the time; same software_tree hash as base_tiny), base_med = medium on copy_base,
+#    fin_emb/fam_emb/fam_cum/fam_xpm/t5 = candidate trees, gm_copy_* = linear, matmul, gemv small on copy_base and the final tree
+# 3. extra shapes through the same harness (not benchmark points, never reported as ArchBench results): partial tiles, odd widths, whole-tile transposes
+ADHOC_POINTS=transpose:40:24,transpose:64:48,transpose:256:128,embedding:100:96:7,embedding:300:160:20,cumsum:5:37,cumsum:3:100 \
+  python -m archbench.run ... --point op.transpose/tiny/fp32-r40-c24 ... --out records/ah_all.jsonl
+TNCA_XP_NOMASK=1 ADHOC_POINTS=transpose:64:48,transpose:128:128 python -m archbench.run ... --out records/ah_nomask.jsonl   # straight-line path (GB10-only hook)
+# 4. SystemC/TLM model, three cores, cal.cfg of R42-kfuse-speed, binary ~/r42/kfuse-speed_out/tlm-build/tnca-chip (not rebuilt)
+python tools/r42/kfuse_speed_tlm_run.py --source-root TREE --binary tnca-chip --config cal.cfg --out OUT --point ID... --active-cores 3 \
+  --profile core-vrf-sync-v5-x8-g2c4-dp --env TNCA_RTL_MEM_PORTS=3 --env TNCA_RTL_OUTSTANDING=32 --env TNCA_TRANSFER_POLICY=resident --jobs 1
+#    records/tlm_base.jsonl (copy_base), records/tlm_new.jsonl (final tree)
+# 5. static census: every point of the 113 compiled with kernel dumps and a fresh compile cache per point; instructions of all kernels of a point
+bash census.sh TREE NAME      # records/census_base.txt, records/census_new.txt
+# 6. gates
+make compiler (final tree, ~/r42/copy_dev2): compiler-unit PASS 186 tests, 62 skipped; compiler-ir SKIP (tnca-opt not built on GB10, as in every checkout)
+python3 compiler/test/test_copy_lowering.py: 5 tests OK
+# 7. tables
+python3 evidence/r42/copy/tables.py > evidence/r42/copy/tables.txt ; python3 evidence/r42/copy/tables.py census > evidence/r42/copy/census.txt

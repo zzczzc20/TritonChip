@@ -1,0 +1,15 @@
+point                                                          board ab-int2 tlm ratio     predicted  note
+op.cumsum/medium/fp32-r128-c256                                        95774      1.91         50248  
+op.cumsum/small/fp32-r64-c256                                          51705      1.91         27126  
+op.cumsum/tiny/fp32-r4-c64                                              2240      1.97          1139  
+op.embedding/hbm/fp16-v65536-d2048-t8192                           299529492     18.79      15936686  
+op.embedding/large/fp16-v128256-d2048-t512                          18721875     18.78        996777  
+op.embedding/medium/fp16-v1024-d128-t256                              579848     18.48         31380  
+op.embedding/small/fp16-v1024-d128-t64                                144387     18.57          7773  
+op.embedding/tiny/fp16-v256-d64-t16                                    19537      9.83          1988  
+op.transpose/hbm/fp32-r8192-c8192                                  375591248      4.44      84591091  ratio of op.transpose/large/fp32-r4096-c4096
+op.transpose/large/fp32-r4096-c4096                                 98538871      4.44      22193037  
+op.transpose/medium/fp32-r160-c256                                    122858      3.12         39344  
+op.transpose/small/fp32-r128-c256                                      96728      3.33         29026  
+op.transpose/tiny/fp32-r32-c32                                          2083      1.80          1159  
+13 points; effect on the 113-point geometric mean if the board follows the model ratios: x1.214; if only half of each log-gain materialises: x1.102

@@ -1,0 +1,12 @@
+{"key": "op.embedding/tiny/fp16-v256-d64-t16", "status": "pass", "launches": 1, "device_cycles": 1756, "max_rel_err": 0.0, "process_wall_s": 40.08, "model_launch_host_s": 0.012994}
+{"key": "op.embedding/small/fp16-v1024-d128-t64", "status": "pass", "launches": 1, "device_cycles": 6646, "max_rel_err": 0.0, "process_wall_s": 8.13, "model_launch_host_s": 0.022154}
+{"key": "op.embedding/medium/fp16-v1024-d128-t256", "status": "pass", "launches": 1, "device_cycles": 27107, "max_rel_err": 0.0, "process_wall_s": 6.85, "model_launch_host_s": 0.063796}
+{"key": "op.embedding/large/fp16-v128256-d2048-t512", "status": "pass", "launches": 1, "device_cycles": 859554, "max_rel_err": 0.0, "process_wall_s": 13.25, "model_launch_host_s": 1.834068}
+{"key": "op.embedding/hbm/fp16-v65536-d2048-t8192", "status": "pass", "launches": 1, "device_cycles": 13743159, "max_rel_err": 0.0, "process_wall_s": 24.84, "model_launch_host_s": 15.491893}
+{"key": "op.transpose/tiny/fp32-r32-c32", "status": "pass", "launches": 1, "device_cycles": 722, "max_rel_err": 0.0, "process_wall_s": 4.28, "model_launch_host_s": 0.007001}
+{"key": "op.transpose/small/fp32-r128-c256", "status": "pass", "launches": 1, "device_cycles": 14984, "max_rel_err": 0.0, "process_wall_s": 4.16, "model_launch_host_s": 0.047645}
+{"key": "op.transpose/medium/fp32-r160-c256", "status": "pass", "launches": 1, "device_cycles": 20086, "max_rel_err": 0.0, "process_wall_s": 4.25, "model_launch_host_s": 0.059485}
+{"key": "op.transpose/large/fp32-r4096-c4096", "status": "pass", "launches": 1, "device_cycles": 8839670, "max_rel_err": 0.0, "process_wall_s": 17.02, "model_launch_host_s": 12.165301}
+{"key": "op.cumsum/tiny/fp32-r4-c64", "status": "pass", "launches": 1, "device_cycles": 915, "max_rel_err": 1.283635090270354e-07, "process_wall_s": 4.12, "model_launch_host_s": 0.005437}
+{"key": "op.cumsum/small/fp32-r64-c256", "status": "pass", "launches": 1, "device_cycles": 21464, "max_rel_err": 1.4183553191409392e-07, "process_wall_s": 3.99, "model_launch_host_s": 0.041251}
+{"key": "op.cumsum/medium/fp32-r128-c256", "status": "pass", "launches": 1, "device_cycles": 39532, "max_rel_err": 1.4183553191409392e-07, "process_wall_s": 3.99, "model_launch_host_s": 0.075901}

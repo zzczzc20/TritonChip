@@ -561,6 +561,20 @@ class RunGuards(unittest.TestCase):
             self.assertEqual(got["stage"], "final evaluation")
             self.assertEqual(got["islands"][0]["services"]["requests"][0]["id"], "s1")
 
+    def test_how_islands_are_split_is_the_tasks_choice(self):
+        """2026-11-25 (user): R41-F5g split by layer, R41-F6 by direction -- two task files, one harness."""
+        from tritonchip_agent_harness.task import load_task
+        layer = load_task(HERE / "tasks" / "r41-dp-formal" / "task.json").islands
+        direction = load_task(HERE / "tasks" / "r41-dp-dir" / "task.json").islands
+        self.assertEqual([sorted(r["authors"]) for r in layer["roles"]],
+                         [["software"], ["hardware"], ["hardware", "isa", "software"]])
+        self.assertEqual(len(islands.grid_cells(layer)), 12)        # elementwise, matrix, attention, model x 3
+        self.assertEqual(islands.op_group("op.softmax/small/x", layer.get("op_groups") or {}), "elementwise")
+        self.assertEqual([r["direction"] for r in direction["roles"]], ["matrix", "movement", "reduction"])
+        self.assertEqual(len(islands.grid_cells(direction)), 9)     # matrix, movement, reduction x 3
+        self.assertEqual(islands.op_group("op.softmax/small/x", direction["op_groups"],
+                                          direction["default_op_group"]), "reduction")
+
     def test_the_live_record_counts_each_islands_tokens_from_its_own_session_logs(self):
         """2026-11-24 (R41-F6): the Codex quota is shared with other work, so a run counts its own tokens."""
         import types as types_

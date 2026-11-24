@@ -432,10 +432,19 @@ def _check_slow(path: Path, slow, ev: dict) -> None:
     required = {"mode", "flows", "board_runs", "flow_minutes", "board_minutes"}
     optional = {"base_image_sha256", "board_checks", "certify_after_run", "flows_at_once", "board_faster_than",
                 "relay_cache_gib", "flows_at_once_per_island", "placement_warning_level",
+                "placement_windows", "base_placement",
                 "post_place_report"}   # read by nothing since 2026-11-24 (the placement is always watched)
     if not isinstance(slow, dict) or not required <= set(slow) or set(slow) - required - optional:
         raise TaskError(f"{path}: services.fpga_slow needs {', '.join(sorted(required))} "
                         f"(and may have {', '.join(sorted(optional))})")
+    # The task text's facts about the placement (2026-11-25): `placement_windows` when the pinned platform reports
+    # the cells of each congested window after placement (platform 64d7679b on), `base_placement` what the base's
+    # own placement was -- both the task's, not the harness's.
+    if not isinstance(slow.get("placement_windows", False), bool):
+        raise TaskError(f"{path}: services.fpga_slow.placement_windows must be true or false")
+    base_placement = slow.get("base_placement")
+    if base_placement is not None and (not isinstance(base_placement, str) or not base_placement.strip()):
+        raise TaskError(f"{path}: services.fpga_slow.base_placement must be a sentence about the base's placement")
     cache = slow.get("relay_cache_gib")
     if cache is not None and (isinstance(cache, bool) or not isinstance(cache, (int, float)) or cache <= 0):
         raise TaskError(f"{path}: services.fpga_slow.relay_cache_gib must be a positive number (GiB of the card "
@@ -843,10 +852,11 @@ def _board_lines(score: dict, slow: dict, board: dict, flows: int, shared: str, 
         "resources most contended when it stopped and, for a flow that failed in placement or routing, the "
         "modules Vivado names as filling the congested windows). While a flow's link runs, its status (`tnca-service status ID`) shows its placement "
         "once placement has ended, a few hours before the link's end: Vivado's timing estimate, its estimated "
-        "routing congestion and, for each window at congestion level 5 or above, the cells Vivado finds filling it "
-        "(`placement.windows`). The base's placement: level 6 at most, estimated slack +0.004 ns; its windows at "
-        "level 5 or above are filled by tile 0's home pipe and LSU, and tile 1's core, VALU, VRF banks 1 and 3, "
-        "home pipe and the mesh. A placement Vivado puts at congestion level "
+        "routing congestion"
+        + (" and, for each window at congestion level 5 or above, the cells Vivado finds filling it "
+           "(`placement.windows`)" if slow.get("placement_windows") else "")
+        + ". " + (f"The base's placement: {slow['base_placement']}. " if slow.get("base_placement") else "")
+        + "A placement Vivado puts at congestion level "
         f"{int(slow.get('placement_warning_level', 7))} or above is flagged "
         "(`placement.warning`); `tnca-service wait ID` returns on it, and you may then abandon that flow "
         "(`tnca-service abandon ID`: the link stops, the flow is not charged, and it is recorded as abandoned) or "

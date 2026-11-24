@@ -389,6 +389,8 @@
    "flows_at_once": 4,
    "flows_at_once_per_island": 2,
    "board_runs": 0,
+   "placement_windows": true,
+   "base_placement": "level 6 at most, estimated slack +0.004 ns; its windows at level 5 or above are filled by tile 0's home pipe and LSU, and tile 1's core, VALU, VRF banks 1 and 3, home pipe and the mesh",
    "flow_minutes": 720,
    "board_minutes": 120,
    "board_checks": [

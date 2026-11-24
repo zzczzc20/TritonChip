@@ -287,5 +287,35 @@ class Watch(unittest.TestCase):
         read_.assert_not_called()
 
 
+
+class PlacementText(unittest.TestCase):
+    """2026-11-25: what the task text says about a running flow's placement is the task's: the windows only where
+    the pinned platform reports them (64d7679b on), the base's own placement only as the task states it."""
+
+    def test_only_a_task_whose_platform_reports_the_windows_promises_them(self):
+        from tritonchip_agent_harness.task import load_task, render
+        tasks = HERE / "tasks"
+        direction = render(load_task(tasks / "r41-dp-dir" / "task.json"), "open", island=0)
+        self.assertIn("(`placement.windows`). The base's placement: level 6 at most", direction)
+        layer = render(load_task(tasks / "r41-dp-formal" / "task.json"), "open", island=0)
+        self.assertIn("its estimated routing congestion. A placement Vivado puts at congestion level 7", layer)
+        self.assertNotIn("placement.windows", layer)
+        self.assertNotIn("The base's placement", layer)
+
+    def test_the_placement_keys_are_checked(self):
+        from tritonchip_agent_harness.task import TaskError, load_task
+        src = HERE / "tasks" / "r41-dp-dir"
+        for key, value in (("placement_windows", "yes"), ("base_placement", ""), ("base_placement", 6)):
+            with self.subTest(key=key, value=value), tempfile.TemporaryDirectory() as tmp:
+                import shutil
+                dst = Path(tmp) / "t"
+                shutil.copytree(src, dst)
+                data = json.loads((dst / "task.json").read_text())
+                data["services"]["fpga_slow"][key] = value
+                (dst / "task.json").write_text(json.dumps(data))
+                with self.assertRaisesRegex(TaskError, key):
+                    load_task(dst / "task.json")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1003,9 +1003,12 @@ run:
   `report_design_analysis -congestion`, written beside impl_1/runme.log as `tnca_placed_congestion.rpt` when
   whole (or `.failed` with why), a few minutes per link, nothing in the design changed. The link saves no
   placed checkpoint, so this is the earliest point at which cells can be named. `windows_not_attributed` says
-  why there are none (the hook failed, or a platform without it). The task text gives the base's own windows
-  (level 6 at most; tile 0's home pipe and LSU, tile 1's core, VALU, VRF banks, home pipe and the mesh), so
-  a candidate's new cells stand out. `evaluation.certify.base_image_platform_commit` (+ `_why`) names the pin
+  why there are none (the hook failed, or a platform without it). What the task text says of it is the task's
+  (2026-11-25): `services.fpga_slow.placement_windows: true` where the pinned platform reports the windows (only
+  `r41-dp-dir`, pinned at 64d7679b; a task pinned at 90d9178f does not promise them), and
+  `services.fpga_slow.base_placement` the base's own placement in a sentence (r41-dp-dir: level 6 at most; tile
+  0's home pipe and LSU, tile 1's core, VALU, VRF banks, home pipe and the mesh), so a candidate's new cells
+  stand out. `evaluation.certify.base_image_platform_commit` (+ `_why`) names the pin
   the base's image was certified on (90d9178f) when the pin moves for something that changes no image.
   The agent then decides: `tnca-service abandon ID` stops the link, the flow is not charged, and the request
   is recorded as abandoned (`abandoned`: when, how far into the link, the warning); left running, a design
@@ -1183,6 +1186,23 @@ are recorded but do not extend an island's clock; axes other than the layer; a j
 
 Decided with the operator on 2026-11-23 for the R41 runs after R41-F5g (`tasks/r41-dp-dir`); every part is
 off unless a task asks for it.
+
+**Choosing the split.** How the islands are divided is the task's `islands` block, never a version of the
+harness: the same harness runs both of these (checked by `test_how_islands_are_split_is_the_tasks_choice`).
+
+| | by layer (R41-F5g: `tasks/r41-dp-formal`) | by direction (R41-F6/F6b: `tasks/r41-dp-dir`) |
+|---|---|---|
+| `roles[].authors` | software / hardware / software+hardware+ISA | every layer, for each role |
+| `roles[].direction` | none | `matrix`, `movement`, `reduction` |
+| op groups (the grid's axis) | none given: the built-in elementwise / matrix / attention / model | `op_groups` (matrix, reduction) + `default_op_group` (movement) |
+| grid | 4 x 3 = 12 cells | 3 x 3 = 9 cells |
+| budgets | `roles[].flows`; `services.score.requests` per island | `roles[].flows`, `roles[].score_requests`, `islands.shared` |
+| candidates after the run | `top3` (default): the archive's best three, the first valid one certified | `islands.final_candidates: per_island` |
+| development set | hidden (default) | `evaluation.dev_cases` |
+
+Any mix is a task file of its own (for example layer roles with the direction groups as the grid's axis).
+What is not a choice: which commits other islands see at once is decided by what a commit brought (below) for
+every split; R41-F5g's rule let software ride on another island's hardware past the exchange.
 
 - **Directions.** `islands.op_groups` may name groups of the task's own (prefix lists that do not overlap) with
   `islands.default_op_group` for every other point; a role's `direction` names one group, and the island's text
@@ -1434,6 +1454,7 @@ service request's snapshot; each role's CPU time.
 | 2026-11-23 | The cycle-model-alignment skill finds a calibration case for the agent's own change: `touched.py` runs the same cases on the base commit's tree and model and on the agent's and lists the mechanisms whose CA counters moved; `mechanisms.py` lists what one case reaches (CALIBRATION.json's mechanisms, same rules, and the matrix instructions of the compiled code, since this base's models leave their matrix-command counters at 0); `shrink_case.py` bisects one dimension and keeps the measured size that still reaches the named mechanisms in the fewest model cycles (a smaller size is not always cheaper: a copy at n=32768 took 6140 model cycles, the smallest size reaching dirty writebacks 14777). Run the agent's way on Myserver on R41-DIR-smoke island 0's workspace: the copy calibration case reaches exactly its CALIBRATION.json mechanisms; shrunk to n=32768 it still reaches dirty writebacks, passes tnca_case.py, and align_case.py's uncore gate is aligned (RTL 6128 cycles in 120 s). Decided by the user ("按设计做") |
 | 2026-11-23 | A flow's routing congestion is returned to the agent (`congestion.py`, §12.5 "Routing congestion"), so that a design that does not route can be changed in its RTL; the platform's placement scripts stay as they are. AutoBridge/TAPA was looked at and not adopted: the binding's place hook already floorplans per SLR and pipelines the crossings, and b3's failure was local congestion. Decided by the user. The same day, also decided by the user: a running link's status reports its placement once placement has ended, read from its log (no platform hook, so no QoR score and no cell attribution before the link ends) |
 | 2026-11-24 | The cause of a congested placement while the link routes: the platform pin moves to 64d7679b (90d9178f + a read-only `report_design_analysis -congestion` after placement), and a running flow's `placement` names the cells filling each window at level 5 or above (`windows`), beside the base's own windows in the task text. The base's image stays (`base_image_platform_commit`). Asked by the user ("重点是需要反馈拥塞的原因让agent去分析") |
+| 2026-11-25 | What the task text says of a running flow's placement is the task's: `services.fpga_slow.placement_windows` (the pinned platform reports each window's cells) and `base_placement` (the base's own placement). The base's facts had been in task.py, so tasks pinned at 90d9178f promised windows their platform never writes; r41-dp-dir's text is unchanged. README 12.6a says how a task chooses the island split (by layer as R41-F5g, by direction as R41-F6) |
 | 2026-11-24 | `run.live.json` counts the run's own tokens, island by island, from the islands' Codex session logs, since the account's quota is shared with other work. A build host's `ip_cache_seed` is copied into each new checkout before its link (R41-F6: every HPC link spent ~2 h 10 min synthesising the platform's IPs again). Asked by the user, who then restarts F6 as a new run |
 | 2026-11-24 | A placement at congestion level 7 or above is a warning: `wait` returns on it, and the agent chooses to abandon the flow (`tnca-service abandon`: stopped, not charged, recorded as abandoned) or to let it run (a design failure then charged as any). Decided by the user |
 | 2026-11-08 | The test-case skill carries a visible set: points of the benchmark itself (`benchmark_cases/`, 18 for the next R41 round, one an unfrozen FP8 draft), exported by `skill_cases.py` and checked bit for bit, and the classes the agent is given (`classes.json`) with a rule for covering them at milestones. Seven classes are held out entirely (none of their points or names in the skill). The leak tests now forbid every point the skill does not give and every class it does not list, derived from its own index. The test tasks `replay-mzero` and `r39-v5-main-pilot` no longer default to the skill. Decided by the user (§6.1) |

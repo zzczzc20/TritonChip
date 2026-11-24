@@ -87,7 +87,9 @@ pairs = [('op.matmul_small_fp16-m64-k128-n128', 'tnca16_matmul_small_AUTO0', 'de
          ('op.linear_small_fp16-m64-k256-n256', 'tnca16_linear_small_AUTO0', 'default_linear_small_run1', '16x16x16 (TNCA_GEMM_AUTO=0) -> N-blocked default (default run 1; runs 2 and 3 above)'),
          ('op.matmul_tiny_fp16-m16-k32-n16', 'default_tiny_run1', 'k32_tiny', '16x16x16 -> TNCA_GEMM_TILE=16,16,32'),
          ('op.linear_tiny_fp16-m16-k64-n64', 'default_tiny_run1', 'k32_tiny', '16x16x16 -> TNCA_GEMM_TILE=16,16,32'),
-         ('op.linear_small_fp16-m64-k256-n256', 'tnca16_linear_small_AUTO0', 'k32_linear_small', '16x16x16 -> TNCA_GEMM_TILE=16,16,32')]
+         ('op.linear_small_fp16-m64-k256-n256', 'tnca16_linear_small_AUTO0', 'k32_linear_small', '16x16x16 -> TNCA_GEMM_TILE=16,16,32'),
+         ('op.linear_small_fp16-m64-k256-n256', 'tnca16_linear_small_AUTO0', 'default_linear_small_run2_env_ignored', '16x16x16 -> N-blocked default (run 2)'),
+         ('op.linear_small_fp16-m64-k256-n256', 'tnca16_linear_small_AUTO0', 'default_linear_small_run3_env_ignored', '16x16x16 -> N-blocked default (run 3)')]
 for n, a, b, what in pairs:
     x, y = mc(a, n), mc(b, n)
     if x and y:

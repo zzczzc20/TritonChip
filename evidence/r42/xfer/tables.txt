@@ -96,13 +96,19 @@ op.matmul_small_fp16-m64-k128-n128                    57824      55408    0.958 
    default_tiny_run1                        op.matmul_tiny_fp16-m16-k32-n16                1952
    default_tiny_run2_env_ignored            op.linear_tiny_fp16-m16-k64-n64                4969
    default_tiny_run2_env_ignored            op.matmul_tiny_fp16-m16-k32-n16                1953
+   k32_linear_small                         op.linear_small_fp16-m64-k256-n256             179142
    k32_tiny                                 op.linear_tiny_fp16-m16-k64-n64                6114
    k32_tiny                                 op.matmul_tiny_fp16-m16-k32-n16                2383
+   tnca16_linear_small_AUTO0                op.linear_small_fp16-m64-k256-n256             193413
    tnca16_matmul_small_AUTO0                op.matmul_small_fp16-m64-k128-n128             47474
    valid pairs (settings through --set):
    op.matmul_small_fp16-m64-k128-n128       16x16x16 (TNCA_GEMM_AUTO=0) -> N-blocked default: 47474 -> 42882  (ratio 0.903)
+   op.linear_small_fp16-m64-k256-n256       16x16x16 (TNCA_GEMM_AUTO=0) -> N-blocked default (default run 1; runs 2 and 3 above): 193413 -> 159177  (ratio 0.823)
    op.matmul_tiny_fp16-m16-k32-n16          16x16x16 -> TNCA_GEMM_TILE=16,16,32: 1952 -> 2383  (ratio 1.221)
    op.linear_tiny_fp16-m16-k64-n64          16x16x16 -> TNCA_GEMM_TILE=16,16,32: 4974 -> 6114  (ratio 1.229)
+   op.linear_small_fp16-m64-k256-n256       16x16x16 -> TNCA_GEMM_TILE=16,16,32: 193413 -> 179142  (ratio 0.926)
+   op.linear_small_fp16-m64-k256-n256       16x16x16 -> N-blocked default (run 2): 193413 -> 154073  (ratio 0.797)
+   op.linear_small_fp16-m64-k256-n256       16x16x16 -> N-blocked default (run 3): 193413 -> 163348  (ratio 0.845)
 
 5. tlm K32 and hardware what-ifs (cycles / base cycles; FAIL = compile failure of the K32 tile)
 point                                                         auto12       k32    ab_k32   le_base   le_auto    le_k32  leab_k32

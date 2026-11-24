@@ -1,0 +1,4 @@
+== w8a8_block_dynamic_fp8_matmul_kernel.s: 8704 instructions
+   matrix commands (static): Counter({'m.mma.dp.async.k32.e4m3': 32})
+   innermost matrix loop [685..7119]: 6435 instructions/iteration, matrix-other 392, mma 32, scalar-branch 1486, vector-other 4318, window-barrier-transfer 207
+      mnemonics: {'v.extract': 617, 's.add': 510, 'v.splat': 477, 's.addi': 386, 'vf.mul': 385, 'v.movi': 355, '@p1': 318, 'vf.fms': 262, 'vf.cvt.f16.f32': 256, 'a.vread': 256, 's.movz': 196, 's.mov': 164}

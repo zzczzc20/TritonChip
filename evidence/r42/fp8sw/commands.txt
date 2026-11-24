@@ -1,0 +1,30 @@
+# fp8sw: commands in the order they were run (hosts: GB10, nice 19, at most 3 processes of mine; domain per line)
+# Trees on GB10: ~/r42/fp8sw = R42 head (origin/R42 02b7578e + R42-xl merge 01718c16, compiler code untouched; restored from git at 23:11 after a
+#   sync mistake, see below), ~/r42/fp8sw-dev, -dev2, -dev3 = development states, ~/r42/fp8sw-cand = the candidate (head of R42-fp8sw).
+# Outputs: ~/r42/fp8sw_out (not in the repository; the records used in the report are copied to evidence/r42/fp8sw/).
+#
+# 1. kernel dumps (static census)         [compile only]
+bash tools/r42/fp8sw/dump_point.sh TREE OUTDIR op.fp8_linear/xl/fp8-m16-k256-n128    # TNCA_KERNEL_DUMP=1, private caches
+# 2. RTL, single core, one point, counters, issue probe                [domain: RTL]
+bash tools/r42/fp8sw/mkprobe.sh TREE OUTDIR            # builds the probed device bench (iverilog) from tools/r42/fp8sw/issue_probe.v
+TNCA_DEVICE=OUTDIR/device.vvp TNCA_DEVICE_PLUSARGS=+iprobe=FILE bash tools/r42/fp8sw/rtl_point.sh TREE OUT POINT --counters
+python3 tools/r42/fp8sw/stall_profile.py KERNEL.s FILE.iprobe --loop for_26      # waiting cycles per mnemonic and per 500-instruction chunk
+# 3. the measured set (R42 head against the candidate)
+bash tools/r42/fp8sw/final_proxies.sh OUTDIR 1 fp8sw fp8sw-cand     # m16/m1 x K256/K512, N=128, with FP8SW_DIGEST_DIR (sha256 of every output)
+# 4. TLM, three cores, cal configuration                               [domain: TLM]
+python3 tools/r42/kfuse_speed_tlm_cfg.py OUTDIR/cfg
+cmake -S tools/performance_harness/systemc -B OUTDIR/tlm-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$HOME/tc_env/systemc-3.0.2/install && cmake --build OUTDIR/tlm-build --target tnca-chip
+TLMTAG=xl_base2 bash tools/r42/fp8sw/tlm_point.sh ~/r42/fp8sw OUTDIR cal op.fp8_linear/xl/fp8-m{1,48}-k{512,1024}-n1536
+TLMTAG=xl_cand  bash tools/r42/fp8sw/tlm_point.sh ~/r42/fp8sw-cand OUTDIR cal (same four points)
+python3 tools/r42/fp8sw/xl_projection.py --base evidence/r42/fp8sw/tlm/xl_base2.json --cand evidence/r42/fp8sw/tlm/xl_cand.json --inputs evidence/r42/fp8sw/xl_inputs.json --out evidence/r42/fp8sw/xl_projection.json
+# 5. gates
+make compiler                                   # GB10, from ~/r42/fp8sw-dev2 (system python3): compiler-unit PASS 182 tests, 67 skipped; compiler-ir SKIP (tnca-opt not built)
+python3 compiler/test/test_fp8sw.py             # the new tests: 8 tests OK
+~/r42/r42_run.sh fp8sw-cand core-vrf-sync-v5-x8-g2c4-dp tiny 2 fp8sw_cand_tiny      # ArchBench tiny tier, single-core RTL, default knobs
+python3 ~/r42/r42_cmp.py BASE.jsonl CAND.jsonl
+#
+# Sync mistake (kept visible): `r42_sync <worktree> fp8sw` at about 23:11 replaced the compiler of the R42-head reference tree with the working tree for
+# about two minutes while the first TLM reference set (tag xl_base) was running. That set was discarded; the tree was restored from git commit 01718c16 and the
+# set rerun as xl_base2. All RTL reference records (base_*, k512_fp8sw_*, m1_fp8sw_*) were taken before that moment.
+# ladder/*.jsonl: cumulative RTL records of the development states (e1 address folding; e2 + lazy dot accumulators and in-place carry; e3 + scheduler alias analysis;
+#   e4 + row reciprocal, FIRST TRY, numeric-error (kept); e6 + fixed row reciprocal and rematerialised loads; e7 = e6 plus a wide scheduler attempt, removed).

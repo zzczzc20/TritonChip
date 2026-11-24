@@ -34,7 +34,7 @@ if os.environ.get('FP8SW_DIGEST_DIR'):
     _cur = []
     _run_point, _compare = T.run, T.compare
 
-    def _run(point, *a, **k):
+    def _tracked_run(point, *a, **k):
         _cur[:] = [point.id]
         return _run_point(point, *a, **k)
 
@@ -52,7 +52,7 @@ if os.environ.get('FP8SW_DIGEST_DIR'):
             fh.write('\n'.join(lines) + '\n')
         return _compare(got, ref, tol)
 
-    T.run, T.compare = _run, _cmp
+    T.run, T.compare = _tracked_run, _cmp
 
 if __name__ == '__main__':
     sys.exit(R.main(sys.argv[1:]))

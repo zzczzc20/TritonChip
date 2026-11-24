@@ -3,6 +3,7 @@
 #include "tnca_barrier_model.hpp"
 #include "tnca_timeline_memory.hpp"
 #include <functional>
+#include <set>
 #include <cstdlib>
 #include <cstdio>
 
@@ -32,6 +33,7 @@ struct TensorEngine : sc_module {
     std::string key(const std::string& suffix)const{return "core_"+std::to_string(core)+"_dma_"+suffix;}
     std::string units_key=key("units"),tags_key=key("tags"),rf_key=key("rf"),read_key=key("read_words"),write_key=key("write_words"),peak_key=key("peak_tags");
     u64 *reads=nullptr,*writes=nullptr,*peak=nullptr;u64 rf_cycles=x.c.get("dma_rf_cycles");
+    std::set<u64>* xheld=nullptr;   // R42 xfer: lines held by the running transposed command (dma_xpose_line_buffer)
     // Timeline path (memory_model=1): the core's memory port and the analytic
     // memory system; the engine's RF port and tag window are timelines too.
     TimelineMemory* tm=nullptr;Timeline* port=nullptr;Timeline rf_tl;
@@ -53,11 +55,17 @@ struct TensorEngine : sc_module {
         u64 done=t;
         if(x.functional)for(auto& beat:beats)beat.second.value=tm->access(beat.first,store,beat.second.value,store?beat.second.mask:255);
         else for(auto& beat:beats){
+            // R42 xfer: the transposed load's line buffer (tnca_tensor.v, TENSOR_LINE): a unit whose line this
+            // command already fetched is answered from the buffer, one a cycle, with no memory request.
+            if(xheld && !store && xheld->count(beat.first&~63ULL)){
+                beat.second.value=tm->access(beat.first,false,0,255);t=t+1;done=std::max(done,t);++x.counts[key("xpose_buffer_hits")];continue;
+            }
             u64 cap=x.c.get("dma_outstanding");
             while(window.size()>=cap){auto m=std::min_element(window.begin(),window.end());t=std::max(t,*m);window.erase(m);}
             u64 at=port->reserve(t,1,now);t=at+1;u64 value=0;
             u64 when=tm->word(core,beat.first,store,beat.second.value,store?beat.second.mask:255,at,value);
             window.push_back(when);done=std::max(done,when);beat.second.value=value;
+            if(xheld && !store)xheld->insert(beat.first&~63ULL);
             if(store){if(!writes)writes=&x.counts[write_key];++*writes;}else{if(!reads)reads=&x.counts[read_key];++*reads;}
         }
         result=0;
@@ -119,6 +127,7 @@ struct TensorEngine : sc_module {
             // block (no overlap between blocks).
             // A 1-byte block is eight destination rows, so eight write cycles.
             unsigned rows=d.block[0],columns=d.block[1],per=8/bytes;u64 cap=x.c.get("dma_outstanding");
+            std::set<u64> held;if(x.c.get_or("dma_xpose_line_buffer",0))xheld=&held;
             for(unsigned column=0;column<columns;column+=per){
                 std::vector<u64> source(rows);u64 drained=t;window.clear();
                 for(unsigned row=0;row<rows;++row){
@@ -131,6 +140,7 @@ struct TensorEngine : sc_module {
                 t=w+per;
             }
             end=std::max(end,t)+x.c.get("dma_drain_cycles");
+            xheld=nullptr;
         }else if(transpose){
             unsigned rows=d.block[0],columns=d.block[1],per=8/bytes;
             for(unsigned column=0;column<columns;column+=per){
@@ -196,6 +206,21 @@ struct TensorEngine : sc_module {
     Timeline line_rf,line_rf_read; // the window port's write side (loads) and read side (stores)
     struct LineResult {u64 issue_end=0,rf_end=0,end=0;std::vector<std::shared_ptr<Held>> held;};
     bool line_mode()const{return tm && !x.functional && x.c.get_or("dma_line_engine",0)!=0;}
+    // R42 xfer (dma_line_elig=1): the line engine's own rule (tnca_tensor.v le_elig). Only a transfer whose rows are
+    // whole 64-byte lines, starting line-aligned with line-multiple outer strides, inside the tensor, moves as line
+    // requests; every other transfer keeps the word walk.
+    // dma_line_elig=2 is a HARDWARE WHAT-IF (not built): a row of 32 bytes (half a line) starting on a 32-byte
+    // boundary also moves as a line request, the other half of the line being left unused.
+    bool line_eligible(const TensorMapModel& d,const std::array<u64,5>& c,unsigned bytes)const{
+        u64 mode=x.c.get_or("dma_line_elig",0);if(!mode)return true;
+        u64 unit=mode==2?32:64;
+        unsigned r=d.rank;if(r<1)return false;
+        if((u64(d.block[r-1])*bytes)%unit)return false;
+        if(!d.inside(c))return false;
+        u64 start=d.base+c[r-1]*bytes;
+        for(unsigned i=0;i+1<r;++i){if(d.stride[i]%unit)return false;start+=c[i]*d.stride[i];}
+        return start%unit==0;
+    }
     u64 take_buffer(u64 t,u64 now){
         unsigned cap=unsigned(x.c.get_or("dma_line_buffers",64));
         line_release.erase(std::remove_if(line_release.begin(),line_release.end(),[now](u64 d){return d<=now;}),line_release.end());
@@ -478,7 +503,7 @@ struct TensorEngine : sc_module {
         }catch(...){admission.release();throw;}
         ++x.counts[key("commands_issued")];require(role<4,"transfer issuer context");++outstanding[role];
         // Admitted commands run in order on one persistent controller process.
-        if(active && !transpose && line_mode()){
+        if(active && !transpose && line_mode() && line_eligible(*descriptor,coordinates,bytes)){
             ++queued;
             command_worker.submit([=](){
                 controller.lock();--queued;auto start=sc_time_stamp();LineResult lr;

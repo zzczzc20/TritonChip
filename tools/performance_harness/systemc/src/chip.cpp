@@ -314,7 +314,7 @@ struct Core : sc_module {
     bool aborting=false;Outcome fault;sc_time deadline=SC_ZERO_TIME;
     // Timing constants (configuration, uncalibrated).
     u64 t_issue,t_scalar,t_mul,t_vint,t_vfp,t_cvt,t_cmp,t_pred,t_shuf,t_red,t_fred,t_sfu_occ,t_sfu,t_load,t_bar,t_acc,
-        t_rf,t_mac,t_mac_unbuf,t_pipe,t_done,t_zero,t_row,t_launch;bool abuf;
+        t_rf,t_mac,t_mac_unbuf,t_pipe,t_done,t_zero,t_row,t_launch;bool abuf,abuf_k32=false;
     // What-if packed MMA (m.mma.dp, hypothetical; Config optional keys):
     // G consecutive k per lane per step, timing only (numerics stay per-K).
     u64 dp_g16=1,dp_g8=1;bool dp_pf=false;u64* c_dp=nullptr;
@@ -365,7 +365,7 @@ struct Core : sc_module {
         t_shuf=g("shuffle_latency");t_red=g("reduction_latency");t_fred=g("fp_reduction_latency");t_sfu_occ=g("sfu_occupancy");
         t_sfu=g("sfu_latency");t_load=g("load_latency");t_bar=g("barrier_latency");t_acc=g("acc_read_latency");
         t_rf=g("mtx_rf_read_cycles");t_mac=g("mtx_mac_cycles");t_mac_unbuf=g("mtx_mac_unbuffered_cycles");t_pipe=g("mtx_pipe_cycles");
-        t_done=g("mtx_complete_cycles");t_zero=g("mtx_zero_cycles");t_row=g("mtx_row_cycles");t_launch=g("launch_cycles");abuf=g("mtx_abuf")!=0;
+        t_done=g("mtx_complete_cycles");t_zero=g("mtx_zero_cycles");t_row=g("mtx_row_cycles");t_launch=g("launch_cycles");abuf=g("mtx_abuf")!=0;abuf_k32=x.c.get_or("mtx_abuf_k32",0)!=0;
         dp_g16=x.c.get_or("mtx_dp_group_16",1);dp_g8=x.c.get_or("mtx_dp_group_8",1);dp_pf=x.c.get_or("mtx_dp_b_prefetch",0)!=0;
         mdp=x.c.get_or("mtx_dp",0)!=0;mdp_pf=x.c.get_or("mtx_dp_prefetch",0)!=0;mdp_extra=x.c.get_or("mtx_dp_extra_latency",1);
         dp_override=x.c.get_or("mtx_dp_g_override",0);dp_bregs=x.c.get_or("mtx_dp_b_regs",0)!=0;free_mode=x.c.get_or("issue_free_mode",0);
@@ -525,7 +525,7 @@ struct Core : sc_module {
             std::fprintf(stderr,"MMAPENDING %zu\n",f.physical->pending.size());for(auto& w:f.physical->pending)std::fprintf(stderr,"  pend idx %u mask %x due %llu\n",w.index,w.mask,(unsigned long long)x.to_cycles(w.due));}}
         if(dp)tnca_matrix_ops::mma_dp(acc[slot],A,B,K,dt,dtb);
         else tnca_matrix_ops::mma(acc[slot],A,B,K,dt);
-        bool buffered=abuf && (bytes==1?K!=64:K==16);
+        bool buffered=abuf && (bytes==1?K!=64:(K==16 || (K==32 && abuf_k32)));
         u64 sweep=(buffered?a_regs*t_rf:0)+K*(t_rf+16*(buffered?t_mac:t_mac_unbuf));
         unsigned dp_g=unsigned(bytes==1?dp_g8:dp_g16);
         if(!dp && (dp_g>1 || dp_pf)){

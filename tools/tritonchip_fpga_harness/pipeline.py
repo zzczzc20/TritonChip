@@ -117,7 +117,9 @@ def sync(host: Host, commit: str, local_repo: Path, *, ssh_binary: str = "ssh") 
     and refused otherwise; nothing on a server is ever deleted. A missing one
     is created as a worktree of the server's bare mirror, after the controller
     has sent the commit as a git bundle (the mirror is fetched from the bundle
-    only when it does not have the commit yet).
+    only when it does not have the commit yet). A build host with an
+    ``ip_cache_seed`` gets that IP cache copied into each checkout created here
+    (seed_ip_cache).
     """
     checkout = host.checkout(commit)
     present = remote(host, ["git", "-C", checkout, "rev-parse", "HEAD"], ssh_binary=ssh_binary, check=False)
@@ -156,7 +158,36 @@ def sync(host: Host, commit: str, local_repo: Path, *, ssh_binary: str = "ssh") 
     head = _out(remote(host, ["git", "-C", checkout, "rev-parse", "HEAD"], ssh_binary=ssh_binary))
     if head != commit:
         raise PipelineError(f"{host.name}: the new checkout is at {head}, not {commit}")
-    return {"host": host.name, "checkout": checkout, "action": "created", "bundle_bytes": sent}
+    out = {"host": host.name, "checkout": checkout, "action": "created", "bundle_bytes": sent}
+    if host.ip_cache_seed:
+        out["ip_cache"] = seed_ip_cache(host, commit, ssh_binary=ssh_binary)
+    return out
+
+
+IP_CACHE = ".ipcache"   # v++'s IP cache, kept in the link's working directory (the checkout)
+
+
+def seed_ip_cache(host: Host, commit: str, *, ssh_binary: str = "ssh") -> dict[str, Any]:
+    """Copy the host's ``ip_cache_seed`` into a checkout sync has just created, before any link runs there.
+
+    The copy is made in ``incoming`` and renamed into the checkout whole, so a link never finds a cache half
+    copied. A failed copy is reported and the checkout is used without one: the link then synthesises every
+    IP, as it did before seeds. Only the harness's own staging copy is ever removed.
+    """
+    started = time.time()
+    staged = f"{host.incoming}/ipcache-{commit}"
+    target = f"{host.checkout(commit)}/{IP_CACHE}"
+    if remote(host, ["test", "-e", target], ssh_binary=ssh_binary, check=False).returncode == 0:
+        return {"seeded": False, "from": host.ip_cache_seed, "error": f"{IP_CACHE} is already in the checkout"}
+    steps = (["rm", "-rf", "--", staged], ["cp", "-a", "--", host.ip_cache_seed, staged],
+             ["mv", "--", staged, target])
+    for argv in steps:
+        done = remote(host, argv, ssh_binary=ssh_binary, check=False, timeout=1800)
+        if done.returncode != 0:
+            detail = done.stderr.decode("utf-8", errors="replace").strip().splitlines()[-2:]
+            remote(host, ["rm", "-rf", "--", staged], ssh_binary=ssh_binary, check=False)
+            return {"seeded": False, "from": host.ip_cache_seed, "error": f"{argv[0]} failed: {' | '.join(detail)}"}
+    return {"seeded": True, "from": host.ip_cache_seed, "seconds": round(time.time() - started, 1)}
 
 
 def worker(host: Host, commit: str, request: dict[str, Any], *, ssh_binary: str = "ssh",

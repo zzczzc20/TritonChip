@@ -24,6 +24,7 @@
       "state_dir": "/shared/fpga/slot-1/tritonchip-harness",
       "vitis_root": "/shared/Xilinx/Vitis/2023.2",
       "platforms_root": "/shared/xilinx/platforms",
+      "ip_cache_seed": "/shared/fpga/ipcache-seed/u280-2023.2",
       "lsf": {"profile": "/opt/lsf/conf/profile.lsf", "queue": "cpu", "slots": 8}
     },
     "card": {

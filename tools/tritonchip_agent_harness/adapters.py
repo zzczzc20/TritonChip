@@ -348,6 +348,46 @@ def codex_rollouts(run_dir: Path) -> tuple:
     return models, (total if found else None)
 
 
+class RolloutUsage:
+    """codex_rollouts' usage, read while the agent runs (2026-11-24, R41-F6): the account's quota is shared with
+    other work, so a run counts its own consumption from its own session logs. Each log is read on from where
+    the last call stopped (they reach ~50 MB an island in 24 h); a line still being written waits for the next
+    call. Same total as codex_rollouts: each session's last token_count, summed over sessions."""
+
+    def __init__(self, run_dir: Path) -> None:
+        self.root = run_dir / "codex-home" / "sessions"
+        self.files: dict = {}          # log -> [bytes read, its last total_token_usage]
+
+    def usage(self) -> Optional[dict]:
+        if self.root.is_dir():
+            for rollout in sorted(self.root.rglob("rollout-*.jsonl")):
+                state = self.files.setdefault(rollout, [0, None])
+                with open(rollout, "rb") as f:
+                    f.seek(state[0])
+                    chunk = f.read()
+                end = chunk.rfind(b"\n")
+                if end < 0:
+                    continue
+                for line in chunk[:end].splitlines():
+                    if b"token_count" not in line:
+                        continue
+                    try:
+                        p = json.loads(line).get("payload") or {}
+                    except (ValueError, AttributeError):
+                        continue
+                    if isinstance(p, dict) and p.get("type") == "token_count" and isinstance(p.get("info"), dict):
+                        state[1] = p["info"].get("total_token_usage") or state[1]
+                state[0] += end + 1
+        total, found = {}, False
+        for _, last in self.files.values():
+            if isinstance(last, dict):
+                found = True
+                for k, v in last.items():
+                    if k != "total_tokens" and isinstance(v, (int, float)) and not isinstance(v, bool):
+                        total[k] = total.get(k, 0) + v
+        return total if found else None
+
+
 def token_delta(now: Optional[dict], before: Optional[dict]) -> Optional[dict]:
     """One turn's share of two running totals in tokens()'s schema: each count's difference (None stays None),
     model by model where both name their models."""
@@ -438,5 +478,5 @@ def _read(account: Account, out: str, run_dir: Path, export_session=None) -> dic
     return r
 
 
-__all__ = ["codex_rollouts", "token_delta", "token_sum", "CODEX_HOME", "Launch", "MODES", "SKILLS_DIR", "TOKEN_FIELDS", "WORKDIR", "codex_config", "launch",
+__all__ = ["RolloutUsage", "codex_rollouts", "token_delta", "token_sum", "CODEX_HOME", "Launch", "MODES", "SKILLS_DIR", "TOKEN_FIELDS", "WORKDIR", "codex_config", "launch",
            "opencode_config", "parse", "session_id", "throttle", "tokens", "tool_calls"]

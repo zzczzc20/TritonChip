@@ -922,6 +922,15 @@ transfer are file work on the login node; `workspace` and `state_dir` must be
 on the file system the nodes share. The pipeline record's `build.lsf` names
 the job, its node, and how long it was pending and running.
 
+`ip_cache_seed` names a complete v++ IP cache on the host (any build host,
+not only a cluster). v++ keeps its IP cache in the link's working directory,
+the checkout, and every commit is a new checkout, so each link synthesised the
+platform's IPs again: about 2 h 10 min of every HPC link in R41-F6
+(2026-11-24), against 30 min with a cache. `sync` copies the seed into each
+checkout it creates, through `incoming` and one rename, before any link runs
+there; the sync step's detail says `ip_cache: {seeded, from, seconds}` or why
+not. An entry that matches no IP is a miss and is synthesised as before.
+
 `lsf.queue` puts a job of the controller's own (a script already on the
 cluster) in the same queue under a name, attaching to one already named so;
 `wait` and `kill` take that name as they take a run's. The agent harness uses

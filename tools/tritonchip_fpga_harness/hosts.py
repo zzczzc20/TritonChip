@@ -50,6 +50,14 @@ job asks for on one node. One such host is one link at a time (the harness's
 own lease); a cluster that should run several links at once is listed as
 several hosts, each with its own ``workspace`` and ``state_dir``.
 
+``ip_cache_seed`` (optional, a build host) is a directory holding a complete
+v++ IP cache (``.ipcache``) of an earlier link. ``sync`` copies it into each
+checkout it creates, before any link runs there: v++ keeps its IP cache in the
+link's working directory, every commit is a new checkout, and without a seed
+every link synthesised the platform's IPs again (R41-F6, 2026-11-24: about
+2 h 10 min of each HPC link). An entry that does not match an IP is a miss and
+is synthesised as before.
+
 Every value is checked to be one shell-safe token that does not start with
 '-': OpenSSH runs the remote command through the login shell, and reads
 options after the destination unless they follow '--' (which the harness
@@ -71,7 +79,7 @@ _SAFE = re.compile(r"^[A-Za-z0-9_./:@%+=,-]+$")
 _NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 _ENV_NAME = re.compile(r"^[A-Z_][A-Z0-9_]*$")
 _FIELDS = {"ssh", "roles", "python", "workspace", "state_dir", "vitis_root", "platforms_root",
-           "environment", "port", "identity_file", "description", "lsf"}
+           "environment", "port", "identity_file", "description", "lsf", "ip_cache_seed"}
 _LSF_FIELDS = {"profile", "queue", "slots"}
 
 
@@ -90,6 +98,8 @@ class Host:
     identity_file: str | None = None
     # {"profile", "queue", "slots"} when the link runs as an LSF job (lsf.py); None for a plain machine.
     lsf: dict[str, Any] | None = None
+    # A complete v++ IP cache that sync copies into each checkout it creates; None: none.
+    ip_cache_seed: str | None = None
 
     @property
     def mirror(self) -> str:
@@ -195,6 +205,7 @@ def parse_hosts(value: Mapping[str, Any]) -> dict[str, Host]:
             port=port,
             identity_file=_token(entry["identity_file"], f"{where}.identity_file") if entry.get("identity_file") else None,
             lsf=lsf,
+            ip_cache_seed=_absolute(entry["ip_cache_seed"], f"{where}.ip_cache_seed") if entry.get("ip_cache_seed") else None,
         )
     return hosts
 

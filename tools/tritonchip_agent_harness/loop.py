@@ -322,8 +322,14 @@ class _LiveRecord:
     LIVE_SECONDS, so that a run can be followed before run.json, which is written at the end (review
     section 9). Never read back; a failed write is skipped."""
 
+    TOKENS_NOTE = ("tokens this run's agents used so far, read from each island's own Codex session logs (each "
+                   "session's last token_count, summed), in agent_result.tokens' schema: total = input_uncached + "
+                   "cache_write + cache_read + output, reasoning inside output. Independent of the account's quota, "
+                   "which other work shares. An island whose CLI keeps no such log is null.")
+
     def __init__(self, run_dir: Path, shared, stage: Callable[[], str] = lambda: "islands") -> None:
         self.run_dir, self.shared, self.stage = run_dir, shared, stage
+        self.readers: dict = {}
         self.done = threading.Event()
         self.thread = threading.Thread(target=self._loop, daemon=True, name="live-record")
 
@@ -344,12 +350,29 @@ class _LiveRecord:
             archive = next((b.archive for b in brokers if b.archive is not None), None)
             snap = {"live": True, "at": time.time(), "stage": self.stage(),
                     "archive": archive.record() if archive else None,
-                    "islands": [{"island": b.island, "services": b.record()} for b in brokers]}
+                    "islands": [{"island": b.island, "services": b.record()} for b in brokers],
+                    "tokens": self.tokens(brokers)}
             tmp = self.run_dir / "run.live.json.tmp"
             tmp.write_text(json.dumps(snap, indent=1, sort_keys=True, default=str) + "\n", encoding="utf-8")
             tmp.replace(self.run_dir / "run.live.json")
         except Exception:  # noqa: BLE001 -- the live record is a convenience; the run goes on
             pass
+
+    def tokens(self, brokers) -> dict:
+        """2026-11-24: each island's tokens so far and the run's total (TOKENS_NOTE)."""
+        from . import adapters
+        islands = {}
+        for b in brokers:
+            try:
+                reader = self.readers.setdefault(b.island, adapters.RolloutUsage(self.run_dir / f"island-{b.island}"))
+                usage = reader.usage()
+                islands[str(b.island)] = None if usage is None else {
+                    k: v for k, v in adapters.tokens("codex", usage).items() if k != "by_model"}
+            except Exception:  # noqa: BLE001 -- one unreadable log leaves that island null
+                islands[str(b.island)] = None
+        counted = [v for v in islands.values() if v]
+        return {"note": self.TOKENS_NOTE, "islands": islands,
+                "total": adapters.token_sum(counted) if counted else None}
 
 
 def _island_rows(results) -> list:

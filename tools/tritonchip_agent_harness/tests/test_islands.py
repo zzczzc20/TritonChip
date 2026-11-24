@@ -560,3 +560,42 @@ class RunGuards(unittest.TestCase):
             self.assertEqual((got["live"], got["archive"]["entries"][0]["id"]), (True, "0-1"))
             self.assertEqual(got["stage"], "final evaluation")
             self.assertEqual(got["islands"][0]["services"]["requests"][0]["id"], "s1")
+
+    def test_the_live_record_counts_each_islands_tokens_from_its_own_session_logs(self):
+        """2026-11-24 (R41-F6): the Codex quota is shared with other work, so a run counts its own tokens."""
+        import types as types_
+        from tritonchip_agent_harness import loop
+
+        def event(total):
+            return json.dumps({"type": "event_msg", "payload": {"type": "token_count", "info": {
+                "total_token_usage": dict(total, total_tokens=0)}}}) + "\n"
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sessions = root / "island-0" / "codex-home" / "sessions" / "2026" / "11" / "24"
+            sessions.mkdir(parents=True)
+            first = sessions / "rollout-a.jsonl"
+            first.write_text(event({"input_tokens": 100, "cached_input_tokens": 60, "output_tokens": 10,
+                                    "reasoning_output_tokens": 4})
+                             + json.dumps({"type": "response_item", "payload": {"type": "message"}}) + "\n"
+                             + event({"input_tokens": 300, "cached_input_tokens": 200, "output_tokens": 30,
+                                      "reasoning_output_tokens": 12}))
+            (sessions / "rollout-b.jsonl").write_text(event({"input_tokens": 50, "cached_input_tokens": 0,
+                                                             "output_tokens": 5, "reasoning_output_tokens": 0}))
+            brokers = [types_.SimpleNamespace(island=i, archive=None, record=lambda: {}) for i in (0, 1)]
+            live = loop._LiveRecord(root, types_.SimpleNamespace(brokers=brokers))
+            got = live.tokens(brokers)
+            # Each session's last total, summed: input 350 of which 200 cached, output 35 of which 12 reasoning.
+            self.assertEqual(got["islands"]["0"], {"input_uncached": 150, "cache_write": None, "cache_read": 200,
+                                                   "output": 35, "reasoning": 12, "total": 385})
+            self.assertIsNone(got["islands"]["1"])                 # no Codex logs on that island
+            self.assertEqual(got["total"]["total"], 385)
+            # A line still being written waits; the next write reads on from where this one stopped.
+            with first.open("a") as f:
+                f.write(event({"input_tokens": 1000, "cached_input_tokens": 900, "output_tokens": 40,
+                               "reasoning_output_tokens": 20})[:-30])
+            self.assertEqual(live.tokens(brokers)["islands"]["0"]["total"], 385)
+            with first.open("a") as f:
+                f.write(event({"input_tokens": 1000, "cached_input_tokens": 900, "output_tokens": 40,
+                               "reasoning_output_tokens": 20})[-30:])
+            self.assertEqual(live.tokens(brokers)["islands"]["0"]["total"], 1000 + 40 + 50 + 5)

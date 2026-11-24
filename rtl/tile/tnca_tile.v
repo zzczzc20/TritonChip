@@ -62,6 +62,7 @@ module tnca_tile #(
     parameter HOME_LINE_WRITE_NOFILL = 0,   // R41 G4: full-line stores allocate without a fill
     parameter HOME_LINE_PIPE = 0,                // R41 G4: pipelined home (tnca_home_pipe) when HYBRID_LSU; 2: chained fills
     parameter TENSOR_LINE = 0,                   // R41 G4: the transfer engine's line path when HYBRID_LSU
+    parameter TENSOR_LINE_HALF = 0,   // R42: half-line rows in the line engine (tnca_tensor LINE_HALF)
     parameter SFU_LANES = 1,
     parameter NOC_PAYLOAD_W = HYBRID_LSU ? 720 : 216,
     parameter LSU_INFLIGHT = 1,
@@ -218,7 +219,7 @@ module tnca_tile #(
     wire [CORE_DW-1:0] c_rsp_rdata;
 
     tnca_core #(
-        .HYBRID_LSU(HYBRID_LSU),.TENSOR_LINE(TENSOR_LINE),.SFU_LANES(SFU_LANES),
+        .HYBRID_LSU(HYBRID_LSU),.TENSOR_LINE(TENSOR_LINE),.TENSOR_LINE_HALF(TENSOR_LINE_HALF),.SFU_LANES(SFU_LANES),
         .MEM_DW(CORE_DW),.MEM_BYTES(CORE_BYTES),.MEM_SHIFT(HYBRID_LSU ? 6 : 3),
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(LW),
         .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),

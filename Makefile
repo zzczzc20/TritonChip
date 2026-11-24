@@ -816,6 +816,21 @@ core-run2: $(patsubst %,$(BUILD)/%.hex,$(RUN2_PROGS)) $(BUILD)/t41_mmadp.hex \
 	     || exit 1; \
 	 done
 
+# R42 lineelig: half-line rows in the line-wide transfer engine (tnca_tensor LINE_HALF, image parameter
+# TENSOR_LINE_HALF, profile core-r42-line32): the miter against the word engine, the directed boxes with the
+# pieces each must move, and the core's tensor programs; -lock compares every output of every cycle with the
+# engine of the base commit (git is needed for it).
+LINE32_BASE ?= 44070eb0
+.PHONY: tensor-line32 tensor-line32-lock
+tensor-line32: | dirs
+	$(PYTHON) tools/r42/lineelig_tests.py miter
+	$(PYTHON) tools/r42/lineelig_tests.py directed
+	$(PYTHON) tools/r42/lineelig_tests.py core
+	$(PYTHON) tools/r41/tensor_line_tests.py
+tensor-line32-lock: | dirs
+	git show $(LINE32_BASE):rtl/core/tnca_tensor.v | sed 's/^module tnca_tensor #(/module tnca_tensor_ref #(/' > $(BUILD)/tnca_tensor_ref.v
+	$(PYTHON) tools/r42/lineelig_tests.py lock --ref $(BUILD)/tnca_tensor_ref.v
+
 .PHONY: core-mtx-vrf-reg
 core-mtx-vrf-reg:
 	$(PYTHON) tools/r41/mtx_vrf_reg_tests.py

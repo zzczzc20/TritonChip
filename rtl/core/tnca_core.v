@@ -98,6 +98,7 @@ module tnca_core #(
     // (tnca_tensor LINE_ENGINE) on the hybrid line port; 0 keeps the word
     // engine behind tnca_word_line_adapter. Needs HYBRID_LSU.
     parameter TENSOR_LINE    = 0,
+    parameter TENSOR_LINE_HALF = 0,   // R42: half-line rows in the line engine (tnca_tensor LINE_HALF)
     parameter LSU_INFLIGHT   = 1,
     //   FPU_OVERLAP (R39-10) ordinary vector FP issues during an SFU pass,
     //               and an SFU pass starts with ordinary FP in flight: the
@@ -2131,7 +2132,7 @@ module tnca_core #(
         .BAR_W(BAR_W), .MEM_DW(TENSOR_DW), .MEM_BYTES(TENSOR_BYTES),
         .TAG_W(CTAG_W), .NTAG(1 << CTAG_W), .HAS_XPOSE(HAS_TENSOR_XPOSE),
         .MUL_PIPE(TENSOR_MUL_PIPE),
-        .LINE_ENGINE(TXF_LINE ? 1 : 0), .LSLOT_N(1 << (MTAG_W - 1)), .LSLOT_W(MTAG_W - 1),
+        .LINE_ENGINE(TXF_LINE ? 1 : 0), .LINE_HALF(TENSOR_LINE_HALF), .LSLOT_N(1 << (MTAG_W - 1)), .LSLOT_W(MTAG_W - 1),
         .PTAG_W(TP_TW), .PORT_DW(TP_DW), .PORT_BYTES(TP_BY)
     ) u_txf (
         .clk(clk), .rst_n(rst_n), .flush(launch_valid),

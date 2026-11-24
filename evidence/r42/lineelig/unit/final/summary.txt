@@ -1,0 +1,6 @@
+directed exit 0
+core exit 0
+miter exit 0
+lock exit 0
+mutants exit 0
+FINAL_DONE

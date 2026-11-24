@@ -20,6 +20,7 @@ Two rules govern what is *not* here:
             absent SFU, absent atomics. Each is a diagnostic, never a quiet
             substitution.
 """
+import contextlib
 import math
 import os
 import re
@@ -568,6 +569,41 @@ class TTIRImporter:
     def _control_label(self, prefix):
         self._control_seq += 1
         return f"{prefix}_{self._control_seq}"
+
+    def _uniform_sload(self, addr, size, elem, mask=None, other=0, safe=None):
+        """One element a lane-invariant address holds, in a scalar register.
+
+        `mask` (a predicate over the block's lanes, or None) says which lanes
+        read it. The address is one for every lane, so the load is needed only
+        when some lane is active; the value is then the element, and otherwise
+        not defined (Triton gives a masked-off lane `other` only when it is
+        passed) -- `other` is used when a branch skips the load.
+
+        With `safe`, an address that is valid whenever the tensor exists (the
+        base pointer), the load is not branched around: a block with no active
+        lane reads `safe` instead of `addr`, so the basic block is not cut
+        (the scheduler overlaps the load with its neighbours), and the value
+        is the one nothing reads. That is the load of a masked broadcast,
+        which would otherwise be a gather of sixteen identical addresses.
+        """
+        size = _load_suffix(size, elem)
+        if mask is None:
+            return self.b.sload(addr, size=size, dtype=elem,
+                                comment='one element, the same in every lane')
+        active = self.b.reduce('or', self.b.vmovi(1), dtype='i32', mask=mask)
+        if safe is not None and other is None:
+            keep = self.b.sbin('sub', self.b.const(0), active)       # all ones when some lane reads
+            at = self.b.sbin('add', safe, self.b.sbin('and', self.b.sbin('sub', addr, safe), keep))
+            return self.b.sload(at, size=size, dtype=elem,
+                                comment='one element, the same in every lane')
+        value = self._copy_value(self.b.const(other or 0))
+        skip = self._control_label('uload')
+        self.b.branch_nz(self.b.scmp('eq', active, self.b.const(0)), skip)
+        loaded = self.b.sload(addr, size=size, dtype=elem,
+                              comment='one element, the same in every lane')
+        self.b._emit('assign', [], [value, loaded])
+        self.b.label(skip)
+        return value
 
     def _copy_value(self, value):
         if value.kind == SCALAR:
@@ -1280,7 +1316,12 @@ class TTIRImporter:
         def failing(v, width):
             """A scalar, non-zero if any of the first `width` lanes is false."""
             if v.kind == PRED:
-                bad = self.b.vselect(v, self.b.vmovi(0), self.b.vmovi(1))
+                # The lanes that are false, ones reduced under that mask (inactive lanes
+                # contribute 0): where `v.sel` of two constants and a reduction did the same.
+                bad = self.b.pun('not', v)
+                if width < self.target.vlen:
+                    bad = self.b.pbin('and', bad, self._shape_mask(width, None))
+                return self.b.reduce('or', self.b.vmovi(1), dtype='i32', mask=bad)
             elif v.kind == VECTOR:
                 bad = self.b.vselect(self.b.vcmp('eq', v, self.b.vmovi(0)),
                                      self.b.vmovi(1), self.b.vmovi(0))
@@ -1586,7 +1627,47 @@ class TTIRImporter:
             raise Unsupported('a scan along an axis other than the lanes')
         if op.get_bool_attr('reverse'):
             raise Unsupported('a reversed scan')
+        if not (isinstance(shape, tuple) and shape[0] > 1):
+            self._scan_steps(op)
+            return
         self._fold(op, keep_partials=True)
+
+    def _scan_steps(self, op):
+        """An inclusive scan along the lanes of one register in log2(n) steps.
+
+        Step d (1, 2, 4, 8): every lane i >= d combines the value d lanes
+        below it with its own, `v.shuffle.up` (ISA sec 8.6) bringing the
+        lower lane over and `v.sel` leaving the lanes below d alone (the
+        Hillis-Steele scan). `tl.associative_scan` states no order for its
+        combiner, only that it is associative -- the body is evaluated
+        lane-wise on whole vectors with the earlier operands first, so a
+        combiner that is not commutative is still right -- where the
+        sequential fold took n - 1 dependent steps and an extract and an
+        insert a lane (about 100 instructions and a 15-deep chain for 16
+        lanes; this is about 20 and a 4-deep one).
+        """
+        nin = op.get_num_operands()
+        held = [self._one_row(op.get_operand(i)) for i in range(nin)]
+        n = held[0][1]
+        xs = [h[0] for h in held]
+        d = 1
+        while d < n:
+            amount = self._const_scalar(d)
+            ge = self.b.vcmp('ge', self.b.arange(), self.b.splat(amount))
+            below = [self.b.vshuffle('up', x, amount, dtype=x.dtype) for x in xs]
+            both = self._eval_region(op, below + xs)
+            xs = [self.b.vselect(ge, self._vec_of(c, x), x) for c, x in zip(both, xs)]
+            d *= 2
+        for i in range(op.get_num_results()):
+            rshape, elem = _parse_type(str(op.get_result(i).get_type()))
+            if isinstance(rshape, tuple):
+                self._tiles[op.get_result(i).id()] = Tile('rows', [xs[i]], 1, rshape[1], elem)
+            else:
+                self._v[op.get_result(i).id()] = xs[i]
+
+    def _vec_of(self, value, like):
+        """A region result as a vector (a scalar result is splat)."""
+        return value if value.kind == VECTOR else self.b.splat(value, dtype=like.dtype)
 
     def _combinator(self, op):
         """Which reduction the region body computes.
@@ -2059,6 +2140,11 @@ class TTIRImporter:
     def _op_tt_get_program_id(self, op):
         axis = op.get_int_attr('axis') or 0
         self._v[op.get_result(0).id()] = self.b.program_id(axis)
+        if self.index_opt:
+            # A program id is an index into the grid: never negative. That is
+            # the fact `(pid * BLOCK + arange) // N` and `% N` need to stay
+            # affine / lane-uniform (_contiguous_div).
+            self._nonneg.add(op.get_result(0).id())
 
     def _op_tt_get_num_programs(self, op):
         axis = op.get_int_attr('axis') or 0
@@ -3645,6 +3731,178 @@ class TTIRImporter:
             base = self.b.sbini('add', base, aff.const * esize, comment="the tile's origin")
         return self._add_dynamic(base, aff, esize)
 
+    def _def_op(self, value):
+        """The TTIR operation that defines `value`, or None."""
+        defs = self.__dict__.get('_def_ops')
+        if defs is None:
+            defs = self._def_ops = {}
+            for o in self._all_ops:
+                for i in range(o.get_num_results()):
+                    defs[o.get_result(i).id()] = o
+        return defs.get(value.id())
+
+    def _tile_full_flag(self, mask):
+        """A scalar that is non-zero exactly when every element of the 2-D
+        mask `mask` is true, built from what is known of its terms -- or
+        None when the mask is not of that known form.
+
+        Inductor masks a tile by `(row index < M) & (column index < N)`,
+        each index an affine function of the program id and a range: the
+        tile is whole when its last index is below the bound, one scalar
+        comparison per index.
+        """
+        o = self._def_op(mask)
+        if o is None:
+            return None
+        name = o.get_name()
+        if name == 'arith.constant':
+            lit = (getattr(self, '_printed_consts', None) or {}).get(mask.id())
+            return self.b.const(1) if lit is not None and re.fullmatch(r'dense<true>', lit.strip()) else None
+        if name in ('tt.broadcast', 'tt.expand_dims', 'tt.reshape'):
+            return self._tile_full_flag(o.get_operand(0))
+        if name == 'arith.andi':
+            a, b = self._tile_full_flag(o.get_operand(0)), self._tile_full_flag(o.get_operand(1))
+            return None if a is None or b is None else self.b.sbin('and', a, b)
+        if name == 'arith.cmpi' and _CMP_I.get(o.get_int_attr('predicate')) == 'lt':
+            shape, elem = _parse_type(str(o.get_operand(0).get_type()))
+            lhs, rhs = self._affine_of(o.get_operand(0)), self._affine_of(o.get_operand(1))
+            if (not isinstance(shape, tuple) or elem not in ('i32', 'i16', 'i8') or lhs is None
+                    or rhs is None or (rhs.row_stride, rhs.col_stride) != (0, 0)):
+                return None
+            diff = lhs.plus(rhs.scaled(-1))
+            span = (max(0, diff.row_stride) * (shape[0] - 1) + max(0, diff.col_stride) * (shape[1] - 1))
+            last = self._add_dynamic(self.b.const(diff.const + span), diff, 1)
+            return self.b.scmp('lt', last, self.b.const(0))
+        return None
+
+    @staticmethod
+    def _fits_offset(byte_offset):
+        """A byte offset an access instruction takes as its `#imm16`."""
+        return -(1 << 15) <= byte_offset < (1 << 15)
+
+    def _tile_full_flag_cached(self, mask):
+        """_tile_full_flag, made once for a mask value: the tile's loads and
+        stores under one mask share the scalar (and what built it)."""
+        cache = self.__dict__.setdefault('_full_flags', {})
+        if mask.id() not in cache:
+            cache[mask.id()] = self._tile_full_flag(mask)
+        return cache[mask.id()]
+
+    def _transpose_registers(self, vs):
+        """The transpose of a square block held as `len(vs)` vectors of that
+        many lanes, in place: lane j of vector i becomes lane i of vector j.
+
+        log2(n) stages of the butterfly. In the stage of distance d the two
+        vectors i and i + d (d not set in i) exchange the lanes that differ in
+        bit d: A keeps its lanes with the bit clear and takes B's lanes
+        `j ^ d` where it is set, B keeps its set lanes and takes A's
+        `j ^ d` where it is clear. One `v.shuffle.xor` of the select
+        `Y = (bit ? A : B)` serves both.
+        """
+        n = len(vs)
+        iota = self.b.arange()
+        d = 1
+        while d < n:
+            high = self.b.vcmp('ne', self.b.vbin('and', iota, self.b.splat(self._const_scalar(d)),
+                                                 dtype='i32'), self.b.vmovi(0))
+            amount = self._const_scalar(d)
+            for i in range(n):
+                if i & d:
+                    continue
+                a, b = vs[i], vs[i + d]
+                y = self.b.vselect(high, a, b)
+                sw = self.b.vshuffle('xor', y, amount, dtype=a.dtype)
+                vs[i] = self.b.vselect(high, sw, a)
+                vs[i + d] = self.b.vselect(high, b, sw)
+            d *= 2
+        return vs
+
+    def _transposed_rows_load(self, op, name, elem, aff, shape):
+        """A VLEN x VLEN tile that is the transpose of contiguous runs, as
+        VLEN contiguous vector loads and a register transpose -- or None.
+
+        `tile[r, c] = base + r + c * S` (Inductor's read of `x.t()`): column c
+        of the tile is one contiguous run of the source, so the tile is the
+        VLEN runs, loaded whole (one `v.ld` each, a line request) and
+        transposed in registers. The gather this replaces is VLEN loads of
+        VLEN lanes, each lane one memory beat.
+
+        A masked access needs the tile whole (_tile_full_flag): the runs are
+        read unmasked, so a tile that is cut by the bounds takes the gather
+        under a runtime branch, as before.
+        """
+        rows, cols = shape
+        vlen = self.target.vlen
+        if (not self.index_opt or not isinstance(aff, Affine2D) or rows != vlen or cols != vlen
+                or aff.row_stride != 1 or aff.col_stride <= 1 or op.get_num_operands() > 2
+                or self._ELEM_BYTES.get(elem) not in (2, 4)):
+            return None
+        users = self._value_users.get(op.get_result(0).id(), [])
+        if any(u.get_name() == 'tt.dot' for u, _k in users):
+            return None          # an MMA operand has its own forms (windows, the repack)
+        mask = op.get_operand(1) if op.get_num_operands() > 1 else None
+        flag = None
+        if mask is not None:
+            flag = self._tile_full_flag_cached(mask)
+            if flag is None:
+                return None
+        esize = self._ELEM_BYTES[elem]
+        size = _load_suffix(_SIZE_SUFFIX[esize], elem)
+        base = self._row_base(name, aff, esize)
+        self.b.comment(f"a {rows}x{cols} tile read down its columns: {vlen} contiguous "
+                       "loads and a register transpose")
+        step = aff.col_stride * esize
+
+        def run(c):
+            if c == 0 or self._fits_offset(c * step):
+                return self.b.load(base, dtype=elem, size=size, offset=c * step)
+            return self.b.load(self.b.sbini('add', base, c * step), dtype=elem, size=size)
+        if flag is None:
+            return Tile('rows', self._transpose_registers([run(c) for c in range(vlen)]),
+                        rows, cols, elem)
+        get_mask = self._row_getter(mask, rows, 'i1')
+        get_mask(0)      # what rows share (a column predicate, a bound) is made before the branch
+        self.kernel.coalesce_assigns = True      # the transpose is computed into `outs` itself
+        # Neither arm defines `outs` first: the cut tile's arm comes first in the text, so its
+        # assigns take the registers (codegen._op_assign) and the whole tile's arm, the one that
+        # runs, computes into them (_coalescable).
+        outs = [self.b._value(VECTOR, elem, hint='xp') for _ in range(rows)]
+        whole, end = self._control_label('xpose_whole'), self._control_label('xpose_end')
+        self.b.branch_nz(flag, whole)
+        with self._branch_arm():
+            get_index = self._offset_row(aff)
+            gbase = self._arg_value(name)
+            for r in range(rows):
+                v = self.b.gather(gbase, get_index(r), mask=self._shape_mask(cols, get_mask(r)),
+                                  other=0, dtype=elem, size=size)
+                self.b._emit('assign', [], [outs[r], v])
+        self.b.branch_nz(self.b.const(1), end)
+        self.b.label(whole)
+        with self._branch_arm():
+            for r, v in enumerate(self._transpose_registers([run(c) for c in range(vlen)])):
+                self.b._emit('assign', [], [outs[r], v])
+        self.b.label(end)
+        return Tile('rows', outs, rows, cols, elem)
+
+    @contextlib.contextmanager
+    def _branch_arm(self):
+        """Emit code that runs on one side of a branch only: whatever it
+        caches (constants, shared index parts, a scratch pointer) is dropped
+        on the way out, because code after the join cannot rely on a value
+        that only one side defined."""
+        caches = ('_scalar_cache', '_fconst_cache', '_byte_offsets', '_aff_cache')
+        saved = {name: dict(getattr(self, name)) for name in caches}
+        saved_single = (self._scratch, self._lane0_mask)
+        pending_values = {k for k in self._pending_const if k in self._v}
+        try:
+            yield
+        finally:
+            for name, cache in saved.items():
+                setattr(self, name, dict(cache))
+            self._scratch, self._lane0_mask = saved_single
+            for key in self._pending_const.keys() - pending_values:
+                self._v.pop(key, None)
+
     def _masked_rows_load(self, op, name, elem, aff, shape):
         rows, cols = shape
         esize = self._ELEM_BYTES[elem]
@@ -3671,6 +3929,37 @@ class TTIRImporter:
         base = self._row_base(name, aff, esize)
         get, get_mask = self._tile_row_getter(tile), self._row_getter(op.get_operand(2), rows, 'i1')
         stride = aff.row_stride * esize
+        flag = self._tile_full_flag_cached(op.get_operand(2))
+        if flag is not None:
+            # A tile the bounds do not cut stores its rows whole: one v.st a row
+            # where the mask costs four more instructions a row (a splat, a
+            # compare, an and and an address). The mask stays for the tile that is cut.
+            vals = []
+            for r in range(rows):
+                v = get(r)
+                vals.append(self.b.vcvt(tile.store, elem, v) if elem != tile.store else v)
+            get_mask(0)
+            cut, end = self._control_label('store_cut'), self._control_label('store_end')
+            self.b.branch_nz(self.b.scmp('eq', flag, self.b.const(0)), cut)
+            self.b.comment(f"a whole {rows}x{cols} tile: one unmasked store a row")
+            with self._branch_arm():
+                for r in range(rows):
+                    if r == 0 or not stride or self._fits_offset(r * stride):
+                        self.b.store(base, vals[r], mask=self._shape_mask(cols, None),
+                                     size=_SIZE_SUFFIX[esize], offset=r * stride)
+                        continue
+                    self.b.store(self.b.sbini('add', base, r * stride, comment=f"row {r}"), vals[r],
+                                 mask=self._shape_mask(cols, None), size=_SIZE_SUFFIX[esize])
+            self.b.branch_nz(self.b.const(1), end)
+            self.b.label(cut)
+            with self._branch_arm():
+                for r in range(rows):
+                    at = base if r == 0 or not stride else self.b.sbini('add', base, r * stride,
+                                                                        comment=f"row {r}")
+                    self.b.store(at, vals[r], mask=self._shape_mask(cols, get_mask(r)),
+                                 size=_SIZE_SUFFIX[esize])
+            self.b.label(end)
+            return
         self.b.comment(f"a masked {rows}x{cols} tile with contiguous rows: one "
                        "predicated store a row")
         for r in range(rows):
@@ -5973,6 +6262,13 @@ class TTIRImporter:
             # predicate register number as though it were a scalar's.
             if kind not in ('and', 'or', 'xor'):
                 raise Unsupported(f"{kind!r} on two masks")
+            if kind == 'xor':
+                # `m ^ true` is the complement (Inductor's `~xmask`): one p.not, where the
+                # constant would be a vector, a compare to make a predicate and a p.xor.
+                for x, y in ((a, b), (b, a)):
+                    if self._const.get(y.id()) not in (None, 0, False) and y.id() in self._pending_const:
+                        self._v[rid] = self.b.pun('not', self._as_pred(self._value(x)))
+                        return
             self._v[rid] = self.b.pbin(kind, self._as_pred(self._value(a)),
                                        self._as_pred(self._value(b)))
             return
@@ -6383,6 +6679,10 @@ class TTIRImporter:
                 self._tiles[op.get_result(0).id()] = self._masked_rows_load(
                     op, name, elem, aff, shape2d)
                 return
+            swapped = self._transposed_rows_load(op, name, elem, aff, shape2d)
+            if swapped is not None:
+                self._tiles[op.get_result(0).id()] = swapped
+                return
             if (op.get_num_operands() > 1 or not isinstance(aff, Affine2D)
                     or aff.col_stride != 1 or shape2d[1] != self.target.vlen):
                 base = self._arg_value(name)
@@ -6487,6 +6787,15 @@ class TTIRImporter:
         mask = self._shape_mask(shape, mask)
         if kind == 'broadcast':
             # One element into every lane: a scalar load and a splat.
+            if mask is not None and self.index_opt and op.get_num_operands() <= 2:
+                # Masked, and no `other`: a masked-off lane is undefined, so every lane may
+                # hold the element, loaded once when some lane is active (_uniform_sload) --
+                # where the gather below reads one address sixteen times.
+                ptr_name = self._ptr_base[ptr.id()][0]
+                self._v[rid] = self.b.splat(
+                    self._uniform_sload(addr, size, elem, mask, other=None,
+                                        safe=self._arg_value(ptr_name)), dtype=elem)
+                return
             if mask is not None:
                 self._v[rid] = self.b.gather(addr, self.b.vmovi(0), mask=mask,
                     other=other, dtype=elem, size=_load_suffix(size, elem))

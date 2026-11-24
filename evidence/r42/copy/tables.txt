@@ -1,0 +1,102 @@
+
+## rtl: embedding, transpose, cumsum, tiny and small (base = R42 head 02b7578e)
+point                                                                base        new  base/new  issued base issued new  status  err
+op.cumsum/medium/fp32-r128-c256                                    256325     114220     2.244       204072      65844  pass    1.4183553191409392e-07
+op.cumsum/small/fp32-r64-c256                                      128229      57148     2.244       102056      32948  pass    1.4183553191409392e-07
+op.cumsum/tiny/fp32-r4-c64                                           2218       1075     2.063         1712        668  pass    1.283635090270354e-07
+op.embedding/small/fp16-v1024-d128-t64                             366173      23134    15.828       347704      14852  pass    0.0
+op.embedding/tiny/fp16-v256-d64-t16                                 46381       4248    10.918        44088       3040  pass    0.0
+op.transpose/medium/fp32-r160-c256                                  89840      90944     0.988        52096      34880  pass    0.0
+op.transpose/small/fp32-r128-c256                                   72000      73664     0.977        41696      28224  pass    0.0
+op.transpose/tiny/fp32-r32-c32                                       2310       2268     1.019         1312        908  pass    0.0
+8 points, geometric mean base/new 2.546
+
+## rtl: tiny tier, all 27 points, final tree
+point                                                                base        new  base/new  issued base issued new  status  err
+model.gpt2_block/tiny/fp16-d64-h4-b1-s16                           175899     174043     1.011        62388      61672  pass    0.00028864731984040254
+model.llama_decode/tiny/fp16-b1-p16                                204752     176911     1.157        85350      67195  pass    0.0002503395080566406
+model.llama_prefill/tiny/fp16-b1-s16                               597097     491867     1.214       345747     254411  pass    0.0002256929874420166
+model.mlp/tiny/fp16-t16-d64                                         79717      79976     0.997        20760      20608  pass    0.0004260301140295764
+model.resnet_block/tiny/fp32-n1-c8-hw8                             272358     277037     0.983       146106     144740  pass    1.278855455060252e-07
+op.add/tiny/fp16-n1000                                               2370       2370     1.000          980        980  pass    0.0003009328919650918
+op.add/tiny/fp32-n256                                                 825        825     1.000          328        328  pass    0.0
+op.argmax/tiny/fp16-r2-v256                                          2034       1996     1.019         1378       1346  pass    0.0
+op.attention_decode/tiny/fp16-b1-h2-l16-d16                          9514       9181     1.036         5638       5254  pass    0.0002162456512451172
+op.attention_prefill/tiny/fp16-b1-h2-s16-d16                        24926      23607     1.056        12218      11696  pass    0.0002356018538251215
+op.bmm/tiny/fp16-b2-m16-k16-n16                                      1856       1856     1.000          626        626  pass    0.0004098407477536124
+op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8                            121248     120990     1.002        68498      68024  pass    2.2609059887405376e-07
+op.cumsum/tiny/fp32-r4-c64                                           2218       1075     2.063         1712        668  pass    1.283635090270354e-07
+op.embedding/tiny/fp16-v256-d64-t16                                 46381       4248    10.918        44088       3040  pass    0.0
+op.gelu_tanh/tiny/fp16-n256                                          1972       1972     1.000         1044       1044  pass    0.0002770012201760388
+op.gemv/tiny/fp16-k64-n64                                            4840       4760     1.017         1186       1230  pass    0.0003614329095968645
+op.layernorm/tiny/fp16-r4-d64                                        2043       2043     1.000          956        956  pass    0.00033908726900512526
+op.linear/tiny/fp16-m16-k64-n64                                      6321       5575     1.134         1522       1530  pass    0.000251381425595787
+op.matmul/tiny/fp16-m16-k32-n16                                      1007       1007     1.000          290        225  pass    0.00040886770849252635
+op.matmul/tiny/fp32-m16-k32-n16                                      3154       3184     0.991         1460       1394  pass    1.5000948059917387e-07
+op.rmsnorm/tiny/fp16-r4-d64                                          1406       1406     1.000          660        660  pass    0.00034892976306195747
+op.rope/tiny/fp16-b1-h2-s16-d16                                      4265       3863     1.104         2380       2092  pass    0.0002342444175425487
+op.silu/tiny/fp16-n256                                               1462       1462     1.000          668        668  pass    0.0001596149365490904
+op.softmax/tiny/fp16-r4-c64                                          2465       2465     1.000          926        926  pass    7.343292236328125e-05
+op.softmax/tiny/fp32-r3-c37                                          1340       1340     1.000          648        648  pass    5.960464477539063e-08
+op.swiglu/tiny/fp16-n256                                             1660       1660     1.000          768        768  pass    0.00016673345493331242
+op.transpose/tiny/fp32-r32-c32                                       2310       2268     1.019         1312        908  pass    0.0
+27 points, geometric mean base/new 1.151
+
+## rtl: tiny tier, all 27 points, first candidate tree
+point                                                                base        new  base/new  issued base issued new  status  err
+model.gpt2_block/tiny/fp16-d64-h4-b1-s16                           175899     174043     1.011        62388      61672  pass    0.00028864731984040254
+model.llama_decode/tiny/fp16-b1-p16                                204752     176951     1.157        85350      67195  pass    0.0002503395080566406
+model.llama_prefill/tiny/fp16-b1-s16                               597097     489241     1.220       345747     253963  pass    0.0002256929874420166
+model.mlp/tiny/fp16-t16-d64                                         79717      79976     0.997        20760      20608  pass    0.0004260301140295764
+model.resnet_block/tiny/fp32-n1-c8-hw8                             272358     277037     0.983       146106     144740  pass    1.278855455060252e-07
+op.add/tiny/fp16-n1000                                               2370       2370     1.000          980        980  pass    0.0003009328919650918
+op.add/tiny/fp32-n256                                                 825        825     1.000          328        328  pass    0.0
+op.argmax/tiny/fp16-r2-v256                                          2034       2023     1.005         1378       1364  pass    0.0
+op.attention_decode/tiny/fp16-b1-h2-l16-d16                          9514       9181     1.036         5638       5254  pass    0.0002162456512451172
+op.attention_prefill/tiny/fp16-b1-h2-s16-d16                        24926      23607     1.056        12218      11696  pass    0.0002356018538251215
+op.bmm/tiny/fp16-b2-m16-k16-n16                                      1856       1856     1.000          626        626  pass    0.0004098407477536124
+op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8                            121248     120990     1.002        68498      68024  pass    2.2609059887405376e-07
+op.cumsum/tiny/fp32-r4-c64                                           2218       1075     2.063         1712        668  pass    1.283635090270354e-07
+op.embedding/tiny/fp16-v256-d64-t16                                 46381       4500    10.307        44088       3232  pass    0.0
+op.gelu_tanh/tiny/fp16-n256                                          1972       1972     1.000         1044       1044  pass    0.0002770012201760388
+op.gemv/tiny/fp16-k64-n64                                            4840       4760     1.017         1186       1230  pass    0.0003614329095968645
+op.layernorm/tiny/fp16-r4-d64                                        2043       2043     1.000          956        956  pass    0.00033908726900512526
+op.linear/tiny/fp16-m16-k64-n64                                      6321       5575     1.134         1522       1530  pass    0.000251381425595787
+op.matmul/tiny/fp16-m16-k32-n16                                      1007       1007     1.000          290        225  pass    0.00040886770849252635
+op.matmul/tiny/fp32-m16-k32-n16                                      3154       3184     0.991         1460       1394  pass    1.5000948059917387e-07
+op.rmsnorm/tiny/fp16-r4-d64                                          1406       1406     1.000          660        660  pass    0.00034892976306195747
+op.rope/tiny/fp16-b1-h2-s16-d16                                      4265       3863     1.104         2380       2092  pass    0.0002342444175425487
+op.silu/tiny/fp16-n256                                               1462       1462     1.000          668        668  pass    0.0001596149365490904
+op.softmax/tiny/fp16-r4-c64                                          2465       2465     1.000          926        926  pass    7.343292236328125e-05
+op.softmax/tiny/fp32-r3-c37                                          1340       1340     1.000          648        648  pass    5.960464477539063e-08
+op.swiglu/tiny/fp16-n256                                             1660       1660     1.000          768        768  pass    0.00016673345493331242
+op.transpose/tiny/fp32-r32-c32                                       2310       2346     0.985         1312        984  pass    0.0
+27 points, geometric mean base/new 1.147
+
+## rtl: GEMM epilogue and conv screens
+point                                                                base        new  base/new  issued base issued new  status  err
+op.gemv/small/fp16-k256-n512                                       107642     106818     1.008        16370      16722  pass    0.00031526882425602515
+op.linear/small/fp16-m64-k256-n256                                 237890     226665     1.050        37944      38072  pass    0.00022531546934391724
+op.matmul/small/fp16-m64-k128-n128                                  57824      56139     1.030        11862       9910  pass    0.00033043937777909856
+3 points, geometric mean base/new 1.029
+
+## rtl: conv2d small
+point                                                                base        new  base/new  issued base issued new  status  err
+op.conv2d/small/fp32-n1-cin16-h16-w16-cout16                       560278     540703     1.036       281042     278240  pass    4.3919074712933946e-07
+1 points, geometric mean base/new 1.036
+
+## tlm: three-core image model, base tree
+point                                                                base        new  base/new  issued base issued new  status  err
+op.cumsum/medium/fp32-r128-c256                                     75349      39532     1.906                          pass    1.4183553191409392e-07
+op.cumsum/small/fp32-r64-c256                                       40913      21464     1.906                          pass    1.4183553191409392e-07
+op.cumsum/tiny/fp32-r4-c64                                           1799        915     1.966                          pass    1.283635090270354e-07
+op.embedding/hbm/fp16-v65536-d2048-t8192                        258302230   13743159    18.795                          pass    0.0
+op.embedding/large/fp16-v128256-d2048-t512                       16144497     859554    18.782                          pass    0.0
+op.embedding/medium/fp16-v1024-d128-t256                           500891      27107    18.478                          pass    0.0
+op.embedding/small/fp16-v1024-d128-t64                             123446       6646    18.574                          pass    0.0
+op.embedding/tiny/fp16-v256-d64-t16                                 17259       1756     9.829                          pass    0.0
+op.transpose/large/fp32-r4096-c4096                              39248846    8839670     4.440                          pass    0.0
+op.transpose/medium/fp32-r160-c256                                  62721      20086     3.123                          pass    0.0
+op.transpose/small/fp32-r128-c256                                   49933      14984     3.332                          pass    0.0
+op.transpose/tiny/fp32-r32-c32                                       1298        722     1.798                          pass    0.0
+12 points, geometric mean base/new 5.463

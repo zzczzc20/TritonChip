@@ -44,6 +44,13 @@ for p in sorted(px['px_base']):
     if b[1] == 'pass' and a[1] == 'pass':
         rs.append(a[0] / b[0]); print('%-58s %12d %12d %8.3f   max_rel_err equal: %s' % (p, b[0], a[0], a[0] / b[0], b[2] == a[2]))
 print('geometric mean auto/base %.3f (speed-up %.3f)' % (gm(rs), 1 / gm(rs)))
+print('   cycles per 16x16x16 matrix command per core (three cores) of the op.* proxies; the board records of the full points are 487-605')
+print('   (op.matmul/large 556, op.linear/large 605, op.linear/hbm 487, op.matmul/hbm 553: ab-int2 cycles x 3 / commands of board_engine_utilisation.txt)')
+for p in sorted(px['px_base']):
+    m = re.match(r'op\.(?:matmul|linear)/large/fp16-m(\d+)-k(\d+)-n(\d+)$', p)
+    if m:
+        mm, kk, nn = map(int, m.groups()); cmds = (mm // 16) * (kk // 16) * (nn // 16) / 3
+        print('   %-52s base %6.0f   auto %6.0f' % (p, px['px_base'][p][0] / cmds, px['px_auto'][p][0] / cmds))
 
 print('\n3. rtl-1c (profile core-vrf-sync-v5-x8-g2c4-dp, default knobs): cycles, base = TNCA_GEMM_AUTO=0')
 print('%-48s %10s %10s %8s %10s %8s' % ('point', 'base', 'auto', 'ratio', 'K32 tile', 'ratio'))

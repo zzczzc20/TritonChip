@@ -38,9 +38,16 @@ op.linear/large/fp16-m48-k4096-n11008                          72147519     5346
 op.matmul/large/fp16-m48-k2048-n2048                            8409455      6652899    0.791   max_rel_err equal: True
 op.matmul/large/fp16-m48-k4096-n4096                           33355808     26251835    0.787   max_rel_err equal: True
 geometric mean auto/base 0.737 (speed-up 1.358)
+   cycles per 16x16x16 matrix command per core (three cores) of the op.* proxies; the board records of the full points are 487-605
+   (op.matmul/large 556, op.linear/large 605, op.linear/hbm 487, op.matmul/hbm 553: ab-int2 cycles x 3 / commands of board_engine_utilisation.txt)
+   op.linear/large/fp16-m48-k2048-n8192                 base    663   auto    429
+   op.linear/large/fp16-m48-k4096-n11008                base    410   auto    304
+   op.matmul/large/fp16-m48-k2048-n2048                 base    513   auto    406
+   op.matmul/large/fp16-m48-k4096-n4096                 base    509   auto    401
 
 3. rtl-1c (profile core-vrf-sync-v5-x8-g2c4-dp, default knobs): cycles, base = TNCA_GEMM_AUTO=0
 point                                                  base       auto    ratio   K32 tile    ratio
+model.mlp_small_fp16-t64-d128                        823343     865984    1.052          -        -
 op.gemv_small_fp16-k256-n512                         107642     105371    0.979          -        -
 op.linear_small_fp16-m64-k256-n256                   237890     239832    1.008     338557    1.423
 op.matmul_medium_fp16-m128-k192-n128                 159502     154655    0.970          -        -

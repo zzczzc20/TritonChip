@@ -72,12 +72,14 @@ integer cycle = 0; always @(posedge clk) cycle <= cycle + 1;
 localparam PMAX = 2048;
 reg [1:0]  p_kind [0:PMAX-1];
 integer    p_a [0:PMAX-1], p_b [0:PMAX-1], p_c [0:PMAX-1], p_wait [0:PMAX-1];
-reg [63:0] p_c0 [0:PMAX-1], p_c1 [0:PMAX-1];
+reg [63:0] p_c0 [0:PMAX-1], p_c1 [0:PMAX-1], p_c2 [0:PMAX-1];
+integer r3e1 [0:15], r3s1 [0:15], r3b1 [0:15];   // R42 DIRECTED rank 3: the middle dimension's extent, stride and box
 reg [2:0]  p_esz [0:PMAX-1];
 reg        p_x [0:PMAX-1];      // a transposed load (X8 path: 16-bit and 1-byte elements)
 reg        p_act [0:PMAX-1];    // R42: the command's predicate (an inactive command moves nothing)
 integer    exp_cum [0:PMAX-1];  // R42 DIRECTED: pieces the half-line path must have moved when completion k has been signalled
 integer    dcum;
+integer    r3c2 = 0;           // R42 DIRECTED: the third coordinate of the next rank-3 command
 integer    gate = 0;           // R42 DIRECTED: completions both engines have signalled and the checker has compared
 integer    plen, ncomp;   // entries; completions the whole program signals
 
@@ -131,7 +133,7 @@ generate for (g = 0; g < 2; g = g + 1) begin : inst
         .cfg_valid(cfg_v), .cfg_op(cfg_op), .cfg_desc(cfg_desc), .cfg_win(cfg_win), \
         .cfg_addr(cfg_addr), .cfg_wbase(cfg_wbase), .cfg_wlen(cfg_wlen), \
         .cmd_valid(cmd_v), .cmd_store(cmd_store), .cmd_desc(cmd_desc), .cmd_win(cmd_win), \
-        .cmd_c0(cmd_c0), .cmd_c1(cmd_c1), .cmd_c2(64'd0), .cmd_c3(64'd0), .cmd_c4(64'd0), \
+        .cmd_c0(cmd_c0), .cmd_c1(cmd_c1), .cmd_c2(p_c2[pc]), .cmd_c3(64'd0), .cmd_c4(64'd0), \
         .cmd_sb(6'd1), .cmd_esz(cmd_esz), .cmd_xpose(cmd_xpose), .cmd_layout(2'd0), \
         .cmd_bar_en(1'b1), .cmd_bar(cmd_bar), .cmd_rctx(1'b0), .cmd_pc(64'd0), .cmd_active(p_act[pc]), \
         .busy(busy[g]), .done(done[g]), .done_bar_en(done_ben[g]), .done_bar(done_bar[g]), \
@@ -313,12 +315,17 @@ task make_desc(input integer slot);
         put64(a + 0, rb[slot]);
         if (rrank[slot] == 1) begin
             put64(a + 8, re1[slot]);  put64(a + 48, 1 << sesz[slot]);
+        end else if (rrank[slot] == 3) begin
+            put64(a + 8, re0[slot]);  put64(a + 16, r3e1[slot]);  put64(a + 24, re1[slot]);
+            put64(a + 48, rs[slot]);  put64(a + 56, r3s1[slot]);  put64(a + 64, 1 << sesz[slot]);
         end else begin
             put64(a + 8, re0[slot]);  put64(a + 16, re1[slot]);
             put64(a + 48, rs[slot]);  put64(a + 56, 1 << sesz[slot]);
         end
         if (rrank[slot] == 1) put64(a + 88, {32'd0, bl1[slot][31:0]});
-        else                  put64(a + 88, {bl1[slot][31:0], bl0[slot][31:0]});
+        else if (rrank[slot] == 3) begin
+            put64(a + 88, {r3b1[slot][31:0], bl0[slot][31:0]});  put64(a + 96, {32'd0, bl1[slot][31:0]});
+        end else              put64(a + 88, {bl1[slot][31:0], bl0[slot][31:0]});
         mem[0][a + 108] = rrank[slot]; mem[1][a + 108] = rrank[slot];
         mem[0][a + 109] = sdt[slot];   mem[1][a + 109] = sdt[slot];
     end
@@ -343,6 +350,7 @@ task dcmd(input [1:0] kind, input integer slot, input integer win, input integer
     begin
         if (rrank[slot] == 1) add(kind, slot, win, 0, c0, 64'd0, ncomp);
         else                  add(kind, slot, win, 0, c0, c1, ncomp);
+        if (rrank[slot] == 3) p_c2[plen-1] = r3c2;     // rank 3: the third coordinate (set by the caller)
         dnote(pieces);
         p_wait[plen] = ncomp;
     end
@@ -351,7 +359,7 @@ endtask
 task add(input [1:0] kind, input integer a, input integer b, input integer c,
          input [63:0] c0, input [63:0] c1, input integer wt);
     begin
-        p_esz[plen] = (kind >= 2) ? sesz[a] : 3'd2; p_x[plen] = 1'b0; p_act[plen] = 1'b1;
+        p_esz[plen] = (kind >= 2) ? sesz[a] : 3'd2; p_x[plen] = 1'b0; p_act[plen] = 1'b1; p_c2[plen] = 64'd0;
         p_kind[plen] = kind; p_a[plen] = a; p_b[plen] = b; p_c[plen] = c;
         p_c0[plen] = c0; p_c1[plen] = c1; p_wait[plen] = wt;
         if (kind != 2'd1) ncomp = ncomp + 1;   // a w.def signals nothing
@@ -461,7 +469,11 @@ initial begin
         dslot(9, 1, 1, 32'h9800, 0, 1, 700, 1, 16);            // rank 1, 32 bytes
         dslot(10, 1, 2, 32'hA800, 512, 32, 256, 5, 16);        // 5 rows of 32 bytes: the last register's second half is not written
         dslot(11, 1, 2, 32'hE800, 512, 8, 256, 8, 32);         // rows of 64 bytes
-        for (dd = 0; dd < 12; dd = dd + 1) begin make_desc(dd); add(0, dd, 0, 0, 0, 0, ncomp); dnote(0); end
+        dslot(12, 1, 2, 32'hF800, 32, 64, 16, 16, 16);         // stride 32: two rows to a line, a 16-column matrix
+        // rank 3 (batch of 4-row tiles): extents 6 x 16 x 64 elements, strides 4096 and 128 bytes, box 2 x 4 x 16 (rows of 32 bytes)
+        dslot(13, 1, 3, 32'h8400, 4096, 6, 64, 2, 16);
+        r3e1[13] = 16; r3s1[13] = 128; r3b1[13] = 4;
+        for (dd = 0; dd < 14; dd = dd + 1) begin make_desc(dd); add(0, dd, 0, 0, 0, 0, ncomp); dnote(0); end
         for (dd = 0; dd < 16; dd = dd + 1) add(1, dd, dd * 16, 16, 0, 0, ncomp);
         //     kind slot win c0 c1 pieces
         dcmd(2,  0,  0,  0,   0, 16);   dcmd(2,  0,  1, 16,  16, 16);  dcmd(2,  0,  2,  3,  32, 16);
@@ -490,11 +502,20 @@ initial begin
         dcmd(2, 11,  1,  0,  32,  0);   // whole lines again (64 bytes in)
         dcmd(2, 11,  2,  0,  16, 16);   // rows of 64 bytes starting 32 bytes into a line: pieces
         dcmd(2,  0,  3,  0,   0,  0);   p_act[plen-1] = 1'b0;     // an inactive command moves nothing
+        dcmd(2, 12, 13,  0,   0, 16);   dcmd(2, 12, 14,  1,   0, 16);  dcmd(2, 12, 15, 17,   0, 16);   // rows that share lines, both register halves first
+        // rank 3: coordinates (batch, row, column); r3c2 is the column
+        r3c2 = 16; dcmd(2, 13, 12,  1,   4,  8);   // (1, 4, 16): 32-byte aligned; 2 x 4 rows of 32 bytes
+        r3c2 = 8;  dcmd(2, 13, 13,  1,   4,  0);   // 16 bytes in
+        r3c2 = 0;  dcmd(2, 13, 14,  4,  12,  8);   // (4, 12, 0): batches 4..5 of 6, rows 12..15 of 16
+        r3c2 = 0;  dcmd(2, 13, 15,  5,   0,  0);   // batches 5..6 of 6: past the edge
         // stores from the windows the loads above filled
         dcmd(3,  0,  0, 20,   0, 16);   dcmd(3,  0,  1, 22,  32, 16);  dcmd(3,  0,  2,  0,   8,  0);
         dcmd(3,  1,  3,  4,   0, 16);   dcmd(3, 10,  4,  0,   0,  5);  dcmd(3,  6,  5,  8,   0,  8);
         dcmd(3,  9,  6,  8,   0,  0);   dcmd(3,  8,  7, 32,   0,  5);  dcmd(3,  4,  8,  0,  16, 12);
         dcmd(3,  3,  9,  0,   8,  8);
+        dcmd(3, 12,  9,  8,   0, 16);   dcmd(3, 12, 10, 33,   0, 16);   dcmd(2, 12, 11,  8,   0, 16);   // stores to rows 32 bytes apart, and the load of them
+        r3c2 = 16; dcmd(3, 13, 12,  2,   8,  8);  // a rank-3 store, and the load of it
+        r3c2 = 16; dcmd(2, 13, 13,  2,   8,  8);
         // a store, then a load of the same rows
         dcmd(3,  0, 10, 40,   0, 16);   dcmd(2,  0, 11, 40,   0, 16);
         // a transposed load of a tile that is half-line shaped: not a half-line command

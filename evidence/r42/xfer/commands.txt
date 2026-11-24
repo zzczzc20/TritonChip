@@ -16,5 +16,5 @@ tools/xf_alldump.sh TREE ad_ctrl IDS113 TNCA_GEMM_AUTO=0 ; tools/xf_alldump.sh T
 # 5. single-core RTL screen, default knobs, base = TNCA_GEMM_AUTO=0 (domain rtl-1c)
 tools/xf_rtlq.sh JOBFILE NPAR  (-> tools/xf_pt.sh)  ; ~/r42/r42_cmp.py BASE.jsonl CAND.jsonl
 # 6. three-core stand-in at the run-2 image geometry (domain rtl-3c)
-tools/xf_mc2.sh TREE OUT "ENV=VAL" POINT...   (tools/r41/link_budget_rtl.py --image r41_run2_sim.tcl --profile core-vrf-sync-v5-x8-g2c4-dp)
+tools/xf_mc3.sh TREE OUT "TNCA_KEY=VAL" POINT...   (settings go through link_budget_rtl.py --set; it deletes TNCA_* variables; tools/xf_mc2.sh was wrong; tools/r41/link_budget_rtl.py --image r41_run2_sim.tcl --profile core-vrf-sync-v5-x8-g2c4-dp)
 # 7. tables: python3 tools/make_tables.py > tables.txt   (reads only the raw files in this directory)

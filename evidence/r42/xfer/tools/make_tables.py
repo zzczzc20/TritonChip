@@ -61,12 +61,21 @@ for f in sorted(glob.glob(HERE + '/rtl_1c/rtl_base/*.jsonl')):
     k = rtl_cycles(HERE + '/rtl_1c/k32/' + n)[0] if os.path.exists(HERE + '/rtl_1c/k32/' + n) else None
     print('%-48s %10s %10s %8s %10s %8s' % (n[:-6], b, a, '%.3f' % (a / b) if a else '-', k or '-', '%.3f' % (k / b) if k else '-'))
 
+print('\n3b. rtl-1c, ArchBench tiny tier (27 points), committed default, profile core-vrf-sync-v5-x8-g2c4-dp: status and cycles')
+print('   every tiny-tier kernel has byte-identical assembly to the TNCA_GEMM_AUTO=0 arm (audit/audit_summary.txt), so its cycles are those of the baseline')
+rows = [json.loads(l) for l in open(HERE + '/rtl_1c/tiny_auto_default.jsonl')]
+for r in rows:
+    print('   %-56s %-6s %9s  max_rel_err %.2e (tol %s)' % (r['point_id'], r['status'], (r.get('time') or {}).get('device'),
+          (r.get('correctness') or {}).get('max_rel_err') or 0, (r.get('correctness') or {}).get('tol')))
+print('   %d of %d points pass' % (sum(r['status'] == 'pass' for r in rows), len(rows)))
+
 print('\n4. rtl-3c (three-core board-top stand-in at the R41 run-2 image geometry, line engine): cycles of the timed call')
-print('   base_tiny/k32_tiny: 16x16x16 vs TNCA_GEMM_TILE=16,16,32. base0_small = TNCA_GEMM_AUTO=0 (the 16x16x16 baseline); auto_small_run1 = the default')
-print('   (N blocking) and bn32_small_explicit = TNCA_GEMM_TILE=16,32,16: the same kernel, so their difference is the run-to-run noise of the stand-in')
-for d in ('base_tiny', 'k32_tiny', 'base0_small', 'auto_small_run1', 'bn32_small_explicit'):
+print('   tools/r41/link_budget_rtl.py deletes every TNCA_* environment variable: a setting reaches it only through --set (tools/xf_mc3.sh).')
+print('   The first runs (tools/xf_mc2.sh, environment variables) therefore all compiled the DEFAULT kernel: the dirs *_env_ignored and default_* are')
+print('   repeated runs of the default kernel and show the run-to-run noise of the stand-in. They are not baselines or K32 runs.')
+for d in sorted(os.listdir(HERE + '/rtl_3c')):
     for f in sorted(glob.glob(HERE + '/rtl_3c/%s/*.jsonl' % d)):
-        print('   %-12s %-48s %s' % (d, os.path.basename(f)[:-6], rtl_cycles(f)[0]))
+        print('   %-40s %-46s %s' % (d, os.path.basename(f)[:-6], rtl_cycles(f)[0]))
 
 print('\n5. tlm K32 and hardware what-ifs (cycles / base cycles; FAIL = compile failure of the K32 tile)')
 tags = [t for t in ('auto12', 'k32', 'ab_k32', 'le_base', 'le_auto', 'le_k32', 'leab_k32') if t in tl]

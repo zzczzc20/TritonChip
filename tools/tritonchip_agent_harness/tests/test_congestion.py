@@ -179,20 +179,55 @@ class Collect(unittest.TestCase):
         self.assertEqual(congestion.collect(self.site, "tnca-ffffffffffffffff", "hpc", analyse=True,
                                             ssh_binary=str(self.ssh)), {})
 
+    def placement(self):
+        return congestion.placement(self.site, self.run_id, "hpc", ssh_binary=str(self.ssh))
+
     def test_a_running_link_reports_its_placement_once_placement_has_ended(self):
         impl = self.tmp / "hpc-state" / "runs" / self.run_id / congestion.IMPL_LOG
         full = read("b3_runme.log")
-        seen = congestion.placement(self.site, self.run_id, "hpc", ssh_binary=str(self.ssh))
+        seen = self.placement()
         self.assertEqual(seen["post_place_estimate"]["wns_ns"], -0.863)
         self.assertEqual(seen["placer"]["SLR0"]["long"]["level"], 7)
-        self.assertEqual(set(seen), {"note", "post_place_estimate", "placer"})
+        # The log has moved past placement and the link left no report after it (a platform without the hook).
+        self.assertEqual(set(seen), {"note", "post_place_estimate", "placer", "windows_not_attributed"})
+        self.assertIn("no report after placement", seen["windows_not_attributed"])
         # Placement still running: the tables are not there yet, or not closed.
         impl.write_text(full.split("INFO: [Place 30-612]")[0], encoding="utf-8")
-        self.assertEqual(congestion.placement(self.site, self.run_id, "hpc", ssh_binary=str(self.ssh)), {})
+        self.assertEqual(self.placement(), {})
         impl.write_text(full.split("Command: phys_opt_design")[0], encoding="utf-8")
-        self.assertEqual(congestion.placement(self.site, self.run_id, "hpc", ssh_binary=str(self.ssh)), {})
+        self.assertEqual(self.placement(), {})
         impl.unlink()
-        self.assertEqual(congestion.placement(self.site, self.run_id, "hpc", ssh_binary=str(self.ssh)), {})
+        self.assertEqual(self.placement(), {})
+
+    def test_the_report_after_placement_names_the_cells_of_each_congested_window(self):
+        # 2026-11-24, the user: the cause of a congested placement, not only its level, while the link routes.
+        run = self.tmp / "hpc-state" / "runs" / self.run_id
+        full = read("b3_runme.log")
+        (run / congestion.PLACED_REPORT).write_text(read("b3_design_analysis.rpt"), encoding="utf-8")
+        seen = self.placement()
+        self.assertNotIn("windows_not_attributed", seen)
+        top = seen["windows"][0]
+        self.assertEqual(top["level"], 7)
+        self.assertIn("u_txf", " ".join(c[0] for c in top["cells"]))
+        self.assertTrue(all(w["level"] >= congestion.MIN_LEVEL for w in seen["windows"]))
+        self.assertLessEqual(len(seen["windows"]), congestion.WINDOWS)
+        self.assertIn("report_design_analysis", seen["note"])
+        # Placement has ended (the placer closed its task) but the report is not whole yet: nothing, and the next
+        # read finds it.
+        (run / congestion.PLACED_REPORT).unlink()
+        (run / congestion.IMPL_LOG).write_text(
+            full.split("Command: phys_opt_design")[0] + "Ending Placer Task | Checksum: 1ee0d8d53\n", encoding="utf-8")
+        self.assertEqual(self.placement(), {})
+        # The hook could not write it: why, from the platform's own note.
+        (run / congestion.PLACED_FAILED).write_text("ERROR: [Common 17-53] User Exception: No open project.\n",
+                                                    encoding="utf-8")
+        self.assertIn("No open project", self.placement()["windows_not_attributed"])
+        (run / congestion.PLACED_FAILED).unlink()
+        # A placement with no window at level 5 or above says so; a report with no placer table is not read as one.
+        (run / congestion.PLACED_REPORT).write_text("1. Placer Final Level Congestion Reporting\n\n", encoding="utf-8")
+        self.assertEqual(self.placement()["windows"], "none at level 5 or above")
+        (run / congestion.PLACED_REPORT).write_text("Design Analysis\n", encoding="utf-8")
+        self.assertIn("no placer table", self.placement()["windows_not_attributed"])
 
     def test_an_unknown_machine_is_not_an_error_for_the_flow(self):
         self.assertIn("error", self.collect("nowhere", analyse=True))
@@ -221,6 +256,9 @@ class Watch(unittest.TestCase):
         base = congestion.parse_log(read("base_runme.log"))
         warning = fpga_slow.placement_warning(b3)
         self.assertEqual((warning["level"], warning["where"]), (7, "device, long congestion, north"))
+        self.assertNotIn("windows", warning["why"])
+        attributed = {**b3, "windows": congestion.placed_windows(read("b3_design_analysis.rpt"))}
+        self.assertIn("`windows` names the cells", fpga_slow.placement_warning(attributed)["why"])
         self.assertIsNone(fpga_slow.placement_warning(base))
         self.assertEqual(fpga_slow.placement_warning(base, level=6)["level"], 6)
         job = {"id": "b3"}

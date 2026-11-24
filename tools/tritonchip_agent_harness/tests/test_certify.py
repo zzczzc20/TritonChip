@@ -270,6 +270,22 @@ class Certify(unittest.TestCase):
             certify.certify(self.repo, self.task, run_dir=run_dir, hosts=Path("/h"), board_host="elsewhere",
                             yes=True, base_image_record=image, measure=self.measured({}))
 
+    def test_a_pin_moved_for_a_report_names_the_pin_the_bases_image_was_certified_on(self):
+        # 2026-11-24: 64d7679b = 90d9178f + a report after placement; the base's image stays the base's image.
+        image = self.certified_base()
+        cert = certify.config(self.task)
+        moved = {**cert, "commit": "e" * 40}
+        with self.assertRaisesRegex(certify.CertifyError, "its platform_commit"):
+            certify.base_image(image, self.task, moved)
+        named = {**moved, "base_image_platform_commit": cert["commit"], "base_image_platform_why": "a report only"}
+        self.assertEqual(certify.base_image(image, self.task, named)["xclbin_sha256"], "f" * 64)
+        for bad in ({"base_image_platform_commit": cert["commit"]},
+                    {"base_image_platform_commit": "90d9178f", "base_image_platform_why": "short hash"}):
+            task = dataclasses.replace(self.task, evaluation={**self.task.evaluation,
+                                                              "certify": {**moved, **bad}})
+            with self.assertRaisesRegex(certify.CertifyError, "base_image_platform_commit"):
+                certify.config(task)
+
     def test_without_yes_the_tree_is_built_and_nothing_runs(self):
         run_dir = make_run(self.repo, self.task, {"compiler/a.py": "a = 2\n", "rtl/core/x.v": "module x; endmodule\n"})
         value = self.certify(run_dir, yes=False)

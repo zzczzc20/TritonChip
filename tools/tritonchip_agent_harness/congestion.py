@@ -37,8 +37,8 @@ NODES = 10                      # contended routing resources kept
 MIN_LEVEL = 5
 
 NOTE = ("Vivado's own estimate of routing congestion for this link. A congested window of 2^n x 2^n "
-        "interconnect tiles is level n; AMD's methodology guide (UG949) says level 5 and above often costs "
-        "timing and above 6 a design is unlikely to meet timing and may fail to route. `windows` is Vivado's "
+        "interconnect tiles is level n; AMD's methodology guide (UG949): level 5 and above often costs timing, "
+        "6 is 'high' and routes with difficulty, 7 and 8 are 'likely unroutable'. `windows` is Vivado's "
         "attribution (report_design_analysis -congestion) of the most congested windows to the cells that fill "
         "them, after placement (`placer`) and when routing began (`router`); paths are below the kernel's top, "
         "`platform/...` is the shell's. `route.worst_nodes` are the routing resources the router found most "
@@ -302,26 +302,49 @@ report_design_analysis -congestion -file $out
 
 # Where the Vitis link of the U280 binding leaves its implementation run's log (flow/fpga/link.sh's --temp_dir):
 # read in place while the link runs, without searching the run's tree every poll.
-IMPL_LOG = "artifacts/tmp/link/vivado/vpl/prj/prj.runs/impl_1/runme.log"
-# Placement has ended once the placer closed its task or the next step began.
+IMPL_DIR = "artifacts/tmp/link/vivado/vpl/prj/prj.runs/impl_1"
+IMPL_LOG = f"{IMPL_DIR}/runme.log"
+# What the platform's report after placement leaves beside the log (64d7679b, 2026-11-24: the user wants the
+# cause of a congested placement, not only its level, before the link's end): report_design_analysis
+# -congestion on the placed design, renamed into place when whole, or why it was not written.
+PLACED_REPORT = f"{IMPL_DIR}/tnca_placed_congestion.rpt"
+PLACED_FAILED = f"{IMPL_DIR}/tnca_placed_congestion.failed"
+# Placement has ended once the placer closed its task or the next step began; the step after it has begun once
+# the report after placement (PLACE_DESIGN's POST hook) is behind it.
 _PLACED = ("Ending Placer Task", "Command: phys_opt_design", "Command: route_design")
-PLACEMENT_NOTE = ("Read from the link's own log while it runs, once placement has ended: Vivado's timing estimate "
-                  "after placement and its estimated congestion for the device and each SLR (a window of 2^n x 2^n "
-                  "interconnect tiles is level n; AMD's UG949: level 5 and above often costs timing, above 6 a "
-                  "design is unlikely to meet timing and may fail to route). The link goes on; its result brings "
-                  "the full congestion record.")
+_PAST_HOOK = ("Command: phys_opt_design", "Command: route_design")
+PLACEMENT_NOTE = ("Read from the link while it runs, once placement has ended: Vivado's timing estimate after "
+                  "placement and its estimated congestion for the device and each SLR (a window of 2^n x 2^n "
+                  "interconnect tiles is level n; AMD's UG949: level 5 and above often costs timing, 6 is 'high' "
+                  "and routes with difficulty, 7 and 8 are 'likely unroutable'), and `windows`: Vivado's "
+                  "attribution (report_design_analysis -congestion on the placed design) of each window at level 5 "
+                  "or above to the cells that fill it, as a percentage of the window, paths below the kernel's top "
+                  "(`platform/...` is the shell's). The link goes on; its result brings the full congestion record.")
+
+
+_PLACER_SECTION = re.compile(r"^\s*\d+\.\s+Placer Final", re.M)
+
+
+def placed_windows(text: str):
+    """The windows of a report after placement at MIN_LEVEL or above, most congested first (WINDOWS of them,
+    CELLS cells each); None when the text holds no placer table to read."""
+    if not _PLACER_SECTION.search(text):
+        return None
+    return rank({"placer": parse_design_analysis(text).get("placer") or []}, []).get("placer") or []
 
 
 def placement(site, run_id: str, build_host: Optional[str], *, ssh_binary: str = "ssh") -> dict:
-    """What a running link's log says once placement has ended: {note, post_place_estimate, placer}; {} before
-    that, or when the log cannot be read. One read of one file; never raises."""
+    """What a running link says once placement has ended: {note, post_place_estimate, placer, and `windows` or
+    `windows_not_attributed`}; {} before that, while the report after placement is still being written, or when
+    the log cannot be read. Never raises."""
     try:
         from tritonchip_fpga_harness.hosts import host_for, load_hosts
         from tritonchip_fpga_harness.pipeline import remote
         if not build_host:
             return {}
         host = host_for(load_hosts(site.fpga_pipeline["hosts"]), build_host, "build")
-        done = remote(host, ["tail", "-c", str(REPORT_BYTES), f"{host.state_dir}/runs/{run_id}/{IMPL_LOG}"],
+        run = f"{host.state_dir}/runs/{run_id}"
+        done = remote(host, ["tail", "-c", str(REPORT_BYTES), f"{run}/{IMPL_LOG}"],
                       ssh_binary=ssh_binary, check=False, timeout=120)
         if done.returncode != 0:
             return {}
@@ -330,7 +353,27 @@ def placement(site, run_id: str, build_host: Optional[str], *, ssh_binary: str =
             return {}
         log = parse_log(text)
         seen = {k: log[k] for k in ("post_place_estimate", "placer") if log.get(k)}
-        return {"note": PLACEMENT_NOTE, **seen} if seen else {}
+        if not seen:
+            return {}
+        report = remote(host, ["head", "-c", str(REPORT_BYTES), f"{run}/{PLACED_REPORT}"],
+                        ssh_binary=ssh_binary, check=False, timeout=120)
+        if report.returncode == 0 and report.stdout:
+            windows = placed_windows(report.stdout.decode(errors="replace"))
+            if windows is None:
+                seen["windows_not_attributed"] = "Vivado's report after placement holds no placer table"
+            else:
+                seen["windows"] = windows or f"none at level {MIN_LEVEL} or above"
+        else:
+            failed = remote(host, ["head", "-c", "2000", f"{run}/{PLACED_FAILED}"],
+                            ssh_binary=ssh_binary, check=False, timeout=60)
+            if failed.returncode == 0:
+                seen["windows_not_attributed"] = ("Vivado's report after placement was not written: "
+                                                  + failed.stdout.decode(errors="replace").strip()[:300])
+            elif any(m in text for m in _PAST_HOOK):
+                seen["windows_not_attributed"] = "this link wrote no report after placement"
+            else:
+                return {}   # the report after placement is being written; a later read finds it
+        return {"note": PLACEMENT_NOTE, **seen}
     except Exception:  # noqa: BLE001 -- the flow goes on without it
         return {}
 

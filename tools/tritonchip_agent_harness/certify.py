@@ -54,6 +54,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -85,6 +86,12 @@ def config(task: Task) -> dict:
         raise CertifyError(f"evaluation.certify is missing {', '.join(missing)}")
     if cert["target"] not in BOARD_BACKEND:
         raise CertifyError(f"evaluation.certify.target {cert['target']!r}: certify knows {sorted(BOARD_BACKEND)}")
+    if "base_image_platform_commit" in cert and not (
+            isinstance(cert["base_image_platform_commit"], str)
+            and re.fullmatch(r"[0-9a-f]{40}", cert["base_image_platform_commit"])
+            and isinstance(cert.get("base_image_platform_why"), str) and cert["base_image_platform_why"].strip()):
+        raise CertifyError("evaluation.certify.base_image_platform_commit must be a full commit hash, with "
+                           "`base_image_platform_why` saying why the base's image stands for the pinned platform")
     board_cycles(task)
     return cert
 
@@ -300,7 +307,10 @@ def base_image(path: Path, task: Task, cert: dict) -> dict:
         problems.append(f"its verdict is {rec.get('verdict')!r}, not certified")
     if (rec.get("task") or {}).get("base_commit") != task.base_commit:
         problems.append("it certified another base commit")
-    for key, want in (("platform_commit", cert["commit"]), ("target", cert["target"]),
+    # A pin moved for something that changes no image (2026-11-24: 64d7679b = 90d9178f + a report after
+    # placement) names the pin the base's image was certified on: `base_image_platform_commit`.
+    for key, want in (("platform_commit", cert.get("base_image_platform_commit") or cert["commit"]),
+                      ("target", cert["target"]),
                       ("clock_mhz", cert["clock_mhz"]), ("profile", task.evaluation["profile"])):
         if rec.get(key) != want:
             problems.append(f"its {key} is {rec.get(key)!r}, not {want!r}")

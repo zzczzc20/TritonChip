@@ -680,8 +680,11 @@ def placement_warning(seen: dict, level: int = PLACEMENT_WARNING_LEVEL) -> Optio
                 worst = {"level": v["level"], "where": f"{scope}, {kind} congestion, {v.get('direction')}"}
     if worst is None:
         return None
-    return {**worst, "why": f"the placer estimated congestion level {worst['level']}; AMD's methodology guide "
-                            "(UG949) says above 6 a design is unlikely to meet timing and may fail to route"}
+    why = (f"the placer estimated congestion level {worst['level']}; AMD's methodology guide (UG949) calls levels "
+           "7 and 8 likely unroutable")
+    if isinstance(seen.get("windows"), list) and seen["windows"]:
+        why += "; `windows` names the cells Vivado finds filling each congested window"
+    return {**worst, "why": why}
 
 
 def _watch_placement(site: Site, job: dict, remote_id: str, host: str, elapsed: float,

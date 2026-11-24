@@ -341,7 +341,9 @@
    ]
   },
   "certify": {
-   "commit": "90d9178f8e067a83654bb6d76d8581065ff44988",
+   "commit": "64d7679b2baeb75ae5360c85498ebd6b9c059dce",
+   "base_image_platform_commit": "90d9178f8e067a83654bb6d76d8581065ff44988",
+   "base_image_platform_why": "2026-11-24: 64d7679b is 90d9178f plus a report after placement (report_design_analysis -congestion as PLACE_DESIGN.TCL.POST), which changes no design; the base's image dbcd81cd was linked and certified on 90d9178f",
    "paths": [
     "flow/fpga/",
     "fpga/",

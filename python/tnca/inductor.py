@@ -143,7 +143,7 @@ _GEMM_AUTO = [False]
 # A GEMM kernel is blocked along N (one A fragment feeds BLOCKED_BN / 16 matrix commands a K step) only while
 # the grid keeps at least this many programs: two full waves of the image's three cores, each core running two
 # programs at a time (RCTX SPMD). Below that the tail of the last wave costs more than the blocking saves
-# (TLM, 24 GEMM points of the tiny/small/medium tiers: evidence/r42/xfer/REPORT.md).
+# (TLM, 24 GEMM points of the tiny/small/medium tiers: evidence/r42/xfer/tables.txt, section 1).
 GEMM_MIN_PROGRAMS = 12
 BLOCKED_BN = 32
 

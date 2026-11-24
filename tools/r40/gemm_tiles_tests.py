@@ -43,9 +43,12 @@ def main():
     D.register()
     torch.manual_seed(47)
     for name, fn in [('mm', lambda a,b,c: a @ b),
-                     ('addmm', lambda a,b,c: torch.addmm(c,a,b))]:
+                     ('addmm', lambda a,b,c: torch.addmm(c,a,b)),
+                     # a K-contiguous weight: the B tile arrives by a transposed transfer
+                     ('linear', lambda a,b,c: torch.nn.functional.linear(a, b.t(), c))]:
         compiled = torch.compile(fn, fullgraph=True, dynamic=False)
-        for m,n,k in ((17,65,33),(33,31,65)):
+        # (32, 64, 64) is an even K for every depth: no masked tile, so a K32 operand is one transfer (gemm_kmerge)
+        for m,n,k in ((17,65,33),(33,31,65),(32,64,64)):
             dtype = getattr(torch, args.dtype)
             a,b,c = (torch.randn(m,k).to(dtype)*.1, torch.randn(k,n).to(dtype)*.1,
                      torch.randn(n).to(dtype)*.1)
@@ -90,13 +93,19 @@ def main():
                     print(f'AUDIT awaited window layout: {layout}', flush=True)
                 print(f'AUDIT logical K={args.depth}, physical MMA K={physical_depth}, '
                       f'retiles={retiles}: {manifest["resources"]}', flush=True)
+            if args.depth == 32 and k % 32 == 0 and args.columns == 16:
+                # R42 xfer: the chunks of a K32 operand are one transfer each (frontend._defer_matrix_load), no repack
+                merged = [artifact.load(e['artifact_path'])[0]['optional_metadata']['provenance']
+                          .get('gemm_kmerge_transfers', 0) for e in log]
+                assert any(merged), merged
+                print(f'AUDIT K32 operands as one transfer: {merged}', flush=True)
             if args.columns > 16 or args.depth > 16:
                 plans = [artifact.load(e['artifact_path'])[0]['optional_metadata']['provenance']
                          .get('register_blocks',{}) for e in log]
                 assert any([16,args.columns,args.depth] in p.get('gemm_tiles',[]) for p in plans), plans
                 print(f'AUDIT logical GEMM tiles: {plans}',flush=True)
             print(f'PASS {name}, logical 16x{args.columns}x{args.depth}, shape {m}x{n}x{k}',flush=True)
-    print('r40-gemm-tiles-tests PASS (4/4)',flush=True)
+    print('r40-gemm-tiles-tests PASS (9/9)',flush=True)
     return 0
 
 

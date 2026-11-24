@@ -55,7 +55,9 @@ for f in sorted(glob.glob(HERE + '/rtl_1c/rtl_base/*.jsonl')):
     print('%-48s %10s %10s %8s %10s %8s' % (n[:-6], b, a, '%.3f' % (a / b) if a else '-', k or '-', '%.3f' % (k / b) if k else '-'))
 
 print('\n4. rtl-3c (three-core board-top stand-in at the R41 run-2 image geometry, line engine): cycles of the timed call')
-for d in ('base_tiny', 'k32_tiny', 'base_small', 'bn32_small'):
+print('   base_tiny/k32_tiny: 16x16x16 vs TNCA_GEMM_TILE=16,16,32. base0_small = TNCA_GEMM_AUTO=0 (the 16x16x16 baseline); auto_small_run1 = the default')
+print('   (N blocking) and bn32_small_explicit = TNCA_GEMM_TILE=16,32,16: the same kernel, so their difference is the run-to-run noise of the stand-in')
+for d in ('base_tiny', 'k32_tiny', 'base0_small', 'auto_small_run1', 'bn32_small_explicit'):
     for f in sorted(glob.glob(HERE + '/rtl_3c/%s/*.jsonl' % d)):
         print('   %-12s %-48s %s' % (d, os.path.basename(f)[:-6], rtl_cycles(f)[0]))
 
@@ -101,3 +103,15 @@ for f in ('base_linear_tiny', 'k32_linear_tiny', 'matmul_small_base', 'matmul_sm
     print(''.join('     ' + l + '\n' for l in out.splitlines()))
     s = [l for l in open(HERE + '/census/%s.probe' % f) if l.startswith('S ')]
     if s: print('      launch summary:', s[-1].strip())
+
+print('\n8. tlm HARDWARE what-if (not built): rows of 32 bytes (half a line) move as line requests (dma_line_elig=2), against the engine as built')
+print('   (dma_line_elig=1, the le_elig rule of tnca_tensor.v); both with the default compiler (auto tile), no transposed line buffer. cal_le is NOT')
+print('   validated (section 5 note), so the ratio is an expectation of the direction and the order of size, not a prediction of board cycles.')
+if 'le1_auto' in tl and 'le2_auto' in tl:
+    rs = []
+    print('%-58s %10s %10s %8s' % ('point', 'elig=1', 'elig=2', 'ratio'))
+    for p in sorted(base):
+        a, b2 = tl['le1_auto'][p], tl['le2_auto'][p]
+        if a[1] == 'pass' and b2[1] == 'pass':
+            rs.append(b2[0] / a[0]); print('%-58s %10d %10d %8.3f' % (p, a[0], b2[0], b2[0] / a[0]))
+    print('geometric mean elig=2 / elig=1: %.3f (speed-up %.3f)' % (gm(rs), 1 / gm(rs)))

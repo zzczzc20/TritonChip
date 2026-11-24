@@ -43,14 +43,18 @@ geometric mean auto/base 0.737 (speed-up 1.358)
 point                                                  base       auto    ratio   K32 tile    ratio
 op.gemv_small_fp16-k256-n512                         107642     105371    0.979          -        -
 op.linear_small_fp16-m64-k256-n256                   237890     239832    1.008     338557    1.423
+op.matmul_medium_fp16-m128-k192-n128                 159502     154655    0.970          -        -
 op.matmul_small_fp16-m64-k128-n128                    57824      55408    0.958      87643    1.516
 
 4. rtl-3c (three-core board-top stand-in at the R41 run-2 image geometry, line engine): cycles of the timed call
+   base_tiny/k32_tiny: 16x16x16 vs TNCA_GEMM_TILE=16,16,32. base0_small = TNCA_GEMM_AUTO=0 (the 16x16x16 baseline); auto_small_run1 = the default
+   (N blocking) and bn32_small_explicit = TNCA_GEMM_TILE=16,32,16: the same kernel, so their difference is the run-to-run noise of the stand-in
    base_tiny    op.linear_tiny_fp16-m16-k64-n64                  4974
    base_tiny    op.matmul_tiny_fp16-m16-k32-n16                  1952
    k32_tiny     op.linear_tiny_fp16-m16-k64-n64                  4969
    k32_tiny     op.matmul_tiny_fp16-m16-k32-n16                  1953
-   base_small   op.linear_small_fp16-m64-k256-n256               159177
+   auto_small_run1 op.linear_small_fp16-m64-k256-n256               159177
+   bn32_small_explicit op.linear_small_fp16-m64-k256-n256               154073
 
 5. tlm K32 and hardware what-ifs (cycles / base cycles; FAIL = compile failure of the K32 tile)
 point                                                         auto12       k32    ab_k32   le_base   le_auto    le_k32  leab_k32
@@ -146,3 +150,33 @@ B tile KS x 16 (plain)     32       256 / 256         448 / 448         704 / 70
        m.mma commands n=256: cycles median 169 min 169 max 171
 
       launch summary: S end=91461 run=55405 mtx=43555 mma_busy=43011 txf=28810 both=25025 none=8065 n_mma=256 n_txf=384 x_valid=8708
+
+8. tlm HARDWARE what-if (not built): rows of 32 bytes (half a line) move as line requests (dma_line_elig=2), against the engine as built
+   (dma_line_elig=1, the le_elig rule of tnca_tensor.v); both with the default compiler (auto tile), no transposed line buffer. cal_le is NOT
+   validated (section 5 note), so the ratio is an expectation of the direction and the order of size, not a prediction of board cycles.
+point                                                          elig=1     elig=2    ratio
+model.gpt2_block/medium/fp16-d160-h5-b1-s64                   1053692     904619    0.859
+model.gpt2_block/small/fp16-d128-h4-b1-s64                     776648     680803    0.877
+model.gpt2_block/tiny/fp16-d64-h4-b1-s16                        81810      72916    0.891
+model.llama_decode/medium/fp16-b1-p256                        1675123    1437694    0.858
+model.llama_decode/small/fp16-b1-p128                          880171     722776    0.821
+model.llama_decode/tiny/fp16-b1-p16                            134922     113794    0.843
+model.llama_prefill/medium/fp16-b1-s64                        6177954    5510236    0.892
+model.llama_prefill/small/fp16-b1-s64                         3868946    3493821    0.903
+model.llama_prefill/tiny/fp16-b1-s16                           296483     275487    0.929
+model.mlp/medium/fp16-t128-d128                                732259     609633    0.833
+model.mlp/small/fp16-t64-d128                                  377631     316531    0.838
+model.mlp/tiny/fp16-t16-d64                                     40180      34035    0.847
+op.bmm/medium/fp16-b16-m64-k32-n64                              97993      68123    0.695
+op.bmm/small/fp16-b8-m64-k32-n64                                49299      34309    0.696
+op.bmm/tiny/fp16-b2-m16-k16-n16                                   954        773    0.810
+op.gemv/medium/fp16-k320-n448                                   60471      45334    0.750
+op.gemv/small/fp16-k256-n512                                    54067      42768    0.791
+op.gemv/tiny/fp16-k64-n64                                        3307       2189    0.662
+op.linear/medium/fp16-m128-k320-n256                           268801     205037    0.763
+op.linear/small/fp16-m64-k256-n256                             131578      87966    0.669
+op.linear/tiny/fp16-m16-k64-n64                                  4028       3141    0.780
+op.matmul/medium/fp16-m128-k192-n128                           108051      44785    0.414
+op.matmul/small/fp16-m64-k128-n128                              31231      16249    0.520
+op.matmul/tiny/fp16-m16-k32-n16                                  1152        850    0.738
+geometric mean elig=2 / elig=1: 0.767 (speed-up 1.304)

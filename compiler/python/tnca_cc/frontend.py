@@ -1259,7 +1259,12 @@ class TTIRImporter:
         def failing(v, width):
             """A scalar, non-zero if any of the first `width` lanes is false."""
             if v.kind == PRED:
-                bad = self.b.vselect(v, self.b.vmovi(0), self.b.vmovi(1))
+                # The lanes that are false, ones reduced under that mask (inactive lanes
+                # contribute 0): where `v.sel` of two constants and a reduction did the same.
+                bad = self.b.pun('not', v)
+                if width < self.target.vlen:
+                    bad = self.b.pbin('and', bad, self._shape_mask(width, None))
+                return self.b.reduce('or', self.b.vmovi(1), dtype='i32', mask=bad)
             elif v.kind == VECTOR:
                 bad = self.b.vselect(self.b.vcmp('eq', v, self.b.vmovi(0)),
                                      self.b.vmovi(1), self.b.vmovi(0))
@@ -3792,20 +3797,23 @@ class TTIRImporter:
         get_mask = self._row_getter(mask, rows, 'i1')
         get_mask(0)      # what rows share (a column predicate, a bound) is made before the branch
         self.kernel.coalesce_assigns = True      # the transpose is computed into `outs` itself
-        outs = [self.b.vmovi(0, dtype=elem) for _ in range(rows)]
-        slow, end = self._control_label('xpose_cut'), self._control_label('xpose_end')
-        self.b.branch_nz(self.b.scmp('eq', flag, self.b.const(0)), slow)
-        with self._branch_arm():
-            for r, v in enumerate(self._transpose_registers([run(c) for c in range(vlen)])):
-                self.b._emit('assign', [], [outs[r], v])
-        self.b.branch_nz(self.b.const(1), end)
-        self.b.label(slow)
+        # Neither arm defines `outs` first: the cut tile's arm comes first in the text, so its
+        # assigns take the registers (codegen._op_assign) and the whole tile's arm, the one that
+        # runs, computes into them (_coalescable).
+        outs = [self.b._value(VECTOR, elem, hint='xp') for _ in range(rows)]
+        whole, end = self._control_label('xpose_whole'), self._control_label('xpose_end')
+        self.b.branch_nz(flag, whole)
         with self._branch_arm():
             get_index = self._offset_row(aff)
             gbase = self._arg_value(name)
             for r in range(rows):
                 v = self.b.gather(gbase, get_index(r), mask=self._shape_mask(cols, get_mask(r)),
                                   other=0, dtype=elem, size=size)
+                self.b._emit('assign', [], [outs[r], v])
+        self.b.branch_nz(self.b.const(1), end)
+        self.b.label(whole)
+        with self._branch_arm():
+            for r, v in enumerate(self._transpose_registers([run(c) for c in range(vlen)])):
                 self.b._emit('assign', [], [outs[r], v])
         self.b.label(end)
         return Tile('rows', outs, rows, cols, elem)
@@ -6083,6 +6091,13 @@ class TTIRImporter:
             # predicate register number as though it were a scalar's.
             if kind not in ('and', 'or', 'xor'):
                 raise Unsupported(f"{kind!r} on two masks")
+            if kind == 'xor':
+                # `m ^ true` is the complement (Inductor's `~xmask`): one p.not, where the
+                # constant would be a vector, a compare to make a predicate and a p.xor.
+                for x, y in ((a, b), (b, a)):
+                    if self._const.get(y.id()) not in (None, 0, False) and y.id() in self._pending_const:
+                        self._v[rid] = self.b.pun('not', self._as_pred(self._value(x)))
+                        return
             self._v[rid] = self.b.pbin(kind, self._as_pred(self._value(a)),
                                        self._as_pred(self._value(b)))
             return

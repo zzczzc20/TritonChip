@@ -688,6 +688,11 @@ class CodeGen:
         bank = {VECTOR: 'v', PRED: 'p'}.get(dst.kind, 's')
         if src.kind != dst.kind:
             raise Diagnostic(f"assign of a {src.kind} into a {dst.kind} {dst!r}")
+        if dst.reg is None:
+            # The join of a branch (frontend._transposed_rows_load): neither side defines the
+            # value first, so the first assign in the text takes its register, and it stays
+            # reserved until the value's last use.
+            self._alloc(dst)
         if id(src) in self._coalesced and src.reg == dst.reg:
             return                            # computed in place (_coalescable)
         self._emit(f'{bank}.mov', f'{bank}{dst.reg}', f'{bank}{src.reg}')

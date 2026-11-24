@@ -1,0 +1,18 @@
+== image old
+R42_ELAB_TENSOR device/system/shell/u_system/g_tile[0].u_tile/u_core/u_txf LINE_ENGINE=1 LINE_HALF=0 NTAG=16 TAG_W=4 LSLOT_N=64 PTAG_W=7
+R42_ELAB_TENSOR device/system/shell/u_system/g_tile[1].u_tile/u_core/u_txf LINE_ENGINE=1 LINE_HALF=0 NTAG=16 TAG_W=4 LSLOT_N=64 PTAG_W=7
+R42_ELAB_TENSOR device/system/shell/u_system/g_tile[2].u_tile/u_core/u_txf LINE_ENGINE=1 LINE_HALF=0 NTAG=16 TAG_W=4 LSLOT_N=64 PTAG_W=7
+R42_ELAB_MATRIX device/system/shell/u_system/g_tile[0].u_tile/u_core/u_mtx ABUF=1
+R42_ELAB_MATRIX device/system/shell/u_system/g_tile[1].u_tile/u_core/u_mtx ABUF=1
+R42_ELAB_MATRIX device/system/shell/u_system/g_tile[2].u_tile/u_core/u_mtx ABUF=1
+R42_ELAB_DONE
+0
+== image all3
+R42_ELAB_TENSOR device/system/shell/u_system/g_tile[0].u_tile/u_core/u_txf LINE_ENGINE=1 LINE_HALF=1 NTAG=32 TAG_W=5 LSLOT_N=64 PTAG_W=7
+R42_ELAB_TENSOR device/system/shell/u_system/g_tile[1].u_tile/u_core/u_txf LINE_ENGINE=1 LINE_HALF=1 NTAG=32 TAG_W=5 LSLOT_N=64 PTAG_W=7
+R42_ELAB_TENSOR device/system/shell/u_system/g_tile[2].u_tile/u_core/u_txf LINE_ENGINE=1 LINE_HALF=1 NTAG=32 TAG_W=5 LSLOT_N=64 PTAG_W=7
+R42_ELAB_MATRIX device/system/shell/u_system/g_tile[0].u_tile/u_core/u_mtx ABUF=2
+R42_ELAB_MATRIX device/system/shell/u_system/g_tile[1].u_tile/u_core/u_mtx ABUF=2
+R42_ELAB_MATRIX device/system/shell/u_system/g_tile[2].u_tile/u_core/u_mtx ABUF=2
+R42_ELAB_DONE
+0

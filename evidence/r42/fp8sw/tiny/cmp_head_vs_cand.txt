@@ -1,5 +1,5 @@
 # R42 head (origin/R42 02b7578e + R42-xl merge) against the candidate, tiny tier, single-core RTL, profile core-vrf-sync-v5-x8-g2c4-dp, default knobs
-# the four longest model points (llama_prefill, resnet_block, llama_decode, gpt2_block) were not run on the head tree; conv2d if absent below was still running
+# the four longest model points (llama_prefill, resnet_block, llama_decode, gpt2_block) were not run on the head tree
 model.mlp/tiny/fp16-t16-d64                      main    84918 head    79717 cand    79873  head/cand  0.998  main/cand  1.063
 op.add/tiny/fp16-n1000                           main     2354 head     2370 cand     2370  head/cand  1.000  main/cand  0.993
 op.add/tiny/fp32-n256                            main      775 head      825 cand      825  head/cand  1.000  main/cand  0.939
@@ -7,6 +7,7 @@ op.argmax/tiny/fp16-r2-v256                      main     2934 head     2034 can
 op.attention_decode/tiny/fp16-b1-h2-l16-d16      main     9787 head     9514 cand     9514  head/cand  1.000  main/cand  1.029
 op.attention_prefill/tiny/fp16-b1-h2-s16-d16     main    40707 head    24926 cand    24886  head/cand  1.002  main/cand  1.636
 op.bmm/tiny/fp16-b2-m16-k16-n16                  main     1924 head     1856 cand     1864  head/cand  0.996  main/cand  1.032
+op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8          main   145168 head   121248 cand   120760  head/cand  1.004  main/cand  1.202
 op.cumsum/tiny/fp32-r4-c64                       main     2505 head     2218 cand     2218  head/cand  1.000  main/cand  1.129
 op.embedding/tiny/fp16-v256-d64-t16              main    46381 head    46381 cand    46381  head/cand  1.000  main/cand  1.000
 op.gelu_tanh/tiny/fp16-n256                      main     2228 head     1972 cand     1972  head/cand  1.000  main/cand  1.130
@@ -22,4 +23,6 @@ op.softmax/tiny/fp16-r4-c64                      main     3875 head     2465 can
 op.softmax/tiny/fp32-r3-c37                      main     1809 head     1340 cand     1340  head/cand  1.000  main/cand  1.350
 op.swiglu/tiny/fp16-n256                         main     1699 head     1660 cand     1660  head/cand  1.000  main/cand  1.023
 op.transpose/tiny/fp32-r32-c32                   main     2310 head     2310 cand     2334  head/cand  0.990  main/cand  0.990
-points 22 geomean head/cand 1.0015 geomean main/cand 1.2234
+points 23 geomean head/cand 1.0016 geomean main/cand 1.2225
+slower than head by more than 2 %: []
+slower than main by more than 2 %: [('op.add/tiny/fp32-n256', 0.939)]

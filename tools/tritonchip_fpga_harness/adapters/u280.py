@@ -29,6 +29,16 @@ class U280FlowAdapter:
             "XILINX_PLATFORMS": str(roots["platforms_root"]),
         }
         environment.update({str(k): str(v) for k, v in data.get("environment", {}).items()})
+        hook = data.get("post_place_tcl")
+        if hook:
+            # A report after placement that changes nothing (hooks/post_place_congestion.tcl): v++ hands it to
+            # the implementation run as PLACE_DESIGN.TCL.POST, beside link.sh's own PRE hook. link.sh splits
+            # LINK_EXTRA on blanks, so a checkout whose path has one gets no hook rather than a broken link.
+            path = str((Path(root) / str(hook)).resolve())
+            if not any(c.isspace() for c in path):
+                environment["LINK_EXTRA"] = " ".join(filter(None, [
+                    environment.get("LINK_EXTRA", ""),
+                    f"--vivado.prop run.impl_1.STEPS.PLACE_DESIGN.TCL.POST={path}"]))
         environment.update(extra_env or {})
         return U50Adapter(
             U50Config(

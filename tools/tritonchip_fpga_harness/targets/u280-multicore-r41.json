@@ -38,6 +38,7 @@
     "VPP_JOBS": "2",
     "LINK_EXTRA": "--vivado.prop run.impl_1.STEPS.PLACE_DESIGN.ARGS.DIRECTIVE=SSI_SpreadSLLs"
   },
+  "post_place_tcl": "tools/tritonchip_fpga_harness/hooks/post_place_congestion.tcl",
   "expected_artifacts": [
     "tnca_u50.xo",
     "tnca_u280.xclbin"

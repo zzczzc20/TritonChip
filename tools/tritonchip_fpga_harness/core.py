@@ -1235,7 +1235,8 @@ def reconcile(state_dir: Path, run_id: str, *, terminate: bool = False) -> dict[
 # DRC verdict is read from.
 _HEAVY = ("artifacts/tmp", "artifacts/vpp_logs", "artifacts/proj", "artifacts/ip_repo")
 _KEPT_FROM_HEAVY = ("artifacts/tmp/reports/link/imp/*.rpt",
-                    "artifacts/tmp/link/vivado/vpl/prj/prj.runs/impl_*/runme.log")
+                    "artifacts/tmp/link/vivado/vpl/prj/prj.runs/impl_*/runme.log",
+                    "artifacts/tmp/link/vivado/vpl/prj/prj.runs/impl_*/tnca_placed_congestion.*")
 _PACKET_FILES = frozenset({"evidence-manifest.json", "README.txt"})
 
 

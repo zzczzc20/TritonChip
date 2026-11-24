@@ -29,6 +29,22 @@ class U280AdapterTests(unittest.TestCase):
         self.assertTrue(str(impl.config.link_script).endswith("flow/fpga/link.sh"))
         self.assertEqual(impl.package_command(Path("/tmp/build"))[-1], "xcu280-fsvh2892-2L-e")
 
+    def test_r41_target_reports_the_placed_design_after_placement(self) -> None:
+        profile = load_profile(HERE, "u280-multicore-r41")
+        hook = HERE.parent.parent / profile.data["post_place_tcl"]
+        self.assertTrue(hook.is_file())
+        self.assertIn("report_design_analysis -congestion", hook.read_text(encoding="utf-8"))
+        extra = U280FlowAdapter()._impl(Path("/tmp/u280-source"), profile).config.environment["LINK_EXTRA"]
+        self.assertTrue(extra.startswith("--vivado.prop run.impl_1.STEPS.PLACE_DESIGN.ARGS.DIRECTIVE=SSI_SpreadSLLs "))
+        post = "--vivado.prop run.impl_1.STEPS.PLACE_DESIGN.TCL.POST="
+        self.assertIn(post + str(Path("/tmp/u280-source").resolve() / profile.data["post_place_tcl"]), extra)
+        # link.sh splits LINK_EXTRA on blanks: a checkout path with one gets no hook, the link stays whole.
+        blank = U280FlowAdapter()._impl(Path("/tmp/u280 source"), profile).config.environment["LINK_EXTRA"]
+        self.assertNotIn(post, blank)
+        # A target without the key gets no hook.
+        self.assertNotIn(post, U280FlowAdapter()._impl(Path("/tmp/u280-source"), load_profile(HERE, "u280"))
+                         .config.environment.get("LINK_EXTRA", ""))
+
     def test_u280_profile_allows_only_advisory_scaling_rule(self) -> None:
         profile = load_profile(HERE, "u280")
         self.assertEqual(profile.data["allowed_auto_frequency_rules"], ["AUTO-FREQ-SCALING-08"])

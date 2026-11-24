@@ -77,6 +77,22 @@ for d in sorted(os.listdir(HERE + '/rtl_3c')):
     for f in sorted(glob.glob(HERE + '/rtl_3c/%s/*.jsonl' % d)):
         print('   %-40s %-46s %s' % (d, os.path.basename(f)[:-6], rtl_cycles(f)[0]))
 
+def mc(d, n):
+    f = HERE + '/rtl_3c/%s/%s.jsonl' % (d, n)
+    return rtl_cycles(f)[0] if os.path.exists(f) else None
+
+
+print('   valid pairs (settings through --set):')
+pairs = [('op.matmul_small_fp16-m64-k128-n128', 'tnca16_matmul_small_AUTO0', 'default_matmul_small', '16x16x16 (TNCA_GEMM_AUTO=0) -> N-blocked default'),
+         ('op.linear_small_fp16-m64-k256-n256', 'tnca16_linear_small_AUTO0', 'default_linear_small_run1', '16x16x16 (TNCA_GEMM_AUTO=0) -> N-blocked default (default run 1; runs 2 and 3 above)'),
+         ('op.matmul_tiny_fp16-m16-k32-n16', 'default_tiny_run1', 'k32_tiny', '16x16x16 -> TNCA_GEMM_TILE=16,16,32'),
+         ('op.linear_tiny_fp16-m16-k64-n64', 'default_tiny_run1', 'k32_tiny', '16x16x16 -> TNCA_GEMM_TILE=16,16,32'),
+         ('op.linear_small_fp16-m64-k256-n256', 'tnca16_linear_small_AUTO0', 'k32_linear_small', '16x16x16 -> TNCA_GEMM_TILE=16,16,32')]
+for n, a, b, what in pairs:
+    x, y = mc(a, n), mc(b, n)
+    if x and y:
+        print('   %-40s %s: %d -> %d  (ratio %.3f)' % (n, what, x, y, y / x))
+
 print('\n5. tlm K32 and hardware what-ifs (cycles / base cycles; FAIL = compile failure of the K32 tile)')
 tags = [t for t in ('auto12', 'k32', 'ab_k32', 'le_base', 'le_auto', 'le_k32', 'leab_k32') if t in tl]
 print('%-58s' % 'point' + ''.join(' %9s' % t[:9] for t in tags))

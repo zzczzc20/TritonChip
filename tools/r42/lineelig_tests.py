@@ -25,6 +25,7 @@ import argparse, re, subprocess, sys, tempfile, shutil
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CFG = ((20, 20, 40), (0, 0, 8), (40, 40, 120))
+VRL = {(20, 20, 40): 0, (0, 0, 8): 3, (40, 40, 120): 1}     # the register file's extra read latency of each configuration (0: one cycle)
 TB = 'tb/core/tb_tensor_line.v'
 
 
@@ -52,13 +53,14 @@ def one(tmp, params, rtl, extra_src=()):
 def miter(a):
     bad = n = 0
     with tempfile.TemporaryDirectory(prefix='lineelig-') as t:
-        for lhalf, lsw in ((1, 5), (1, 6), (0, 5)):       # LSW 6: the run-2 image's 64 line slots
+        # LSW 6: the run-2 image's 64 line slots; TGW 5: R42 TENSOR_TAG_W 5 (32 word tags, which fit the image's 8-bit port tag)
+        for lhalf, lsw, tgw in ((1, 5, 4), (1, 6, 4), (1, 6, 5), (0, 5, 4), (0, 6, 5)):
             for seed in range(1, a.seeds + 1):
                 for vw, rq, lat in CFG:
-                    p = dict(SEED=seed, VW_STALL=vw, REQ_STALL=rq, MAXLAT=lat, LHALF=lhalf, HBIAS=1, LSW=lsw)
+                    p = dict(SEED=seed, VW_STALL=vw, REQ_STALL=rq, MAXLAT=lat, LHALF=lhalf, HBIAS=1, LSW=lsw, TGW=tgw, VRLAT=VRL[(vw, rq, lat)])
                     ok, msg = one(t, p, ROOT / 'rtl/core/tnca_tensor.v')
                     n += 1; bad += not ok
-                    print(f"{'PASS' if ok else 'FAIL'} LINE_HALF={lhalf} LSW={lsw} seed={seed} vw={vw} rq={rq} lat={lat} {msg}", flush=True)
+                    print(f"{'PASS' if ok else 'FAIL'} LINE_HALF={lhalf} LSW={lsw} TGW={tgw} seed={seed} vw={vw} rq={rq} lat={lat} {msg}", flush=True)
     print(f'MITER {n - bad} of {n} configurations pass', flush=True)
     return 1 if bad else 0
 
@@ -69,7 +71,7 @@ def directed(a):
         for lhalf in (1, 0):
             for lsw in (5, 6):
                 for vw, rq, lat in CFG:
-                    p = dict(SEED=1, VW_STALL=vw, REQ_STALL=rq, MAXLAT=lat, LHALF=lhalf, DIRECTED=1, LSW=lsw)
+                    p = dict(SEED=1, VW_STALL=vw, REQ_STALL=rq, MAXLAT=lat, LHALF=lhalf, DIRECTED=1, LSW=lsw, VRLAT=VRL[(vw, rq, lat)])
                     ok, msg = one(t, p, ROOT / 'rtl/core/tnca_tensor.v')
                     n += 1; bad += not ok
                     print(f"{'PASS' if ok else 'FAIL'} DIRECTED LINE_HALF={lhalf} LSW={lsw} vw={vw} rq={rq} lat={lat} {msg}", flush=True)
@@ -118,7 +120,7 @@ def lock(a):
         for hb in (0, 1):
             for seed in range(1, a.seeds + 1):
                 for vw, rq, lat in CFG:
-                    p = dict(SEED=seed, VW_STALL=vw, REQ_STALL=rq, MAXLAT=lat, LHALF=0, HBIAS=hb, LOCK=1)
+                    p = dict(SEED=seed, VW_STALL=vw, REQ_STALL=rq, MAXLAT=lat, LHALF=0, HBIAS=hb, LOCK=1, VRLAT=VRL[(vw, rq, lat)])
                     ok, msg = one(t, p, ROOT / 'rtl/core/tnca_tensor.v', [a.ref])
                     n += 1; bad += not ok
                     print(f"{'PASS' if ok else 'FAIL'} LOCK HBIAS={hb} seed={seed} vw={vw} rq={rq} lat={lat} {msg}", flush=True)
@@ -161,7 +163,7 @@ def mutants(a):
             caught = False
             for seed in range(1, a.seeds + 1):
                 for vw, rq, lat in CFG[:2]:
-                    p = dict(SEED=seed, VW_STALL=vw, REQ_STALL=rq, MAXLAT=lat, LHALF=1, HBIAS=1)
+                    p = dict(SEED=seed, VW_STALL=vw, REQ_STALL=rq, MAXLAT=lat, LHALF=1, HBIAS=1, VRLAT=VRL[(vw, rq, lat)])
                     try:
                         ok, msg = one(t, p, f)
                     except subprocess.CalledProcessError:

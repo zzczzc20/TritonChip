@@ -1,0 +1,27 @@
+# R42 lineelig: commands in the order they were run. Hosts: GB10 (nice -n 19, at most 4 processes of this branch), x86 host for OOC runs, local host for edits only.
+# S = the session scratchpad with the host helpers (gb_rsh, vx, r42_sync); scripts below are in that scratchpad (no credentials in them) and copied to scripts/.
+# Trees on GB10: ~/r42/lineelig (unit tests and gates), ~/r42/lineelig_m1 (rtl-3c arms of item 1, commit b5149165 + the stand-in tools), ~/r42/lineelig_m2 (items 2 and 3).
+#
+# 0. branch: git worktree add --no-checkout -b R42-lineelig /home/ubuntu/r42-wt/lineelig origin/R42 (44070eb0), sparse checkout without evidence/ except evidence/r42/lineelig/
+#
+# 1. unit (domain: unit = RTL simulation of tnca_tensor alone or in the core bench, Icarus)
+python3 tools/r42/lineelig_tests.py miter   --seeds 3   # LINE_HALF 1 (LSW 5, 6; TGW 4, 5) and 0 against the word engine, random program with 32-byte-piece boxes
+python3 tools/r42/lineelig_tests.py directed            # fixed boxes with the number of pieces each must move; engines in step, compared after every command
+python3 tools/r42/lineelig_tests.py core                # core's tensor programs on tb_core_hybrid: word engine, line engine, line engine + LINE_HALF
+python3 tools/r42/lineelig_tests.py lock --ref tnca_tensor_ref.v --seeds 3   # every output of every cycle against the base commit's engine (git show 44070eb0:rtl/core/tnca_tensor.v, module renamed)
+python3 tools/r42/lineelig_tests.py mutants --seeds 3   # 19 mutants of the half-line logic
+tools/r42/le_gates.sh   # make unit core-g2c4 core-run2 core-mmadp r41-xpose8-rtl r38-xpose-rtl core-abuf16; tensor_line_tests.py; tensor_bounds_tests.py
+#
+# 2. rtl-eng (the engine alone behind a fixed-latency memory)
+tools/r42/run_xp_half.sh TREE OUT ; python3 tools/r42/xp_half_table.py OUT      # word / line / line+half, per K step
+tools/r42/run_xp_tag.sh TREE OUT                                                # 16 against 32 word-walk tags
+#
+# 3. rtl-3c (the three-core board-top stand-in at the R41 run-2 image geometry), default knobs unless a --set is named
+scripts/le_mc2.sh TREE OUTDIR IMAGE PROFILE POINT...     # tools/r42/lineelig_mc.py (= tools/r41/link_budget_rtl.py + a sha256 of every compared output)
+#   old arm: IMAGE tools/r42/images/r41_run2_sim.tcl, PROFILE core-vrf-sync-v5-x8-g2c4-dp
+#   new arm: IMAGE tools/r42/images/r42_line32_sim.tcl, PROFILE core-r42-line32
+python3 tools/r42/lineelig_table.py OLD_DIR NEW_DIR
+#
+# 4. OOC (domain: out-of-context synthesis and place and route, 10 ns, SLR0 pblock, Vivado 2023.2, xcu280-fsvh2892-2L-e) on the x86 host
+vivado -mode batch -source flow/fpga/screen_r42_tensor.tcl -tclargs COMMON TENSOR_V OUT [NAME=VALUE ...]     # tnca_tensor at the run-2 image geometry
+vivado -mode batch -source flow/fpga/screen_r42_unit.tcl -tclargs tnca_matrix COMMON FILELIST OUT VLEN=16 ELEN=32 ACC_N=16 ACC_W=4 ROWS=16 ROW_W=4 BAR_W=3 FMA_LAT=2 FMA_IMPL=1 MAC_DP=1 MAC_CUTS=29 ABUF=N

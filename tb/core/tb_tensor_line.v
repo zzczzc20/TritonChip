@@ -40,6 +40,8 @@ parameter FIXLAT = 0;
 parameter LHALF = 0;          // R42: LINE_HALF of the line engine
 parameter HBIAS = 0;          // R42: boxes of 32-byte pieces
 parameter DIRECTED = 0;       // R42: a fixed list of boxes, each with the number of 32-byte pieces the half-line path must move for it
+parameter VRLAT = 0;          // R42: the register file answers a window read after 0..VRLAT extra cycles at random (0: the next cycle, as it was)
+parameter TGW = 4;            // log2 of the word walk's tags (the image: 4; 5 with TENSOR_TAG_W 5, which needs LSW 6)
 parameter LSW = 5;            // line slots 2^LSW (the run-2 image: 6); the line engine's port tag is LSW + 1 bits
 parameter LOCK = 0;           // R42: cycle-exact comparison of the reference and the current engine (both LINE_ENGINE 1, LINE_HALF 0)
 // XRACE (with XPERF's matrix): another requester writes the weight lines.
@@ -97,7 +99,7 @@ generate for (g = 0; g < 2; g = g + 1) begin : inst
     localparam REF = LOCK && (g == 0);       // R42 LOCK: the engine as it was
     localparam PDW = LEN ? 512 : 64;
     localparam PBY = LEN ? 64 : 8;
-    localparam PTW = LEN ? LSW + 1 : 4;
+    localparam PTW = LEN ? LSW + 1 : TGW;
     wire vw_en; wire [0:0] vw_rctx; wire [7:0] vw_idx; wire [15:0] vw_lane; wire [511:0] vw_data;
     reg  vw_ready;
     wire vr_req; wire [0:0] vr_rctx; wire [7:0] vr_idx; reg vr_valid; reg [511:0] vr_data;
@@ -143,11 +145,11 @@ generate for (g = 0; g < 2; g = g + 1) begin : inst
         .busy_any(bany), .inflight_rctx(infl)
     if (REF) begin : u_ref
         tnca_tensor_ref #(.VLEN(16), .ELEN(32), .RCTX_W(1), .BAR_W(5), .MEM_DW(64), .MEM_BYTES(8),
-                      .TAG_W(4), .NTAG(16), .HAS_XPOSE(2), .LINE_ENGINE(LEN), .LSLOT_N(1 << LSW), .LSLOT_W(LSW),
+                      .TAG_W(TGW), .NTAG(1 << TGW), .HAS_XPOSE(2), .LINE_ENGINE(LEN), .LSLOT_N(1 << LSW), .LSLOT_W(LSW),
                       .CMD_N(8), .CMD_W(3), .PTAG_W(PTW), .PORT_DW(PDW), .PORT_BYTES(PBY)) dut (`TL_PORTS);
     end else begin : u_cur
         tnca_tensor #(.VLEN(16), .ELEN(32), .RCTX_W(1), .BAR_W(5), .MEM_DW(64), .MEM_BYTES(8),
-                      .TAG_W(4), .NTAG(16), .HAS_XPOSE(2), .LINE_ENGINE(LEN), .LINE_HALF(LEN ? LHALF : 0), .LSLOT_N(1 << LSW), .LSLOT_W(LSW),
+                      .TAG_W(TGW), .NTAG(1 << TGW), .HAS_XPOSE(2), .LINE_ENGINE(LEN), .LINE_HALF(LEN ? LHALF : 0), .LSLOT_N(1 << LSW), .LSLOT_W(LSW),
                       .CMD_N(8), .CMD_W(3), .PTAG_W(PTW), .PORT_DW(PDW), .PORT_BYTES(PBY)) dut (`TL_PORTS);
     end
     // R42: piece requests of the half-line path (the line engine with LINE_HALF)
@@ -159,6 +161,7 @@ generate for (g = 0; g < 2; g = g + 1) begin : inst
 
     // register file: lane-enabled writes, refused at random; reads a cycle later
     integer seed_v = SEED * 31 + (LOCK ? 0 : g) * 7 + 1;
+    integer seed_r = SEED * 13 + (LOCK ? 0 : g) * 3 + 5;
     always @(negedge clk) vw_ready = ($unsigned($random(seed_v)) % 100) >= VW_STALL;
     always @(posedge clk) if (rst_n) begin
         if (vw_en && vw_ready) begin : wr
@@ -166,7 +169,7 @@ generate for (g = 0; g < 2; g = g + 1) begin : inst
             for (l = 0; l < 16; l = l + 1)
                 if (vw_lane[l]) vrf[g][vw_idx][l*32 +: 32] <= vw_data[l*32 +: 32];
         end
-        vr_valid <= vr_req && !vr_valid;
+        vr_valid <= vr_req && !vr_valid && (VRLAT == 0 || ($unsigned($random(seed_r)) % (VRLAT + 1)) == 0);
         vr_data  <= vrf[g][vr_idx];
     end
 

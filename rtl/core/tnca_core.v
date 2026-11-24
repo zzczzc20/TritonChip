@@ -99,6 +99,7 @@ module tnca_core #(
     // engine behind tnca_word_line_adapter. Needs HYBRID_LSU.
     parameter TENSOR_LINE    = 0,
     parameter TENSOR_LINE_HALF = 0,   // R42: half-line rows in the line engine (tnca_tensor LINE_HALF)
+    parameter TENSOR_TAG_W = 0,   // R42: log2 of the line engine's word-walk tags (0: CTAG_W); at most PORT tag width - 3
     parameter LSU_INFLIGHT   = 1,
     //   FPU_OVERLAP (R39-10) ordinary vector FP issues during an SFU pass,
     //               and an SFU pass starts with ordinary FP in flight: the
@@ -2126,11 +2127,20 @@ module tnca_core #(
         assign tn_rsp_valid=tm_rsp_valid;assign tn_rsp_tag=tm_rsp_tag;assign tn_rsp_rdata=tm_rsp_rdata;
     end endgenerate
 
+    // R42: the line engine's word walk may have more tags in flight than the core's per-client tag
+    // (TENSOR_TAG_W; 0 keeps CTAG_W). The tag rides under the port tag's path and descriptor bits.
+    localparam TXT_W = (TXF_LINE && TENSOR_TAG_W != 0) ? TENSOR_TAG_W : CTAG_W;
+`ifndef SYNTHESIS
+    initial if (TXF_LINE && TXT_W > MTAG_W - 2) begin
+        $display("FATAL tnca_core: TENSOR_TAG_W %0d does not fit the port tag (at most %0d)", TXT_W, MTAG_W - 2);
+        $finish;
+    end
+`endif
     tnca_tensor #(
         .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
         .DESC_N(DESC_N), .DESC_W(DESC_W), .WIN_N(WIN_N), .WIN_W(WIN_W),
         .BAR_W(BAR_W), .MEM_DW(TENSOR_DW), .MEM_BYTES(TENSOR_BYTES),
-        .TAG_W(CTAG_W), .NTAG(1 << CTAG_W), .HAS_XPOSE(HAS_TENSOR_XPOSE),
+        .TAG_W(TXT_W), .NTAG(1 << TXT_W), .HAS_XPOSE(HAS_TENSOR_XPOSE),
         .MUL_PIPE(TENSOR_MUL_PIPE),
         .LINE_ENGINE(TXF_LINE ? 1 : 0), .LINE_HALF(TENSOR_LINE_HALF), .LSLOT_N(1 << (MTAG_W - 1)), .LSLOT_W(MTAG_W - 1),
         .PTAG_W(TP_TW), .PORT_DW(TP_DW), .PORT_BYTES(TP_BY)

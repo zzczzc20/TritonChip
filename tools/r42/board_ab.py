@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
-"""R42 board A/B: register and queue the 113 original ArchBench points on the R41 run-3 image.
+"""R42 board A/B: register and queue the 113 original ArchBench points (or the 32 xl points) on the R41 run-3 image.
 
 Local (lead machine; seconds, no torch, no board):
 
-    board_ab.py register --name NAME --commit COMMIT --src-dir DIR [--knob TNCA_X=V ...]
+    board_ab.py register --name NAME --commit COMMIT --src-dir DIR [--suite original|xl] [--knob TNCA_X=V ...]
 
 writes spec/r42/board/NAME/{NAME-identity.json, NAME.json, queue.json}: the run-3 registrations
 (evidence/r42/board/run3_registration/, fetched from the FPGA host, sha256 equal to the manifest hashes in the
 run-3 records) with only the fields listed in CHANGES below changed. COMMIT names the measured software; its
 software-tree identity (archbench/provenance.py of that commit) is computed from git and registered, and DIR is
 the directory under ~/r42 on the FPGA host that holds `git archive COMMIT` (without evidence/).
+
+`--suite xl` registers the points of archbench/suites/xl.json of COMMIT instead of the 113 original points (section
+"xl suite" below): the same image, board block, knobs, sampling rule and identity manifest; the suite manifest has one
+batch `xl` whose configurations are listed from the frozen suite, run through tools/r42/xl_board_batch.py (a registered,
+hashed copy of it lives in the registration directory) so that every point has its own registered process timeout.
 
 FPGA host (run from the staged registration directory ~/r42/reg/NAME, detached):
 
@@ -36,8 +41,10 @@ import fcntl
 import hashlib
 import importlib.util
 import json
+import math
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -69,6 +76,27 @@ CHANGES = [
     'and its two tool sources are removed; the clock verification and the three identity points are unchanged',
     'board.load_policy: R42 wording',
     'optional --knob entries are added to every configuration (none for the baseline)',
+]
+
+# ---- xl suite (R42 plan section 4, archbench/suites/xl.json) -------------------------------------------------
+XL_SUITE = 'archbench/suites/xl.json'
+XL_WRAPPER = 'xl_board_batch.py'
+XL_BATCH = 'xl'
+XL_TIMEOUT_FACTOR = 4          # per-point process timeout = 4 x the point's pessimistic estimate in xl.json ...
+XL_TIMEOUT_FLOOR = 1200        # ... but at least 20 minutes (seconds)
+XL_CAP_SECONDS = 300           # a qualification process above this wall time is the formal record (1 sample)
+XL_CHANGES = [
+    'board_batches: the batch `xl` lists the points of archbench/suites/xl.json in file order (coverage-checked against '
+    'the same file) instead of the 113 original points; the suite file sha256 is registered in `suites`',
+    'steps[0]: id `xl`, run through the registered copy of tools/r42/xl_board_batch.py (a subclass of board_batch.Batch) '
+    'instead of board_batch.py directly; outputs under {out}/xl',
+    'configurations[].timeout_seconds: per-point process timeout, max(%d s, %d x the point estimate.seconds_pessimistic of '
+    'xl.json, the larger of the two planning estimates there: the nominal one assumes an FP8 efficiency that no board run '
+    'has confirmed); the run-3 value was the plan budget (28800 s) for every point' % (XL_TIMEOUT_FLOOR, XL_TIMEOUT_FACTOR),
+    'sampling: the device rule is unchanged (a qualification record, then 3 timed samples in a new process for points at '
+    '<= 1 s device time); in addition a point whose qualification process took more than %d s of wall time keeps the '
+    'qualification record as its only formal record' % XL_CAP_SECONDS,
+    'hypothesis / expected_*: xl wording',
 ]
 
 
@@ -104,13 +132,16 @@ def commit_tree_identity(repo, commit):
         return tree_identity(tmp)
 
 
-def derive(old, name, kind, knobs, registration):
+def derive(old, name, kind, knobs, registration, suite='original', xl=None):
     spec = copy.deepcopy(old)
     old_manifest = f'spec/r41/run3/board/{old["id"]}.json'
     new_manifest = f'{{home}}/r42/reg/{name}/{name}{"-identity" if kind == "identity" else ""}.json'
     spec['id'] = name + ('-identity' if kind == 'identity' else '')
-    spec['hypothesis'] = (f'R42 {name}: the 113 original ArchBench points '
-                          f'({"three identity points first" if kind == "identity" else "full suite"}) pass their '
+    subject = {('original', 'identity'): '113 original ArchBench points (three identity points first',
+               ('original', 'suite'): '113 original ArchBench points (full suite',
+               ('xl', 'identity'): 'three run-3 identity points (before the xl suite',
+               ('xl', 'suite'): '32 xl ArchBench points, 18 of them FP8 matrix multiplications (full suite'}[suite, kind]
+    spec['hypothesis'] = (f'R42 {name}: the {subject}) pass their '
                           'numerical and structural checks on the R41 run-3 image with the registered software '
                           'tree, and give its serial-grid device cycles at 100 MHz.')
     spec['competing_explanations'] = [
@@ -121,6 +152,12 @@ def derive(old, name, kind, knobs, registration):
         'baseline tree (main 4b61abd8): serial-grid cycles equal to the run-3 records within run-to-run noise',
         'candidate tree: cycles change only where the candidate changes generated code or the runtime',
         'no host fallback and no upload/download inside resident calls']
+    if suite == 'xl':
+        spec['expected_counter_changes'] = [
+            'no board record of an xl point exists before this run: the baseline arm (main 4b61abd8 plus the archbench '
+            'additions of R42-xl) is the first measurement of every point',
+            'candidate arm: cycles change only where the candidate changes generated code or the runtime',
+            'no host fallback and no upload/download inside resident calls']
     spec['expected_observations'] = [
         'every registered configuration completes with its numerical and structural checks passing',
         'the experiment records the observed image, clock, software tree and raw results']
@@ -144,6 +181,8 @@ def derive(old, name, kind, knobs, registration):
             if row['knobs'] != RUN3_KNOBS:
                 raise SystemExit('run-3 registration has unexpected knobs')
             row['knobs'] = dict(row['knobs'], **knobs)
+    if suite == 'xl' and kind == 'suite':
+        xl_manifest(spec, name, new_manifest, knobs, xl)
     text = json.dumps({k: v for k, v in spec.items() if k != 'registration'})
     if 'spec/r41/run3' in text or 'candidate_source' in text:
         raise SystemExit('a run-3 path survived the derivation')
@@ -151,6 +190,28 @@ def derive(old, name, kind, knobs, registration):
                                 derived_from_sha256=R3_SHA[old['id']+'.json'],
                                 run3_registration=old['registration'])
     return spec
+
+
+def xl_timeout(point):
+    return max(XL_TIMEOUT_FLOOR, math.ceil(XL_TIMEOUT_FACTOR*point['estimate']['seconds_pessimistic']))
+
+
+def xl_manifest(spec, name, manifest, knobs, xl):
+    """Turn the derived run-3 suite manifest into the xl one: batch, coverage, suites, step, sources."""
+    if len(spec['steps']) != 1 or spec['steps'][0]['id'] != 'original':
+        raise SystemExit('unexpected run-3 suite manifest')
+    configs = [dict(id=p['id'], point=p['id'], point_sha256=p['sha256'], knobs=dict(RUN3_KNOBS, **knobs),
+                    timeout_seconds=xl_timeout(p)) for p in xl['points']]
+    spec['suites'] = [dict(path=XL_SUITE, sha256=xl['file_sha256'])]
+    spec['board_batches'] = {XL_BATCH: dict(sampling='device-rule', configurations=configs,
+                                            coverage=dict(suite=XL_SUITE, sha256=xl['file_sha256']))}
+    wrapper = f'{{home}}/r42/reg/{name}/{XL_WRAPPER}'
+    step = spec['steps'][0]
+    step['id'] = XL_BATCH
+    step['argv'] = ['{python}', wrapper, '--manifest', manifest, '--batch', XL_BATCH, '--root', '{root}',
+                    '--out', '{out}/' + XL_BATCH, '--python', '{python}']
+    step['outputs'] = ['{out}/%s/batch.json' % XL_BATCH, '{out}/%s/formal.jsonl' % XL_BATCH]
+    spec['sources'] = [s for s in spec['sources'] if s != 'spec/r40/suites'] + [wrapper]
 
 
 def register(a):
@@ -169,6 +230,16 @@ def register(a):
     for f, digest in R3_SHA.items():
         if sha(repo/R3/f) != digest:
             raise SystemExit('run-3 registration copy changed: ' + f)
+    xl = None
+    if a.suite == 'xl':
+        text = subprocess.run(['git', '-C', str(repo), 'show', f'{commit}:{XL_SUITE}'], capture_output=True,
+                              check=True).stdout
+        xl = json.loads(text)
+        xl['file_sha256'] = hashlib.sha256(text).hexdigest()
+        if xl.get('tier') != 'xl' or not xl['points'] or len({p['id'] for p in xl['points']}) != len(xl['points']):
+            raise SystemExit(f'{XL_SUITE} of {commit} is not a frozen xl suite')
+        if any(p.get('estimate', {}).get('seconds_pessimistic') is None for p in xl['points']):
+            raise SystemExit('every xl point needs estimate.seconds_pessimistic (the registered process timeout derives from it)')
     registration = dict(status='registered-not-run', registered_utc=utc(), round='R42', name=name,
                         software=dict(commit=commit, host_dir='{home}/r42/' + a.src_dir,
                                       software_tree=commit_tree_identity(repo, commit),
@@ -180,10 +251,25 @@ def register(a):
                                  'record 0 warm-up + 1 timed call; a point at <= 1 s device time then gets a formal '
                                  'record of 3 timed calls in a new process, else the qualification record is formal)',
                         boundary='unchanged: ArchBench protocol 2, device-cycles-serial-grid at the qualified 100 MHz')
+    if xl is not None:
+        registration['changes_against_run3'] = CHANGES + XL_CHANGES
+        registration['suite'] = dict(
+            name='xl', file=XL_SUITE, file_sha256=xl['file_sha256'], suite_sha256_field=xl['sha256'],
+            points=len(xl['points']), fp8_matmul_points=xl.get('fp8_matmul_points'), max_live_bytes=xl.get('max_live_bytes'),
+            memory_cap_bytes=xl.get('memory_cap_bytes'), plan='doc/r42_plan.md section 4',
+            tolerances='the frozen per-point tolerances of the suite file; none changed',
+            timeout_rule=f'max({XL_TIMEOUT_FLOOR} s, {XL_TIMEOUT_FACTOR} x estimate.seconds_pessimistic of the point in the suite file)',
+            timeouts_seconds={p['id']: xl_timeout(p) for p in xl['points']},
+            sampling_cap=f'a qualification process above {XL_CAP_SECONDS} s of wall time is the formal record (1 sample)',
+            memory_map=dict(window_bytes=8 << 30, note='unchanged run-3 map (explicit 8 GiB HBM_STRIPED allocation, '
+                            'MBG[0:31]); the run-3 heap capacity is 8 GiB - 4 KiB, above the 3 GiB live cap of the xl '
+                            'points (tools/r42/xl_memory_check.py reads it from the run-3 records)'))
+        registration['sampling'] = (registration['sampling'] + '; xl: additionally the qualification record is the only '
+                                    f'formal record when its process took more than {XL_CAP_SECONDS} s of wall time')
     out.mkdir(parents=True)
     manifests = {}
     for kind, source in (('identity', 'r3-s2-identity.json'), ('suite', 'r3-s2-original-suite.json')):
-        spec = derive(json.loads((repo/R3/source).read_text()), name, kind, knobs, registration)
+        spec = derive(json.loads((repo/R3/source).read_text()), name, kind, knobs, registration, a.suite, xl)
         path = out/(spec['id'] + '.json')
         path.write_text(json.dumps(spec, indent=1) + '\n')
         manifests[kind] = dict(file=path.name, id=spec['id'], sha256=sha(path))
@@ -196,6 +282,12 @@ def register(a):
                          dict(manifest='identity', path='identity/batch.json', field=['configurations'], equals=3),
                          dict(manifest='identity', path='clock.json', field=['status'], equals='pass'),
                          dict(manifest='suite', path='original/batch.json', field=['configurations'], equals=113)])
+    if xl is not None:
+        shutil.copyfile(HERE/XL_WRAPPER, out/XL_WRAPPER)
+        queue['suite_batch'] = XL_BATCH
+        queue['files'] = {XL_WRAPPER: sha(out/XL_WRAPPER)}
+        queue['checks'][-1] = dict(manifest='suite', path=f'{XL_BATCH}/batch.json', field=['configurations'],
+                                   equals=len(xl['points']))
     (out/'queue.json').write_text(json.dumps(queue, indent=1) + '\n')
     print(json.dumps(dict(registered=str(out), software_tree=registration['software']['software_tree'],
                           commit=commit, manifests=manifests), indent=1))
@@ -223,6 +315,9 @@ def verify(reg_dir, home):
         if sha(path) != row['sha256'] or json.loads(path.read_text())['id'] != row['id']:
             raise ValueError('registered manifest missing or changed: ' + str(path))
         manifests[kind] = path
+    for file, digest in (queue.get('files') or {}).items():
+        if sha(reg_dir/file) != digest:
+            raise ValueError('registered file missing or changed: ' + file)
     image = queue['image']
     if (image['sha256'], image['uuid']) != (IMAGE_SHA, IMAGE_UUID):
         raise ValueError('only the approved run-3 image is admitted')
@@ -354,7 +449,7 @@ def run(a):
                     value = value[key]
                 if value != c['equals']:
                     failed.append(dict(c, observed=value))
-            suite = json.loads((out/'queue'/queue['manifests']['suite']['id']/'original/batch.json').read_text())
+            suite = json.loads((out/'queue'/queue['manifests']['suite']['id']/(queue.get('suite_batch', 'original') + '/batch.json')).read_text())
             record('completed', failed_checks=failed, suite_status=suite['status'],
                    failed_configurations=suite['failed_configurations'], missing_formal=suite['missing_formal'])
         except BaseException as error:
@@ -370,6 +465,8 @@ def main():
     r.add_argument('--commit', required=True)
     r.add_argument('--src-dir', required=True, help='directory name under ~/r42 on the FPGA host')
     r.add_argument('--knob', action='append', default=[], help='TNCA_NAME=VALUE added to every configuration')
+    r.add_argument('--suite', choices=('original', 'xl'), default='original',
+                   help='the 113 original points (default) or the points of archbench/suites/xl.json of COMMIT')
     q = sub.add_parser('run')
     q.add_argument('--reg', type=Path, required=True)
     q.add_argument('--out', type=Path, required=True)

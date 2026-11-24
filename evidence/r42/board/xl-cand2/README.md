@@ -5,7 +5,7 @@ Registration: [`spec/r42/board/xl-cand2/`](../../../../spec/r42/board/xl-cand2/)
 (`doc/r42_plan.md` conflict resolved keeping both sides); tree `files:67e7c6e9...`, the same tree as the earlier registration `xl-cand` (R42 head `ba5f20ef` + R42-xl, `aa558cdd`), which was registered and never launched.
 Staged as `~/r42/src_xlcand2` on the FPGA host `acf3019`; queue directory `~/r42/q/xl-cand2`. Baseline: [`../xl-base/`](../xl-base/) (main `4b61abd8` + archbench xl additions, tree `files:64bf16ee...`).
 
-Run (UTC): runner launched 2026-11-23 22:25:51 (`already-loaded`), identity 3/3 pass, xl suite 23:0x - 00:24:23 (queue-end rc 0). 48 runs (32 qualification + 16 three-sample), 0 failed, 5,205 s process wall time.
+Run (UTC): runner launched 2026-11-23 22:25:51 (`already-loaded`), identity 22:40:56-22:42:35 (clock pass, 3/3 points pass), xl suite 22:57:37 - 00:24:23 on 2026-11-24 (queue-end rc 0). 48 runs (32 qualification + 16 three-sample), 0 failed, 5,205 s process wall time.
 Records [`records.tgz`](records.tgz) sha256 `c9663feb...`, logs [`logs.tgz`](logs.tgz), comparison [`comparison.json`](comparison.json)
 (`python3 tools/r42/board_compare_xl.py --old ../xl-base/records.tgz --new records.tgz`).
 

@@ -371,3 +371,17 @@ python -m archbench.run --platform tnca --backend fpga-u280-multicore --profile 
 ```
 The Hub kernels need no network: `archbench/third_party/finegrained_fp8` is used when neither `ARCHBENCH_FINEGRAINED_FP8`
 nor the `kernels` package provides the pinned build. Report every point: a point that fails stays failed.
+
+**2026-11-24. xl tier on the board (`xl-base` vs `xl-cand2`).** Board, U280, run-3 image `791b8af2` on both sides (one load, 20:24 UTC;
+the card was held by another user's image for 3 h 04 min before and the guarded queue waited its 15 idle minutes), 100 MHz,
+serial-grid device cycles, default knobs, 32/32 points pass on both sides (`evidence/r42/board/xl-cand2/comparison.json`,
+`tools/r42/board_compare_xl.py`). Baseline = `main` 4b61abd8 plus the xl point definitions only (compiler/python/rtl diff empty);
+candidate = R42 head 9c795da3 (ab-int2 software) plus the xl definitions, i.e. WITHOUT the later `R42-fp8sw` changes.
+- Geometric mean new/old 0.7688 (1.30x); summed device cycles 149.8e9 -> 97.4e9. FP8 matmul kernels (`fp8_linear` 13, `fp8_act_quant` 2):
+  0.9992 (unchanged, as expected: round 2 does not touch the Hub kernel); FP8 composites (layers, decoders; 5 points) 0.6925 (the attention,
+  norm and pointwise parts); fp16 (12 points) 0.5814. Slower: only `op.linear/xl/fp16-m2048-k2048-n6144-bias0` 1.037 (one sample per side).
+- xl-base board figures: 1,498 s of device time, FP8 share 1,358 s; eta geometric mean by family fp8_linear 0.230, fp8_act_quant 0.242,
+  fp8_decoder_prefill 0.117, fp8_decoder_decode 0.114, fp8_layer_decode 0.093, fp8_layer_prefill 0.156; all 18 FP8 points inside their
+  frozen tolerance (worst error/tolerance 0.893, `op.fp8_act_quant`); heap peak 2.27 GB of the 8 GiB window.
+- Next: the `R42-fp8sw` Hub-kernel changes (single-core RTL 1.68x per K block for M >= 16, TLM projection 1.42x on the 18 FP8 points) go
+  into the next candidate together with `R42-xfer` and `R42-copy`, measured against these same baselines.

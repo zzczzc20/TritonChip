@@ -353,6 +353,13 @@ def _register_builtin():
     register('fpga-u280-multicore', _lazy('tnca.backends.multicore_mmio', 'board'),
              state=REFERENCE_AVAILABLE, needs_elaborator=False, needs_hardware=True,
              physical_grid=True, what='opt-in MMIO v2 physical-grid/AXI binding; requires a matching board image')
+    # The same backend with its link on another host: a trusted board relay
+    # (backends/board_relay.py) owns the card and this side reaches it over a
+    # forwarded Unix socket, so no candidate code runs where the card is.
+    register('fpga-u280-multicore-relay', _lazy('tnca.backends.board_relay', 'relay'),
+             state=REFERENCE_AVAILABLE, needs_elaborator=False, needs_hardware=True,
+             physical_grid=True, what='fpga-u280-multicore whose board link is a board relay on the card '
+                                      'host, reached through address= (a Unix socket)')
     register('fpga-multicore-sim', _lazy('tnca.backends.multicore_mmio_sim', 'stand_in'),
              state=REFERENCE_AVAILABLE, needs_elaborator=False, physical_grid=True,
              what='explicit RTL stand-in for the multicore MMIO v2 board binding')

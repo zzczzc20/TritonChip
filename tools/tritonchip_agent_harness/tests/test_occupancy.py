@@ -164,6 +164,44 @@ class Sandbox(unittest.TestCase):
         self.assertNotIn("id", e)
 
 
+    def test_a_resumed_claude_session_counts_each_turn_once(self):
+        # R41-F5's smoke (2026-11-11): Claude Code's result counts its whole session so far, a resumed one too.
+        run_dir = Path(tempfile.mkdtemp()) / "t-claude-2"
+        run_dir.mkdir()
+        account = Account(label="claude", cli="claude-code", auth="subscription", credential=Path("/c.env"),
+                          hosts=("api.anthropic.com",), models={"main": "claude-fable-5-2[1m]"}, options={})
+        sessions = iter([("s1", 1000, 10), ("s1", 1600, 15), ("s2", 300, 4)])
+
+        def result(sid, read, out):
+            usage = {"inputTokens": 1, "outputTokens": out, "cacheReadInputTokens": read,
+                     "cacheCreationInputTokens": 0}
+            return json.dumps({"type": "result", "subtype": "success", "is_error": False, "result": "OK",
+                               "session_id": sid, "modelUsage": {"claude-fable-5-2[1m]": usage}}) + "\n"
+
+        def docker(*args, **kw):
+            if args[:1] == ("exec",) and "--version" in args:
+                return types.SimpleNamespace(returncode=0, stdout="2.1.311 (Claude Code)\n", stderr="")
+            if args[:1] == ("exec",) and "-p" in args:
+                return types.SimpleNamespace(returncode=0, stdout=result(*next(sessions)), stderr="")
+            return types.SimpleNamespace(returncode=1, stdout="" if kw.get("text", True) else b"", stderr="")
+
+        nexts = iter(["go on", ("start again", True), None])
+        with mock.patch.object(runner.provider, "docker", side_effect=docker), \
+                mock.patch.object(runner.provider, "remove"), \
+                mock.patch.object(runner.provider, "image_id", return_value="sha256:1"), \
+                mock.patch.object(runner.doctor, "start_gateway", return_value=(run_dir, run_dir)), \
+                mock.patch.object(runner.doctor, "stop_gateway"), \
+                mock.patch.object(runner.doctor, "read_log", return_value=[]), \
+                mock.patch.object(runner.time, "sleep"):
+            got = runner.run_agent(SITE, account, "prompt", "offline", run_dir, None, timeout=600,
+                                   turns=lambda record, left: next(nexts))
+        self.assertEqual([t["tokens"]["cache_read"] for t in got["turns"]], [1000, 600, 300])
+        self.assertEqual([t["tokens"]["output"] for t in got["turns"]], [10, 5, 4])
+        self.assertEqual(got["turns"][1]["tokens"]["by_model"]["claude-fable-5-2[1m]"]["cache_read"], 600)
+        self.assertEqual((got["tokens"]["cache_read"], got["tokens"]["output"]), (1900, 19))
+        self.assertEqual(got["tokens"]["by_model"]["claude-fable-5-2[1m]"]["cache_read"], 1900)
+
+
 class RunRecord(unittest.TestCase):
     def setUp(self):
         self.repo, base = make_repo()
@@ -197,7 +235,7 @@ class RunRecord(unittest.TestCase):
         self.assertEqual(evaluator.reserved(SITE, task, ["a", "b", "c"]), {"cpus": 8.0})
 
     def test_an_agent_run_lists_its_sandbox_its_requests_and_the_evaluation(self):
-        def run_agent(site, account, prompt, mode, run_dir, workspace, timeout, services=None):
+        def run_agent(site, account, prompt, mode, run_dir, workspace, timeout, services=None, skills=None):
             self.assertIsNotNone(services, "the task's services get a broker")
             return {"label": "claude", "cli": "claude-code", "stop_reason": "exited",
                     "container": {"started": 100.0, "finished": 700.0},
@@ -220,3 +258,25 @@ class RunRecord(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HostLoad(unittest.TestCase):
+    """2026-11-09: the run host's load average, sampled through the run, summarised in its record."""
+
+    def test_the_sampler_writes_lines_and_the_record_gets_their_summary(self):
+        import json
+        import tempfile
+        from tritonchip_agent_harness import loop, occupancy
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp)
+            sampler = occupancy.LoadSampler(run_dir / "load.jsonl", every=0.05).start()
+            loop._SAMPLERS[run_dir] = sampler
+            import time
+            time.sleep(0.2)
+            loop._write(run_dir, {"run_id": "r", "finished": 1.0})
+            self.assertNotIn(run_dir, loop._SAMPLERS)
+            written = json.loads((run_dir / "run.json").read_text())
+            self.assertGreaterEqual(written["host_load"]["samples"], 2)
+            self.assertEqual(set(written["host_load"]), {"file", "samples", "load1_mean", "load1_max", "cpus"})
+            self.assertEqual(occupancy.load_summary(run_dir / "missing.jsonl"), {})
+

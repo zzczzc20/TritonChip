@@ -48,6 +48,26 @@ class SiteTest(unittest.TestCase):
             with self.assertRaisesRegex(SiteError, message):
                 load_site(self.write(v))
 
+    def test_build_machines_are_one_or_an_ordered_list_and_shared_slots_name_them(self):
+        self.assertEqual(load_site(EXAMPLE).fpga_pipeline["build_hosts"], ["build"])
+        v = json.loads(EXAMPLE.read_text())
+        v["fpga_pipeline"].pop("build_host")
+        v["fpga_pipeline"].update(build_hosts=["a", "b"], shared_slots={"a": ["/home/owner/.slot.0"]})
+        site = load_site(self.write(v))
+        self.assertEqual((site.fpga_pipeline["build_host"], site.fpga_pipeline["build_hosts"]), ("a", ["a", "b"]))
+        self.assertEqual(site.fpga_pipeline["shared_slots"], {"a": ["/home/owner/.slot.0"]})
+        for mutate, message in [
+            (lambda p: p.update(build_host="a"), "not both"),
+            (lambda p: p.update(build_hosts=["a", "a"]), "distinct"),
+            (lambda p: p.update(build_hosts=[]), "distinct"),
+            (lambda p: p.update(shared_slots={"c": ["/x"]}), "shared_slots"),
+            (lambda p: p.update(shared_slots={"a": ["relative/path"]}), "shared_slots"),
+        ]:
+            w = json.loads(json.dumps(v))
+            mutate(w["fpga_pipeline"])
+            with self.assertRaisesRegex(SiteError, message):
+                load_site(self.write(w))
+
     def test_credential_status_reads_shape_not_values(self):
         d = Path(tempfile.mkdtemp())
         env = d / "claude.env"

@@ -33,7 +33,7 @@ from typing import Optional
 
 from . import evaluator, fpga_quick
 
-BUILD_STEPS = ("build:submit", "build")
+BUILD_STEPS = ("build:submit", "build:lsf", "build")
 BOARD_STEPS = ("board:measure", "board")
 WHOLE_SLOW = "the whole request, from its start to its end: no pipeline record timed a build or board stage"
 WHOLE_CERTIFY = "the whole pipeline, link and board stage together: its record timed no step"
@@ -75,7 +75,11 @@ def services(site, task, requests) -> list:
             continue  # cancelled before it started: it held nothing
         times = (job["started"], job.get("finished"))
         common = {"queued": job["started"] - job["submitted"], "request_id": job["id"]}
-        if job["service"] == "score":
+        if job["service"] == "score" and (job.get("full") or {}).get("record") is not None:
+            # The board as the score (2026-11-10): the request's card session.
+            out += (_card(job["full"]["record"], "board-score", job["id"])
+                    or [entry("board-score", None, *times, **common, reserved={"cards": 1})])
+        elif job["service"] == "score":
             out.append(entry("score", None, *times, **common,
                              reserved=evaluator.reserved(site, task, task.evaluation["validation"])))
         elif job["service"] == "fpga-quick":
@@ -84,10 +88,36 @@ def services(site, task, requests) -> list:
                              reserved={"cpus": fpga_quick.threads(worker)}))
         else:
             cfg = site.fpga_pipeline or {}
-            out += (stages((job.get("full") or {}).get("pipeline"), cfg.get("build_host"), cfg.get("board_host"),
-                           ("fpga-slow-build", "fpga-slow-board"), job["id"])
-                    or [entry("fpga-slow", None, *times, **common, covers=WHOLE_SLOW)])
+            full = job.get("full") or {}
+            # The link from its pipeline's steps; the card from its session (board.py), wait for idle included.
+            got = stages((full.get("build") or {}).get("pipeline") or full.get("pipeline"),
+                         job.get("build_host") or cfg.get("build_host"),
+                         cfg.get("board_host"), ("fpga-slow-build", "fpga-slow-board"), job["id"])
+            got += _card(((full.get("card") or {}).get("record")), "fpga-slow-board", job["id"])
+            # No timed stage (a flow stopped or timed out before its record): the machines its attempts took
+            # (2026-11-21, the HPC demo's two timed-out flows had none).
+            hosts = [a["build_host"] for a in ((full.get("build") or {}).get("attempts") or []) if a.get("build_host")]
+            out += got or [entry("fpga-slow", "+".join(dict.fromkeys(hosts)) or job.get("build_host"), *times,
+                                 **common, covers=WHOLE_SLOW)]
     return out
+
+
+def _card(record: Optional[dict], role: str, request_id: Optional[str] = None) -> list:
+    """A card session's hold on the card host, from the harness's request to the session's end."""
+    if not record or record.get("started_at") is None:
+        return []
+    return [entry(role, record.get("host"), record["started_at"], record.get("finished_at"),
+                  reserved={"cards": 1}, request_id=request_id)]
+
+
+def certification(site, cert) -> list:
+    """The automatic certification after a run (certify.after_run): its link, if it needed one, and its card."""
+    if not isinstance(cert, dict):
+        return []
+    cfg = site.fpga_pipeline or {}
+    out = stages(((cert.get("build") or {}).get("pipeline")), cert.get("build_host") or cfg.get("build_host"), None,
+                 ("certify-build", "certify-board"), None)
+    return out + _card(cert.get("card"), "certify-board")
 
 
 def of_run(site, task, agent_result: dict, evaluated: Optional[tuple]) -> list:
@@ -104,3 +134,61 @@ def of_run(site, task, agent_result: dict, evaluated: Optional[tuple]) -> list:
 
 
 __all__ = ["BOARD_STEPS", "BUILD_STEPS", "entry", "of_run", "services", "stages"]
+
+
+class LoadSampler:
+    """The run host's load average, every `every` seconds, one JSON line each (decided 2026-11-09): what
+    explains a request that took longer than its work, when several islands' simulations and sandboxes
+    share one machine. A daemon thread; it ends with stop() or when its file cannot be written."""
+
+    def __init__(self, path, every: float = 60.0) -> None:
+        import threading
+        self.path, self.every = path, float(every)
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._loop, name="load-sampler", daemon=True)
+
+    def start(self) -> "LoadSampler":
+        self._thread.start()
+        return self
+
+    def stop(self) -> None:
+        self._stop.set()
+
+    def _sample(self) -> None:
+        import json
+        import os
+        import time
+        one, five, fifteen = os.getloadavg()
+        with open(self.path, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"at": round(time.time(), 1), "load": [one, five, fifteen]}) + "\n")
+
+    def _loop(self) -> None:
+        while True:
+            try:
+                self._sample()
+            except OSError:
+                return
+            if self._stop.wait(self.every):
+                return
+
+
+def load_summary(path) -> dict:
+    """What the sampler wrote, in short, for the run record: samples, the one-minute load's mean and maximum,
+    and the host's CPU count to read them against."""
+    import json
+    import os
+    rows = []
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    rows.append(json.loads(line)["load"][0])
+                except (ValueError, KeyError, IndexError, TypeError):
+                    continue
+    except OSError:
+        return {}
+    if not rows:
+        return {"samples": 0}
+    return {"file": os.path.basename(str(path)), "samples": len(rows), "load1_mean": round(sum(rows) / len(rows), 2),
+            "load1_max": round(max(rows), 2), "cpus": os.cpu_count()}
+

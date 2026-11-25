@@ -55,7 +55,8 @@ def _platform(args):
 def _evidence(args):
     if args.platform == 'gpu':
         return 'measured-gpu'
-    return 'measured-board' if args.backend in ('fpga-u50', 'fpga-u280', 'fpga-u280-multicore') else 'measured-rtl'
+    return 'measured-board' if args.backend in ('fpga-u50', 'fpga-u280', 'fpga-u280-multicore',
+                                                'fpga-u280-multicore-relay') else 'measured-rtl'
 
 
 def _child_env(args):

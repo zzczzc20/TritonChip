@@ -1,0 +1,1649 @@
+{
+ "about": "The calibration set (2026-11-23): small cases that together reach every mechanism the development points reach in the CA model's counters on the base; run the ones that reach what you changed, on the RTL and on the model, with the trace gate. `chosen` covers all of them that any case the RTL simulator can run reaches; `by_mechanism` lists every such case, smallest first; `unreached` names what only larger programs reach.",
+ "mechanisms": {
+  "all three cores": "every core runs part of the program (core_N_instructions on all three)",
+  "context parks": "contexts parked and resumed (core_N_context_parks)",
+  "dirty writebacks": "dirty lines written back from the home caches (uncore_writebacks)",
+  "fences": "fence stalls and drains (core_N_stall_fence, fence_drain_cycles)",
+  "fill chains": "the home's chained line fills (uncore_fill_chains)",
+  "fpu / sfu stalls": "waits on the FPU or the SFU (core_N_stall_fpu, sfu_queue_cycles)",
+  "home blocked": "a home request blocked (uncore_blocked)",
+  "home cache hits": "home cache hits (uncore_hits)",
+  "home cache misses": "home cache misses (uncore_misses)",
+  "home replays": "home requests replayed (uncore_replays)",
+  "lsu stalls": "waits on the load/store unit (core_N_stall_lsu, lsu_wait_cycles)",
+  "matrix engine waits": "waits on the matrix engine (core_N_stall_mtx, matrix_engine_wait_cycles)",
+  "memory request stalls (mreq)": "requests to memory stalled (uncore_mreq_stall)",
+  "mshr merges": "misses merged into an outstanding MSHR (uncore_merges)",
+  "reservation stalls": "issue waits on a reservation (core_N_stall_rsv)",
+  "response / writeback queue full": "the home's response or writeback queue full (uncore_rsq_full, wbq_full)",
+  "several launches": "a program of more than one launch (chip_grid_launches + chip_single_launches)",
+  "transfer engine stalls": "waits on the transfer engine (core_N_stall_txf)",
+  "vrf bank conflicts": "register-file bank conflicts (core_N_stall_vrf, vrf_bank_conflict_cycles)",
+  "writeback steals": "writeback port steals (core_N_stall_wb_steal)"
+ },
+ "chosen": [
+  {
+   "point": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+   "cycles": 27103,
+   "case": "/opt/tnca-skills/testcase-design/benchmark_cases/w8a8_block_linear_small_e4m3_to_bf16_m1_k128_n384.py",
+   "covers": [
+    "all three cores",
+    "context parks",
+    "fences",
+    "fill chains",
+    "fpu / sfu stalls",
+    "home cache hits",
+    "home cache misses",
+    "lsu stalls",
+    "matrix engine waits",
+    "mshr merges",
+    "reservation stalls",
+    "several launches",
+    "transfer engine stalls",
+    "vrf bank conflicts",
+    "writeback steals"
+   ]
+  },
+  {
+   "point": "op.copy/membound/fp16-n65536",
+   "cycles": 11334,
+   "case": "/opt/tnca-task/dev_cases/copy_membound_fp16_n65536.py",
+   "covers": [
+    "all three cores",
+    "dirty writebacks",
+    "fill chains",
+    "home cache hits",
+    "home cache misses",
+    "home replays",
+    "lsu stalls",
+    "mshr merges",
+    "reservation stalls",
+    "writeback steals"
+   ]
+  },
+  {
+   "point": "op.gemv/membound/fp16-k512-n1024",
+   "cycles": 362031,
+   "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py",
+   "covers": [
+    "all three cores",
+    "context parks",
+    "dirty writebacks",
+    "fences",
+    "fill chains",
+    "home cache hits",
+    "home cache misses",
+    "home replays",
+    "lsu stalls",
+    "matrix engine waits",
+    "memory request stalls (mreq)",
+    "mshr merges",
+    "reservation stalls",
+    "response / writeback queue full",
+    "transfer engine stalls",
+    "vrf bank conflicts",
+    "writeback steals"
+   ]
+  }
+ ],
+ "by_mechanism": {
+  "all three cores": [
+   {
+    "point": "op.silu/tiny/fp16-n256",
+    "cycles": 1256,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/silu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.swiglu/tiny/fp16-n256",
+    "cycles": 1448,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/swiglu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.add/tiny/fp16-n1000",
+    "cycles": 2954,
+    "case": "/opt/tnca-task/dev_cases/add_tiny_fp16_n1000.py"
+   },
+   {
+    "point": "op.wfp8_linear/tiny/bf16-m16-k64-n64-we4m3",
+    "cycles": 8882,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/wfp8_linear_tiny_bf16_m16_k64_n64_we4m3.py"
+   },
+   {
+    "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+    "cycles": 10869,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_decode_tiny_fp16_b1_h2_l16_d16.py"
+   },
+   {
+    "point": "op.copy/membound/fp16-n65536",
+    "cycles": 11334,
+    "case": "/opt/tnca-task/dev_cases/copy_membound_fp16_n65536.py"
+   },
+   {
+    "point": "op.add/small/fp16-n16384",
+    "cycles": 13698,
+    "case": "/opt/tnca-task/dev_cases/add_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.embedding/tiny/fp16-v256-d64-t16",
+    "cycles": 21406,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/embedding_tiny_fp16_v256_d64_t16.py"
+   },
+   {
+    "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+    "cycles": 26402,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_prefill_tiny_fp16_b1_h2_s16_d16.py"
+   },
+   {
+    "point": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+    "cycles": 27103,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/w8a8_block_linear_small_e4m3_to_bf16_m1_k128_n384.py"
+   },
+   {
+    "point": "op.silu/small/fp16-n16384",
+    "cycles": 29877,
+    "case": "/opt/tnca-task/dev_cases/silu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.swiglu/small/fp16-n16384",
+    "cycles": 35420,
+    "case": "/opt/tnca-task/dev_cases/swiglu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.matmul/small/fp16-m64-k128-n128",
+    "cycles": 49045,
+    "case": "/opt/tnca-task/dev_cases/matmul_small_fp16_m64_k128_n128.py"
+   },
+   {
+    "point": "op.transpose/small/fp32-r128-c256",
+    "cycles": 53102,
+    "case": "/opt/tnca-task/dev_cases/transpose_small_fp32_r128_c256.py"
+   },
+   {
+    "point": "op.rmsnorm/small/fp16-r64-d256",
+    "cycles": 58597,
+    "case": "/opt/tnca-task/dev_cases/rmsnorm_small_fp16_r64_d256.py"
+   },
+   {
+    "point": "op.gemv/membound/fp16-k512-n1024",
+    "cycles": 362031,
+    "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py"
+   }
+  ],
+  "context parks": [
+   {
+    "point": "op.add/tiny/fp32-n256",
+    "cycles": 901,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/add_tiny_fp32_n256.py"
+   },
+   {
+    "point": "op.silu/tiny/fp16-n256",
+    "cycles": 1256,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/silu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.swiglu/tiny/fp16-n256",
+    "cycles": 1448,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/swiglu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.softmax/tiny/fp32-r3-c37",
+    "cycles": 2243,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/softmax_tiny_fp32_r3_c37.py"
+   },
+   {
+    "point": "op.add/tiny/fp16-n1000",
+    "cycles": 2954,
+    "case": "/opt/tnca-task/dev_cases/add_tiny_fp16_n1000.py"
+   },
+   {
+    "point": "op.rmsnorm/tiny/fp16-r4-d64",
+    "cycles": 3161,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/rmsnorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.argmax/tiny/fp16-r2-v256",
+    "cycles": 3643,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/argmax_tiny_fp16_r2_v256.py"
+   },
+   {
+    "point": "op.layernorm/tiny/fp16-r4-d64",
+    "cycles": 3865,
+    "case": "/opt/tnca-task/dev_cases/layernorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.gemv/tiny/fp16-k64-n64",
+    "cycles": 5873,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/gemv_tiny_fp16_k64_n64.py"
+   },
+   {
+    "point": "op.linear/tiny/fp16-m16-k64-n64",
+    "cycles": 6318,
+    "case": "/opt/tnca-task/dev_cases/linear_tiny_fp16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.wfp8_linear/tiny/bf16-m16-k64-n64-we4m3",
+    "cycles": 8882,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/wfp8_linear_tiny_bf16_m16_k64_n64_we4m3.py"
+   },
+   {
+    "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+    "cycles": 10869,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_decode_tiny_fp16_b1_h2_l16_d16.py"
+   },
+   {
+    "point": "op.add/small/fp16-n16384",
+    "cycles": 13698,
+    "case": "/opt/tnca-task/dev_cases/add_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.embedding/tiny/fp16-v256-d64-t16",
+    "cycles": 21406,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/embedding_tiny_fp16_v256_d64_t16.py"
+   },
+   {
+    "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+    "cycles": 26402,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_prefill_tiny_fp16_b1_h2_s16_d16.py"
+   },
+   {
+    "point": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+    "cycles": 27103,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/w8a8_block_linear_small_e4m3_to_bf16_m1_k128_n384.py"
+   },
+   {
+    "point": "op.silu/small/fp16-n16384",
+    "cycles": 29877,
+    "case": "/opt/tnca-task/dev_cases/silu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.argmax/small/fp16-r8-v2048",
+    "cycles": 32624,
+    "case": "/opt/tnca-task/dev_cases/argmax_small_fp16_r8_v2048.py"
+   },
+   {
+    "point": "op.swiglu/small/fp16-n16384",
+    "cycles": 35420,
+    "case": "/opt/tnca-task/dev_cases/swiglu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.matmul/small/fp16-m64-k128-n128",
+    "cycles": 49045,
+    "case": "/opt/tnca-task/dev_cases/matmul_small_fp16_m64_k128_n128.py"
+   },
+   {
+    "point": "op.transpose/small/fp32-r128-c256",
+    "cycles": 53102,
+    "case": "/opt/tnca-task/dev_cases/transpose_small_fp32_r128_c256.py"
+   },
+   {
+    "point": "op.rmsnorm/small/fp16-r64-d256",
+    "cycles": 58597,
+    "case": "/opt/tnca-task/dev_cases/rmsnorm_small_fp16_r64_d256.py"
+   },
+   {
+    "point": "op.gemv/membound/fp16-k512-n1024",
+    "cycles": 362031,
+    "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py"
+   }
+  ],
+  "dirty writebacks": [
+   {
+    "point": "op.copy/membound/fp16-n65536",
+    "cycles": 11334,
+    "case": "/opt/tnca-task/dev_cases/copy_membound_fp16_n65536.py"
+   },
+   {
+    "point": "op.transpose/small/fp32-r128-c256",
+    "cycles": 53102,
+    "case": "/opt/tnca-task/dev_cases/transpose_small_fp32_r128_c256.py"
+   },
+   {
+    "point": "op.gemv/membound/fp16-k512-n1024",
+    "cycles": 362031,
+    "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py"
+   }
+  ],
+  "fences": [
+   {
+    "point": "op.matmul/tiny/fp16-m16-k32-n16",
+    "cycles": 3513,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/matmul_tiny_fp16_m16_k32_n16.py"
+   },
+   {
+    "point": "op.scaled_mm/tiny/e4m3-to-bf16-m16-k64-n64",
+    "cycles": 3794,
+    "case": "/opt/tnca-task/dev_cases/scaled_mm_tiny_e4m3_to_bf16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.matmul/tiny/fp32-m16-k32-n16",
+    "cycles": 5439,
+    "case": "/opt/tnca-task/dev_cases/matmul_tiny_fp32_m16_k32_n16.py"
+   },
+   {
+    "point": "op.gemv/tiny/fp16-k64-n64",
+    "cycles": 5873,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/gemv_tiny_fp16_k64_n64.py"
+   },
+   {
+    "point": "op.linear/tiny/fp16-m16-k64-n64",
+    "cycles": 6318,
+    "case": "/opt/tnca-task/dev_cases/linear_tiny_fp16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.wfp8_linear/tiny/bf16-m16-k64-n64-we4m3",
+    "cycles": 8882,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/wfp8_linear_tiny_bf16_m16_k64_n64_we4m3.py"
+   },
+   {
+    "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+    "cycles": 10869,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_decode_tiny_fp16_b1_h2_l16_d16.py"
+   },
+   {
+    "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+    "cycles": 26402,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_prefill_tiny_fp16_b1_h2_s16_d16.py"
+   },
+   {
+    "point": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+    "cycles": 27103,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/w8a8_block_linear_small_e4m3_to_bf16_m1_k128_n384.py"
+   },
+   {
+    "point": "op.matmul/small/fp16-m64-k128-n128",
+    "cycles": 49045,
+    "case": "/opt/tnca-task/dev_cases/matmul_small_fp16_m64_k128_n128.py"
+   },
+   {
+    "point": "op.gemv/membound/fp16-k512-n1024",
+    "cycles": 362031,
+    "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py"
+   }
+  ],
+  "fill chains": [
+   {
+    "point": "op.add/tiny/fp32-n256",
+    "cycles": 901,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/add_tiny_fp32_n256.py"
+   },
+   {
+    "point": "op.add/tiny/fp16-n1000",
+    "cycles": 2954,
+    "case": "/opt/tnca-task/dev_cases/add_tiny_fp16_n1000.py"
+   },
+   {
+    "point": "op.scaled_mm/tiny/e4m3-to-bf16-m16-k64-n64",
+    "cycles": 3794,
+    "case": "/opt/tnca-task/dev_cases/scaled_mm_tiny_e4m3_to_bf16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.matmul/tiny/fp32-m16-k32-n16",
+    "cycles": 5439,
+    "case": "/opt/tnca-task/dev_cases/matmul_tiny_fp32_m16_k32_n16.py"
+   },
+   {
+    "point": "op.gemv/tiny/fp16-k64-n64",
+    "cycles": 5873,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/gemv_tiny_fp16_k64_n64.py"
+   },
+   {
+    "point": "op.linear/tiny/fp16-m16-k64-n64",
+    "cycles": 6318,
+    "case": "/opt/tnca-task/dev_cases/linear_tiny_fp16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.wfp8_linear/tiny/bf16-m16-k64-n64-we4m3",
+    "cycles": 8882,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/wfp8_linear_tiny_bf16_m16_k64_n64_we4m3.py"
+   },
+   {
+    "point": "op.copy/membound/fp16-n65536",
+    "cycles": 11334,
+    "case": "/opt/tnca-task/dev_cases/copy_membound_fp16_n65536.py"
+   },
+   {
+    "point": "op.add/small/fp16-n16384",
+    "cycles": 13698,
+    "case": "/opt/tnca-task/dev_cases/add_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+    "cycles": 26402,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_prefill_tiny_fp16_b1_h2_s16_d16.py"
+   },
+   {
+    "point": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+    "cycles": 27103,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/w8a8_block_linear_small_e4m3_to_bf16_m1_k128_n384.py"
+   },
+   {
+    "point": "op.silu/small/fp16-n16384",
+    "cycles": 29877,
+    "case": "/opt/tnca-task/dev_cases/silu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.swiglu/small/fp16-n16384",
+    "cycles": 35420,
+    "case": "/opt/tnca-task/dev_cases/swiglu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.matmul/small/fp16-m64-k128-n128",
+    "cycles": 49045,
+    "case": "/opt/tnca-task/dev_cases/matmul_small_fp16_m64_k128_n128.py"
+   },
+   {
+    "point": "op.transpose/small/fp32-r128-c256",
+    "cycles": 53102,
+    "case": "/opt/tnca-task/dev_cases/transpose_small_fp32_r128_c256.py"
+   },
+   {
+    "point": "op.rmsnorm/small/fp16-r64-d256",
+    "cycles": 58597,
+    "case": "/opt/tnca-task/dev_cases/rmsnorm_small_fp16_r64_d256.py"
+   },
+   {
+    "point": "op.gemv/membound/fp16-k512-n1024",
+    "cycles": 362031,
+    "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py"
+   }
+  ],
+  "fpu / sfu stalls": [
+   {
+    "point": "op.silu/tiny/fp16-n256",
+    "cycles": 1256,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/silu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.swiglu/tiny/fp16-n256",
+    "cycles": 1448,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/swiglu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.softmax/tiny/fp32-r3-c37",
+    "cycles": 2243,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/softmax_tiny_fp32_r3_c37.py"
+   },
+   {
+    "point": "op.rmsnorm/tiny/fp16-r4-d64",
+    "cycles": 3161,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/rmsnorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.layernorm/tiny/fp16-r4-d64",
+    "cycles": 3865,
+    "case": "/opt/tnca-task/dev_cases/layernorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+    "cycles": 10869,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_decode_tiny_fp16_b1_h2_l16_d16.py"
+   },
+   {
+    "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+    "cycles": 26402,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_prefill_tiny_fp16_b1_h2_s16_d16.py"
+   },
+   {
+    "point": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+    "cycles": 27103,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/w8a8_block_linear_small_e4m3_to_bf16_m1_k128_n384.py"
+   },
+   {
+    "point": "op.silu/small/fp16-n16384",
+    "cycles": 29877,
+    "case": "/opt/tnca-task/dev_cases/silu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.swiglu/small/fp16-n16384",
+    "cycles": 35420,
+    "case": "/opt/tnca-task/dev_cases/swiglu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.rmsnorm/small/fp16-r64-d256",
+    "cycles": 58597,
+    "case": "/opt/tnca-task/dev_cases/rmsnorm_small_fp16_r64_d256.py"
+   }
+  ],
+  "home blocked": [],
+  "home cache hits": [
+   {
+    "point": "op.add/tiny/fp32-n256",
+    "cycles": 901,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/add_tiny_fp32_n256.py"
+   },
+   {
+    "point": "op.silu/tiny/fp16-n256",
+    "cycles": 1256,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/silu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.swiglu/tiny/fp16-n256",
+    "cycles": 1448,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/swiglu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.softmax/tiny/fp32-r3-c37",
+    "cycles": 2243,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/softmax_tiny_fp32_r3_c37.py"
+   },
+   {
+    "point": "op.add/tiny/fp16-n1000",
+    "cycles": 2954,
+    "case": "/opt/tnca-task/dev_cases/add_tiny_fp16_n1000.py"
+   },
+   {
+    "point": "op.rmsnorm/tiny/fp16-r4-d64",
+    "cycles": 3161,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/rmsnorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.matmul/tiny/fp16-m16-k32-n16",
+    "cycles": 3513,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/matmul_tiny_fp16_m16_k32_n16.py"
+   },
+   {
+    "point": "op.argmax/tiny/fp16-r2-v256",
+    "cycles": 3643,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/argmax_tiny_fp16_r2_v256.py"
+   },
+   {
+    "point": "op.scaled_mm/tiny/e4m3-to-bf16-m16-k64-n64",
+    "cycles": 3794,
+    "case": "/opt/tnca-task/dev_cases/scaled_mm_tiny_e4m3_to_bf16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.layernorm/tiny/fp16-r4-d64",
+    "cycles": 3865,
+    "case": "/opt/tnca-task/dev_cases/layernorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.matmul/tiny/fp32-m16-k32-n16",
+    "cycles": 5439,
+    "case": "/opt/tnca-task/dev_cases/matmul_tiny_fp32_m16_k32_n16.py"
+   },
+   {
+    "point": "op.gemv/tiny/fp16-k64-n64",
+    "cycles": 5873,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/gemv_tiny_fp16_k64_n64.py"
+   },
+   {
+    "point": "op.linear/tiny/fp16-m16-k64-n64",
+    "cycles": 6318,
+    "case": "/opt/tnca-task/dev_cases/linear_tiny_fp16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.wfp8_linear/tiny/bf16-m16-k64-n64-we4m3",
+    "cycles": 8882,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/wfp8_linear_tiny_bf16_m16_k64_n64_we4m3.py"
+   },
+   {
+    "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+    "cycles": 10869,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_decode_tiny_fp16_b1_h2_l16_d16.py"
+   },
+   {
+    "point": "op.copy/membound/fp16-n65536",
+    "cycles": 11334,
+    "case": "/opt/tnca-task/dev_cases/copy_membound_fp16_n65536.py"
+   },
+   {
+    "point": "op.add/small/fp16-n16384",
+    "cycles": 13698,
+    "case": "/opt/tnca-task/dev_cases/add_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.embedding/tiny/fp16-v256-d64-t16",
+    "cycles": 21406,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/embedding_tiny_fp16_v256_d64_t16.py"
+   },
+   {
+    "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+    "cycles": 26402,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_prefill_tiny_fp16_b1_h2_s16_d16.py"
+   },
+   {
+    "point": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+    "cycles": 27103,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/w8a8_block_linear_small_e4m3_to_bf16_m1_k128_n384.py"
+   },
+   {
+    "point": "op.silu/small/fp16-n16384",
+    "cycles": 29877,
+    "case": "/opt/tnca-task/dev_cases/silu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.argmax/small/fp16-r8-v2048",
+    "cycles": 32624,
+    "case": "/opt/tnca-task/dev_cases/argmax_small_fp16_r8_v2048.py"
+   },
+   {
+    "point": "op.swiglu/small/fp16-n16384",
+    "cycles": 35420,
+    "case": "/opt/tnca-task/dev_cases/swiglu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.matmul/small/fp16-m64-k128-n128",
+    "cycles": 49045,
+    "case": "/opt/tnca-task/dev_cases/matmul_small_fp16_m64_k128_n128.py"
+   },
+   {
+    "point": "op.transpose/small/fp32-r128-c256",
+    "cycles": 53102,
+    "case": "/opt/tnca-task/dev_cases/transpose_small_fp32_r128_c256.py"
+   },
+   {
+    "point": "op.rmsnorm/small/fp16-r64-d256",
+    "cycles": 58597,
+    "case": "/opt/tnca-task/dev_cases/rmsnorm_small_fp16_r64_d256.py"
+   },
+   {
+    "point": "op.gemv/membound/fp16-k512-n1024",
+    "cycles": 362031,
+    "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py"
+   }
+  ],
+  "home cache misses": [
+   {
+    "point": "op.add/tiny/fp32-n256",
+    "cycles": 901,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/add_tiny_fp32_n256.py"
+   },
+   {
+    "point": "op.silu/tiny/fp16-n256",
+    "cycles": 1256,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/silu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.swiglu/tiny/fp16-n256",
+    "cycles": 1448,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/swiglu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.softmax/tiny/fp32-r3-c37",
+    "cycles": 2243,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/softmax_tiny_fp32_r3_c37.py"
+   },
+   {
+    "point": "op.add/tiny/fp16-n1000",
+    "cycles": 2954,
+    "case": "/opt/tnca-task/dev_cases/add_tiny_fp16_n1000.py"
+   },
+   {
+    "point": "op.rmsnorm/tiny/fp16-r4-d64",
+    "cycles": 3161,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/rmsnorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.matmul/tiny/fp16-m16-k32-n16",
+    "cycles": 3513,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/matmul_tiny_fp16_m16_k32_n16.py"
+   },
+   {
+    "point": "op.argmax/tiny/fp16-r2-v256",
+    "cycles": 3643,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/argmax_tiny_fp16_r2_v256.py"
+   },
+   {
+    "point": "op.scaled_mm/tiny/e4m3-to-bf16-m16-k64-n64",
+    "cycles": 3794,
+    "case": "/opt/tnca-task/dev_cases/scaled_mm_tiny_e4m3_to_bf16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.layernorm/tiny/fp16-r4-d64",
+    "cycles": 3865,
+    "case": "/opt/tnca-task/dev_cases/layernorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.matmul/tiny/fp32-m16-k32-n16",
+    "cycles": 5439,
+    "case": "/opt/tnca-task/dev_cases/matmul_tiny_fp32_m16_k32_n16.py"
+   },
+   {
+    "point": "op.gemv/tiny/fp16-k64-n64",
+    "cycles": 5873,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/gemv_tiny_fp16_k64_n64.py"
+   },
+   {
+    "point": "op.linear/tiny/fp16-m16-k64-n64",
+    "cycles": 6318,
+    "case": "/opt/tnca-task/dev_cases/linear_tiny_fp16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.wfp8_linear/tiny/bf16-m16-k64-n64-we4m3",
+    "cycles": 8882,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/wfp8_linear_tiny_bf16_m16_k64_n64_we4m3.py"
+   },
+   {
+    "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+    "cycles": 10869,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_decode_tiny_fp16_b1_h2_l16_d16.py"
+   },
+   {
+    "point": "op.copy/membound/fp16-n65536",
+    "cycles": 11334,
+    "case": "/opt/tnca-task/dev_cases/copy_membound_fp16_n65536.py"
+   },
+   {
+    "point": "op.add/small/fp16-n16384",
+    "cycles": 13698,
+    "case": "/opt/tnca-task/dev_cases/add_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.embedding/tiny/fp16-v256-d64-t16",
+    "cycles": 21406,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/embedding_tiny_fp16_v256_d64_t16.py"
+   },
+   {
+    "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+    "cycles": 26402,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_prefill_tiny_fp16_b1_h2_s16_d16.py"
+   },
+   {
+    "point": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+    "cycles": 27103,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/w8a8_block_linear_small_e4m3_to_bf16_m1_k128_n384.py"
+   },
+   {
+    "point": "op.silu/small/fp16-n16384",
+    "cycles": 29877,
+    "case": "/opt/tnca-task/dev_cases/silu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.argmax/small/fp16-r8-v2048",
+    "cycles": 32624,
+    "case": "/opt/tnca-task/dev_cases/argmax_small_fp16_r8_v2048.py"
+   },
+   {
+    "point": "op.swiglu/small/fp16-n16384",
+    "cycles": 35420,
+    "case": "/opt/tnca-task/dev_cases/swiglu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.matmul/small/fp16-m64-k128-n128",
+    "cycles": 49045,
+    "case": "/opt/tnca-task/dev_cases/matmul_small_fp16_m64_k128_n128.py"
+   },
+   {
+    "point": "op.transpose/small/fp32-r128-c256",
+    "cycles": 53102,
+    "case": "/opt/tnca-task/dev_cases/transpose_small_fp32_r128_c256.py"
+   },
+   {
+    "point": "op.rmsnorm/small/fp16-r64-d256",
+    "cycles": 58597,
+    "case": "/opt/tnca-task/dev_cases/rmsnorm_small_fp16_r64_d256.py"
+   },
+   {
+    "point": "op.gemv/membound/fp16-k512-n1024",
+    "cycles": 362031,
+    "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py"
+   }
+  ],
+  "home replays": [
+   {
+    "point": "op.copy/membound/fp16-n65536",
+    "cycles": 11334,
+    "case": "/opt/tnca-task/dev_cases/copy_membound_fp16_n65536.py"
+   },
+   {
+    "point": "op.add/small/fp16-n16384",
+    "cycles": 13698,
+    "case": "/opt/tnca-task/dev_cases/add_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.argmax/small/fp16-r8-v2048",
+    "cycles": 32624,
+    "case": "/opt/tnca-task/dev_cases/argmax_small_fp16_r8_v2048.py"
+   },
+   {
+    "point": "op.swiglu/small/fp16-n16384",
+    "cycles": 35420,
+    "case": "/opt/tnca-task/dev_cases/swiglu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.matmul/small/fp16-m64-k128-n128",
+    "cycles": 49045,
+    "case": "/opt/tnca-task/dev_cases/matmul_small_fp16_m64_k128_n128.py"
+   },
+   {
+    "point": "op.transpose/small/fp32-r128-c256",
+    "cycles": 53102,
+    "case": "/opt/tnca-task/dev_cases/transpose_small_fp32_r128_c256.py"
+   },
+   {
+    "point": "op.rmsnorm/small/fp16-r64-d256",
+    "cycles": 58597,
+    "case": "/opt/tnca-task/dev_cases/rmsnorm_small_fp16_r64_d256.py"
+   },
+   {
+    "point": "op.gemv/membound/fp16-k512-n1024",
+    "cycles": 362031,
+    "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py"
+   }
+  ],
+  "lsu stalls": [
+   {
+    "point": "op.add/tiny/fp32-n256",
+    "cycles": 901,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/add_tiny_fp32_n256.py"
+   },
+   {
+    "point": "op.silu/tiny/fp16-n256",
+    "cycles": 1256,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/silu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.swiglu/tiny/fp16-n256",
+    "cycles": 1448,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/swiglu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.softmax/tiny/fp32-r3-c37",
+    "cycles": 2243,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/softmax_tiny_fp32_r3_c37.py"
+   },
+   {
+    "point": "op.add/tiny/fp16-n1000",
+    "cycles": 2954,
+    "case": "/opt/tnca-task/dev_cases/add_tiny_fp16_n1000.py"
+   },
+   {
+    "point": "op.rmsnorm/tiny/fp16-r4-d64",
+    "cycles": 3161,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/rmsnorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.matmul/tiny/fp16-m16-k32-n16",
+    "cycles": 3513,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/matmul_tiny_fp16_m16_k32_n16.py"
+   },
+   {
+    "point": "op.argmax/tiny/fp16-r2-v256",
+    "cycles": 3643,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/argmax_tiny_fp16_r2_v256.py"
+   },
+   {
+    "point": "op.scaled_mm/tiny/e4m3-to-bf16-m16-k64-n64",
+    "cycles": 3794,
+    "case": "/opt/tnca-task/dev_cases/scaled_mm_tiny_e4m3_to_bf16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.layernorm/tiny/fp16-r4-d64",
+    "cycles": 3865,
+    "case": "/opt/tnca-task/dev_cases/layernorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.matmul/tiny/fp32-m16-k32-n16",
+    "cycles": 5439,
+    "case": "/opt/tnca-task/dev_cases/matmul_tiny_fp32_m16_k32_n16.py"
+   },
+   {
+    "point": "op.gemv/tiny/fp16-k64-n64",
+    "cycles": 5873,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/gemv_tiny_fp16_k64_n64.py"
+   },
+   {
+    "point": "op.linear/tiny/fp16-m16-k64-n64",
+    "cycles": 6318,
+    "case": "/opt/tnca-task/dev_cases/linear_tiny_fp16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.wfp8_linear/tiny/bf16-m16-k64-n64-we4m3",
+    "cycles": 8882,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/wfp8_linear_tiny_bf16_m16_k64_n64_we4m3.py"
+   },
+   {
+    "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+    "cycles": 10869,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_decode_tiny_fp16_b1_h2_l16_d16.py"
+   },
+   {
+    "point": "op.copy/membound/fp16-n65536",
+    "cycles": 11334,
+    "case": "/opt/tnca-task/dev_cases/copy_membound_fp16_n65536.py"
+   },
+   {
+    "point": "op.add/small/fp16-n16384",
+    "cycles": 13698,
+    "case": "/opt/tnca-task/dev_cases/add_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.embedding/tiny/fp16-v256-d64-t16",
+    "cycles": 21406,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/embedding_tiny_fp16_v256_d64_t16.py"
+   },
+   {
+    "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+    "cycles": 26402,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_prefill_tiny_fp16_b1_h2_s16_d16.py"
+   },
+   {
+    "point": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+    "cycles": 27103,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/w8a8_block_linear_small_e4m3_to_bf16_m1_k128_n384.py"
+   },
+   {
+    "point": "op.silu/small/fp16-n16384",
+    "cycles": 29877,
+    "case": "/opt/tnca-task/dev_cases/silu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.argmax/small/fp16-r8-v2048",
+    "cycles": 32624,
+    "case": "/opt/tnca-task/dev_cases/argmax_small_fp16_r8_v2048.py"
+   },
+   {
+    "point": "op.swiglu/small/fp16-n16384",
+    "cycles": 35420,
+    "case": "/opt/tnca-task/dev_cases/swiglu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.matmul/small/fp16-m64-k128-n128",
+    "cycles": 49045,
+    "case": "/opt/tnca-task/dev_cases/matmul_small_fp16_m64_k128_n128.py"
+   },
+   {
+    "point": "op.transpose/small/fp32-r128-c256",
+    "cycles": 53102,
+    "case": "/opt/tnca-task/dev_cases/transpose_small_fp32_r128_c256.py"
+   },
+   {
+    "point": "op.rmsnorm/small/fp16-r64-d256",
+    "cycles": 58597,
+    "case": "/opt/tnca-task/dev_cases/rmsnorm_small_fp16_r64_d256.py"
+   },
+   {
+    "point": "op.gemv/membound/fp16-k512-n1024",
+    "cycles": 362031,
+    "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py"
+   }
+  ],
+  "matrix engine waits": [
+   {
+    "point": "op.scaled_mm/tiny/e4m3-to-bf16-m16-k64-n64",
+    "cycles": 3794,
+    "case": "/opt/tnca-task/dev_cases/scaled_mm_tiny_e4m3_to_bf16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.matmul/tiny/fp32-m16-k32-n16",
+    "cycles": 5439,
+    "case": "/opt/tnca-task/dev_cases/matmul_tiny_fp32_m16_k32_n16.py"
+   },
+   {
+    "point": "op.gemv/tiny/fp16-k64-n64",
+    "cycles": 5873,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/gemv_tiny_fp16_k64_n64.py"
+   },
+   {
+    "point": "op.linear/tiny/fp16-m16-k64-n64",
+    "cycles": 6318,
+    "case": "/opt/tnca-task/dev_cases/linear_tiny_fp16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.wfp8_linear/tiny/bf16-m16-k64-n64-we4m3",
+    "cycles": 8882,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/wfp8_linear_tiny_bf16_m16_k64_n64_we4m3.py"
+   },
+   {
+    "point": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+    "cycles": 27103,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/w8a8_block_linear_small_e4m3_to_bf16_m1_k128_n384.py"
+   },
+   {
+    "point": "op.matmul/small/fp16-m64-k128-n128",
+    "cycles": 49045,
+    "case": "/opt/tnca-task/dev_cases/matmul_small_fp16_m64_k128_n128.py"
+   },
+   {
+    "point": "op.transpose/small/fp32-r128-c256",
+    "cycles": 53102,
+    "case": "/opt/tnca-task/dev_cases/transpose_small_fp32_r128_c256.py"
+   },
+   {
+    "point": "op.gemv/membound/fp16-k512-n1024",
+    "cycles": 362031,
+    "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py"
+   }
+  ],
+  "memory request stalls (mreq)": [
+   {
+    "point": "op.gemv/membound/fp16-k512-n1024",
+    "cycles": 362031,
+    "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py"
+   }
+  ],
+  "mshr merges": [
+   {
+    "point": "op.silu/tiny/fp16-n256",
+    "cycles": 1256,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/silu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.swiglu/tiny/fp16-n256",
+    "cycles": 1448,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/swiglu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.softmax/tiny/fp32-r3-c37",
+    "cycles": 2243,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/softmax_tiny_fp32_r3_c37.py"
+   },
+   {
+    "point": "op.add/tiny/fp16-n1000",
+    "cycles": 2954,
+    "case": "/opt/tnca-task/dev_cases/add_tiny_fp16_n1000.py"
+   },
+   {
+    "point": "op.rmsnorm/tiny/fp16-r4-d64",
+    "cycles": 3161,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/rmsnorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.matmul/tiny/fp16-m16-k32-n16",
+    "cycles": 3513,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/matmul_tiny_fp16_m16_k32_n16.py"
+   },
+   {
+    "point": "op.scaled_mm/tiny/e4m3-to-bf16-m16-k64-n64",
+    "cycles": 3794,
+    "case": "/opt/tnca-task/dev_cases/scaled_mm_tiny_e4m3_to_bf16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.layernorm/tiny/fp16-r4-d64",
+    "cycles": 3865,
+    "case": "/opt/tnca-task/dev_cases/layernorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.gemv/tiny/fp16-k64-n64",
+    "cycles": 5873,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/gemv_tiny_fp16_k64_n64.py"
+   },
+   {
+    "point": "op.linear/tiny/fp16-m16-k64-n64",
+    "cycles": 6318,
+    "case": "/opt/tnca-task/dev_cases/linear_tiny_fp16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.wfp8_linear/tiny/bf16-m16-k64-n64-we4m3",
+    "cycles": 8882,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/wfp8_linear_tiny_bf16_m16_k64_n64_we4m3.py"
+   },
+   {
+    "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+    "cycles": 10869,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_decode_tiny_fp16_b1_h2_l16_d16.py"
+   },
+   {
+    "point": "op.copy/membound/fp16-n65536",
+    "cycles": 11334,
+    "case": "/opt/tnca-task/dev_cases/copy_membound_fp16_n65536.py"
+   },
+   {
+    "point": "op.add/small/fp16-n16384",
+    "cycles": 13698,
+    "case": "/opt/tnca-task/dev_cases/add_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.embedding/tiny/fp16-v256-d64-t16",
+    "cycles": 21406,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/embedding_tiny_fp16_v256_d64_t16.py"
+   },
+   {
+    "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+    "cycles": 26402,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_prefill_tiny_fp16_b1_h2_s16_d16.py"
+   },
+   {
+    "point": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+    "cycles": 27103,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/w8a8_block_linear_small_e4m3_to_bf16_m1_k128_n384.py"
+   },
+   {
+    "point": "op.silu/small/fp16-n16384",
+    "cycles": 29877,
+    "case": "/opt/tnca-task/dev_cases/silu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.swiglu/small/fp16-n16384",
+    "cycles": 35420,
+    "case": "/opt/tnca-task/dev_cases/swiglu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.matmul/small/fp16-m64-k128-n128",
+    "cycles": 49045,
+    "case": "/opt/tnca-task/dev_cases/matmul_small_fp16_m64_k128_n128.py"
+   },
+   {
+    "point": "op.rmsnorm/small/fp16-r64-d256",
+    "cycles": 58597,
+    "case": "/opt/tnca-task/dev_cases/rmsnorm_small_fp16_r64_d256.py"
+   },
+   {
+    "point": "op.gemv/membound/fp16-k512-n1024",
+    "cycles": 362031,
+    "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py"
+   }
+  ],
+  "reservation stalls": [
+   {
+    "point": "op.add/tiny/fp32-n256",
+    "cycles": 901,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/add_tiny_fp32_n256.py"
+   },
+   {
+    "point": "op.silu/tiny/fp16-n256",
+    "cycles": 1256,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/silu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.swiglu/tiny/fp16-n256",
+    "cycles": 1448,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/swiglu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.softmax/tiny/fp32-r3-c37",
+    "cycles": 2243,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/softmax_tiny_fp32_r3_c37.py"
+   },
+   {
+    "point": "op.add/tiny/fp16-n1000",
+    "cycles": 2954,
+    "case": "/opt/tnca-task/dev_cases/add_tiny_fp16_n1000.py"
+   },
+   {
+    "point": "op.rmsnorm/tiny/fp16-r4-d64",
+    "cycles": 3161,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/rmsnorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.matmul/tiny/fp16-m16-k32-n16",
+    "cycles": 3513,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/matmul_tiny_fp16_m16_k32_n16.py"
+   },
+   {
+    "point": "op.argmax/tiny/fp16-r2-v256",
+    "cycles": 3643,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/argmax_tiny_fp16_r2_v256.py"
+   },
+   {
+    "point": "op.scaled_mm/tiny/e4m3-to-bf16-m16-k64-n64",
+    "cycles": 3794,
+    "case": "/opt/tnca-task/dev_cases/scaled_mm_tiny_e4m3_to_bf16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.layernorm/tiny/fp16-r4-d64",
+    "cycles": 3865,
+    "case": "/opt/tnca-task/dev_cases/layernorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.matmul/tiny/fp32-m16-k32-n16",
+    "cycles": 5439,
+    "case": "/opt/tnca-task/dev_cases/matmul_tiny_fp32_m16_k32_n16.py"
+   },
+   {
+    "point": "op.gemv/tiny/fp16-k64-n64",
+    "cycles": 5873,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/gemv_tiny_fp16_k64_n64.py"
+   },
+   {
+    "point": "op.linear/tiny/fp16-m16-k64-n64",
+    "cycles": 6318,
+    "case": "/opt/tnca-task/dev_cases/linear_tiny_fp16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.wfp8_linear/tiny/bf16-m16-k64-n64-we4m3",
+    "cycles": 8882,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/wfp8_linear_tiny_bf16_m16_k64_n64_we4m3.py"
+   },
+   {
+    "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+    "cycles": 10869,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_decode_tiny_fp16_b1_h2_l16_d16.py"
+   },
+   {
+    "point": "op.copy/membound/fp16-n65536",
+    "cycles": 11334,
+    "case": "/opt/tnca-task/dev_cases/copy_membound_fp16_n65536.py"
+   },
+   {
+    "point": "op.add/small/fp16-n16384",
+    "cycles": 13698,
+    "case": "/opt/tnca-task/dev_cases/add_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.embedding/tiny/fp16-v256-d64-t16",
+    "cycles": 21406,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/embedding_tiny_fp16_v256_d64_t16.py"
+   },
+   {
+    "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+    "cycles": 26402,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_prefill_tiny_fp16_b1_h2_s16_d16.py"
+   },
+   {
+    "point": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+    "cycles": 27103,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/w8a8_block_linear_small_e4m3_to_bf16_m1_k128_n384.py"
+   },
+   {
+    "point": "op.silu/small/fp16-n16384",
+    "cycles": 29877,
+    "case": "/opt/tnca-task/dev_cases/silu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.argmax/small/fp16-r8-v2048",
+    "cycles": 32624,
+    "case": "/opt/tnca-task/dev_cases/argmax_small_fp16_r8_v2048.py"
+   },
+   {
+    "point": "op.swiglu/small/fp16-n16384",
+    "cycles": 35420,
+    "case": "/opt/tnca-task/dev_cases/swiglu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.matmul/small/fp16-m64-k128-n128",
+    "cycles": 49045,
+    "case": "/opt/tnca-task/dev_cases/matmul_small_fp16_m64_k128_n128.py"
+   },
+   {
+    "point": "op.transpose/small/fp32-r128-c256",
+    "cycles": 53102,
+    "case": "/opt/tnca-task/dev_cases/transpose_small_fp32_r128_c256.py"
+   },
+   {
+    "point": "op.rmsnorm/small/fp16-r64-d256",
+    "cycles": 58597,
+    "case": "/opt/tnca-task/dev_cases/rmsnorm_small_fp16_r64_d256.py"
+   },
+   {
+    "point": "op.gemv/membound/fp16-k512-n1024",
+    "cycles": 362031,
+    "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py"
+   }
+  ],
+  "response / writeback queue full": [
+   {
+    "point": "op.gemv/membound/fp16-k512-n1024",
+    "cycles": 362031,
+    "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py"
+   }
+  ],
+  "several launches": [
+   {
+    "point": "op.wfp8_linear/tiny/bf16-m16-k64-n64-we4m3",
+    "cycles": 8882,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/wfp8_linear_tiny_bf16_m16_k64_n64_we4m3.py"
+   },
+   {
+    "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+    "cycles": 10869,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_decode_tiny_fp16_b1_h2_l16_d16.py"
+   },
+   {
+    "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+    "cycles": 26402,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_prefill_tiny_fp16_b1_h2_s16_d16.py"
+   },
+   {
+    "point": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+    "cycles": 27103,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/w8a8_block_linear_small_e4m3_to_bf16_m1_k128_n384.py"
+   }
+  ],
+  "transfer engine stalls": [
+   {
+    "point": "op.matmul/tiny/fp16-m16-k32-n16",
+    "cycles": 3513,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/matmul_tiny_fp16_m16_k32_n16.py"
+   },
+   {
+    "point": "op.scaled_mm/tiny/e4m3-to-bf16-m16-k64-n64",
+    "cycles": 3794,
+    "case": "/opt/tnca-task/dev_cases/scaled_mm_tiny_e4m3_to_bf16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.matmul/tiny/fp32-m16-k32-n16",
+    "cycles": 5439,
+    "case": "/opt/tnca-task/dev_cases/matmul_tiny_fp32_m16_k32_n16.py"
+   },
+   {
+    "point": "op.gemv/tiny/fp16-k64-n64",
+    "cycles": 5873,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/gemv_tiny_fp16_k64_n64.py"
+   },
+   {
+    "point": "op.linear/tiny/fp16-m16-k64-n64",
+    "cycles": 6318,
+    "case": "/opt/tnca-task/dev_cases/linear_tiny_fp16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.wfp8_linear/tiny/bf16-m16-k64-n64-we4m3",
+    "cycles": 8882,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/wfp8_linear_tiny_bf16_m16_k64_n64_we4m3.py"
+   },
+   {
+    "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+    "cycles": 10869,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_decode_tiny_fp16_b1_h2_l16_d16.py"
+   },
+   {
+    "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+    "cycles": 26402,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_prefill_tiny_fp16_b1_h2_s16_d16.py"
+   },
+   {
+    "point": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+    "cycles": 27103,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/w8a8_block_linear_small_e4m3_to_bf16_m1_k128_n384.py"
+   },
+   {
+    "point": "op.matmul/small/fp16-m64-k128-n128",
+    "cycles": 49045,
+    "case": "/opt/tnca-task/dev_cases/matmul_small_fp16_m64_k128_n128.py"
+   },
+   {
+    "point": "op.gemv/membound/fp16-k512-n1024",
+    "cycles": 362031,
+    "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py"
+   }
+  ],
+  "vrf bank conflicts": [
+   {
+    "point": "op.add/tiny/fp32-n256",
+    "cycles": 901,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/add_tiny_fp32_n256.py"
+   },
+   {
+    "point": "op.silu/tiny/fp16-n256",
+    "cycles": 1256,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/silu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.swiglu/tiny/fp16-n256",
+    "cycles": 1448,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/swiglu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.softmax/tiny/fp32-r3-c37",
+    "cycles": 2243,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/softmax_tiny_fp32_r3_c37.py"
+   },
+   {
+    "point": "op.add/tiny/fp16-n1000",
+    "cycles": 2954,
+    "case": "/opt/tnca-task/dev_cases/add_tiny_fp16_n1000.py"
+   },
+   {
+    "point": "op.rmsnorm/tiny/fp16-r4-d64",
+    "cycles": 3161,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/rmsnorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.matmul/tiny/fp16-m16-k32-n16",
+    "cycles": 3513,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/matmul_tiny_fp16_m16_k32_n16.py"
+   },
+   {
+    "point": "op.argmax/tiny/fp16-r2-v256",
+    "cycles": 3643,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/argmax_tiny_fp16_r2_v256.py"
+   },
+   {
+    "point": "op.scaled_mm/tiny/e4m3-to-bf16-m16-k64-n64",
+    "cycles": 3794,
+    "case": "/opt/tnca-task/dev_cases/scaled_mm_tiny_e4m3_to_bf16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.layernorm/tiny/fp16-r4-d64",
+    "cycles": 3865,
+    "case": "/opt/tnca-task/dev_cases/layernorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.matmul/tiny/fp32-m16-k32-n16",
+    "cycles": 5439,
+    "case": "/opt/tnca-task/dev_cases/matmul_tiny_fp32_m16_k32_n16.py"
+   },
+   {
+    "point": "op.gemv/tiny/fp16-k64-n64",
+    "cycles": 5873,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/gemv_tiny_fp16_k64_n64.py"
+   },
+   {
+    "point": "op.linear/tiny/fp16-m16-k64-n64",
+    "cycles": 6318,
+    "case": "/opt/tnca-task/dev_cases/linear_tiny_fp16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.wfp8_linear/tiny/bf16-m16-k64-n64-we4m3",
+    "cycles": 8882,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/wfp8_linear_tiny_bf16_m16_k64_n64_we4m3.py"
+   },
+   {
+    "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+    "cycles": 10869,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_decode_tiny_fp16_b1_h2_l16_d16.py"
+   },
+   {
+    "point": "op.add/small/fp16-n16384",
+    "cycles": 13698,
+    "case": "/opt/tnca-task/dev_cases/add_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.embedding/tiny/fp16-v256-d64-t16",
+    "cycles": 21406,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/embedding_tiny_fp16_v256_d64_t16.py"
+   },
+   {
+    "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+    "cycles": 26402,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_prefill_tiny_fp16_b1_h2_s16_d16.py"
+   },
+   {
+    "point": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+    "cycles": 27103,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/w8a8_block_linear_small_e4m3_to_bf16_m1_k128_n384.py"
+   },
+   {
+    "point": "op.silu/small/fp16-n16384",
+    "cycles": 29877,
+    "case": "/opt/tnca-task/dev_cases/silu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.argmax/small/fp16-r8-v2048",
+    "cycles": 32624,
+    "case": "/opt/tnca-task/dev_cases/argmax_small_fp16_r8_v2048.py"
+   },
+   {
+    "point": "op.swiglu/small/fp16-n16384",
+    "cycles": 35420,
+    "case": "/opt/tnca-task/dev_cases/swiglu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.matmul/small/fp16-m64-k128-n128",
+    "cycles": 49045,
+    "case": "/opt/tnca-task/dev_cases/matmul_small_fp16_m64_k128_n128.py"
+   },
+   {
+    "point": "op.transpose/small/fp32-r128-c256",
+    "cycles": 53102,
+    "case": "/opt/tnca-task/dev_cases/transpose_small_fp32_r128_c256.py"
+   },
+   {
+    "point": "op.rmsnorm/small/fp16-r64-d256",
+    "cycles": 58597,
+    "case": "/opt/tnca-task/dev_cases/rmsnorm_small_fp16_r64_d256.py"
+   },
+   {
+    "point": "op.gemv/membound/fp16-k512-n1024",
+    "cycles": 362031,
+    "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py"
+   }
+  ],
+  "writeback steals": [
+   {
+    "point": "op.add/tiny/fp32-n256",
+    "cycles": 901,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/add_tiny_fp32_n256.py"
+   },
+   {
+    "point": "op.silu/tiny/fp16-n256",
+    "cycles": 1256,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/silu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.swiglu/tiny/fp16-n256",
+    "cycles": 1448,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/swiglu_tiny_fp16_n256.py"
+   },
+   {
+    "point": "op.softmax/tiny/fp32-r3-c37",
+    "cycles": 2243,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/softmax_tiny_fp32_r3_c37.py"
+   },
+   {
+    "point": "op.add/tiny/fp16-n1000",
+    "cycles": 2954,
+    "case": "/opt/tnca-task/dev_cases/add_tiny_fp16_n1000.py"
+   },
+   {
+    "point": "op.rmsnorm/tiny/fp16-r4-d64",
+    "cycles": 3161,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/rmsnorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.matmul/tiny/fp16-m16-k32-n16",
+    "cycles": 3513,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/matmul_tiny_fp16_m16_k32_n16.py"
+   },
+   {
+    "point": "op.argmax/tiny/fp16-r2-v256",
+    "cycles": 3643,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/argmax_tiny_fp16_r2_v256.py"
+   },
+   {
+    "point": "op.scaled_mm/tiny/e4m3-to-bf16-m16-k64-n64",
+    "cycles": 3794,
+    "case": "/opt/tnca-task/dev_cases/scaled_mm_tiny_e4m3_to_bf16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.layernorm/tiny/fp16-r4-d64",
+    "cycles": 3865,
+    "case": "/opt/tnca-task/dev_cases/layernorm_tiny_fp16_r4_d64.py"
+   },
+   {
+    "point": "op.matmul/tiny/fp32-m16-k32-n16",
+    "cycles": 5439,
+    "case": "/opt/tnca-task/dev_cases/matmul_tiny_fp32_m16_k32_n16.py"
+   },
+   {
+    "point": "op.gemv/tiny/fp16-k64-n64",
+    "cycles": 5873,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/gemv_tiny_fp16_k64_n64.py"
+   },
+   {
+    "point": "op.linear/tiny/fp16-m16-k64-n64",
+    "cycles": 6318,
+    "case": "/opt/tnca-task/dev_cases/linear_tiny_fp16_m16_k64_n64.py"
+   },
+   {
+    "point": "op.wfp8_linear/tiny/bf16-m16-k64-n64-we4m3",
+    "cycles": 8882,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/wfp8_linear_tiny_bf16_m16_k64_n64_we4m3.py"
+   },
+   {
+    "point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16",
+    "cycles": 10869,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_decode_tiny_fp16_b1_h2_l16_d16.py"
+   },
+   {
+    "point": "op.copy/membound/fp16-n65536",
+    "cycles": 11334,
+    "case": "/opt/tnca-task/dev_cases/copy_membound_fp16_n65536.py"
+   },
+   {
+    "point": "op.add/small/fp16-n16384",
+    "cycles": 13698,
+    "case": "/opt/tnca-task/dev_cases/add_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.embedding/tiny/fp16-v256-d64-t16",
+    "cycles": 21406,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/embedding_tiny_fp16_v256_d64_t16.py"
+   },
+   {
+    "point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16",
+    "cycles": 26402,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/attention_prefill_tiny_fp16_b1_h2_s16_d16.py"
+   },
+   {
+    "point": "op.w8a8_block_linear/small/e4m3-to-bf16-m1-k128-n384",
+    "cycles": 27103,
+    "case": "/opt/tnca-skills/testcase-design/benchmark_cases/w8a8_block_linear_small_e4m3_to_bf16_m1_k128_n384.py"
+   },
+   {
+    "point": "op.silu/small/fp16-n16384",
+    "cycles": 29877,
+    "case": "/opt/tnca-task/dev_cases/silu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.argmax/small/fp16-r8-v2048",
+    "cycles": 32624,
+    "case": "/opt/tnca-task/dev_cases/argmax_small_fp16_r8_v2048.py"
+   },
+   {
+    "point": "op.swiglu/small/fp16-n16384",
+    "cycles": 35420,
+    "case": "/opt/tnca-task/dev_cases/swiglu_small_fp16_n16384.py"
+   },
+   {
+    "point": "op.matmul/small/fp16-m64-k128-n128",
+    "cycles": 49045,
+    "case": "/opt/tnca-task/dev_cases/matmul_small_fp16_m64_k128_n128.py"
+   },
+   {
+    "point": "op.transpose/small/fp32-r128-c256",
+    "cycles": 53102,
+    "case": "/opt/tnca-task/dev_cases/transpose_small_fp32_r128_c256.py"
+   },
+   {
+    "point": "op.rmsnorm/small/fp16-r64-d256",
+    "cycles": 58597,
+    "case": "/opt/tnca-task/dev_cases/rmsnorm_small_fp16_r64_d256.py"
+   },
+   {
+    "point": "op.gemv/membound/fp16-k512-n1024",
+    "cycles": 362031,
+    "case": "/opt/tnca-task/dev_cases/gemv_membound_fp16_k512_n1024.py"
+   }
+  ]
+ },
+ "unreached": {
+  "home blocked": {
+   "smallest_development_point": "op.gemv/medium/fp16-k1024-n1536",
+   "cycles": 1034085
+  }
+ },
+ "reached_by_larger_points": {
+  "all three cores": "39/39",
+  "context parks": "36/39",
+  "dirty writebacks": "36/39",
+  "fences": "22/39",
+  "fill chains": "38/39",
+  "fpu / sfu stalls": "17/39",
+  "home blocked": "6/39",
+  "home cache hits": "39/39",
+  "home cache misses": "39/39",
+  "home replays": "38/39",
+  "lsu stalls": "39/39",
+  "matrix engine waits": "19/39",
+  "memory request stalls (mreq)": "8/39",
+  "mshr merges": "34/39",
+  "reservation stalls": "39/39",
+  "response / writeback queue full": "7/39",
+  "several launches": "13/39",
+  "transfer engine stalls": "22/39",
+  "vrf bank conflicts": "36/39",
+  "writeback steals": "39/39"
+ }
+}

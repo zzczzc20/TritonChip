@@ -17,6 +17,11 @@ remote. Each step is recorded with its timing and outcome; the record is the
 result. A build or measurement survives the controller: ``--build-run`` picks
 up a build that is running or done, and a failed transfer or board stage can be
 repeated without building again.
+
+A build host that is a batch cluster (an ``lsf`` block in the hosts file) runs
+the link as a job: ``build:submit`` queues it, ``build:lsf`` waits for LSF to
+say it has ended, and ``build`` then reads the verdict as for any host (lsf.py
+says why the run is not asked while the job lives).
 """
 
 from __future__ import annotations
@@ -31,6 +36,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
+from . import lsf
 from .hosts import Host, host_for
 from .schema import validate_manifest
 from .worker import LIVE_STATUSES, _board_for_target, build_ssh_argv, call_worker, check_run_id, ssh_prefix
@@ -111,7 +117,9 @@ def sync(host: Host, commit: str, local_repo: Path, *, ssh_binary: str = "ssh") 
     and refused otherwise; nothing on a server is ever deleted. A missing one
     is created as a worktree of the server's bare mirror, after the controller
     has sent the commit as a git bundle (the mirror is fetched from the bundle
-    only when it does not have the commit yet).
+    only when it does not have the commit yet). A build host with an
+    ``ip_cache_seed`` gets that IP cache copied into each checkout created here
+    (seed_ip_cache).
     """
     checkout = host.checkout(commit)
     present = remote(host, ["git", "-C", checkout, "rev-parse", "HEAD"], ssh_binary=ssh_binary, check=False)
@@ -144,12 +152,42 @@ def sync(host: Host, commit: str, local_repo: Path, *, ssh_binary: str = "ssh") 
         finally:
             remote(host, ["rm", "-f", path], ssh_binary=ssh_binary, check=False)
         sent = len(bundle)
-    remote(host, ["git", "-C", host.mirror, "worktree", "add", "-q", "--detach", checkout, commit],
+    # No -q: a cluster's git may be older than the option (2.9 has worktrees but not their -q).
+    remote(host, ["git", "-C", host.mirror, "worktree", "add", "--detach", checkout, commit],
            ssh_binary=ssh_binary)
     head = _out(remote(host, ["git", "-C", checkout, "rev-parse", "HEAD"], ssh_binary=ssh_binary))
     if head != commit:
         raise PipelineError(f"{host.name}: the new checkout is at {head}, not {commit}")
-    return {"host": host.name, "checkout": checkout, "action": "created", "bundle_bytes": sent}
+    out = {"host": host.name, "checkout": checkout, "action": "created", "bundle_bytes": sent}
+    if host.ip_cache_seed:
+        out["ip_cache"] = seed_ip_cache(host, commit, ssh_binary=ssh_binary)
+    return out
+
+
+IP_CACHE = ".ipcache"   # v++'s IP cache, kept in the link's working directory (the checkout)
+
+
+def seed_ip_cache(host: Host, commit: str, *, ssh_binary: str = "ssh") -> dict[str, Any]:
+    """Copy the host's ``ip_cache_seed`` into a checkout sync has just created, before any link runs there.
+
+    The copy is made in ``incoming`` and renamed into the checkout whole, so a link never finds a cache half
+    copied. A failed copy is reported and the checkout is used without one: the link then synthesises every
+    IP, as it did before seeds. Only the harness's own staging copy is ever removed.
+    """
+    started = time.time()
+    staged = f"{host.incoming}/ipcache-{commit}"
+    target = f"{host.checkout(commit)}/{IP_CACHE}"
+    if remote(host, ["test", "-e", target], ssh_binary=ssh_binary, check=False).returncode == 0:
+        return {"seeded": False, "from": host.ip_cache_seed, "error": f"{IP_CACHE} is already in the checkout"}
+    steps = (["rm", "-rf", "--", staged], ["cp", "-a", "--", host.ip_cache_seed, staged],
+             ["mv", "--", staged, target])
+    for argv in steps:
+        done = remote(host, argv, ssh_binary=ssh_binary, check=False, timeout=1800)
+        if done.returncode != 0:
+            detail = done.stderr.decode("utf-8", errors="replace").strip().splitlines()[-2:]
+            remote(host, ["rm", "-rf", "--", staged], ssh_binary=ssh_binary, check=False)
+            return {"seeded": False, "from": host.ip_cache_seed, "error": f"{argv[0]} failed: {' | '.join(detail)}"}
+    return {"seeded": True, "from": host.ip_cache_seed, "seconds": round(time.time() - started, 1)}
 
 
 def worker(host: Host, commit: str, request: dict[str, Any], *, ssh_binary: str = "ssh",
@@ -285,6 +323,8 @@ def _build_summary(value: Mapping[str, Any]) -> dict[str, Any]:
         "xclbin_sha256": next((digest for name, digest in artifacts.items() if name.endswith(".xclbin")), None),
         "error": result.get("error"),
         "preflight_failed": result.get("preflight_failed"),
+        # A stage the submit stopped at its --timeout (the link at the flow's cap, 2026-11-21).
+        "timed_out": any(isinstance(s, dict) and s.get("timed_out") for s in (result.get("stages") or [])),
         "log_tail": value.get("log_tail"),
     }
 
@@ -325,9 +365,28 @@ def run_pipeline(
     do_sync: bool = True,
     ssh_binary: str = "ssh",
     sleep: Callable[[float], None] = time.sleep,
+    measure_run: str | None = None,
+    expect_xclbin_sha256: str | None = None,
 ) -> dict[str, Any]:
+    """Build on one server, measure on another; or, with ``measure_run``, only measure.
+
+    ``measure_run`` names a run whose image the card server already holds (it
+    was measured there before), built from another commit: the board stage
+    runs that image with this commit's checkout driving the card -- its
+    runtime, its compiler, its ArchBench -- and no build server is involved.
+    It is how a candidate that changed only software is measured on the
+    machine it shares with the base. The card server records the source
+    mismatch it was allowed; the manifest must name the run's candidate,
+    target and mode; and the image measured must hash to
+    ``expect_xclbin_sha256`` when one is given. A measurement of that run
+    already in progress is never attached to: it is someone else's.
+    """
     validate_manifest(manifest)
-    builder = host_for(hosts, build_host, "build")
+    if measure_run and (build_run or run_id or skip_board):
+        raise PipelineError("measure_run measures an existing image: no build_run, run_id or skip_board with it")
+    if not measure_run and not build_host:
+        raise PipelineError("name a build host, or measure an existing run's image with measure_run")
+    builder = None if measure_run else host_for(hosts, build_host, "build")
     want_board = bool(manifest.get("board")) and manifest.get("mode") == "full" and not skip_board
     card = host_for(hosts, board_host, "board") if board_host and want_board else None
     if want_board and card is None:
@@ -344,7 +403,7 @@ def run_pipeline(
         "target": manifest["target"],
         "commit": commit,
         "adapter": adapter,
-        "hosts": {"build": builder.summary(), "board": card.summary() if card else None},
+        "hosts": {"build": builder.summary() if builder else None, "board": card.summary() if card else None},
         "started_at": time.time(),
         "steps": [],
         "status": "RUNNING",
@@ -386,8 +445,12 @@ def run_pipeline(
             check_run_id(run_id)
         if build_run:
             check_run_id(build_run)
-        same_state = bool(card and card.ssh == builder.ssh and card.state_dir == builder.state_dir)
-        servers = [builder] + ([card] if card and card.name != builder.name else [])
+        if measure_run:
+            check_run_id(measure_run)
+            if card is None:
+                raise PipelineError("measure_run needs a board block and a --board-host")
+        same_state = bool(card and builder and card.ssh == builder.ssh and card.state_dir == builder.state_dir)
+        servers = ([builder] if builder else []) + ([card] if card and (builder is None or card.name != builder.name) else [])
         if do_sync:
             for server in servers:
                 step(f"sync:{server.name}", lambda server=server: sync(server, commit, local_repo, ssh_binary=ssh_binary))
@@ -408,12 +471,24 @@ def run_pipeline(
 
         # Attaching to a build that may still be linking: a full doctor would
         # count its own Vivado against it, so only the checkout is checked.
-        step(f"doctor:{builder.name}", lambda: doctor(builder, "source" if build_run else "build"))
+        if builder:
+            step(f"doctor:{builder.name}", lambda: doctor(builder, "source" if build_run else "build"))
         if card:
             step(f"doctor:{card.name}", lambda: doctor(card, "board"))
+        if measure_run:
+            return _measure_only(record, step, finish, card, commit, base, manifest, measure_run,
+                                 expect_xclbin_sha256, timeout=timeout, poll_s=poll_s, ssh_binary=ssh_binary,
+                                 sleep=sleep, deadline_for=deadline_for)
 
+        batch = bool(getattr(builder, "lsf", None))
         if build_run:
             run_id = build_run
+        elif batch:
+            # The same name on the cluster and in the harness: a submit repeated
+            # after a lost answer finds the job the first one queued.
+            run_id = run_id or time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + uuid.uuid4().hex[:8]
+            step("build:submit", lambda: lsf.submit(builder, commit, base, run_id, timeout=timeout,
+                                                    ssh_binary=ssh_binary))
         else:
             # The controller names the run, so a submit repeated after a lost
             # answer attaches to the build the first one started.
@@ -425,7 +500,14 @@ def run_pipeline(
                 worker(builder, commit, request, ssh_binary=ssh_binary), f"submit on {builder.name}"))
             run_id = started["run_id"]
         record["run_id"] = run_id
-        built = step("build", lambda: poll(builder, commit, base, run_id, poll_s=poll_s, deadline=deadline_for(2),
+        queued = None
+        if batch:
+            queued = step("build:lsf", lambda: lsf.wait(builder, run_id, poll_s=poll_s, deadline=deadline_for(2),
+                                                        ssh_binary=ssh_binary, sleep=sleep, log=_log))
+        # After a job has ended its record cannot be live for long: a run still
+        # RUNNING is declared ORPHANED by the first status asked.
+        built = step("build", lambda: poll(builder, commit, base, run_id, poll_s=poll_s,
+                                           deadline=time.time() + 600 if batch else deadline_for(2),
                                            ssh_binary=ssh_binary, sleep=sleep, label="build"))
         seen = built.get("run") or {}
         wanted = {"candidate_id": manifest["candidate_id"], "target": manifest["target"], "mode": manifest["mode"],
@@ -435,6 +517,11 @@ def run_pipeline(
             raise PipelineError(f"run {run_id} on {builder.name} is not this candidate: "
                                 + ", ".join(f"{key} {got!r}, not {want!r}" for key, (got, want) in differs.items()))
         record["build"] = dict(_build_summary(built), run_id=run_id, host=builder.name)
+        if queued is not None:
+            record["build"]["lsf"] = queued
+            if built.get("status") != "PASS" and not record["build"].get("log_tail"):
+                # A job that ended before the run had a record, or was killed under it: its own output.
+                record["build"]["log_tail"] = lsf.log_tail(builder, run_id, ssh_binary=ssh_binary)
         if built.get("status") != "PASS":
             return finish(str(built.get("status")), "the build did not pass")
         if not want_board:
@@ -466,8 +553,47 @@ def run_pipeline(
         record["board"] = dict(_board_summary(measured), run_id=run_id, host=card.name,
                                attempt=asked.get("attempt"), attached=asked.get("attached"))
         return finish(str(measured.get("status")))
-    except (PipelineError, OSError, subprocess.SubprocessError, ValueError) as exc:
+    except (PipelineError, lsf.LsfError, OSError, subprocess.SubprocessError, ValueError) as exc:
         return finish("PIPELINE_FAIL", str(exc))
+
+
+def _measure_only(record, step, finish, card, commit, base, manifest, run_id, expect_xclbin_sha256, *,
+                  timeout, poll_s, ssh_binary, sleep, deadline_for) -> dict[str, Any]:
+    """run_pipeline's ``measure_run``: the board stage of an image built from another commit."""
+    record["run_id"] = run_id
+    # The image's build passed when that run was measured before; nothing is built here.
+    record["build"] = {"status": "PASS", "run_id": run_id, "reused": True, "host": None,
+                       "xclbin_sha256": expect_xclbin_sha256}
+    # The card server checks the manifest against the run it measures: the run's
+    # candidate, target and mode, and no source commit but the one it was built from.
+    measured_manifest = {k: v for k, v in manifest.items() if k != "source_commit"}
+    request = dict(base, manifest=measured_manifest, operation="measure", run_id=run_id, detach=True,
+                   allow_source_mismatch=True)
+    if timeout:
+        request["timeout"] = timeout
+    record["board_block_sha256"] = hashlib.sha256(json.dumps(manifest["board"], sort_keys=True).encode()).hexdigest()
+    asked = step("board:measure", lambda: _remote_value(
+        worker(card, commit, request, ssh_binary=ssh_binary), f"measure on {card.name}"))
+    if asked.get("attached"):
+        raise PipelineError(f"run {run_id} is already being measured on {card.name} (attempt {asked.get('attempt')}), "
+                            "by another request; measure again when it is done")
+    arch = manifest["board"].get("archbench")
+    arch_s = float(arch.get("timeout_s") or timeout or 0) if isinstance(arch, dict) else 0.0
+    measured = step("board", lambda: poll(card, commit, base, run_id, step="measure", poll_s=poll_s,
+                                          deadline=deadline_for(3, arch_s), ssh_binary=ssh_binary,
+                                          sleep=sleep, label="board"))
+    record["board"] = dict(_board_summary(measured), run_id=run_id, host=card.name,
+                           attempt=asked.get("attempt"), attached=False)
+    # A measurement that reached the points must say which image it ran and which
+    # checkout drove it, and they must be the ones asked for.
+    reached = measured.get("status") == "PASS" or record["board"].get("archbench")
+    got = record["board"].get("xclbin_sha256")
+    if expect_xclbin_sha256 and (got or reached) and got != expect_xclbin_sha256:
+        raise PipelineError(f"the card measured an image hashing {got}, not the expected {expect_xclbin_sha256}")
+    driven_by = (record["board"].get("software") or {}).get("commit")
+    if (driven_by or reached) and driven_by != commit:
+        raise PipelineError(f"the measurement was driven by {driven_by}, not this commit's checkout {commit}")
+    return finish(str(measured.get("status")))
 
 
 __all__ = ["PipelineError", "poll", "remote", "resolve_commit", "run_pipeline", "sync", "transfer", "worker"]

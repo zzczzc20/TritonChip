@@ -23,9 +23,18 @@ def flatten(out):
     raise TypeError(f'output of type {type(out).__name__}')
 
 
+# OCP FP8 operands are not upcast: torch._scaled_mm is defined on FP8
+# operands only, and torch's CPU kernel (ATen _scaled_mm_out_cpu_emulated)
+# widens them to binary32 exactly before a binary32 matmul -- the upcast
+# reference by another route. The FP8 points keep their FP8 tensors as
+# inputs rather than parameters, so module.float() never sees one.
+FP8 = (torch.float8_e4m3fn, torch.float8_e5m2)
+
+
 def _to_fp32(module, inputs, device):
     module = module.float().to(device)
-    ins = tuple(t.float().to(device) if t.is_floating_point() else t.to(device) for t in inputs)
+    ins = tuple(t.float().to(device) if t.is_floating_point() and t.dtype not in FP8 else t.to(device)
+                for t in inputs)
     return module, ins
 
 
@@ -36,7 +45,9 @@ def reference(point, seed, device='cpu'):
     Low-precision weights and inputs upcast exactly, so the reference
     computes the same mathematical function at higher precision, and the
     point's tolerance measures the platform's arithmetic, not the
-    reference's. TF32 is off for the duration (protocol: IEEE fp32 only).
+    reference's. FP8 operands stay FP8 (see _to_fp32): the reference of an
+    FP8 point is torch's own CPU _scaled_mm, whose output is the point's
+    out_dtype. TF32 is off for the duration (protocol: IEEE fp32 only).
     """
     m, ins = point.make(seed)
     m, ins = _to_fp32(m.eval(), ins, device)

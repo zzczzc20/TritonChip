@@ -45,10 +45,15 @@ def _hardware_identity(session):
         raise ValueError('backend cannot bound candidate launches')
     if getattr(session.dev, 'device_clock', False) is not True:
         raise ValueError('backend common-clock endpoints are disabled')
-    path = getattr(getattr(session.dev, 'link', None), 'xclbin', None)
-    if not path:
-        raise ValueError('loaded physical image identity unavailable')
-    image = _file_sha(path)
+    link = getattr(session.dev, 'link', None)
+    # A board relay's link names the image the card host loaded (its hello);
+    # a local link names the file, which is hashed here.
+    image = getattr(link, 'image_sha256', None)
+    if not image:
+        path = getattr(link, 'xclbin', None)
+        if not path:
+            raise ValueError('loaded physical image identity unavailable')
+        image = _file_sha(path)
     clock = from_environment(image)
     if not clock:
         raise ValueError('image-bound operating clock evidence required for tuning')

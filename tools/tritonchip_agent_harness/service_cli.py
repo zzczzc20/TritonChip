@@ -2,12 +2,21 @@
 """tnca-service: the agent's way to ask the evaluator for a measurement, within its budget.
 
     tnca-service budget                what is left
-    tnca-service submit score          the hidden validation set, in simulation: an aggregate
+    tnca-service submit score          the hidden validation set: an aggregate (in simulation, or on the
+                                       card when the task scores on the board)
     tnca-service submit fpga-quick     synthesis and timing of the whole device on the FPGA part
-    tnca-service submit fpga-slow      full link; optional validation-set board measurement
+    tnca-service submit fpga-slow      the card: a hardware change is first fully linked (a flow)
+    tnca-service submit flow           a task that scores on the board: a changed machine's image (a flow)
+    tnca-service submit score --message TEXT    on an island: a commit, with one line on what it changes
+    ... --prediction FILE   (score, flow) what you expect of this snapshot on the card, set beside what it measures
+    tnca-service archive               on an island: the commits you can see
+    tnca-service read-commit ID        on an island: one commit, as a patch against the base commit
     tnca-service status [ID]           one request, or all of them
     tnca-service result ID             a finished request's result
-    tnca-service wait ID [SECONDS]     wait for a request to finish, then print its result
+    tnca-service wait ID [SECONDS]     wait for a request to finish, then print its result; for a flow,
+                                       also returns when its placement is flagged (placement.warning)
+    tnca-service wait ID [SECONDS] --to-end    the same, through a placement warning
+    tnca-service abandon ID            stop a flow whose placement was flagged: not charged, recorded
 
 A request snapshots the working directory the way the final evaluation will:
 only changes under the task's design paths count. Requests run in the
@@ -49,17 +58,46 @@ def main(argv) -> int:
     cmd, rest = argv[0], argv[1:]
     if cmd == "budget":
         reply = call({"op": "budget"})
-    elif cmd == "submit" and len(rest) == 1:
-        reply = call({"op": "submit", "service": rest[0]})
+    elif cmd == "submit" and rest and len(rest) % 2 == 1 and all(
+            k in ("--message", "--prediction") for k in rest[1::2]):
+        request = {"op": "submit", "service": rest[0]}
+        for key, value in zip(rest[1::2], rest[2::2]):
+            if key == "--message":
+                request["message"] = value
+            else:
+                # What the agent expects of this snapshot on the card (2026-11-23): a JSON object, point id ->
+                # speedup over the base (and "score"), read here and sent as it is; the evaluator checks it.
+                try:
+                    with open(value, encoding="utf-8") as f:
+                        request["prediction"] = json.load(f)
+                except (OSError, ValueError) as exc:
+                    print(json.dumps({"error": f"--prediction {value}: {exc}"}), file=sys.stderr)
+                    return 2
+        reply = call(request)
+    elif cmd == "archive" and not rest:
+        reply = call({"op": "archive"})
+    elif cmd == "read-commit" and len(rest) == 1:
+        reply = call({"op": "read-commit", "id": rest[0]})
+        if reply.get("patch") is not None and not reply.get("error"):
+            # The patch as it is, for `git apply`; what it is goes to stderr.
+            print(json.dumps({k: v for k, v in reply.items() if k != "patch"}), file=sys.stderr)
+            sys.stdout.write(reply["patch"])
+            return 0
     elif cmd == "status":
         reply = call({"op": "status", "id": rest[0]} if rest else {"op": "status"})
     elif cmd == "result" and len(rest) == 1:
         reply = call({"op": "result", "id": rest[0]})
-    elif cmd == "wait" and rest:
+    elif cmd == "abandon" and len(rest) == 1:
+        reply = call({"op": "abandon", "id": rest[0]})
+    elif cmd == "wait" and [a for a in rest if a != "--to-end"]:
+        to_end = "--to-end" in rest
+        rest = [a for a in rest if a != "--to-end"]
         limit = time.time() + (float(rest[1]) if len(rest) > 1 else 3600.0)
         while True:
             reply = call({"op": "result", "id": rest[0]})
             if reply.get("state") not in ("queued", "running") or time.time() > limit:
+                break
+            if not to_end and (reply.get("placement") or {}).get("warning"):
                 break
             time.sleep(15)
     else:

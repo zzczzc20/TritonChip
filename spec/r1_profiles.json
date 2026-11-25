@@ -544,6 +544,60 @@
         "bench_args": ["+allroles"],
         "what": "the run-2 core bench reads back this profile's capabilities and resources"
       }
+    },
+    "core-vrf-sync-v5-x8-g2c4-dp-board": {
+      "target_file": "tnca-sim-vrf-v5-x8-g2c4-dp-board.json",
+      "executes_artifacts_of": [],
+      "description": "core-vrf-sync-v5-x8-g2c4-dp as the R41 run-2 board image built it (evidence/r41/hbm_bw/g4/run2/image.tcl, corrected candidate 791b8af2): one word-path load/store unit instead of the pair (LSU_INFLIGHT 1, the author's 2026-10-29 trade-off for the SLR budget; copy fp32 +9.8 %, decode step +3.3 %, prefill +2.3 %, attention prefill +9..20 % against LSU_INFLIGHT 2), the G2 FMA rebuild (FMA_IMPL 1) and the registered matrix operand capture (MTX_VRF_REG 1). Every instruction, format and capability is core-vrf-sync-v5-x8-g2c4-dp's, so its artifacts run unchanged; only cycle counts and resources differ. This is the per-core profile of spec/devices/u280-3core-r41.json, the agent harness's R41 starting machine; the author's -dp profile is left as it is.",
+      "num_cores": 1,
+      "topology": "single",
+      "compiler": {
+        "snapshot_fence": true,
+        "why": "The run-2 images of this profile build the line-wide transfer engine (TENSOR_LINE): its TensorMap snapshot is one line request beside the LSU, so the context's map stores must be fenced before td.load (R41 G4, evidence/r41/hbm_bw/G4_DESIGN.md sec 9.6)."
+      },
+      "elaboration": {
+        "NUM_RCTX": 4,
+        "RCTX_W": 2,
+        "VREGS_PER_RCTX": 64,
+        "PHYS_VREGS": 256,
+        "HAS_SFU": 1,
+        "HAS_ATOMICS": 1,
+        "HAS_SYS_ATOMICS": 0,
+        "RSLICE": 1,
+        "HAS_TENSOR_XPOSE": 2,
+        "RPAIR": 1,
+        "BAR_N": 8,
+        "BAR_W": 3,
+        "BAR_EPOCH_W": 38,
+        "MAC_DP": 1,
+        "MAC_CUTS": 29
+      },
+      "implementation": {
+        "vector_register_file": "banked",
+        "banks": 4,
+        "ports_per_bank": "1 read, 1 write",
+        "read_latency_cycles": 1,
+        "unwritten_reads": "zero, from per-lane valid bits",
+        "contract": "spec/r3v2_contract.json",
+        "rtl_parameters": {
+          "USE_BANKED_VRF": 1,
+          "VRF_BYPASS": 1,
+          "FE_NOBUBBLE": 1,
+          "VRF_PREFETCH": 1,
+          "RCTX_SWITCH": 2,
+          "LSU_INFLIGHT": 1,
+          "FPU_OVERLAP": 1,
+          "MTX_ABUF": 1,
+          "FMA_IMPL": 1,
+          "MTX_VRF_REG": 1
+        }
+      },
+      "platform_binding": {
+        "kind": "simulation",
+        "bench": "sim/build/tb_core_run2.vvp",
+        "bench_args": ["+allroles"],
+        "what": "the run-2 core bench reads back this profile's capabilities, which are -dp's; the board image's resources are stated by the device description that names this profile"
+      }
     }
   },
   "supported_topologies": {

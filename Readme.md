@@ -84,8 +84,8 @@ y = torch.compile(model, fullgraph=True)(x)
 ArchBench runs any benchmark point on TNCA or a GPU under one timing protocol:
 
 ```sh
-python -m archbench.run --platform tnca --point op.matmul/tiny/fp16-m16-k32-n16 --out tnca.jsonl
-python -m archbench.run --platform gpu  --point op.matmul/tiny/fp16-m16-k32-n16 --out gpu.jsonl
+python -m archbench.run --platform tnca --point POINT_ID --out tnca.jsonl
+python -m archbench.run --platform gpu  --point POINT_ID --out gpu.jsonl
 ```
 
 The [tutorial](tutorial/README.md) walks through compiling kernels, reading

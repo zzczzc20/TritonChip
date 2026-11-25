@@ -44,7 +44,12 @@ from .common import SCHEMA2, base_record, classify, compare, error_text, referen
 
 EVIDENCE = {'sim-file': 'measured-rtl', 'sim-socket': 'measured-rtl',
             'fpga-u50-sim': 'measured-rtl', 'fpga-u50': 'measured-board',
-            'fpga-u280': 'measured-board', 'fpga-u280-multicore': 'measured-board'}
+            'fpga-u280': 'measured-board', 'fpga-u280-multicore': 'measured-board',
+            'fpga-u280-multicore-relay': 'measured-board'}
+# The multicore board reached through a card session's board relay
+# (python/tnca/backends/board_relay.py): the same backend and image, so the
+# same clock and launch map; its image identity is the relay's, not a file's.
+RELAY = 'fpga-u280-multicore-relay'
 
 # The clock a cycle count may be converted with, by backend. Only a board
 # has one; a simulated cycle has no duration (Stage 1 rule).
@@ -62,11 +67,11 @@ BOARD_CLOCK_HZ = {'fpga-u50': 37.5e6,
                   # host-timed spin kernels gives 100.01-100.07 MHz
                   # (flow/fpga/measure_clock.py). Earlier the same day: /2 of
                   # 150, 75 MHz; until R38's timing work, /4, 37.5 MHz.
-                  'fpga-u280': 100e6, 'fpga-u280-multicore': 100e6}
+                  'fpga-u280': 100e6, 'fpga-u280-multicore': 100e6, RELAY: 100e6}
 # How each board's clock is set (a configuration field of protocol-2 records:
 # two runs at different clock policies are different configurations).
 BOARD_CLOCK_POLICY = {'fpga-u50': '150MHz/4', 'fpga-u280': '100MHz-undivided',
-                      'fpga-u280-multicore': '100MHz-undivided'}
+                      'fpga-u280-multicore': '100MHz-undivided', RELAY: '100MHz-undivided'}
 
 # The device heap a launch's argument storages must fit: Session's default
 # heap, 0x20000..0x80000, of the 512 KiB memory the simulator and the U50
@@ -103,6 +108,12 @@ def device_id(profile, backend, backend_kwargs, *, full=False):
     runs with the same profile name on different RTL must not be merged."""
     import hashlib
     try:
+        if backend == RELAY:
+            # The image the relay serves, as its hello names it: the file is on
+            # the card host, and the session there checked its sha256.
+            from tnca.backends.board_relay import relay_identity
+            sha = relay_identity(backend_kwargs['address'], backend_kwargs.get('label'))['xclbin_sha256']
+            return sha if full else f'xclbin:{sha[:16]}'
         xclbin = (backend_kwargs or {}).get('xclbin')
         if xclbin:
             h = hashlib.sha256()
@@ -131,6 +142,7 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
     # half-initialised module with no DriverBase subclass in it yet.
     import triton                                            # noqa: F401
     import tnca.inductor
+    import tnca.inductor_guard     # the evaluator's check, from the platform (2026-11-11)
     from tnca.triton_backend.driver import backend_choice, launch_log
     from torch._inductor.utils import run_and_get_code
 
@@ -206,8 +218,8 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
         return rec
     wall = time.monotonic() - t0
 
-    rec['fallbacks'] = tnca.inductor.host_fallbacks(code)
-    rec['kernels'] = tnca.inductor.triton_kernels(code)
+    rec['fallbacks'] = tnca.inductor_guard.host_fallbacks(code)
+    rec['kernels'] = tnca.inductor_guard.triton_kernels(code)
     # The launches the generated wrapper makes. Anything beyond them -- an
     # autotuner timing candidates by launching them -- is not the graph's
     # work, and a measurement that contains it is refused below.
@@ -286,7 +298,7 @@ def run(point, *, profile='core-sim', opt_level=2, seed=0, counters=False, warmu
 
     L, binding, terms = tnca_bound(point, profile)
     rec['bound'] = dict(version=VERSION, unit='cycles', value=L, binding=binding, terms=terms,
-                        peak=tnca_peak(profile)['rates'])
+                        peak=tnca_peak(profile, point.dtype)['rates'])
     if rec['status'] == 'pass' and cycles:
         rec['eta'] = L / cycles
         if rec['eta'] > 1:
@@ -483,7 +495,7 @@ def _provenance(profile, backend, backend_kwargs, plat, log, clock):
                              programs=len(e.get('program_cycles') or []), artifact=e.get('artifact')))
         seen.add(e['kernel'])
     launch_map = dict(timing='serial-grid', cores=[0], launches=launches)
-    if backend == 'fpga-u280-multicore':
+    if backend in ('fpga-u280-multicore', RELAY):
         from tnca.triton_backend.driver import _Sessions
         session = _Sessions.get(profile)
         if not session.physical_grid:

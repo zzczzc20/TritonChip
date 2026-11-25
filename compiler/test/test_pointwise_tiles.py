@@ -7,6 +7,10 @@ the same arithmetic in Python. Covers the modes (1: tensor-engine tiles where
 legal; 2: vector loads and stores only; 3: streamed tensor-engine tiles), several blocks, a masked tail and an
 exact multiple, and the refusals that keep the default lowering.
 
+A masked tail here ends on a vector boundary (n a multiple of vlen) but inside
+a tile. A tail that ends inside a vector is refused (refusal 34, from R41-F2's
+l16, the base of R41-F3): the narrow configuration takes it.
+
 Needs Triton importable and the RTL bench (skips otherwise, like
 test_triton_e2e).
 """
@@ -28,6 +32,8 @@ from tnca_cc.codegen import CodeGen  # noqa: E402
 from tnca_cc.frontend import TTIRImporter, Unsupported  # noqa: E402
 
 SENTINEL = 0xdeadbeef
+# A tail length that ends on a 16-lane vector boundary but inside a tile.
+TAIL = 48
 # Unaligned on purpose (4 bytes past an 8-byte boundary): the tensor engine's
 # map base is rounded down and the coordinate moved up (ISA sec 9E.2).
 X, Y, O = 0x10004, 0x11004, 0x12004
@@ -91,7 +97,7 @@ class TestPointwiseTiles(unittest.TestCase):
         import kernels_triton as K
         for mode in (1, 2):
             for block in (64, 256):
-                for n in (40, block):
+                for n in (TAIL, block):
                     with self.subTest(mode=mode, block=block, n=n):
                         self._run(K.add_kernel, 'add_kernel', lambda i: xv(i) + yv(i), block, n, mode)
 
@@ -99,7 +105,7 @@ class TestPointwiseTiles(unittest.TestCase):
         if not H.available():
             self.skipTest(H.why_unavailable())
         import kernels_triton as K
-        self._run(K.mul_add_kernel, 'mul_add_kernel', lambda i: xv(i) * yv(i) + xv(i), 128, 100, 1)
+        self._run(K.mul_add_kernel, 'mul_add_kernel', lambda i: xv(i) * yv(i) + xv(i), 128, 112, 1)
 
     def test_grouped_loads_unmasked(self):
         """Mode 2 issues the loads of two tiles before computing the first
@@ -118,7 +124,7 @@ class TestPointwiseTiles(unittest.TestCase):
             self.skipTest(H.why_unavailable())
         import kernels_triton as K
         for block in (256, 512):
-            for n in (200, block):
+            for n in (208, block):
                 with self.subTest(block=block, n=n):
                     imp = self._run(K.add_kernel, 'add_kernel', lambda i: xv(i) + yv(i), block, n, 3)
                     self.assertGreaterEqual(imp.tiled_pointwise_plan['ring'], 2)
@@ -134,7 +140,7 @@ class TestPointwiseTiles(unittest.TestCase):
             {'BLOCK': 256})
         imp = TTIRImporter(self.target, 'add_kernel', scratch_addr=0x3000, index_opt=True)
         imp.tiled_pointwise = 3
-        imp.run(mod, 'add_kernel', {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': 40},
+        imp.run(mod, 'add_kernel', {'x_ptr': X, 'y_ptr': Y, 'o_ptr': O, 'n': TAIL},
                 param_names=triton_bridge.param_names(__import__('kernels_triton').add_kernel))
         self.assertIsNotNone(imp.tiled_pointwise_plan)
         self.assertEqual(imp.tiled_pointwise_plan['ring'], 0)
@@ -142,13 +148,27 @@ class TestPointwiseTiles(unittest.TestCase):
 
     def test_plan_shape(self):
         import kernels_triton as K
-        imp, _ = self._import(K.add_kernel, 'add_kernel', 256, 40, 1)
+        imp, _ = self._import(K.add_kernel, 'add_kernel', 256, TAIL, 1)
         plan = imp.tiled_pointwise_plan
         self.assertEqual(plan['width'], 256)
         self.assertEqual(plan['accesses'], ['load', 'load', 'store'])
         self.assertTrue(plan['double_buffer'])
-        imp, _ = self._import(K.add_kernel, 'add_kernel', 256, 40, 2)
+        imp, _ = self._import(K.add_kernel, 'add_kernel', 256, TAIL, 2)
         self.assertEqual(imp.tiled_pointwise_plan['accesses'], ['vload', 'vload', 'vstore'])
+
+    def test_tail_inside_a_vector_is_refused(self):
+        """A store whose bound ends inside a vector is not tiled (refusal 34):
+        a 64-lane block keeps the default lowering, and a widened block is
+        refused so Inductor keeps its narrow configuration."""
+        import kernels_triton as K
+        for mode in (1, 2, 3):
+            with self.subTest(mode=mode, block=64):
+                imp, _ = self._import(K.add_kernel, 'add_kernel', 64, 40, mode)
+                self.assertIsNone(imp.tiled_pointwise_plan)
+                self.assertEqual(imp.tiled_pointwise_refused, 34)
+            with self.subTest(mode=mode, block=256):
+                with self.assertRaisesRegex(Unsupported, 'refusal 34'):
+                    self._import(K.add_kernel, 'add_kernel', 256, 40, mode)
 
     def test_option_off_keeps_the_default_lowering(self):
         import kernels_triton as K

@@ -297,15 +297,23 @@ def parent(a):
             (run_dir/d).mkdir(parents=True, exist_ok=True)
         env = {k: v for k, v in os.environ.items() if not k.startswith(('TNCA_', 'TRITON_', 'TORCHINDUCTOR_'))
                or k in ('TNCA_CACHE', 'TNCA_DRAM_PATH', 'TNCA_RAMULATOR2_CONFIG')}  # RTL simulator cache; DRAM path
-        env.update(HARNESS)
-        env['TNCA_PROFILE'] = a.profile
-        if a.dataset:   # the board record's knobs and nothing else
-            env.update(TNCA_DEADLINE=RUNTIME['TNCA_DEADLINE'], TNCA_HOST_TIMEOUT=RUNTIME['TNCA_HOST_TIMEOUT'])
+        if a.evaluator_env:
+            # The agent harness evaluator's environment (align/record_rtl.py --device records the RTL so):
+            # the product's defaults for every knob, nothing of HARNESS, RUNTIME or B40N; the profile, the
+            # active cores and the host timeout are all it sets.
+            env.update(TNCA_PROFILE=a.profile, TNCA_HOST_TIMEOUT=f'{a.timeout:g}', PYTHONDONTWRITEBYTECODE='1',
+                       TNCA_COMPILE_CACHE_DIR=str(run_dir/'tnca-inductor'))
         else:
-            env.update(RUNTIME)
-        env.update(knobs)
+            env.update(HARNESS)
+            env['TNCA_PROFILE'] = a.profile
+            if a.dataset:   # the board record's knobs and nothing else
+                env.update(TNCA_DEADLINE=RUNTIME['TNCA_DEADLINE'], TNCA_HOST_TIMEOUT=RUNTIME['TNCA_HOST_TIMEOUT'])
+            else:
+                env.update(RUNTIME)
+            env.update(knobs)
+            env['TNCA_TORCH_DEVICE'] = a.torch_device
         env.update(dict(kv.split('=', 1) for kv in a.env or []))
-        env.update(TNCA_BACKEND=a.backend, TNCA_TORCH_DEVICE=a.torch_device,
+        env.update(TNCA_BACKEND=a.backend,
                    PYTHONPATH=os.pathsep.join(str(x) for x in (root, root/'python', root/'compiler/python',
                                                               root/'tools/asm', HERE)),
                    TRITON_CACHE_DIR=str(run_dir/'triton_cache'), TRITON_HOME=str(run_dir/'triton_home'),
@@ -409,6 +417,9 @@ def main():
                     help='run the cold call untimed when a steady call is measured (timeline memory only)')
     ap.add_argument('--env', action='append', help='KEY=VALUE set for every run after the knobs (e.g. TNCA_RTL_MEM_PORTS=3)')
     ap.add_argument('--dram-path', choices=('fast', 'slow'), help='TNCA_DRAM_PATH for the model (overrides dram_path)')
+    ap.add_argument('--evaluator-env', action='store_true',
+                    help='the agent harness evaluator\'s environment: product defaults for every knob, no '
+                         'HARNESS/RUNTIME/B40N, no TNCA_TORCH_DEVICE (pair with --timed 0, as the evaluator runs)')
     ap.add_argument('--jobs', type=int, default=4)
     ap.add_argument('--timeout', type=float, default=7200)
     ap.add_argument('--warmup', type=int, default=0)

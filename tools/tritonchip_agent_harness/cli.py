@@ -17,7 +17,7 @@ if __package__ in (None, ""):
     from tritonchip_agent_harness.siteconfig import SiteError, credential_status, load_site
     from tritonchip_agent_harness.workspace import WorkspaceError
 else:
-    from . import certify, doctor, loop, smoke, stats
+    from . import skills, certify, doctor, loop, smoke, stats
     from .task import TaskError, load_task
     from .provider import ProviderError
     from .siteconfig import SiteError, credential_status, load_site
@@ -42,13 +42,25 @@ def main(argv=None) -> int:
     s = sub.add_parser("smoke", help="one trivial request per account, through the gateway")
     s.add_argument("--account", action="append", help="account label; default every account")
     s.add_argument("--mode", choices=("offline", "open"), default="offline")
+    s.add_argument("--probe", choices=("ok", "skills"), default="ok",
+                   help="skills: ask the CLI to list its skills; passes when it names every skill the harness provides")
     s.add_argument("--json", action="store_true")
     t = sub.add_parser("run-task", help="one task run: workspace, agent, gate, evaluator, record")
     t.add_argument("task", type=Path, help="a task package directory or its task.json")
     t.add_argument("--agent", required=True, help="an account label, or noop / reference")
     t.add_argument("--mode", choices=("offline", "open"), default="offline")
     t.add_argument("--model", help="override the account's main model for this run")
+    t.add_argument("--name", help="the run's own name (e.g. R41-F2): the run id becomes NAME-<stamp> and the "
+                                  "record's `name` says it")
     t.add_argument("--budget-seconds", type=int, help="override the task's wall-clock budget (the prompt says it too)")
+    t.add_argument("--known-busy", action="append", default=[], metavar="BUILD_MACHINE",
+                   help="a build machine the operator knows is busy with a job of their own: the run starts anyway, "
+                        "its record says so, and its flows wait for that machine as for any busy one")
+    which_skills = t.add_mutually_exclusive_group()
+    which_skills.add_argument("--skills", metavar="NAME[,NAME...]",
+                              help="the skills this run gets, instead of the task's own set (the record says so)")
+    which_skills.add_argument("--no-skills", action="store_true",
+                              help="run without any skill (a pilot's control arm; the record says so)")
     t.add_argument("--json", action="store_true")
     k = sub.add_parser("certify", help="build a final candidate's machine at the target's clock and run its points on "
                                        "the card (on the controller: no site configuration)")
@@ -63,9 +75,20 @@ def main(argv=None) -> int:
     k.add_argument("--build-host")
     k.add_argument("--board-host")
     k.add_argument("--build-run", help="attach to the pipeline's build already started (its run id)")
+    k.add_argument("--base-image", type=Path, help="the base's certification record: a candidate that kept the "
+                   "base's machine runs on that image, on the card server that holds it")
     k.add_argument("--work", type=Path, help="where the tree is built (default: beside the record)")
     k.add_argument("--yes", action="store_true", help="run the pipeline; without it, only build the tree and say what would run")
+    k.add_argument("--again", action="store_true",
+                   help="with --run: judge the run's after-run certification again under the task's board_cycles rule, "
+                        "from the rows and board checks it stored (no build, no card); written to "
+                        "certification-again.json beside run.json, which is left as it was")
     k.add_argument("--json", action="store_true")
+    cb = sub.add_parser("carry-baseline", help="copy the base's kept simulation and card results to the task's "
+                                               "platform commit, when it differs from FROM only in files no "
+                                               "measurement reads (carry.MEASUREMENT_NEUTRAL)")
+    cb.add_argument("task", type=Path, help="a task package directory or its task.json")
+    cb.add_argument("--from-platform", required=True, help="the platform commit the kept results were measured with")
     st = sub.add_parser("stats", help="runs, tokens and server occupancy per agent framework, as JSON "
                                       "(no point ids, no per-point results; no site configuration)")
     st.add_argument("paths", nargs="+", type=Path, help="run directories, or directories that hold them")
@@ -77,6 +100,17 @@ def main(argv=None) -> int:
             print(json.dumps(stats.summarise(args.paths), indent=2, sort_keys=True))
             return 0
         site = load_site(args.site)
+        if args.command == "carry-baseline":
+            from . import carry
+            if site.repository is None:
+                raise SiteError("site.json has no `repository`")
+            try:
+                value = carry.carry(site.state_dir, site.repository, load_task(args.task), args.from_platform)
+            except carry.CarryError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                return 2
+            print(json.dumps(value, indent=2, sort_keys=True))
+            return 0
         if args.command == "credentials":
             value = {"ok": None, "accounts": [credential_status(a) for a in site.accounts.values()]}
             value["ok"] = all(a["ok"] for a in value["accounts"])
@@ -93,9 +127,21 @@ def main(argv=None) -> int:
             task = load_task(args.task)
             if args.budget_seconds:
                 task = dataclasses.replace(task, wall_seconds=args.budget_seconds)
-            value = loop.run_task(site, task, args.agent, args.mode, args.model)
+            chosen = [] if args.no_skills else ([s for s in args.skills.split(",") if s] if args.skills else None)
+            value = loop.run_task(site, task, args.agent, args.mode, args.model, skills=chosen, name=args.name,
+                                  known_busy=args.known_busy)
             value["ok"] = value.get("validity") == "valid"
-            if not args.json:
+            if not args.json and value.get("islands"):
+                print(f"{value['run_id']}: validity={value['validity']} islands={len(value['islands']['islands'])}")
+                for row in value["islands"]["islands"]:
+                    print(f"  island {row['island']}: {row['commits']} commits, stop={row['stop_reason']}, "
+                          f"restarts={row['restarts']}, resume={row['resume_mode']}")
+                for c in value.get("champions") or []:
+                    ev = c.get("evaluation") or {}
+                    cert = (c.get("certification") or {}).get("verdict")
+                    print(f"  champion {c['rank']} ({c['id']}, {c['cell']}): final "
+                          f"{(ev.get('final') or {}).get('speedup_geomean')}, card {cert}")
+            elif not args.json:
                 ev = value.get("evaluation") or {}
                 print(f"{value['run_id']}: validity={value['validity']} gate={value['gate']['verdict']} "
                       f"taken={value['gate']['taken']}")
@@ -111,7 +157,7 @@ def main(argv=None) -> int:
                 print(f"  record: {value['run_dir']}/run.json")
         else:
             labels = args.account or list(site.accounts)
-            value = {"runs": [smoke.run(site, label, args.mode) for label in labels]}
+            value = {"runs": [smoke.run(site, label, args.mode, args.probe) for label in labels]}
             value["ok"] = all(r["ok"] for r in value["runs"])
             if not args.json:
                 for r in value["runs"]:
@@ -120,15 +166,35 @@ def main(argv=None) -> int:
         if args.json:
             print(json.dumps(value, indent=2, sort_keys=True))
         return 0 if value["ok"] else 1
-    except (SiteError, ProviderError, TaskError, certify.CertifyError, WorkspaceError, OSError) as exc:
+    except (SiteError, ProviderError, TaskError, skills.SkillError, certify.CertifyError, WorkspaceError, OSError) as exc:
         print(f"agent-harness: {exc}", file=sys.stderr)
         return 2
 
 
 def _certify(args) -> int:
+    if args.again:
+        if args.run is None:
+            raise certify.CertifyError("--again judges a run's stored certification again: name the run with --run")
+        value = certify.rejudge_run(load_task(args.task), args.run)
+        if args.json:
+            print(json.dumps(value, indent=2, sort_keys=True))
+        else:
+            # Verdicts and aggregates only: the rows name the final points (they stay in the record).
+            for c in value["certifications"]:
+                cyc = c.get("cycles_on_card") or {}
+                print(f"  {c['rank']} ({c['id']}): {c['was']} -> {c['verdict']}"
+                      + (f"; board/sim geomean {cyc['board_over_simulation_geomean']} over {cyc['points']} points"
+                         if cyc.get("points") else "")
+                      + ("" if c["judged_again"] else f" (not judged again{': ' + c['note'] if c.get('note') else ''})"))
+            result = value["result"]
+            print(f"{value['run_id']} under board_cycles={value['board_cycles']}: "
+                  + (f"certified, champion {result['rank']} ({result['id']})" if result else "nothing certified"))
+            print(f"  record: {value['output']}")
+        return 0 if value["result"] else 1
     value = certify.certify(args.repo.resolve(), load_task(args.task), run_dir=args.run, baseline=args.base,
                             hosts=args.hosts, build_host=args.build_host, board_host=args.board_host,
-                            work=args.work, yes=args.yes, build_run=args.build_run)
+                            work=args.work, yes=args.yes, build_run=args.build_run,
+                            base_image_record=args.base_image)
     if args.json:
         print(json.dumps(value, indent=2, sort_keys=True))
     elif value.get("dry_run"):

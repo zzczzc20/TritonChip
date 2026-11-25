@@ -1,0 +1,5698 @@
+{
+ "aggregates": {
+  "aligned": 0,
+  "diverged": 27,
+  "median_abs_cycle_error": 0.09601667067404024,
+  "missing": 0,
+  "p95_abs_cycle_error": 1.4130604418156067,
+  "points": 27
+ },
+ "options": {
+  "data": true,
+  "order_only": true
+ },
+ "points": {
+  "model.gpt2_block_tiny_fp16-d64-h4-b1-s16": {
+   "aligned_launches": 0,
+   "cycle_error": 0.7406970207982012,
+   "cycles_a": 462540,
+   "cycles_b": 805142,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 155,
+   "launches_a": 155,
+   "launches_b": 270,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": {
+     "launch_count_a": 155,
+     "launch_count_b": 270
+    },
+    "request": {
+     "a": {
+      "addr": "000000000003a808",
+      "amo": 0,
+      "be": null,
+      "cycle": 108,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "000000000003a810",
+      "amo": 0,
+      "be": null,
+      "cycle": 137,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 400,
+     "count_b": 400,
+     "index": 7,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 7,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 56,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "model.llama_decode_tiny_fp16-b1-p16": {
+   "aligned_launches": 0,
+   "cycle_error": 1.4130604418156067,
+   "cycles_a": 616411,
+   "cycles_b": 1487437,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 163,
+   "launches_a": 163,
+   "launches_b": 340,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": {
+     "launch_count_a": 163,
+     "launch_count_b": 340
+    },
+    "request": {
+     "a": {
+      "addr": "0000000000057b00",
+      "amo": 0,
+      "be": "ff",
+      "cycle": 117,
+      "wdata": "00000000000554c0",
+      "we": 1
+     },
+     "b": {
+      "addr": "0000000000057700",
+      "amo": 0,
+      "be": "ff",
+      "cycle": 137,
+      "wdata": "00000000000554c0",
+      "we": 1
+     },
+     "count_a": 1982,
+     "count_b": 638,
+     "index": 8,
+     "launch": 27
+    },
+    "response": {
+     "a": {
+      "latency": 11,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 68,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "model.llama_prefill_tiny_fp16-b1-s16": {
+   "aligned_launches": 0,
+   "cycle_error": 3.436018222890669,
+   "cycles_a": 503323,
+   "cycles_b": 2232750,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 148,
+   "launches_a": 148,
+   "launches_b": 564,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": {
+     "launch_count_a": 148,
+     "launch_count_b": 564
+    },
+    "request": {
+     "a": {
+      "addr": "000000000005d810",
+      "amo": 0,
+      "be": null,
+      "cycle": 182,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "000000000005d818",
+      "amo": 0,
+      "be": null,
+      "cycle": 221,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 280,
+     "count_b": 280,
+     "index": 11,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 11,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 19,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "model.mlp_tiny_fp16-t16-d64": {
+   "aligned_launches": 0,
+   "cycle_error": -0.20981094480157506,
+   "cycles_a": 337256,
+   "cycles_b": 266496,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 46,
+   "launches_a": 46,
+   "launches_b": 46,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "000000000003d600",
+      "amo": 0,
+      "be": null,
+      "cycle": 350,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "000000000003d520",
+      "amo": 0,
+      "be": null,
+      "cycle": 887,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 1448,
+     "count_b": 296,
+     "index": 24,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 9,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 62,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "model.resnet_block_tiny_fp32-n1-c8-hw8": {
+   "aligned_launches": 0,
+   "cycle_error": -0.12825734557392005,
+   "cycles_a": 859327,
+   "cycles_b": 749112,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 29,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 39,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 54,
+   "launches_a": 54,
+   "launches_b": 54,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000023900",
+      "amo": 0,
+      "be": "ff",
+      "cycle": 105,
+      "wdata": "0000000000022c80",
+      "we": 1
+     },
+     "b": {
+      "addr": "0000000000023600",
+      "amo": 0,
+      "be": "ff",
+      "cycle": 126,
+      "wdata": "0000000000022c80",
+      "we": 1
+     },
+     "count_a": 980,
+     "count_b": 916,
+     "index": 6,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 29,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 56,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.add_tiny_fp16-n1000": {
+   "aligned_launches": 0,
+   "cycle_error": -0.09601667067404024,
+   "cycles_a": 24954,
+   "cycles_b": 22558,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 29,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 37,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 58,
+   "launches_a": 58,
+   "launches_b": 58,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000021820",
+      "amo": 0,
+      "be": null,
+      "cycle": 133,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000022000",
+      "amo": 0,
+      "be": null,
+      "cycle": 180,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 60,
+     "count_b": 60,
+     "index": 12,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 30,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 13,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.add_tiny_fp32-n256": {
+   "aligned_launches": 0,
+   "cycle_error": -0.08856428477431241,
+   "cycles_a": 15198,
+   "cycles_b": 13852,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 36,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 29,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 37,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000020c40",
+      "amo": 0,
+      "be": null,
+      "cycle": 137,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000021000",
+      "amo": 0,
+      "be": null,
+      "cycle": 180,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 108,
+     "count_b": 108,
+     "index": 16,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 36,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 19,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.argmax_tiny_fp16-r2-v256": {
+   "aligned_launches": 0,
+   "cycle_error": -0.07855432675863641,
+   "cycles_a": 17542,
+   "cycles_b": 16164,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 28,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000020460",
+      "amo": 0,
+      "be": null,
+      "cycle": 246,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020660",
+      "amo": 0,
+      "be": null,
+      "cycle": 271,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 136,
+     "count_b": 136,
+     "index": 12,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 31,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 13,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.attention_decode_tiny_fp16-b1-h2-l16-d16": {
+   "aligned_launches": 0,
+   "cycle_error": 0.23683147223038495,
+   "cycles_a": 54448,
+   "cycles_b": 67343,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 28,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 76,
+   "launches_a": 76,
+   "launches_b": 76,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000020d00",
+      "amo": 0,
+      "be": "f0",
+      "cycle": 487,
+      "wdata": "be80728500000000",
+      "we": 1
+     },
+     "b": {
+      "addr": "0000000000020d08",
+      "amo": 0,
+      "be": "0f",
+      "cycle": 408,
+      "wdata": "00000000bd086730",
+      "we": 1
+     },
+     "count_a": 48,
+     "count_b": 48,
+     "index": 45,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 28,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 56,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.attention_prefill_tiny_fp16-b1-h2-s16-d16": {
+   "aligned_launches": 0,
+   "cycle_error": 0.05212719902396788,
+   "cycles_a": 152454,
+   "cycles_b": 160401,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 35,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 118,
+   "launches_a": 118,
+   "launches_b": 118,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000022008",
+      "amo": 0,
+      "be": null,
+      "cycle": 136,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000021440",
+      "amo": 0,
+      "be": null,
+      "cycle": 173,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 56,
+     "count_b": 56,
+     "index": 7,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 30,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 7,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.bmm_tiny_fp16-b2-m16-k16-n16": {
+   "aligned_launches": 0,
+   "cycle_error": 0.03117541766109785,
+   "cycles_a": 20112,
+   "cycles_b": 20739,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000021900",
+      "amo": 0,
+      "be": null,
+      "cycle": 187,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000021818",
+      "amo": 0,
+      "be": null,
+      "cycle": 739,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 275,
+     "count_b": 83,
+     "index": 11,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 34,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 19,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.conv2d_tiny_fp32-n1-cin4-h8-w8-cout8": {
+   "aligned_launches": 0,
+   "cycle_error": -0.22039691289966923,
+   "cycles_a": 444430,
+   "cycles_b": 346479,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 38,
+   "launches_a": 38,
+   "launches_b": 38,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000021800",
+      "amo": 0,
+      "be": "ff",
+      "cycle": 112,
+      "wdata": "0000000000021080",
+      "we": 1
+     },
+     "b": {
+      "addr": "0000000000021600",
+      "amo": 0,
+      "be": "ff",
+      "cycle": 139,
+      "wdata": "0000000000021080",
+      "we": 1
+     },
+     "count_a": 788,
+     "count_b": 724,
+     "index": 6,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 30,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 62,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.cumsum_tiny_fp32-r4-c64": {
+   "aligned_launches": 0,
+   "cycle_error": -0.09676831490705869,
+   "cycles_a": 16462,
+   "cycles_b": 14869,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 28,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000020900",
+      "amo": 0,
+      "be": null,
+      "cycle": 201,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020a00",
+      "amo": 0,
+      "be": null,
+      "cycle": 216,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 264,
+     "count_b": 264,
+     "index": 16,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 31,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 13,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.embedding_tiny_fp16-v256-d64-t16": {
+   "aligned_launches": 0,
+   "cycle_error": -0.044533827681213646,
+   "cycles_a": 117596,
+   "cycles_b": 112359,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 58,
+   "launches_a": 58,
+   "launches_b": 58,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000030920",
+      "amo": 0,
+      "be": "ff",
+      "cycle": 3262,
+      "wdata": "38db403ac0ac3840",
+      "we": 1
+     },
+     "b": {
+      "addr": "0000000000030940",
+      "amo": 0,
+      "be": "ff",
+      "cycle": 3268,
+      "wdata": "3a7aba03bf353515",
+      "we": 1
+     },
+     "count_a": 52,
+     "count_b": 52,
+     "index": 40,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 30,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 56,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.gelu_tanh_tiny_fp16-n256": {
+   "aligned_launches": 0,
+   "cycle_error": -0.060885934466733335,
+   "cycles_a": 16999,
+   "cycles_b": 15964,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 28,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000020620",
+      "amo": 0,
+      "be": "ff",
+      "cycle": 643,
+      "wdata": "38fd367bace3afa4",
+      "we": 1
+     },
+     "b": {
+      "addr": "0000000000020600",
+      "amo": 0,
+      "be": "ff",
+      "cycle": 631,
+      "wdata": "b09dae6eb09ab0b2",
+      "we": 1
+     },
+     "count_a": 40,
+     "count_b": 40,
+     "index": 24,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 32,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 13,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.gemv_tiny_fp16-k64-n64": {
+   "aligned_launches": 0,
+   "cycle_error": -0.07578006320825549,
+   "cycles_a": 57271,
+   "cycles_b": 52931,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 36,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 35,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000024700",
+      "amo": 0,
+      "be": "ff",
+      "cycle": 117,
+      "wdata": "0000000000022180",
+      "we": 1
+     },
+     "b": {
+      "addr": "0000000000024300",
+      "amo": 0,
+      "be": "ff",
+      "cycle": 137,
+      "wdata": "0000000000022180",
+      "we": 1
+     },
+     "count_a": 1982,
+     "count_b": 638,
+     "index": 8,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 36,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 62,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.layernorm_tiny_fp16-r4-d64": {
+   "aligned_launches": 0,
+   "cycle_error": -0.10762748960385204,
+   "cycles_a": 18276,
+   "cycles_b": 16309,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000020a08",
+      "amo": 0,
+      "be": null,
+      "cycle": 116,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020a10",
+      "amo": 0,
+      "be": null,
+      "cycle": 160,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 400,
+     "count_b": 400,
+     "index": 7,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 7,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 7,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.linear_tiny_fp16-m16-k64-n64": {
+   "aligned_launches": 0,
+   "cycle_error": -0.15083564289913495,
+   "cycles_a": 47628,
+   "cycles_b": 40444,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 11,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000026200",
+      "amo": 0,
+      "be": null,
+      "cycle": 333,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000026120",
+      "amo": 0,
+      "be": null,
+      "cycle": 971,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 1448,
+     "count_b": 296,
+     "index": 24,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 33,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 56,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.matmul_tiny_fp16-m16-k32-n16": {
+   "aligned_launches": 0,
+   "cycle_error": 0.015368615669054772,
+   "cycles_a": 17308,
+   "cycles_b": 17574,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 28,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 36,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000021500",
+      "amo": 0,
+      "be": null,
+      "cycle": 190,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000021418",
+      "amo": 0,
+      "be": null,
+      "cycle": 841,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 403,
+     "count_b": 83,
+     "index": 11,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 33,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 19,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.matmul_tiny_fp32-m16-k32-n16": {
+   "aligned_launches": 0,
+   "cycle_error": 0.00011546899657441977,
+   "cycles_a": 25981,
+   "cycles_b": 25984,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000022900",
+      "amo": 0,
+      "be": null,
+      "cycle": 185,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000022818",
+      "amo": 0,
+      "be": null,
+      "cycle": 781,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 723,
+     "count_b": 147,
+     "index": 11,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 32,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 13,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.rmsnorm_tiny_fp16-r4-d64": {
+   "aligned_launches": 0,
+   "cycle_error": -0.11844913445577425,
+   "cycles_a": 16868,
+   "cycles_b": 14870,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 28,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 7,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 9,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000020908",
+      "amo": 0,
+      "be": null,
+      "cycle": 116,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020910",
+      "amo": 0,
+      "be": null,
+      "cycle": 160,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 268,
+     "count_b": 268,
+     "index": 7,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 28,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 56,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.rope_tiny_fp16-b1-h2-s16-d16": {
+   "aligned_launches": 0,
+   "cycle_error": -0.14839699863574352,
+   "cycles_a": 29320,
+   "cycles_b": 24969,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 19,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 58,
+   "launches_a": 58,
+   "launches_b": 58,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000020c50",
+      "amo": 0,
+      "be": null,
+      "cycle": 251,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020c90",
+      "amo": 0,
+      "be": null,
+      "cycle": 255,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 40,
+     "count_b": 40,
+     "index": 12,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 33,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 19,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.silu_tiny_fp16-n256": {
+   "aligned_launches": 0,
+   "cycle_error": -0.07216625483114744,
+   "cycles_a": 15783,
+   "cycles_b": 14644,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000020808",
+      "amo": 0,
+      "be": null,
+      "cycle": 192,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020440",
+      "amo": 0,
+      "be": null,
+      "cycle": 229,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 40,
+     "count_b": 40,
+     "index": 7,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 31,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 13,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.softmax_tiny_fp16-r4-c64": {
+   "aligned_launches": 0,
+   "cycle_error": 0.05269409864107194,
+   "cycles_a": 21046,
+   "cycles_b": 22155,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 30,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000021008",
+      "amo": 0,
+      "be": null,
+      "cycle": 57,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000021010",
+      "amo": 0,
+      "be": null,
+      "cycle": 95,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 310,
+     "count_b": 246,
+     "index": 3,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 31,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 13,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.softmax_tiny_fp32-r3-c37": {
+   "aligned_launches": 0,
+   "cycle_error": -0.08172854212163325,
+   "cycles_a": 15111,
+   "cycles_b": 13876,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 7,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 32,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 28,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000020540",
+      "amo": 0,
+      "be": null,
+      "cycle": 163,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "00000000000205d0",
+      "amo": 0,
+      "be": null,
+      "cycle": 177,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 301,
+     "count_b": 301,
+     "index": 6,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 7,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 56,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.swiglu_tiny_fp16-n256": {
+   "aligned_launches": 0,
+   "cycle_error": -0.08471939691276774,
+   "cycles_a": 16714,
+   "cycles_b": 15298,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 35,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 34,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 28,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 34,
+   "launches_a": 34,
+   "launches_b": 34,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000020c08",
+      "amo": 0,
+      "be": null,
+      "cycle": 196,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000020640",
+      "amo": 0,
+      "be": null,
+      "cycle": 241,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 60,
+     "count_b": 60,
+     "index": 7,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 35,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 13,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  },
+  "op.transpose_tiny_fp32-r32-c32": {
+   "aligned_launches": 0,
+   "cycle_error": -0.1538675570395103,
+   "cycles_a": 25158,
+   "cycles_b": 21287,
+   "divergences": [
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 0
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 1,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 13,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 2,
+     "response": {
+      "a": {
+       "latency": 38,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 68,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 3,
+     "response": {
+      "a": {
+       "latency": 31,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 56,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    },
+    {
+     "issue": {
+      "a": {
+       "cycle": 34,
+       "pc": "0000000000000940",
+       "rctx": 1
+      },
+      "b": {
+       "cycle": 27,
+       "pc": "0000000000000040",
+       "rctx": 0
+      },
+      "count_a": 318,
+      "count_b": 318,
+      "index": 26
+     },
+     "launch": 4,
+     "response": {
+      "a": {
+       "latency": 33,
+       "rdata": "0000000000000000"
+      },
+      "b": {
+       "latency": 62,
+       "rdata": "0000000040000000"
+      },
+      "count_a": 4,
+      "count_b": 4,
+      "index": 3
+     }
+    }
+   ],
+   "equal": false,
+   "launches": 30,
+   "launches_a": 30,
+   "launches_b": 30,
+   "status": "diverged",
+   "streams": {
+    "issue": {
+     "a": {
+      "cycle": 34,
+      "pc": "0000000000000940",
+      "rctx": 1
+     },
+     "b": {
+      "cycle": 27,
+      "pc": "0000000000000040",
+      "rctx": 0
+     },
+     "count_a": 318,
+     "count_b": 318,
+     "index": 26,
+     "launch": 0
+    },
+    "length": "equal",
+    "request": {
+     "a": {
+      "addr": "0000000000022800",
+      "amo": 0,
+      "be": null,
+      "cycle": 340,
+      "wdata": null,
+      "we": 0
+     },
+     "b": {
+      "addr": "0000000000022008",
+      "amo": 0,
+      "be": null,
+      "cycle": 853,
+      "wdata": null,
+      "we": 0
+     },
+     "count_a": 772,
+     "count_b": 772,
+     "index": 52,
+     "launch": 26
+    },
+    "response": {
+     "a": {
+      "latency": 31,
+      "rdata": "0000000000000000"
+     },
+     "b": {
+      "latency": 13,
+      "rdata": "0000000040000000"
+     },
+     "count_a": 4,
+     "count_b": 4,
+     "index": 3,
+     "launch": 1
+    }
+   }
+  }
+ },
+ "reason": "27 of 27 point(s) diverge",
+ "schema": "tnca-core-alignment/1",
+ "verdict": "diverged"
+}

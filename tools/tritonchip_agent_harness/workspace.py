@@ -55,10 +55,22 @@ def under(path: str, entry: str) -> bool:
 
 
 def hidden(path: str, hide: Iterable[str]) -> bool:
+    """Whether the agent does not see `path`. A hide entry that starts with "!" shows again what is under it
+    (2026-11-08: R41's second formal run shows the performance models, tools/performance_harness/systemc/, and
+    hides the rest of tools/performance_harness/). The longest entry that matches decides, so anything added
+    later under a hidden directory stays hidden, and a longer hide entry inside a shown one hides again.
+    ALWAYS_HIDDEN and the instruction files are never shown."""
     parts = path.split("/")
     if any(p in INSTRUCTION_NAMES for p in parts):
         return True
-    return any(under(path, e) for e in (*ALWAYS_HIDDEN, *hide))
+    if any(under(path, e) for e in ALWAYS_HIDDEN):
+        return True
+    best, shown = -1, False
+    for e in hide:
+        entry = e[1:] if e.startswith("!") else e
+        if under(path, entry) and len(entry) > best:
+            best, shown = len(entry), e.startswith("!")
+    return best >= 0 and not shown
 
 
 def base_tree(repo: Path, commit: str) -> dict:
@@ -84,10 +96,13 @@ def visible_tree(repo: Path, commit: str, hide: Iterable[str]) -> dict:
     """
     hide = tuple(hide)
     tree = base_tree(repo, commit)
-    for entry in hide:
+    for e in hide:
+        entry = e[1:] if e.startswith("!") else e
         if not any(under(p, entry) for p in tree):
             hint = " (a directory needs a trailing slash)" if any(p.startswith(entry + "/") for p in tree) else ""
-            raise WorkspaceError(f"hide entry {entry!r} matches nothing in {commit[:12]}{hint}")
+            raise WorkspaceError(f"hide entry {e!r} matches nothing in {commit[:12]}{hint}")
+        if e.startswith("!") and not any(under(entry, h) for h in hide if not h.startswith("!") and h != entry):
+            raise WorkspaceError(f"hide entry {e!r} shows what no shorter hide entry hides")
     return {p: e for p, e in tree.items() if not hidden(p, hide)}
 
 

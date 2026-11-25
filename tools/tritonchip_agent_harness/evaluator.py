@@ -39,7 +39,7 @@ from typing import Optional
 from . import provider
 from .provider import AgentContainer, Mount
 from .siteconfig import Site
-from .task import Task
+from .task import POINT_SETS, Task
 from .workspace import apply_candidate, export, git
 
 SCRIPT = """set -e
@@ -49,6 +49,22 @@ make -s python/tnca/data/.staged > /out/stage.log 2>&1
 /opt/torchenv/bin/python -m archbench.run --platform tnca --profile {profile} --jobs {jobs} \\
     --point {points} --out /out/archbench.jsonl > /out/archbench.log 2>&1 || true
 """
+
+
+_POINT_ID = re.compile(r"[A-Za-z0-9_./=+:,-]+")
+
+
+def _pool(hostout: Path, body: str, points: list, jobs: int) -> list:
+    """The evaluation script's lines that measure every point, at most `jobs` at once: a pool that starts the
+    next point as soon as one ends, in the list's order, never batches that wait for their slowest point
+    (2026-11-08: two batches of 12 cost a validation request about 10 minutes, the final set about an hour).
+    `body` is one point's command, $1 its index and $2 its id; it goes into /out/run-point.sh."""
+    for p in points:
+        if not _POINT_ID.fullmatch(p):
+            raise ValueError(f"a point id the evaluation script cannot pass as one word: {p!r}")
+    (hostout / "run-point.sh").write_text(body + "\n", encoding="utf-8")
+    listing = " ".join(f"'{i} {p}'" for i, p in enumerate(points))
+    return [f"printf '%s\\n' {listing} | xargs -P {max(1, int(jobs))} -n 2 sh /out/run-point.sh || true"]
 
 
 # The candidate's paths the device is built from. Everything else in the
@@ -349,16 +365,18 @@ def _measure_multicore(site: Site, hosttree: Path, devtree: Path, task: Task, ou
             args = {"board_top": True, "device": desc, "inbox": f"/mb/in/{i}", "outbox": f"/mb/out/{i}",
                     "memory_bytes": memory, "hbm_dma": True}
             (hostout / f"backend-{i}.json").write_text(json.dumps(args), encoding="utf-8")
-        lines = ["set -e", "cd /work", "make -s python/tnca/data/.staged > /out/stage.log 2>&1",
-                 "run() {",
-                 f'  TNCA_BACKEND=fpga-multicore-sim TNCA_BACKEND_ARGS="$(cat /out/backend-$1.json)" '
-                 f'TNCA_ACTIVE_CORES={cores} TNCA_HOST_TIMEOUT={timeout:g} /opt/torchenv/bin/python -m archbench.run '
-                 f'--platform tnca '
-                 f'--profile {ev["profile"]} --point "$2" --out /out/archbench-$1.jsonl > /out/archbench-$1.log 2>&1 || true',
-                 "}"]
-        jobs = max(1, int(ev["jobs"]))
-        for k in range(0, len(points), jobs):
-            lines += [f"run {i} '{points[i]}' &" for i in range(k, min(k + jobs, len(points)))] + ["wait"]
+        # The persistent Inductor graph cache (r41's python/tnca/compile_cache.py, on by
+        # default, keyed on sources and options) lives under this evaluation's own
+        # output, never in a home directory shared between candidates or runs.
+        lines = ["set -e", "cd /work", "mkdir -p /out/caches",
+                 "make -s python/tnca/data/.staged > /out/stage.log 2>&1"]
+        lines += _pool(hostout, f'TNCA_BACKEND=fpga-multicore-sim TNCA_BACKEND_ARGS="$(cat /out/backend-$1.json)" '
+                                f'TNCA_COMPILE_CACHE_DIR=/out/caches/tnca-inductor '
+                                f'TNCA_ACTIVE_CORES={cores} TNCA_HOST_TIMEOUT={timeout:g} '
+                                f'/opt/torchenv/bin/python -m archbench.run --platform tnca '
+                                f'--profile {ev["profile"]} --point "$2" --out /out/archbench-$1.jsonl '
+                                f'> /out/archbench-$1.log 2>&1 || true',
+                       points, int(ev["jobs"]))
         (hostout / "evaluate.sh").write_text("\n".join(lines) + "\n", encoding="utf-8")
         h = AgentContainer(name=name, image=site.images["toolchain"], cpus=site.cpus, memory=site.memory,
                            pids=site.pids, mounts=[Mount(hosttree, "/work", read_only=False),
@@ -375,7 +393,7 @@ def _measure_multicore(site: Site, hosttree: Path, devtree: Path, task: Task, ou
         rec = None
         path = hostout / f"archbench-{i}.jsonl"
         if path.exists():
-            for line in path.read_text(encoding="utf-8").splitlines():
+            for line in _container_text(path).splitlines():
                 try:
                     r = json.loads(line)
                 except json.JSONDecodeError:
@@ -438,15 +456,12 @@ def _measure_observed(site: Site, hosttree: Path, devtree: Path, task: Task, out
                                          "--unix", f"{SOCKETS}/{i}.sock", "--workdir", "/tmp/dev",
                                          "--deadline", str(DEADLINE), "--idle-timeout", f"{timeout:g}"],
                                         detach=True, remove=False))
-        lines = ["set -e", "cd /work", "make -s python/tnca/data/.staged > /out/stage.log 2>&1",
-                 "run() {",
-                 f'  TNCA_BACKEND=sim-socket TNCA_BACKEND_ARGS="{{\\"address\\": \\"{SOCKETS}/$1.sock\\", '
-                 f'\\"bench\\": \\"device-container\\"}}" /opt/torchenv/bin/python -m archbench.run --platform tnca '
-                 f'--profile {ev["profile"]} --point "$2" --out /out/archbench-$1.jsonl > /out/archbench-$1.log 2>&1 || true',
-                 "}"]
-        jobs = max(1, int(ev["jobs"]))
-        for k in range(0, len(points), jobs):
-            lines += [f"run {i} '{points[i]}' &" for i in range(k, min(k + jobs, len(points)))] + ["wait"]
+        lines = ["set -e", "cd /work", "make -s python/tnca/data/.staged > /out/stage.log 2>&1"]
+        lines += _pool(hostout, f'TNCA_BACKEND=sim-socket TNCA_BACKEND_ARGS="{{\\"address\\": \\"{SOCKETS}/$1.sock\\", '
+                                f'\\"bench\\": \\"device-container\\"}}" /opt/torchenv/bin/python -m archbench.run '
+                                f'--platform tnca --profile {ev["profile"]} --point "$2" '
+                                f'--out /out/archbench-$1.jsonl > /out/archbench-$1.log 2>&1 || true',
+                       points, int(ev["jobs"]))
         (hostout / "evaluate.sh").write_text("\n".join(lines) + "\n", encoding="utf-8")
         h = AgentContainer(name=name, image=site.images["toolchain"], cpus=site.cpus, memory=site.memory,
                            pids=site.pids, mounts=[Mount(hosttree, "/work", read_only=False),
@@ -460,7 +475,7 @@ def _measure_observed(site: Site, hosttree: Path, devtree: Path, task: Task, out
         rec = None
         path = hostout / f"archbench-{i}.jsonl"
         if path.exists():
-            for line in path.read_text(encoding="utf-8").splitlines():
+            for line in _container_text(path).splitlines():
                 try:
                     r = json.loads(line)
                 except json.JSONDecodeError:
@@ -487,7 +502,7 @@ def _measure(site: Site, tree: Path, task: Task, out: Path, name: str) -> dict:
     records = {}
     path = out / "archbench.jsonl"
     if path.exists():
-        for line in path.read_text(encoding="utf-8").splitlines():
+        for line in _container_text(path).splitlines():
             try:
                 r = json.loads(line)
             except json.JSONDecodeError:
@@ -552,25 +567,120 @@ def baseline_key(task: Task) -> str:
 
 
 def baseline(site: Site, repo: Path, task: Task) -> dict:
-    """The base's own cycles, measured once per baseline_key and kept."""
+    """The base's own cycles, measured once per baseline_key and kept.
+
+    Two runs of the same task, in one process or two, may ask at once. The
+    measurement owns a fixed directory and a fixed container name, so it holds
+    a lock per key: the second caller waits, then finds the first one's result
+    kept. The lock is the operating system's (flock), so a caller that dies
+    releases it."""
+    import fcntl
     key = baseline_key(task)
-    cache = site.state_dir / "baselines" / f"{key}.json"
+    root = site.state_dir / "baselines"
+    cache = root / f"{key}.json"
     if cache.exists():
         return json.loads(cache.read_text(encoding="utf-8"))
-    work = site.state_dir / "baselines" / key
-    shutil.rmtree(work, ignore_errors=True)
-    host, dev = _trees(repo, task, None, work)
-    result = _measure_trees(site, host, dev, task, work / "out", f"tnca-eval-base-{key}", repo)
-    shutil.rmtree(host, ignore_errors=True)
-    if dev is not None:
-        shutil.rmtree(dev, ignore_errors=True)
-    if not result["missing"] and all(p["status"] == "pass" for p in result["points"].values()):
-        cache.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    return result
+    root.mkdir(parents=True, exist_ok=True)
+    with open(root / f"{key}.lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if cache.exists():                      # measured while this caller waited
+            return json.loads(cache.read_text(encoding="utf-8"))
+        work = root / key
+        shutil.rmtree(work, ignore_errors=True)
+        host, dev = _trees(repo, task, None, work)
+        result = _measure_trees(site, host, dev, task, work / "out", f"tnca-eval-base-{key}", repo)
+        shutil.rmtree(host, ignore_errors=True)
+        if dev is not None:
+            shutil.rmtree(dev, ignore_errors=True)
+        if not result["missing"] and all(p["status"] == "pass" for p in result["points"].values()):
+            tmp = cache.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            tmp.replace(cache)                  # a reader never sees half a file
+        return result
+
+
+# What a failed point may be called in the agent's reply (README section 6.4).
+# The candidate's compiler runs in the process that writes a point's record, so
+# a status is only ever one of these names: anything else would be a channel
+# out of the hidden set (a status spelling a shape) and is reported as "other".
+FAILURE_NAMES = {"missing", "no-status", "fallback", "no-cycles", "no-observation", "device-fault",
+                 "numeric-error", "unsupported", "not-measured", "runtime-fault", "timeout"}
+# The anti-tamper checks' verdicts: the agent learns that a measurement was
+# rejected, never which check rejected it.
+REJECTED = {"record-disagrees", "activity-outside-launch", "not-drained", "unobserved-launch"}
+
+
+def failure_counts(scored: dict) -> dict:
+    """How many of a set's points failed, by kind: counts only, never which point."""
+    counts: dict = {}
+    for row in scored["points"]:
+        f = row.get("failure")
+        if not f:
+            continue
+        f = "measurement-rejected" if f in REJECTED else f if f in FAILURE_NAMES else "other"
+        counts[f] = counts.get(f, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def scrubbed(lines: list, task: Task, keep: int = 20) -> list:
+    """A log's last lines as the agent may see them: no point's name, no line past 300 characters."""
+    names = sorted({p for s in POINT_SETS for p in task.evaluation.get(s) or ()}, key=len, reverse=True)
+    out = []
+    for line in [l for l in lines if l.strip()][-keep:]:
+        for p in names:
+            line = line.replace(p, "<point>")
+        out.append(line[:300])
+    return out
+
+
+def _container_text(path: Path, limit: int = 8 << 20) -> str:
+    """A file the candidate's container could write: no link followed (a link would read the harness host's
+    own file), a regular file (never a device or a pipe that blocks), at most `limit` bytes."""
+    import os
+    import stat
+    try:
+        fd = os.open(str(path), os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except OSError:
+        return ""
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            return ""
+        return os.read(fd, limit).decode("utf-8", errors="replace")
+    finally:
+        os.close(fd)
+
+
+def _read_lines(path: Path) -> list:
+    return _container_text(path).splitlines()
+
+
+def point_independent_errors(out: Path, task: Task, got: dict) -> dict:
+    """The failures that happened before any point was run, so their logs say nothing of the
+    hidden set: the multicore device that did not elaborate (each device container builds the
+    candidate's RTL before it serves a point), and staging or preparing that stopped the host before
+    its first point. A point's own log is never returned."""
+    errors = {}
+    if task.evaluation.get("device") and not got.get("device_problems"):
+        for log in sorted(out.glob("dev*.log")):
+            lines = _read_lines(log)
+            at = next((i for i, l in enumerate(lines) if "the device did not build" in l), None)
+            if at is not None:
+                errors["device_build_errors"] = scrubbed(lines[at:], task, keep=30)
+                break
+    if got.get("points") == {} and got.get("missing"):
+        # Staging (the host's, or a single-core task's) and, without an observer, the device's
+        # prepare: both run before ArchBench is handed a point. The first log with anything in it.
+        for log in (out / "host" / "stage.log", out / "stage.log", out / "prepare.log"):
+            lines = _read_lines(log)
+            if any(l.strip() for l in lines):
+                errors["stage_errors"] = scrubbed(lines, task)
+                break
+    return errors
 
 
 def measure_validation(site: Site, repo: Path, task: Task, candidate: Optional[Path], job_dir: Path, name: str) -> dict:
-    """The scoring service: the validation set alone, the final evaluator's way; an aggregate for the agent."""
+    """The scoring service: the validation set alone, the final evaluator's way; an aggregate for the agent,
+    and when it failed, what may be said of why (README section 6.4)."""
     import dataclasses
     base = baseline(site, repo, task)
     host, dev = _trees(repo, task, candidate, job_dir)
@@ -586,9 +696,11 @@ def measure_validation(site: Site, repo: Path, task: Task, candidate: Optional[P
         build = list(got["device_problems"])
     elif got.get("device_build") == "failed":
         log = job_dir / "eval" / "device-build" / "prepare.log"
-        build = (log.read_text(errors="replace").splitlines()[-20:] if log.exists() else ["the device did not build"])
+        build = scrubbed(_read_lines(log), task) or ["the device did not build"]
+    early = point_independent_errors(job_dir / "eval", task, got)   # task: scrub the final set's names too
     return {"aggregate": {k: full[k] for k in ("n", "passed", "speedup_geomean", "fast_1")},
-            "device_build_errors": build, "full": full}
+            "device_build_errors": build or early.get("device_build_errors"),
+            "stage_errors": early.get("stage_errors"), "failures": failure_counts(full), "full": full}
 
 
 def _rtl_parameters(profiles_json: str, name: str) -> dict:
@@ -665,8 +777,10 @@ def _geomean(xs: list) -> Optional[float]:
     return math.exp(sum(math.log(x) for x in xs) / len(xs)) if xs and all(x > 0 for x in xs) else None
 
 
-def score(base: dict, got: dict, names) -> dict:
-    """One set of points, each judged on its own against the base's cycles."""
+def score(base: dict, got: dict, names, faster_than: float = 1.0) -> dict:
+    """One set of points, each judged on its own against the base's cycles. `faster_than`: the speedup a point
+    must exceed to count in fast_1 -- 1.0 in simulation, whose counts are exact; above it on the card, whose
+    counts of one program vary a little from run to run (services.fpga_slow.board_faster_than)."""
     rows = []
     for p in names:
         b, c = base.get(p, {}), got.get(p)
@@ -689,7 +803,7 @@ def score(base: dict, got: dict, names) -> dict:
     n = len(rows)
     return {"points": rows, "n": n, "passed": len(passed),
             "speedup_geomean": _geomean(passed),
-            "fast_1": (sum(1 for x in passed if x > 1.0) / n) if n else None}
+            "fast_1": (sum(1 for x in passed if x > faster_than) / n) if n else None}
 
 
 def evaluate(site: Site, repo: Path, task: Task, candidate: Optional[Path], run_dir: Path) -> dict:

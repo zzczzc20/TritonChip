@@ -15,6 +15,18 @@
         "PATH": "/opt/Xilinx/Vivado/2022.2/bin:/opt/Xilinx/Vitis/2022.2/bin:/usr/local/bin:/usr/bin:/bin"
       }
     },
+    "cluster-1": {
+      "description": "A batch cluster instead of one machine: 'ssh' is its login node, the link runs as an LSF job on a node (README 11.3). workspace and state_dir are on the file system the nodes share; list cluster-2, cluster-3 with their own directories to run several links at once.",
+      "ssh": "hpc-login",
+      "roles": ["build"],
+      "python": "/shared/tools/python3.12/bin/python3",
+      "workspace": "/shared/fpga/slot-1/tritonchip",
+      "state_dir": "/shared/fpga/slot-1/tritonchip-harness",
+      "vitis_root": "/shared/Xilinx/Vitis/2023.2",
+      "platforms_root": "/shared/xilinx/platforms",
+      "ip_cache_seed": "/shared/fpga/ipcache-seed/u280-2023.2",
+      "lsf": {"profile": "/opt/lsf/conf/profile.lsf", "queue": "cpu", "slots": 8}
+    },
     "card": {
       "description": "The card, XRT, and the ArchBench interpreter (PyTorch, Triton, tnca).",
       "ssh": "fpga-card",

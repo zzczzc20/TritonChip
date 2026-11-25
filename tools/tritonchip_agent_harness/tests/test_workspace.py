@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -11,7 +12,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE.parent))
 
-from tritonchip_agent_harness.workspace import WorkspaceError, apply_candidate, export, gate, git  # noqa: E402
+from tritonchip_agent_harness.workspace import (WorkspaceError, apply_candidate, export, gate, git,  # noqa: E402
+                                                 hidden, visible_tree)
 
 FILES = {
     "compiler/a.py": "a = 1\n", "compiler/c.py": "c = 3\n", "tb/t.v": "module t; endmodule\n",
@@ -109,6 +111,94 @@ class WorkspaceTest(unittest.TestCase):
         self.assertEqual((tree / "tb/t.v").read_text(), FILES["tb/t.v"])
         self.assertEqual((tree / "doc/r39_report.md").read_text(), FILES["doc/r39_report.md"],
                          "hidden from the agent, but the evaluator builds from the full base")
+
+
+REPO = HERE.parents[1]
+
+
+class ShowAgainTest(unittest.TestCase):
+    """A "!" hide entry shows a directory inside a hidden one (2026-11-08: the performance models)."""
+
+    def test_the_longest_entry_decides_and_new_files_stay_hidden(self):
+        hide = ("tools/ph/", "!tools/ph/systemc/", "tools/ph/systemc/test_points.py")
+        self.assertFalse(hidden("tools/ph/systemc/src/chip.cpp", hide))
+        self.assertTrue(hidden("tools/ph/systemc/test_points.py", hide))
+        self.assertTrue(hidden("tools/ph/fp8_cases.py", hide))
+        # Added later beside the shown directory: hidden, as everything under tools/ph/ is.
+        self.assertTrue(hidden("tools/ph/align/tracediff.py", hide))
+        self.assertFalse(hidden("rtl/top.v", hide))
+        # Nothing shows what is always hidden.
+        self.assertTrue(hidden("evidence/x.json", ("!evidence/",)))
+
+    def test_a_show_entry_needs_a_shorter_hide_entry_and_a_match(self):
+        root = Path(tempfile.mkdtemp())
+        for path in ("tools/ph/systemc/a.cpp", "tools/ph/systemc/test_points.py", "tools/ph/b.py", "rtl/top.v"):
+            (root / path).parent.mkdir(parents=True, exist_ok=True)
+            (root / path).write_text(path)
+        git("init", "-q", str(root))
+        git("-C", str(root), "add", "-A")
+        git("-C", str(root), "-c", "commit.gpgsign=false", "commit", "-q", "-m", "base")
+        base = git("-C", str(root), "rev-parse", "HEAD").decode().strip()
+        tree = visible_tree(root, base, ("tools/ph/", "!tools/ph/systemc/", "tools/ph/systemc/test_points.py"))
+        self.assertEqual(sorted(tree), ["rtl/top.v", "tools/ph/systemc/a.cpp"])
+        with self.assertRaisesRegex(WorkspaceError, "shows what no shorter hide entry hides"):
+            visible_tree(root, base, ("!tools/ph/systemc/",))
+        with self.assertRaisesRegex(WorkspaceError, "matches nothing"):
+            visible_tree(root, base, ("tools/ph/", "!tools/ph/nothing/"))
+
+
+def staged_sources(makefile: str) -> list:
+    """What the Makefile's data staging (r2-stage-data) copies: the sources of each `cp` in its recipe."""
+    m = re.search(r"^r2-stage-data:\n((?:\t.*\n)+)", makefile, re.M)
+    if not m:
+        return []
+    sources = []
+    for line in m.group(1).splitlines():
+        for cmd in line.split("&&"):
+            words = cmd.strip().lstrip("@").split()
+            if words[:1] == ["cp"]:
+                sources += [w for w in words[1:-1] if not w.startswith("-")]
+    return sources
+
+
+def matches(source: str, paths) -> bool:
+    if "*" in source:
+        pattern = re.compile(re.escape(source).replace(r"\*", "[^/]*"))
+        return any(pattern.fullmatch(p) for p in paths)
+    source = source.removesuffix("/.").rstrip("/")
+    return any(p == source or p.startswith(source + "/") for p in paths)
+
+
+class TheAgentsTreeBuildsTest(unittest.TestCase):
+    """Before make builds the device simulator it stages the package's data (r2-stage-data), copying spec/,
+    compiler/targets/, isa/, rtl/ and tb/ into python/tnca/data/. A hide list that takes every file a copy
+    names stops that copy, and with it every make target behind it, in the agent's tree; the copy deletes the
+    staged data first, so what it leaves is half a package. Run 6180's agent met this with spec/r40/ hidden
+    whole. The tasks of runs to come are held to it; a finished run's task stays what that run saw."""
+
+    TASKS = ("r41-dp-formal", "r41-dp-island1")
+
+    def test_every_staged_source_is_in_the_agents_tree(self):
+        from tritonchip_agent_harness.task import load_task
+        from tritonchip_agent_harness.workspace import visible_tree
+        for name in self.TASKS:
+            task = load_task(HERE / "tasks" / name / "task.json")
+            try:
+                makefile = git("show", f"{task.base_commit}:Makefile", cwd=REPO).decode()
+            except WorkspaceError:  # a checkout without the base commit's objects
+                self.skipTest(f"{task.base_commit[:12]} is not in this repository")
+            sources = staged_sources(makefile)
+            self.assertIn("spec/r40/*.json", sources, "the staging recipe was not found")
+            paths = set(visible_tree(REPO, task.base_commit, task.hide))
+            for source in sources:
+                self.assertTrue(matches(source, paths), f"{name}: make's staging copies {source}, which the task hides")
+
+    def test_hiding_all_of_a_staged_glob_is_caught(self):
+        sources = ["spec/r40/*.json", "rtl/.", "tools/asm/tnca_asm.py"]
+        paths = {"spec/r40/a.json", "spec/r40/v2/b.json", "rtl/core/x.v", "tools/asm/tnca_asm.py"}
+        self.assertTrue(all(matches(s, paths) for s in sources))
+        self.assertFalse(matches("spec/r40/*.json", {"spec/r40/v2/b.json"}), "a glob does not reach a subdirectory")
+        self.assertFalse(matches("rtl/.", {"rtl2/x.v"}))
 
 
 if __name__ == "__main__":

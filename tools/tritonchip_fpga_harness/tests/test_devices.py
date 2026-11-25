@@ -129,6 +129,27 @@ class Refusals(unittest.TestCase):
         d["uncore"]["SETS"] = 32.0
         self.refused(d, "uncore.LINK_STAGES=2.0", "uncore.SETS=32.0")
 
+    def test_the_u280_binding_needs_two_stages_on_each_slr_link(self) -> None:
+        # R41-F4's b4 and b9 (2026-11-11): NOC_LINK_STAGES 1 passed every check here, then the placement
+        # pre-hook found no g_stage[1] to put on the next SLR, hours into the flow.
+        for key in devices.SLR_LINKS:
+            d = copy.deepcopy(self.desc)
+            d["uncore"][key] = 1
+            self.refused(d, f"uncore.{key}=1 is below 2", "different SLRs")
+        d = copy.deepcopy(self.desc)
+        d["uncore"]["NOC_LINK_STAGES"] = 0
+        d["uncore"]["LINK_STAGES"] = 1
+        self.refused(d, "uncore.NOC_LINK_STAGES=0 is below 2", "uncore.LINK_STAGES=1 is below 2")
+        # More stages than the binding places are the RTL's to take; another board or core count is not this
+        # binding's.
+        d = copy.deepcopy(self.desc)
+        d["uncore"]["NOC_LINK_STAGES"] = 4
+        devices.validate(d)
+        d = copy.deepcopy(self.desc)
+        d["uncore"]["NOC_LINK_STAGES"] = 1
+        d["platform"]["core_count"] = 4
+        devices.validate(d)
+
     def test_the_victim_key_holds_eight_ways(self) -> None:
         d = copy.deepcopy(self.desc)
         d["uncore"]["WAYS"] = 16

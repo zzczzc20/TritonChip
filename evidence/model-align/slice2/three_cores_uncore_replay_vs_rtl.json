@@ -1,0 +1,163 @@
+{
+ "aggregates": {
+  "aligned": 8,
+  "diverged": 0,
+  "median_abs_cycle_error": 0.0,
+  "missing": 0,
+  "p95_abs_cycle_error": 0.0,
+  "points": 8
+ },
+ "options": {
+  "data": false,
+  "order_only": false
+ },
+ "points": {
+  "op.add_tiny_fp16-n1000": {
+   "aligned_launches": 37,
+   "cycle_error": 0.0,
+   "cycles_a": 16491,
+   "cycles_b": 16491,
+   "divergences": [],
+   "equal": true,
+   "launches": 37,
+   "launches_a": 37,
+   "launches_b": 37,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.add_tiny_fp16-n1000.core1": {
+   "aligned_launches": 11,
+   "cycle_error": 0.0,
+   "cycles_a": 5365,
+   "cycles_b": 5365,
+   "divergences": [],
+   "equal": true,
+   "launches": 11,
+   "launches_a": 11,
+   "launches_b": 11,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.add_tiny_fp16-n1000.core2": {
+   "aligned_launches": 10,
+   "cycle_error": 0.0,
+   "cycles_a": 5144,
+   "cycles_b": 5144,
+   "divergences": [],
+   "equal": true,
+   "launches": 10,
+   "launches_a": 10,
+   "launches_b": 10,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.add_tiny_fp16-n1000.uncore": {
+   "aligned_launches": 58,
+   "cycles_a": 158739,
+   "cycles_b": 11675602,
+   "divergences": [],
+   "equal": true,
+   "launches": 58,
+   "launches_a": 58,
+   "launches_b": 58,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  },
+  "op.matmul_tiny_fp16-m16-k32-n16": {
+   "aligned_launches": 28,
+   "cycle_error": 0.0,
+   "cycles_a": 17318,
+   "cycles_b": 17318,
+   "divergences": [],
+   "equal": true,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.matmul_tiny_fp16-m16-k32-n16.core1": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.matmul_tiny_fp16-m16-k32-n16.core2": {
+   "aligned_launches": 0,
+   "cycles_a": 0,
+   "cycles_b": 0,
+   "divergences": [],
+   "equal": true,
+   "launches": 0,
+   "launches_a": 0,
+   "launches_b": 0,
+   "status": "aligned",
+   "streams": {
+    "issue": "equal",
+    "length": "equal",
+    "request": "equal",
+    "response": "equal"
+   }
+  },
+  "op.matmul_tiny_fp16-m16-k32-n16.uncore": {
+   "aligned_launches": 28,
+   "cycles_a": 114778,
+   "cycles_b": 11610536,
+   "divergences": [],
+   "equal": true,
+   "launches": 28,
+   "launches_a": 28,
+   "launches_b": 28,
+   "status": "aligned",
+   "streams": {
+    "dram_req": "equal",
+    "dram_rsp": "equal",
+    "mem_req": "equal",
+    "mem_rsp": "equal",
+    "slice_req": "equal",
+    "slice_rsp": "equal"
+   }
+  }
+ },
+ "reason": "all 8 point(s) equal in every compared stream",
+ "schema": "tnca-core-alignment/1",
+ "verdict": "aligned"
+}

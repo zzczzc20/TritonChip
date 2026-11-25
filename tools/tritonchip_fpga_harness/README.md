@@ -44,6 +44,34 @@ board stages are refused; `submit --skip-board` still builds normally. The
 queue never programs or resets the card. See the
 [performance harness guide](../performance_harness/README.md).
 
+### A card session for an agent's candidate
+
+`python -m tritonchip_fpga_harness.board_session --xclbin X --sha256 S --bdf
+0000:04:00.1 --out DIR [--device DIR/device.json] [--base-xclbin BASE]` runs on
+the card host from the platform's checkout and no candidate code with it: it
+checks the image (sha256, UUID, kernel clock, and with `--base-xclbin` its
+static HBM map against the base image's; CDC and core placement are recorded
+`not-checked`), waits for 15 minutes of continuous idle, takes the shared
+lease, programs only when the loaded UUID differs (`program.sh --check`, then
+`--go`, judged by the UUID and the clock counter), and starts `python -m
+tnca.backends.board_relay` on `DIR/relay.sock`. The relay holds the card and
+executes only link-level operations (register reads and writes below 0x200,
+the HBM buffer) for clients that open the `fpga-u280-multicore-relay` backend
+with `address=` the forwarded socket. It files each connection's launch
+observations under the label the harness wrote to `DIR/label` before the
+connection (never the client's), in `DIR/observe/<label>.log`, and clears the
+HBM buffer (device caches handed back, then zeros) whenever the label changes.
+`DIR/ready.json` gives a client the socket, the clock evidence (which
+`tnca.operating_clock` qualifies as counter-only) and the exact
+`backend_args` from the device description; the relay ends when `DIR/stop`
+appears, after `--relay-idle-seconds` without a connection, or at
+`--deadline-seconds`; then the lease is released and `DIR/session.json`
+records the status (`ok`, `refused-admission`, `admission-error`,
+`busy-timeout`, `program-failed`, `relay-failed`, `device-lost`, `timeout`,
+`killed`), its `cause` (`image`, charged to the candidate, or
+`infrastructure`, never), the reason as `detail`, timings and probes. The
+image stays loaded. Both files' docstrings carry the details.
+
 ## 1. At a glance
 
 ```text
@@ -207,6 +235,10 @@ Then the host:
 
 A leftover vendor process is reported, never killed. Setting
 `FPGA_HARNESS_ALLOW_EXISTING_VENDOR_PROCS=1` turns that one check into a warning.
+Inside an LSF job (`LSB_JOBID` set) the vendor processes of this account's
+other LSF jobs do not count: the scheduler gave each job its own slots on the
+node. A process in no LSF job, in this job, or whose `/proc/<pid>/environ`
+cannot be read still does.
 
 ### 3.4 Which source, and one run at a time
 
@@ -270,6 +302,26 @@ not accepted.
 
 A missed timing is `TIMING_FAIL` even though `v++` exits non-zero for it;
 `BUILD_FAIL` is a link that never got as far as a routed report.
+
+**A target's timing exception.** A target may declare
+`"timing_exempt_clocks": ["hbm_aclk"]` (`u280-multicore-r41` does, by the
+user's decision of 2026-11-07: only the HBM system clock may miss timing, the
+kernel clock must close). `timing_clean` is then computed from the routed
+summary's Intra Clock, Inter Clock and Other Path Groups tables instead of the
+design row: every row whose destination clock is not exempt must have no
+negative WNS, TNS, WHS, THS, WPWS or TPWS and no failing endpoint; rows into
+an exempt clock are recorded with their figures, not judged; and the rows
+must account for the design row's worst slacks and failing endpoints, or the
+build fails. `no_auto_frequency_scaling` accepts a rule other than the
+allowed ones only on a line where v++ says it moved an exempt clock (R41:
+`AUTO-FREQ-SCALING-07`, hbm_aclk 450 to 433.4 MHz); `expected_clock` still
+reads the kernel clock back at the target's MHz. link.sh's own
+`LINK_FAILED freq-moved` (exit 3) is then not a build failure: the check
+`link_ok_marker` says it was accepted, and the link stage carries
+`accepted_exit`. The record names the exception and the exempt clocks' rows
+under `artifact_validation.timing.exception`, and `result.json` repeats it as
+`timing_exception`. A target without the key keeps the design-wide rule; the
+key may not name the kernel clock.
 
 ### 4.2 Where the numbers are
 
@@ -642,7 +694,7 @@ harness or manifest error.
 | `validate` | judges an existing build directory | `--target`, `--build-dir`, `--historical`, `--output` |
 | `export <run>` | writes the evidence packet; `--light` leaves out v++'s working tree | `--state-dir`, `--output`, `--light` |
 | `import` | installs a run built on another host from its light packet, every file's hash checked (§11.2) | `--state-dir`, `--from-tar FILE\|-` |
-| `pipeline <manifest>` | builds on one server of a hosts file and measures on another (§11.2) | `--hosts`, `--build-host`, `--board-host`, `--timeout`, `--poll`, `--skip-board`, `--build-run`, `--no-sync`, `--adapter mock`, `--output` |
+| `pipeline <manifest>` | builds on one server of a hosts file and measures on another (§11.2) | `--hosts`, `--build-host`, `--board-host`, `--timeout`, `--poll`, `--skip-board`, `--build-run`, `--measure-run`, `--expect-xclbin-sha256`, `--no-sync`, `--adapter mock`, `--output` |
 | `sync <host>` | puts a clean checkout of a commit on a server, from a git bundle | `--hosts`, `--commit` |
 | `dispatch <host> <manifest>` | sends a manifest to a worker over SSH (§11.1) | `--remote-repo`, `--state-dir`, `--timeout`, `--ssh-timeout`, `--skip-board`, `--output` |
 | `worker --stdin` | the remote end of `dispatch` and `pipeline`: `doctor`, `submit`, `status`, `export`, `measure` | |
@@ -768,8 +820,16 @@ resolves (user, key, jump host: the harness adds none), its `roles` (`build`,
 `workspace`, a `state_dir`, and for a build server the `vitis_root` it keeps.
 `environment` passes further variables to every command the controller runs
 there: on a build server a `PATH` with Vivado's and Vitis's `bin` first (a
-remote command does not read the login shell's profile), on a card server the
-ArchBench interpreter. Every value is one shell-safe token that does not start
+remote command does not read the login shell's profile) that also reaches a
+system `unzip`, which `v++ --link` calls to unpack the kernel `.xo` and
+settings64 does not provide (the doctor checks it; x86vivado has none, so its
+`PATH` ends in a directory that holds one), on a card server the ArchBench
+interpreter. The Vivado beside that Vitis must also hold the device data the
+part's bitstream is written from: for every Alveo UltraScale+ part (`xcu*`),
+`data/parts/xilinx/virtexuplus/devint/` (`bsdata.cfg`, `bsoptions.cfg`), even
+for an HBM part whose own family is `virtexuplusHBM`. An installation without
+that family routes the design and fails `write_bitstream` hours later (RSCL,
+2026-11-08); the doctor checks it (`bitstream_data`). Every value is one shell-safe token that does not start
 with `-`; anything else is refused when the file is read. The harness passes
 `--` before the destination, and quotes for the remote shell every word it did
 not take from the hosts file.
@@ -813,6 +873,20 @@ running from an earlier controller is attached to rather than started again.
 are; `--adapter mock` plays the build (and its board stage measures a
 placeholder image), to exercise the servers without Vivado.
 
+`pipeline --measure-run RUN_ID` builds nothing: it measures the image of a
+run the card server already holds (it was measured there before), built from
+another commit, with the manifest's commit checked out on the card server
+driving the card -- its runtime, compiler and ArchBench. It is how a change
+to software alone is measured on the machine it shares with its base. No
+build server is named or touched (`--build-host` is not needed); the card
+server measures with `--allow-source-mismatch`, which the run's result
+records (`software.relation`); the manifest must name that run's candidate,
+target and mode, and is sent without its source commit; `--expect-xclbin-sha256`
+fails the pipeline if the image measured hashes otherwise; and the
+measurement must have been driven by this commit's checkout. A measurement of
+that run already in progress is never attached to: it is another request's,
+and the pipeline stops instead.
+
 **How long the controller waits.** `--timeout` is each remote command's limit
 on the server (package, link, load, conformance; ArchBench has its own
 `board.archbench.timeout_s`). The controller waits for the build what its two
@@ -823,6 +897,59 @@ the stage can be attached to again.
 **One run at a time, per server.** Each server's harness takes its own lease
 (§3.4): a build on the build server and a board stage on the card server can
 overlap, two links on one build server cannot.
+
+### 11.3 A build host that is a batch cluster (LSF)
+
+A cluster is reached through a login node that must not run Vivado; the link
+goes to whichever node the scheduler picks. A build host with an `lsf` block
+says so (`hosts.py`, `lsf.py`):
+
+```json
+"hpc-1": {"ssh": "hpc-login", "roles": ["build"], "python": "/path/python3",
+          "workspace": "/shared/tnca/slot-1/fpga", "state_dir": "/shared/tnca/slot-1/fpga-state",
+          "vitis_root": "/shared/Xilinx/Vitis/2023.2", "platforms_root": "/shared/xilinx/platforms",
+          "lsf": {"profile": "/opt/lsf/conf/profile.lsf", "queue": "cpu", "slots": 8}}
+```
+
+| Step | Plain host | LSF host |
+|---|---|---|
+| `build:submit` | the worker starts `submit --skip-board` detached | the manifest and a job script are written to `<state_dir>/requests/<run>.lsf.*`; `bsub -q <queue> -n <slots> -R span[hosts=1] -J <run>` |
+| waiting | `status` on that machine, every poll | `build:lsf`: `bjobs -J <run>` until the job is DONE, EXIT or no longer listed |
+| `build` | the last `status` | one `status` on the login node, after the job has ended |
+| stopping | `reconcile --terminate` there | `bkill -J <run>`; the job script traps it and runs `reconcile --terminate` on its node |
+
+The checkout on the cluster is the candidate's own and is not changed. It
+judges a run alive by the process and boot identity of the machine it is asked
+on, so the controller never asks `status` while the job lives: on the login
+node that would declare the run lost. Sync, doctor, export and the packet's
+transfer are file work on the login node; `workspace` and `state_dir` must be
+on the file system the nodes share. The pipeline record's `build.lsf` names
+the job, its node, and how long it was pending and running.
+
+`ip_cache_seed` names a complete v++ IP cache on the host (any build host,
+not only a cluster). v++ keeps its IP cache in the link's working directory,
+the checkout, and every commit is a new checkout, so each link synthesised the
+platform's IPs again: about 2 h 10 min of every HPC link in R41-F6
+(2026-11-24), against 30 min with a cache. `sync` copies the seed into each
+checkout it creates, through `incoming` and one rename, before any link runs
+there; the sync step's detail says `ip_cache: {seeded, from, seconds}` or why
+not. An entry that matches no IP is a miss and is synthesised as before.
+
+`lsf.queue` puts a job of the controller's own (a script already on the
+cluster) in the same queue under a name, attaching to one already named so;
+`wait` and `kill` take that name as they take a run's. The agent harness uses
+it to read a failed link's checkpoint in Vivado on a node rather than on the
+login node.
+
+One such host is one link at a time (the harness's lease, §3.4). A cluster
+that should run several at once is listed as several hosts with their own
+`workspace` and `state_dir`; the scheduler decides where each runs and makes
+the ones it has no room for wait.
+
+Checked on a real cluster 2026-11-20 with the mock adapter (IBM Spectrum LSF
+10.1, git 2.9.5, Python 3.12 in the user's home): the job ran on a compute
+node and the verdict was read on the login node. A Vivado link there has not
+been run yet.
 
 ## 12. Running a real candidate
 

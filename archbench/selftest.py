@@ -27,7 +27,8 @@ from .platforms.common import flatten
 
 # Families whose MACs are exactly the dense count (no causal mask, no
 # padding taps): the declared demand must EQUAL the counter's.
-EXACT_MACS = {'matmul', 'linear', 'gemv', 'bmm', 'mlp', 'attention_decode'}
+EXACT_MACS = {'matmul', 'linear', 'gemv', 'bmm', 'mlp', 'attention_decode',
+              'scaled_mm', 'w8a8_linear', 'wfp8_linear'}
 
 
 def _bytes(ts):

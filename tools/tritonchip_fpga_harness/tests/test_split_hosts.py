@@ -31,7 +31,7 @@ from tritonchip_fpga_harness.adapters.u50 import U50Adapter, U50Config
 from tritonchip_fpga_harness.adapters.u280 import U280FlowAdapter
 from tritonchip_fpga_harness.core import HarnessError, export_evidence, import_run, load_profile, submit
 from tritonchip_fpga_harness.hosts import host_for, parse_hosts
-from tritonchip_fpga_harness.pipeline import run_pipeline
+from tritonchip_fpga_harness.pipeline import run_pipeline, sync
 from tritonchip_fpga_harness.schema import SchemaError, load_json, validate_worker_request
 from tritonchip_fpga_harness.toolroots import PLATFORMS_ENV, VITIS_ENV, tool_roots, vitis_version
 from tritonchip_fpga_harness.worker import remote_status, worker_main
@@ -113,7 +113,8 @@ class HostsFile(unittest.TestCase):
 
     def test_the_example_is_a_valid_hosts_file(self) -> None:
         hosts = parse_hosts(load_json(HERE / "examples" / "hosts.example.json"))
-        self.assertEqual({name: host.roles for name, host in hosts.items()}, {"build": ("build",), "card": ("board",)})
+        self.assertEqual({name: host.roles for name, host in hosts.items()}, {"build": ("build",), "cluster-1": ("build",), "card": ("board",)})
+        self.assertEqual(hosts["cluster-1"].lsf["queue"], "cpu")
         self.assertIn("PATH", hosts["build"].remote_env())
 
     def test_refuses_what_could_reach_a_shell(self) -> None:
@@ -316,6 +317,49 @@ class Pipeline(unittest.TestCase):
             self.assertEqual(again["status"], "PASS")
             self.assertEqual(again["steps"][0]["detail"]["action"], "present")
 
+    def test_a_new_checkout_gets_the_hosts_ip_cache_before_any_link(self) -> None:
+        """R41-F6 (2026-11-24): every HPC link synthesised the platform's IPs again, ~2 h 10 min, because v++ keeps
+        its IP cache in the checkout and every commit is a new checkout."""
+        with tempfile.TemporaryDirectory(prefix="tc-ipcache-") as td:
+            tmp = Path(td)
+            repo, commit = candidate_repo(tmp)
+            ssh = tmp / "ssh"
+            ssh.write_text(FAKE_SSH.format(python=PY), encoding="utf-8")
+            ssh.chmod(ssh.stat().st_mode | stat.S_IXUSR)
+            seed = tmp / "seed"
+            (seed / "0" / "0" / "0009985eb0c99b81").mkdir(parents=True)
+            (seed / "0" / "0" / "0009985eb0c99b81" / "ip.dcp").write_text("netlist", encoding="utf-8")
+
+            def host(name: str, seed_dir: Path | None):
+                entry = {"ssh": name, "roles": ["build"], "python": PY,
+                         "workspace": str(tmp / name), "state_dir": str(tmp / f"{name}-state")}
+                if seed_dir is not None:
+                    entry["ip_cache_seed"] = str(seed_dir)
+                return parse_hosts({"schema_version": 1, "hosts": {name: entry}})[name]
+
+            seeded = host("seeded", seed)
+            first = sync(seeded, commit, repo, ssh_binary=str(ssh))
+            self.assertEqual(first["action"], "created")
+            self.assertTrue(first["ip_cache"]["seeded"], first)
+            cache = Path(seeded.checkout(commit)) / ".ipcache"
+            self.assertEqual((cache / "0" / "0" / "0009985eb0c99b81" / "ip.dcp").read_text(), "netlist")
+            self.assertEqual(list((tmp / "seeded" / "incoming").iterdir()), [])
+            # The cache is not part of the tree: the checkout is still clean, and a second sync leaves it.
+            again = sync(seeded, commit, repo, ssh_binary=str(ssh))
+            self.assertEqual(again["action"], "present")
+            self.assertNotIn("ip_cache", again)
+
+            plain = sync(host("plain", None), commit, repo, ssh_binary=str(ssh))
+            self.assertNotIn("ip_cache", plain)
+            self.assertFalse((tmp / "plain" / "checkouts" / commit / ".ipcache").exists())
+
+            missing = sync(host("missing", tmp / "no-such-seed"), commit, repo, ssh_binary=str(ssh))
+            self.assertEqual(missing["action"], "created")
+            self.assertFalse(missing["ip_cache"]["seeded"])
+            self.assertIn("cp failed", missing["ip_cache"]["error"])
+            self.assertFalse((tmp / "missing" / "checkouts" / commit / ".ipcache").exists())
+            self.assertEqual(list((tmp / "missing" / "incoming").iterdir()), [])
+
     def test_a_board_block_needs_a_card_server(self) -> None:
         hosts = parse_hosts({"schema_version": 1, "hosts": {
             "builder": {"ssh": "b", "roles": ["build"], "workspace": "/w", "state_dir": "/s"}}})
@@ -502,6 +546,51 @@ class PipelineRecovery(unittest.TestCase):
         self.assertEqual(second["board"]["attempt"], f"{first['run_id']}.measure.2")
         result = load_json(self.tmp / "card-state" / "runs" / first["run_id"] / "result.json")
         self.assertEqual(result["board_config_source"], "measure")
+
+    def software_change(self) -> str:
+        """A second commit that changes only software: the machine stays the first commit's."""
+        (self.repo / "compiler").mkdir(exist_ok=True)
+        (self.repo / "compiler" / "pass.py").write_text("FUSE = True\n", encoding="utf-8")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-q", "-m", "compiler only")
+        return git(self.repo, "rev-parse", "HEAD")
+
+    def test_a_software_change_is_measured_on_the_image_it_shares(self) -> None:
+        # The base is built and measured once; a commit that changed only software
+        # is then measured on that image, with its own checkout driving the card.
+        first = self.pipe(self.manifest())
+        self.assertEqual(first["status"], "PASS", first.get("error"))
+        image = first["build"]["xclbin_sha256"]
+        changed = self.software_change()
+        again = self.pipe(dict(self.manifest(), source_commit=changed), build_host=None,
+                          measure_run=first["run_id"], expect_xclbin_sha256=image)
+        self.assertEqual(again["status"], "PASS", again.get("error"))
+        self.assertEqual([s["name"] for s in again["steps"]], ["sync:card", "doctor:card", "board:measure", "board"])
+        self.assertEqual(again["board"]["xclbin_sha256"], image)
+        self.assertEqual((again["board"]["software"]["commit"], again["board"]["software"]["relation"]),
+                         (changed, "differs"))
+        self.assertEqual(again["build"], {"status": "PASS", "run_id": first["run_id"], "reused": True,
+                                          "host": None, "xclbin_sha256": image})
+        self.assertFalse((self.tmp / "builder" / "checkouts" / changed).exists())   # no build server involved
+
+    def test_measuring_another_image_than_expected_fails(self) -> None:
+        first = self.pipe(self.manifest())
+        changed = self.software_change()
+        wrong = self.pipe(dict(self.manifest(), source_commit=changed), build_host=None,
+                          measure_run=first["run_id"], expect_xclbin_sha256="0" * 64)
+        self.assertEqual(wrong["status"], "PIPELINE_FAIL")
+        self.assertIn("not the expected", wrong["error"])
+
+    def test_measure_run_names_the_runs_own_candidate(self) -> None:
+        first = self.pipe(self.manifest())
+        changed = self.software_change()
+        other = self.pipe(dict(self.manifest(candidate="rec-2"), source_commit=changed), build_host=None,
+                          measure_run=first["run_id"])
+        # The card server refuses before measuring anything: the run was built as another candidate.
+        self.assertEqual(other["status"], "FAILED_TO_START")
+        self.assertIn("names candidate_id 'rec-2'", json.dumps(other["board"]))
+        with self.assertRaises(Exception):
+            self.pipe(self.manifest(), measure_run=first["run_id"], build_run=first["run_id"])
 
     def test_build_run_must_be_this_candidate(self) -> None:
         first = self.pipe(self.manifest(), skip_board=True)

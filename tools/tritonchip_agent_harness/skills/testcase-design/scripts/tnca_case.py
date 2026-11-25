@@ -1,0 +1,259 @@
+#!/usr/bin/env python3
+"""Measure a test case of your own the way the evaluation measures a point.
+
+    python /opt/tnca-skills/testcase-design/scripts/tnca_case.py CASE.py [CASE2.py ...] [--profile P] [--opt-level N] [--kernels N] [--json OUT]
+    python /opt/tnca-skills/testcase-design/scripts/tnca_case.py /opt/tnca-skills/testcase-design/examples/*.py
+
+Run it from the repository checkout you work in (or set TNCA_ROOT): the bound
+reads that checkout's spec/ and compiler/targets. The device it measures is the
+one your environment selects: this script sets TNCA_PROFILE and TNCA_OPT_LEVEL
+and nothing else about the machine, so TNCA_BACKEND and its arguments are your
+shell's, as the task text sets them.
+
+A case file defines
+
+    def make():                # -> (torch.nn.Module, tuple of CPU input tensors)
+    MODEL = False              # True: a whole model, judged at the model tolerance
+    TOL = None                 # a tolerance of your own instead of the protocol's
+    FP_OPS = 0.0; SFU_OPS = 0.0   # demand the FLOP counter cannot see (see bound.demand_of)
+    DEMAND = None              # a bound.Demand declared by hand, instead of the measured one
+
+and this script does, for each case, what the evaluation does for a point:
+
+  1. the reference: eager PyTorch in binary32 on the CPU, inputs and weights
+     upcast exactly (protocol.reference);
+  2. the run: torch.compile with TNCA as the backend, compiled once and run
+     once, every launch logged;
+  3. the verdict: the protocol's criterion at the protocol's tolerance
+     (protocol.compare); any host fallback fails the case; a case that does not
+     compile or run fails with the evaluation's status names;
+  4. the time: the sum of the device cycles of every launch, and those
+     launches grouped by kernel and grid, largest share first (printed for a
+     case of more than one launch; --kernels N rows, 0 for all);
+  5. the bound: demand measured from the case (bound.demand_of), L against
+     the WHOLE CHIP (bound.chip_peak: in a run, the base machine's roof the
+     card's eta is against), eta = L / T, which resource binds, and what the
+     case did per cycle against that resource's rate.
+
+What differs from the evaluation, and how to read it:
+
+  * The cycles here are the ones the device reports to the driver. The score
+    uses the platform's own count at the device boundary, which is a few
+    cycles more per launch. Compare cases and versions by their RELATIVE
+    cycles; do not expect the absolute number to equal a score.
+  * The device you measure is the one your environment points at, built as
+    the task text says. After a change to the RTL, a profile, a device
+    description or a compiler target, build it again or you measure the old
+    machine.
+  * Each case is compiled afresh (torch._dynamo.reset), so the first call
+    compiles and runs, as in the evaluation.
+
+Importable too: `measure(module, inputs, profile=..., opt_level=...)` returns the
+same dict the --json output holds.
+"""
+import argparse
+import importlib.util
+import json
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
+
+import protocol  # noqa: E402
+import bound as B  # noqa: E402
+
+STATUSES = ('pass', 'numeric-error', 'compile-failure', 'runtime-fault', 'capacity-exceeded',
+            'timeout', 'unsupported', 'not-measured')
+# How the resources read, as the card's replies name them; and the unit of each one's rate.
+NAMES = {'fp_lane': 'compute', 'mem_bytes': 'memory', 'int_lane': 'integer', 'sfu_lane': 'special-function',
+         'mma_mac': 'matrix', 'dependency': 'dependency'}
+UNITS = {'fp_lane': 'FP ops/cycle', 'mem_bytes': 'B/cycle', 'mma_mac': 'MACs/cycle'}
+KERNELS = 8
+
+
+def _env(profile, opt_level):
+    os.environ['TNCA_PROFILE'] = profile
+    os.environ['TNCA_OPT_LEVEL'] = str(opt_level)
+    os.environ.setdefault('TNCA_HOST_TIMEOUT', '3600')
+
+
+def measure(module, inputs, *, profile, opt_level=2, tol=None, model=False, demand=None,
+            fp_ops=0.0, sfu_ops=0.0):
+    """One case, measured the evaluation's way. Never raises for a failing case:
+    the failure is the result (`status`, `problems`)."""
+    _env(profile, opt_level)
+    import torch
+    import triton                                            # noqa: F401  (before the driver)
+    import tnca.inductor
+    from tnca.triton_backend.driver import launch_log
+    from torch._inductor.utils import run_and_get_code
+
+    dtype = protocol.dtype_of(module, inputs)
+    if tol is None:
+        if dtype is None:
+            raise ValueError('the case has no floating-point input or parameter; pass tol=')
+        tol = protocol.tolerance(dtype, model=model)
+    rec = dict(schema='tnca-testcase/1', profile=profile, opt_level=opt_level, dtype=dtype, tol=tol,
+               status='not-measured', problems=[], fallbacks=[], correctness=None, time=None,
+               demand=None, bound=None, eta=None, achieved=None, host=None)
+
+    ref = protocol.reference(module, inputs)
+    d = peak = None
+    try:
+        d = demand or B.demand_of(module, inputs, fp_ops=fp_ops, sfu_ops=sfu_ops)
+        rec['demand'] = d.as_dict()
+        # The case's dtype is its matrix operand format for the bound, as the
+        # evaluation passes a point's (an FP8 case on a matrix_dp profile gets the 4x rate).
+        peak = B.chip_peak(profile, mma_dtype=dtype if dtype in B.MMA_GROUP else None)
+        L, binding, terms = B.lower_bound(B.workload(d), peak)
+        rec['bound'] = dict(cycles=L, binding=binding, terms=terms, unit='cycles', rates=peak['rates'],
+                            scope='the whole chip, as the card\'s eta', source=peak['source'])
+    except Exception as exc:                                 # a bound is advice, not a verdict
+        rec['problems'].append(f'no bound: {type(exc).__name__}: {exc}')
+
+    tnca.inductor.configure()
+    torch._dynamo.reset()
+    t0 = time.monotonic()
+    try:
+        with torch.no_grad(), launch_log() as log:
+            got, code = run_and_get_code(torch.compile(module), *inputs)
+    except Exception as exc:
+        rec['status'] = protocol.classify(exc)
+        rec['problems'].append(f'{type(exc).__name__}: {str(exc)[:800]}')
+        return rec
+    wall = time.monotonic() - t0
+
+    rec['fallbacks'] = tnca.inductor.host_fallbacks(code)
+    cmp = protocol.compare(got, ref, tol)
+    rec['correctness'] = cmp
+    cycles = sum(e['device_cycles'] or 0 for e in log)
+    per_launch = [dict(kernel=e['kernel'], grid=list(e['grid']), cycles=e['device_cycles']) for e in log]
+    rec['time'] = dict(device_cycles=cycles, launches=len(log), per_launch=per_launch,
+                       kernels=kernels(per_launch),
+                       note='the device\'s count as the driver sees it; the score counts at the device '
+                            'boundary, a few cycles more per launch')
+    rec['host'] = dict(wall_s=round(wall, 3),
+                       upload_bytes=sum(e['upload_bytes'] for e in log),
+                       download_bytes=sum(e['download_bytes'] for e in log))
+    if not log:
+        rec['problems'].append('no launch: nothing ran on the device')
+    if rec['fallbacks']:
+        rec['status'] = 'unsupported'
+        rec['problems'].append(f'host fallback: {rec["fallbacks"]}')
+    elif not cmp['ok']:
+        rec['status'] = 'numeric-error'
+        rec['problems'].append(cmp['detail'])
+    elif not log:
+        rec['status'] = 'unsupported'
+    else:
+        rec['status'] = 'pass'
+    if rec['status'] == 'pass' and rec['bound'] and cycles:
+        rec['eta'] = B.eta(rec['bound']['cycles'], cycles)
+        rec['achieved'] = B.achieved(d, cycles, peak)
+        if rec['eta'] > 1:
+            rec['problems'].append(f'eta {rec["eta"]:.3g} > 1: the demand is overcounted or the count is wrong')
+    return rec
+
+
+def kernels(per_launch):
+    """The launches grouped by (kernel, grid), largest share of the cycles first: what a case of many
+    launches spends its time on. The score is their sum, so the rows add up to the case's cycles."""
+    total = sum(e['cycles'] or 0 for e in per_launch) or 1
+    rows = {}
+    for e in per_launch:
+        r = rows.setdefault((e['kernel'], tuple(e['grid'])),
+                            dict(kernel=e['kernel'], grid=list(e['grid']), launches=0, cycles=0))
+        r['launches'] += 1
+        r['cycles'] += e['cycles'] or 0
+    out = sorted(rows.values(), key=lambda r: -r['cycles'])
+    for r in out:
+        r['share'] = r['cycles'] / total
+    return out
+
+
+def load_case(path):
+    spec = importlib.util.spec_from_file_location(f'_case_{Path(path).stem}', path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    if not hasattr(mod, 'make'):
+        raise SystemExit(f'{path}: defines no make()')
+    return mod
+
+
+def run_case(path, profile, opt_level):
+    mod = load_case(path)
+    module, inputs = mod.make()
+    rec = measure(module, tuple(inputs), profile=profile, opt_level=opt_level,
+                  tol=getattr(mod, 'TOL', None), model=bool(getattr(mod, 'MODEL', False)),
+                  demand=getattr(mod, 'DEMAND', None),
+                  fp_ops=float(getattr(mod, 'FP_OPS', 0.0)), sfu_ops=float(getattr(mod, 'SFU_OPS', 0.0)))
+    rec['case'] = str(path)
+    return rec
+
+
+def summary(rec, top=KERNELS):
+    s = f"{rec['status']:14} {Path(rec['case']).name:28}"
+    if rec['time']:
+        s += f" {rec['time']['device_cycles']:>9} cycles  {rec['time']['launches']} launch(es)"
+    if rec['correctness'] and rec['correctness']['max_rel_err'] is not None:
+        s += f"  err {rec['correctness']['max_rel_err']:.2e} (tol {rec['tol']:g})"
+    if rec['eta'] is not None:
+        b = rec['bound']['binding']
+        got = (rec.get('achieved') or {}).get(b)
+        did = f": {got['per_cycle']:.3g} of {got['rate']:g} {UNITS[b]}" if got and b in UNITS else ''
+        s += f"  eta {rec['eta']:.4f} ({NAMES.get(b, b)} binds{did}; L {rec['bound']['cycles']:.0f}, whole chip)"
+    rows = (rec['time'] or {}).get('kernels') or []
+    if len(rec['time']['per_launch'] if rec['time'] else ()) > 1 and rows:
+        shown = rows if top == 0 else rows[:top]
+        s += '\n               share     cycles  launches  grid          kernel'
+        for r in shown:
+            grid = 'x'.join(str(g) for g in r['grid'])
+            s += f"\n              {r['share']:6.1%} {r['cycles']:>10} {r['launches']:>9}  {grid:12}  {r['kernel']}"
+        if len(shown) < len(rows):
+            rest = rows[len(shown):]
+            s += (f"\n               ... {len(rest)} more kernel(s), "
+                  f"{sum(r['share'] for r in rest):.1%} of the cycles (--kernels 0 lists them)")
+    if rec['problems']:
+        s += '\n' + ''.join(f"               {p}\n" for p in rec['problems']).rstrip('\n')
+    return s
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
+    ap.add_argument('cases', nargs='+', help='case files, each with make()')
+    ap.add_argument('--profile', default=os.environ.get('TNCA_PROFILE', 'core-sim'))
+    ap.add_argument('--opt-level', type=int, default=int(os.environ.get('TNCA_OPT_LEVEL', '2')))
+    ap.add_argument('--kernels', type=int, default=KERNELS,
+                    help=f'kernel rows printed for a case of several launches (default {KERNELS}; 0: all)')
+    ap.add_argument('--json', type=Path, help='append one JSON record per case to this file')
+    args = ap.parse_args(argv)
+    if len(args.cases) > 1 and os.environ.get('TNCA_BACKEND', '').startswith('systemc-tlm'):
+        # A performance model is one process per Python process, and the Event Model keeps its caches from one
+        # case to the next, so a later case would start warm and come out short. One process per case, as the
+        # evaluation runs one point per process.
+        bad = 0
+        for path in args.cases:
+            cmd = [sys.executable, os.path.abspath(__file__), str(path), '--profile', args.profile,
+                   '--opt-level', str(args.opt_level), '--kernels', str(args.kernels)] + (
+                ['--json', str(args.json)] if args.json else [])
+            bad += subprocess.run(cmd).returncode != 0
+        return 1 if bad else 0
+    bad = 0
+    for path in args.cases:
+        rec = run_case(path, args.profile, args.opt_level)
+        print(summary(rec, args.kernels), flush=True)
+        bad += rec['status'] != 'pass'
+        if args.json:
+            args.json.parent.mkdir(parents=True, exist_ok=True)
+            with open(args.json, 'a') as f:
+                f.write(json.dumps(rec, default=str) + '\n')
+    return 1 if bad else 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

@@ -62,7 +62,7 @@ class U50MockFlowTests(unittest.TestCase):
     def _config(self, root: Path) -> tuple[U50Config, Path]:
         bin_dir = root / "bin"
         bin_dir.mkdir()
-        for tool in ("vivado", "v++", "xclbinutil"):
+        for tool in ("vivado", "v++", "xclbinutil", "unzip"):
             _fake_tool(bin_dir, tool)
         vitis = root / "vitis"
         (vitis / "settings64.sh").parent.mkdir(parents=True)
@@ -104,6 +104,60 @@ class U50MockFlowTests(unittest.TestCase):
         # A plan is not a build: no .xo/.xclbin must be reported as valid.
         self.assertIsNotNone(result.artifacts)
         self.assertFalse(result.artifacts.ok)
+
+    def test_link_preflight_needs_the_system_unzip(self) -> None:
+        # v++ --link unpacks the .xo with the system unzip; a build server
+        # without it must fail the doctor, not the link hours later.
+        with tempfile.TemporaryDirectory(prefix="tnca-harness-mock-") as td:
+            root = Path(td)
+            config, bin_dir = self._config(root)
+            old_path = os.environ.get("PATH", "")
+            try:
+                os.environ["PATH"] = str(bin_dir)
+                with_unzip = U50Adapter(config).preflight(root / "run", stage="link")
+                (bin_dir / "unzip").unlink()
+                without = U50Adapter(config).preflight(root / "run", stage="link")
+            finally:
+                os.environ["PATH"] = old_path
+        def unzip(result):
+            return next(c for c in result.checks if c.name == "unzip")
+        self.assertTrue(unzip(with_unzip).ok)
+        self.assertFalse(unzip(without).ok)
+        self.assertEqual(unzip(without).severity, "error")
+        self.assertFalse(without.ok)
+
+    def test_link_preflight_needs_the_parts_bitstream_data(self) -> None:
+        # RSCL, 2026-11-08: a Vivado with only the virtexuplusHBM family routed
+        # an xcu280 design and failed write_bitstream; the doctor now says so.
+        import dataclasses
+        from tritonchip_fpga_harness.adapters.u50 import bitstream_device_data
+        with tempfile.TemporaryDirectory(prefix="tnca-harness-mock-") as td:
+            root = Path(td)
+            config, bin_dir = self._config(root)
+            vitis = root / "Xilinx" / "Vitis" / "2023.2"
+            (vitis / "settings64.sh").parent.mkdir(parents=True)
+            (vitis / "settings64.sh").write_text("# mock\n", encoding="utf-8")
+            hbm = root / "Xilinx" / "Vivado" / "2023.2" / "data" / "parts" / "xilinx" / "virtexuplusHBM"
+            hbm.mkdir(parents=True)
+            config = dataclasses.replace(config, vitis_root=vitis, package_part="xcu280-fsvh2892-2L-e")
+            old_path = os.environ.get("PATH", "")
+            try:
+                os.environ["PATH"] = str(bin_dir)
+                without = U50Adapter(config).preflight(root / "run", stage="link")
+                devint = hbm.parent / "virtexuplus" / "devint"
+                devint.mkdir(parents=True)
+                for name in ("bsdata.cfg", "bsoptions.cfg"):
+                    (devint / name).write_text("# mock\n", encoding="utf-8")
+                with_data = U50Adapter(config).preflight(root / "run", stage="link")
+            finally:
+                os.environ["PATH"] = old_path
+            self.assertIsNone(bitstream_device_data(vitis, "vivado", "xc7a35t"))
+        def check(result):
+            return next(c for c in result.checks if c.name == "bitstream_data")
+        self.assertFalse(check(without).ok)
+        self.assertEqual(check(without).severity, "error")
+        self.assertIn("virtexuplus", check(without).detail)
+        self.assertTrue(check(with_data).ok)
 
     def test_mock_package_and_link_pass_end_to_end(self) -> None:
         with tempfile.TemporaryDirectory(prefix="tnca-harness-mock-") as td:

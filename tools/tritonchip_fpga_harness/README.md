@@ -235,6 +235,10 @@ Then the host:
 
 A leftover vendor process is reported, never killed. Setting
 `FPGA_HARNESS_ALLOW_EXISTING_VENDOR_PROCS=1` turns that one check into a warning.
+Inside an LSF job (`LSB_JOBID` set) the vendor processes of this account's
+other LSF jobs do not count: the scheduler gave each job its own slots on the
+node. A process in no LSF job, in this job, or whose `/proc/<pid>/environ`
+cannot be read still does.
 
 ### 3.4 Which source, and one run at a time
 

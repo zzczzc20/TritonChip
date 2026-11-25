@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import tempfile
 import re
+import subprocess
 import sys
 import unittest
 from unittest.mock import patch
@@ -17,6 +18,7 @@ REPO = Path(__file__).resolve().parents[3]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
+from tools.tritonchip_fpga_harness.adapters import u50 as u50_module
 from tools.tritonchip_fpga_harness.adapters.u50 import CommandResult, U50Adapter, U50Config, flow_clock
 
 
@@ -91,6 +93,30 @@ class U50ArtifactTest(unittest.TestCase):
             result = self.adapter.preflight(Path(td) / "run", dry_run=False, require_vendor_tools=False)
         self.assertFalse(result.ok)
         self.assertIn("existing_vendor_processes", {c.name for c in result.checks if not c.ok})
+
+    def test_inside_an_lsf_job_another_jobs_vendor_processes_do_not_count(self) -> None:
+        # R41-F6b, 2026-11-25: LSF put a flow on a node already running another of the run's flows, and the
+        # preflight refused it for that flow's Vivado. pid -> LSF job; None is no job or an environ we cannot read.
+        jobs = {"11": "637134", "12": "641000", "13": None, "14": None}
+        ps = "11 vivado\n12 loader\n13 vpl\n14 v++\n15 bash\n"
+        done = subprocess.CompletedProcess([], 0, stdout=ps, stderr="")
+        with patch.object(u50_module.subprocess, "run", return_value=done), \
+                patch.object(u50_module, "_lsf_job_of", side_effect=jobs.get):
+            with patch.dict(u50_module.os.environ, {"LSB_JOBID": "641000"}):
+                inside = u50_module._existing_vendor_processes()
+            with patch.dict(u50_module.os.environ, {}, clear=False):
+                u50_module.os.environ.pop("LSB_JOBID", None)
+                outside = u50_module._existing_vendor_processes()
+        self.assertEqual(inside, ["12 loader", "13 vpl", "14 v++"])     # its own job, no job, unreadable
+        self.assertEqual(outside, ["11 vivado", "12 loader", "13 vpl", "14 v++"])
+
+    def test_a_processs_lsf_job_is_read_from_its_environment(self) -> None:
+        with patch.object(Path, "read_bytes", return_value=b"PATH=/bin\0LSB_JOBID=637134\0HOME=/h\0"):
+            self.assertEqual(u50_module._lsf_job_of("891614"), "637134")
+        with patch.object(Path, "read_bytes", return_value=b"PATH=/bin\0HOME=/h\0"):
+            self.assertIsNone(u50_module._lsf_job_of("891614"))
+        with patch.object(Path, "read_bytes", side_effect=PermissionError("not ours")):
+            self.assertIsNone(u50_module._lsf_job_of("891614"))
 
     def test_flow_and_divider_contracts_are_checked(self) -> None:
         with tempfile.TemporaryDirectory() as td:

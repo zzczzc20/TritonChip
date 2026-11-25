@@ -1113,9 +1113,29 @@ def _resource_summary(samples: list[dict[str, Any]], work_dir: Path) -> dict[str
     }
 
 
+def _lsf_job_of(pid: str) -> str | None:
+    """The LSF job a process runs in (``LSB_JOBID`` in its environment); None if it has none or cannot be read."""
+    try:
+        environ = Path(f"/proc/{pid}/environ").read_bytes()
+    except OSError:
+        return None
+    for entry in environ.split(b"\0"):
+        if entry.startswith(b"LSB_JOBID="):
+            return entry[len(b"LSB_JOBID="):].decode(errors="replace") or None
+    return None
+
+
 def _existing_vendor_processes() -> list[str]:
-    """Find same-user Vivado/Vitis processes before admitting a full run."""
+    """Find same-user Vivado/Vitis processes before admitting a full run.
+
+    Inside an LSF job, the processes of this account's other LSF jobs are left
+    out: the scheduler gave each job its own slots on the node, so they do not
+    compete with this one (R41-F6b, 2026-11-25: a flow placed on a node that
+    already ran another of the run's flows was refused twice, ~6 h lost). A
+    process in no LSF job, in this one, or whose job cannot be read still counts.
+    """
     found: list[str] = []
+    own_job = os.environ.get("LSB_JOBID")
     try:
         ps = subprocess.run(
             ["ps", "-u", str(os.getuid()), "-o", "pid=,comm="],
@@ -1128,6 +1148,10 @@ def _existing_vendor_processes() -> list[str]:
     for line in ps.stdout.splitlines():
         fields = line.split()
         if len(fields) >= 2 and fields[1].lower() in {"vivado", "vpl", "v++", "loader"}:
+            if own_job:
+                job = _lsf_job_of(fields[0])
+                if job is not None and job != own_job:
+                    continue
             found.append(" ".join(fields[:2]))
     return found
 

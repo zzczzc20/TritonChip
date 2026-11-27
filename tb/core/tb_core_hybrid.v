@@ -39,6 +39,7 @@ module tb_core_hybrid;
     parameter RSLICE         = 0;
     parameter RPAIR          = 0;
     parameter MTX_ABUF       = 0;
+    parameter MTX_PIPE       = 0;
     parameter HAS_TENSOR_XPOSE = 0;
     // R41 G4 / R42: the line-wide transfer engine (needs LSU_TAG_W 7: a port tag with a path bit, a word-tag space and 32 line slots), and its half-line rows
     parameter TENSOR_LINE      = 0;
@@ -108,7 +109,7 @@ module tb_core_hybrid;
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
-        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .TENSOR_LINE(TENSOR_LINE), .TENSOR_LINE_HALF(TENSOR_LINE_HALF)
     ) dut (

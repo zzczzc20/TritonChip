@@ -42,6 +42,7 @@ module tb_tnca_core;
     parameter RSLICE         = 0;
     parameter RPAIR          = 0;
     parameter MTX_ABUF       = 0;
+    parameter MTX_PIPE       = 0;
     parameter MTX_VRF_REG    = 0;
     parameter FMA_IMPL       = 0;   // R41 G2 FMA rebuild
     parameter MAC_DP         = 0;   // R41 G2 shared MAC lane + m.mma.dp.async
@@ -112,7 +113,7 @@ module tb_tnca_core;
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
-        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_VRF_REG(MTX_VRF_REG),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE), .MTX_VRF_REG(MTX_VRF_REG),
         .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) dut (

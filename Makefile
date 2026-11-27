@@ -363,6 +363,8 @@ $(TB)/core/progs/t11_matrix.s: $(TB)/core/progs/gen_t11_matrix.py $(TOOLS)/model
 
 $(TB)/core/progs/t41_mmadp.s: $(TB)/core/progs/gen_t41_mmadp.py $(TOOLS)/model/fdp.py
 	$(PYTHON) $<
+$(TB)/core/progs/t42_mmaovl.s: $(TB)/core/progs/gen_t42_mmaovl.py $(TOOLS)/model/fdp.py
+	$(PYTHON) $<
 
 # R41 G2: m.mma.dp.async (ISA sec 9C.4) through the core with the shared MAC
 # lane (MAC_DP=1), at three register-cut placements (latency 3, 4, 5), against
@@ -865,6 +867,68 @@ core-abuf16: $(patsubst %,$(BUILD)/%.hex,$(RUN2_PROGS)) $(BUILD)/t41_mmadp.hex \
 	     "$(VVP) $(BUILD)/tb_core_abuf16_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=4000000 $$extra" \
 	     || exit 1; \
 	 done
+
+# R42: the matrix unit's overlapped sequencer (tnca_core MTX_PIPE=1, profile
+# core-r42) on the run-2 core bench, same program list as core-run2.
+$(BUILD)/tb_core_r42.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                          $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R41_RUN2) -P tb_tnca_core.MTX_PIPE=1 -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_r42_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                              $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R41_RUN2) -P tb_tnca_core.MTX_PIPE=1 -P tb_tnca_core.MEM_LATENCY=6 \
+	   -P tb_tnca_core.RANDOM_STALL=1 -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+# the same with the banked file's matrix response unregistered (the device
+# simulation's elaboration of the profile: tnca_shell has no MTX_VRF_REG)
+$(BUILD)/tb_core_r42_v0.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                             $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R41_RUN2) -P tb_tnca_core.MTX_PIPE=1 -P tb_tnca_core.MTX_VRF_REG=0 -o $@ $(TB)/core/tb_tnca_core.v
+.PHONY: core-r42
+core-r42: export ARGS_t04_roles := +roles=2
+core-r42: export ARGS_t05_fault := +roles=2 +expectfault=01
+core-r42: export ARGS_t13_share := +roles=2 +aliasvrf
+core-r42: export ARGS_t15_target_vrf_v5_x8_g2c4_dp := +allroles
+core-r42: export ARGS_t41_boundary := +roles=1
+core-r42: export ARGS_t18_squash := +roles=2
+core-r42: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-r42: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-r42: export ARGS_t39_slice := +allroles +slice
+core-r42: export ARGS_t39_pair := +roles=2 +pair
+core-r42: export ARGS_t32_xpose_badsize := +expectfault=04
+core-r42: $(patsubst %,$(BUILD)/%.hex,$(RUN2_PROGS)) $(BUILD)/t41_mmadp.hex $(BUILD)/t42_mmaovl.hex \
+          $(BUILD)/tb_core_r42.vvp $(BUILD)/tb_core_r42_ooo.vvp $(BUILD)/tb_core_r42_v0.vvp \
+          $(BUILD)/tb_core_run2.vvp | dirs
+	@for p in $(RUN2_PROGS) t41_mmadp t42_mmaovl; do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (r42)" \
+	     "$(VVP) $(BUILD)/tb_core_r42.vvp +hex=$(BUILD)/$$p.hex +maxcycles=3000000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r42, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_r42_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=4000000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r42, MTX_VRF_REG 0)" \
+	     "$(VVP) $(BUILD)/tb_core_r42_v0.vvp +hex=$(BUILD)/$$p.hex +maxcycles=3000000 $$extra" \
+	     || exit 1; \
+	 done
+	@$(TOOLS)/run_test.sh "t42_mmaovl (run2: MTX_PIPE 0)" \
+	   "$(VVP) $(BUILD)/tb_core_run2.vvp +hex=$(BUILD)/t42_mmaovl.hex +maxcycles=3000000"
+
+# R42: tnca_matrix OVL=1 against OVL=0, random command lists (tb_matrix_ovl.v)
+MTX_OVL_SEEDS ?= 1 2 3
+MTX_OVL_SEGS ?= 20
+$(BUILD)/tb_matrix_ovl_dp%.vvp: $(RTL_DEPS) $(TB)/core/tb_matrix_ovl.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen \
+	   -P tb_matrix_ovl.MAC_DP=$(word 1,$(subst v, ,$*)) -P tb_matrix_ovl.VRF_MODE=$(word 2,$(subst v, ,$*)) \
+	   -o $@ $(TB)/core/tb_matrix_ovl.v
+.PHONY: matrix-ovl
+matrix-ovl: $(BUILD)/tb_matrix_ovl_dp1v1.vvp $(BUILD)/tb_matrix_ovl_dp1v2.vvp \
+            $(BUILD)/tb_matrix_ovl_dp1v0.vvp $(BUILD)/tb_matrix_ovl_dp0v1.vvp
+	@for b in dp1v1 dp1v2 dp1v0 dp0v1; do for s in $(MTX_OVL_SEEDS); do \
+	   $(TOOLS)/run_test.sh "matrix OVL against OVL=0 ($$b, seed $$s)" \
+	     "$(VVP) $(BUILD)/tb_matrix_ovl_$$b.vvp +seed=$$s +segs=$(MTX_OVL_SEGS)" || exit 1; \
+	 done; done
 
 .PHONY: core-mtx-vrf-reg
 core-mtx-vrf-reg:

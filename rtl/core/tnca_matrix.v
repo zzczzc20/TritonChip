@@ -82,7 +82,31 @@ module tnca_matrix #(
     // R42 lineelig: 2 = a buffer of sixteen registers, which also takes the FP16/BF16
     // K32 fragment (16 registers) and the FP8 K64 fragment: every format and K but
     // FP16/BF16 K64. 1 is as it was.
-    parameter ABUF     = 0
+    parameter ABUF     = 0,
+    // R42: the overlapped sequencer (tnca_core MTX_PIPE). 0 = the sequencer
+    // above, cycle for cycle. 1 = no structural bubbles between MAC rows:
+    //   * every command sweeps out of the A buffer (32 registers deep, so
+    //     FP16/BF16 K32 and K64 and E4M3 K64 too), and the buffer is filled
+    //     WHILE the first k step sweeps -- row m needs only the registers up
+    //     to its own, so there is no S_LOADA in front of the command;
+    //   * B[k+1] is read during the sweep of step k, timed to arrive in the
+    //     cycle row 15 issues, so there is no S_LOADB between k steps;
+    //   * `done` fires the cycle after the last row's result is written,
+    //     with no S_DRAIN/S_DONE turn-around;
+    //   * one m.mma may be accepted while another runs (pend_ok): its B[0]
+    //     and its A registers are read during the last k step of the running
+    //     command, into the buffer entries that step no longer reads, and
+    //     its row 0 issues the cycle after the running command's last row.
+    // The MAC operations, their order within a command and between
+    // commands, and the events are those of the sequencer above.
+    // VRF_LAT: cycles from vrf_req to vrf_valid when nothing contends (0 the
+    // behavioural file, 1 the banked file, 2 with the registered response);
+    // it only phases the B read ahead, a wrong value costs bubbles.
+    // TAG_W: an opaque tag per command (the core's RCTX), returned with each
+    // vector read so the read is made in its own command's context.
+    parameter OVL      = 0,
+    parameter VRF_LAT  = 1,
+    parameter TAG_W    = 1
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -113,8 +137,24 @@ module tnca_matrix #(
     input  wire [VLEN*ELEN-1:0]     cmd_vdata,
     input  wire [31:0]              cmd_scale,
     input  wire [VLEN-1:0]          cmd_mask,
+    input  wire [TAG_W-1:0]         cmd_tag,
 
     output wire                     busy,
+    // ---- R42 OVL (all zero with OVL = 0) -------------------------------------
+    // pend_ok: an m.mma presented next cycle is accepted although busy.
+    // cmd_slot_live: a running or pending m.mma writes accumulator cmd_slot.
+    // done_keep (with done): another accepted m.mma still writes done_slot.
+    // pend_freed: pulse, the pending command became the running one.
+    output wire                     pend_ok,
+    output wire                     cmd_slot_live,
+    output reg                      done_keep,
+    output reg                      pend_freed,
+    output wire [TAG_W-1:0]         vrf_tag,
+    output wire [TAG_W-1:0]         cur_tag,
+    output wire                     pend_v,
+    output wire [TAG_W-1:0]         pend_tag,
+    output wire                     ret_v,
+    output wire [TAG_W-1:0]         ret_tag,
 
     // ---- vector register read port (asynchronous) ---------------------------
     output wire [7:0]               vrf_addr,
@@ -150,6 +190,9 @@ module tnca_matrix #(
                S_DRAIN = 3'd5,
                S_DONE  = 3'd6,
                S_LOADA = 3'd7;
+    // OVL: the m.mma states are S_MAC and S_TAIL (the last rows' results on
+    // their way to the file, nothing left to issue); S_LOADA/S_LOADB unused.
+    localparam S_TAIL  = S_LOADB;
 
     integer i;
     genvar  g;
@@ -179,8 +222,9 @@ module tnca_matrix #(
                          (r_k == `TNCA_MMA_K32) ? 7'd32 : 7'd64;
 
     // ABUF: the A fragment, 16 x k_limit elements, in at most 8 registers.
-    localparam ABUF_N = (ABUF == 2) ? 16 : 8;      // registers in the buffer
-    localparam ABUF_IW = (ABUF == 2) ? 4 : 3;      // its index bits
+    // OVL: 32 registers (every format and K). Otherwise 8, or 16 with ABUF 2 (R42 lineelig).
+    localparam ABUF_N = (OVL != 0) ? 32 : ((ABUF == 2) ? 16 : 8);      // registers in the buffer
+    localparam ABUF_IW = (ABUF == 2) ? 4 : 3;      // index bits of the OVL = 0 buffer
     reg  [VLEN*ELEN-1:0] abuf [0:ABUF_N-1];
     reg  [3:0]           la;          // the A register being read
     reg                  use_abuf;    // this command sweeps out of abuf
@@ -212,6 +256,38 @@ module tnca_matrix #(
     assign busy = (st != S_IDLE);
 
     //==========================================================================
+    // R42 OVL state (unused, and removed by synthesis, with OVL = 0)
+    //==========================================================================
+    reg [TAG_W-1:0]  r_tag;
+    // the pending m.mma
+    reg              p_v;
+    reg [ACC_W-1:0]  p_slot;
+    reg [7:0]        p_va, p_vb;
+    reg [1:0]        p_k, p_dt, p_bdt;
+    reg              p_dp;
+    reg              p_bar_en, p_sf_en;
+    reg [BAR_W-1:0]  p_bar, p_sf_bar;
+    reg [TAG_W-1:0]  p_tag;
+    // the command whose last row has issued and whose `done` has not fired
+    reg              q_live;
+    reg              q_bar_en;
+    reg [BAR_W-1:0]  q_bar;
+    reg [TAG_W-1:0]  q_tag;
+    reg              b_ok;        // b_row holds B[kk] of the running command
+    reg [5:0]        la_n;        // its A registers in abuf, 0..32
+    reg [5:0]        la_p;        // the pending command's
+    // the vector read in flight: registered address, so the file's request
+    // comes from flops
+    reg              f_req;
+    reg [7:0]        f_addr;
+    reg [TAG_W-1:0]  f_tag;
+    reg              f_isb;       // a B row (else an A register)
+    reg              f_nx;        // B: of the NEXT step (or the pending command)
+    reg              f_pd;        // A or B: the pending command's
+    reg [1:0]        f_part;      // B: how to cut the register (b_part, formats)
+    reg              f_e8, f_dp, f_bdt1, f_g4;
+
+    //==========================================================================
     // Fragment addressing
     //
     // A fragment is a window's registers read as a flat row-major *byte*
@@ -230,15 +306,35 @@ module tnca_matrix #(
     wire [7:0]  b_vreg = r_vb + (elemB8 ? {3'd0, kk[6:2]} : {2'd0, kk[6:1]});
     wire [1:0]  b_part = elemB8 ? kk[1:0] : {kk[0], 1'b0};
 
-    assign vrf_addr = (st == S_LOADB) ? b_vreg
-                    : (st == S_LOADA) ? (r_va + {4'd0, la})
-                    : a_vreg;
+    generate
+        if (OVL == 0) begin : g_va0
+            assign vrf_addr = (st == S_LOADB) ? b_vreg
+                            : (st == S_LOADA) ? (r_va + {4'd0, la})
+                            : a_vreg;
+        end else begin : g_va1
+            assign vrf_addr = f_addr;
+        end
+    endgenerate
 
     // The two states that read the vector file. Held while the data has
     // not come back: the address is driven from the state, so holding the
     // state holds the request.
-    assign vrf_req = (st == S_LOADB) || (st == S_LOADA) || (st == S_MAC && !use_abuf);
+    generate
+        if (OVL == 0) begin : g_vr0
+            assign vrf_req = (st == S_LOADB) || (st == S_LOADA) || (st == S_MAC && !use_abuf);
+        end else begin : g_vr1
+            assign vrf_req = f_req;
+        end
+    endgenerate
     wire vrf_wait = vrf_req && !vrf_valid;
+    // How the B register on vrf_data is cut into the row latch: the running
+    // command's format and step, or (OVL) those registered with the read,
+    // which may be the next step's or the pending command's.
+    wire       s_e8   = (OVL != 0) ? f_e8   : elem8;
+    wire [1:0] s_part = (OVL != 0) ? f_part : b_part;
+    wire       s_bdt1 = (OVL != 0) ? f_bdt1 : r_bdt[1];
+    wire       s_g4   = (OVL != 0) ? f_g4   : g4;
+    wire       s_dp   = (OVL != 0) ? f_dp   : ((MAC_DP != 0) && r_dp);
 
     // B row latch. One 16-bit slot per element whatever the format: an 8-bit
     // element sits right-aligned in its slot, which is where the converter
@@ -256,20 +352,29 @@ module tnca_matrix #(
     genvar bi;
     generate
         for (bi = 0; bi < VLEN; bi = bi + 1) begin : g_bw
-            assign b_nd[bi] = elem8 ? {8'd0, vrf_data[(b_part*VLEN + bi)*8 +: 8]}
-                                    : vrf_data[(b_part[1]*VLEN + bi)*16 +: 16];
+            assign b_nd[bi] = s_e8 ? {8'd0, vrf_data[(s_part*VLEN + bi)*8 +: 8]}
+                                   : vrf_data[(s_part[1]*VLEN + bi)*16 +: 16];
             assign b_dp[bi] =
-                !r_bdt[1] ? {vrf_data[(VLEN + bi)*16 +: 16], vrf_data[bi*16 +: 16]}
-              : g4        ? {vrf_data[(3*VLEN + bi)*8 +: 8], vrf_data[(2*VLEN + bi)*8 +: 8],
+                !s_bdt1   ? {vrf_data[(VLEN + bi)*16 +: 16], vrf_data[bi*16 +: 16]}
+              : s_g4      ? {vrf_data[(3*VLEN + bi)*8 +: 8], vrf_data[(2*VLEN + bi)*8 +: 8],
                              vrf_data[(1*VLEN + bi)*8 +: 8], vrf_data[bi*8 +: 8]}
-              :             {8'd0, vrf_data[((b_part + 2'd1)*VLEN + bi)*8 +: 8],
-                             8'd0, vrf_data[(b_part*VLEN + bi)*8 +: 8]};
+              :             {8'd0, vrf_data[((s_part + 2'd1)*VLEN + bi)*8 +: 8],
+                             8'd0, vrf_data[(s_part*VLEN + bi)*8 +: 8]};
         end
     endgenerate
 
     // A element for this cycle, right-aligned in 32 bits.
     wire [ABUF_IW-1:0]   a_bi   = elem8 ? a_flat[6 +: ABUF_IW] : a_flat[5 +: ABUF_IW];
-    wire [VLEN*ELEN-1:0] a_word = use_abuf ? abuf[a_bi] : vrf_data;
+    // OVL: any fragment, at most 32 registers (16-bit K64).
+    wire [4:0]           a_bi5  = elem8 ? {1'b0, a_flat[9:6]} : a_flat[9:5];
+    wire [VLEN*ELEN-1:0] a_word;
+    generate
+        if (OVL == 0) begin : g_aw0
+            assign a_word = use_abuf ? abuf[a_bi] : vrf_data;
+        end else begin : g_aw1
+            assign a_word = abuf[a_bi5];
+        end
+    endgenerate
     // m.mma.dp: the G consecutive elements A[m][k..k+G-1] as one lane word --
     // 16-bit elements are one aligned 32-bit word; four E4M3 bytes likewise;
     // two bytes go to the low bytes of two 16-bit slots.
@@ -405,7 +510,9 @@ module tnca_matrix #(
     // tnca_acc_rf has no write-to-read bypass (see there). That is only right
     // while nothing reads a row in the cycle it is written and uses what it
     // read: the MAC sweep and a row op are the users, so check both.
-    wire acc_rd_used = (st == S_MAC && !vrf_wait) || (st == S_ROW && r_rowop != 2'd0);
+    wire acc_rd_used = ((OVL != 0) ? (st == S_MAC && b_ok && (la_n > {1'b0, a_bi5}))
+                                   : (st == S_MAC && !vrf_wait))
+                       || (st == S_ROW && r_rowop != 2'd0);
     wire acc_collide = acc_rd_used && acc_w_en &&
                        ({acc_r_slot, acc_r_row} == {acc_w_slot, acc_w_row});
     // R41 T2 round 5: the registered row flags are the decode they replace.
@@ -425,31 +532,326 @@ module tnca_matrix #(
     //==========================================================================
     // Sequencer
     //==========================================================================
+    //==========================================================================
+    // R42 OVL: the overlapped sequencer's combinational view
+    //==========================================================================
+    localparam [ROW_W:0] PH_B  = 14 - VRF_LAT;        // read B ahead from this row on
+    localparam [ROW_W:0] PA_MX = 13 - 2*VRF_LAT;      // last row a pending A read may start at
+
+    wire [6:0] kk_nx    = kk + {4'd0, kstep};
+    wire [7:0] bnx_vreg = r_vb + (elemB8 ? {3'd0, kk_nx[6:2]} : {2'd0, kk_nx[6:1]});
+    wire [1:0] bnx_part = elemB8 ? kk_nx[1:0] : {kk_nx[0], 1'b0};
+    wire       lastk    = (kk == k_limit - {4'd0, kstep});
+
+    // the pending command's format
+    wire       p_dpv   = (MAC_DP != 0) && p_dp;
+    wire [6:0] p_klim  = (p_k == `TNCA_MMA_K16) ? 7'd16 :
+                         (p_k == `TNCA_MMA_K32) ? 7'd32 : 7'd64;
+    wire [6:0] p_aregs = p_dt[1] ? {2'd0, p_klim[6:2]} : {1'b0, p_klim[6:1]};
+    wire       p_g4    = p_dpv && (p_dt == `TNCA_MMA_E4M3) && (p_bdt == `TNCA_MMA_E4M3);
+
+    // A row issues when its B row is latched and its A register has arrived.
+    wire a_ok    = (la_n > {1'b0, a_bi5});
+    wire iss     = (OVL != 0) && (st == S_MAC) && b_ok && a_ok;
+    wire r15     = iss && (mm == ROWS-1);
+    wire endcmd  = r15 && lastk;
+
+    wire f_fire   = f_req && vrf_valid;
+    wire f_a_take = f_fire && !f_isb;
+    // A B row of the running step is taken when it comes (b_row is idle
+    // then); one read ahead only in the cycle row 15 issues, which is when
+    // b_row is released. Earlier it is left to be answered again.
+    wire f_b_take = f_fire && f_isb && (!f_nx || r15);
+    wire f_take   = f_a_take || f_b_take;
+    wire [5:0] la_c  = la_n + {5'd0, f_a_take && !f_pd};
+    wire [5:0] lap_c = la_p + {5'd0, f_a_take &&  f_pd};
+    wire b_have = b_ok || (f_fire && f_isb && !f_nx);
+
+    // What to read next. Chosen only in a cycle that does not end a k step,
+    // so every term below is the running command's and step's.
+    wire pick_en = (st == S_MAC) && !r15 && (!f_req || f_take);
+    wire pk_bcur = !b_have;
+    wire pk_acur = b_have &&  ({1'b0, la_c} < a_regs);
+    wire pk_all  = b_have && !({1'b0, la_c} < a_regs);
+    wire pk_bnx  = pk_all && !lastk && (mm >= PH_B);
+    wire pk_pb   = pk_all &&  lastk && p_v && (mm >= PH_B);
+    // A pending A register goes into an entry the running command's last
+    // step has finished with: the rows from mm on read entries >= a_bi5.
+    wire pk_pa   = pk_all &&  lastk && p_v && !(mm >= PH_B) && (mm <= PA_MX)
+                   && ({1'b0, lap_c} < p_aregs) && (lap_c < {1'b0, a_bi5});
+    wire pk_v    = pk_bcur || pk_acur || pk_bnx || pk_pb || pk_pa;
+
+    wire mma_st = (st == S_MAC) || (st == S_TAIL);
+    assign pend_ok       = (OVL != 0) && mma_st && !p_v;
+    assign cmd_slot_live = (OVL != 0) && ((mma_st && (r_slot == cmd_slot))
+                                          || (p_v && (p_slot == cmd_slot)));
+    assign vrf_tag  = f_tag;
+    assign cur_tag  = r_tag;
+    assign pend_v   = (OVL != 0) && p_v;
+    assign pend_tag = p_tag;
+    assign ret_v    = (OVL != 0) && q_live;
+    assign ret_tag  = q_tag;
+
+    reg  tg_last [0:PIPE-1];
+    wire last_out = tg_last[PIPE-1];
+
+    // The pending command becomes the running one.
+    task promote_cmd;
+        begin
+            r_slot   <= p_slot;
+            r_va     <= p_va;
+            r_vb     <= p_vb;
+            r_k      <= p_k;
+            r_dt     <= p_dt;
+            r_dp     <= p_dpv;
+            r_bdt    <= p_bdt;
+            r_bar_en <= p_bar_en;
+            r_bar    <= p_bar;
+            r_sf_en  <= p_sf_en;
+            r_sf_bar <= p_sf_bar;
+            r_tag    <= p_tag;
+            p_v      <= 1'b0;
+            kk       <= 7'd0;
+            mm       <= {(ROW_W+1){1'b0}};
+            la_n     <= lap_c;
+            la_p     <= 6'd0;
+            f_nx     <= 1'b0;
+            f_pd     <= 1'b0;
+            pend_freed <= 1'b1;
+            st       <= S_MAC;
+        end
+    endtask
+
+`ifndef SYNTHESIS
+    generate if (OVL != 0) begin : g_ovl_chk
+        always @(posedge clk)
+            if (rst_n && !flush && cmd_valid && (st != S_IDLE) &&
+                (p_v || !mma_st || (cmd_op != 2'd1)))
+                $display("FAIL tnca_matrix assert @%0t: command op %0d while st %0d pend %b",
+                         $time, cmd_op, st, p_v);
+    end endgenerate
+`endif
+
+    generate if (OVL == 0) begin : g_seq0
+    always @(posedge clk) begin
+        done_keep  <= 1'b0;
+        pend_freed <= 1'b0;
+    end
+        always @(posedge clk) begin
+            if (!rst_n || flush) begin
+                st          <= S_IDLE;
+                done        <= 1'b0;
+                src_free    <= 1'b0;
+                done_bar_en <= 1'b0;
+                z_en        <= 1'b0;
+                direct_w    <= 1'b0;
+                row_q       <= 1'b0;
+                row_mul_q   <= 1'b0;
+                row_fma_q   <= 1'b0;
+                for (i = 0; i < PIPE; i = i + 1) tg_v[i] <= 1'b0;
+            end else begin
+                done        <= 1'b0;
+                src_free    <= 1'b0;
+                done_bar_en <= 1'b0;
+                z_en        <= 1'b0;
+                direct_w    <= 1'b0;
+                row_q       <= 1'b0;
+                row_mul_q   <= 1'b0;
+                row_fma_q   <= 1'b0;
+                // R41 T2 round 5: the a.vwrite payload is copied every cycle --
+                // it is read only under direct_w, the cycle after S_ROW, and r_*
+                // change only in S_IDLE -- so its enable is not r_rowop's decode
+                // routed to every bit (r_rowop -> direct_* CE, +1.054 ns tile 1).
+                direct_slot <= r_slot;
+                direct_row  <= r_row;
+                direct_mask <= r_mask;
+                direct_data <= r_vdata;
+
+                // advance the result tag pipeline
+                for (i = PIPE-1; i > 0; i = i - 1) begin
+                    tg_v[i]    <= tg_v[i-1];
+                    tg_slot[i] <= tg_slot[i-1];
+                    tg_row[i]  <= tg_row[i-1];
+                    tg_mask[i] <= tg_mask[i-1];
+                end
+                tg_v[0] <= 1'b0;
+
+                case (st)
+
+                //---------------------------------------------------------------
+                S_IDLE: begin
+                    if (cmd_valid) begin
+                        r_slot   <= cmd_slot;
+                        r_va     <= cmd_va;
+                        r_vb     <= cmd_vb;
+                        r_k      <= cmd_k;
+                        r_dt     <= cmd_dt;
+                        r_dp     <= (MAC_DP != 0) && cmd_dp;
+                        r_bdt    <= cmd_bdt;
+                        r_bar_en <= cmd_bar_en;
+                        r_bar    <= cmd_bar;
+                        r_sf_en  <= cmd_sf_en;
+                        r_sf_bar <= cmd_sf_bar;
+                        r_rowop  <= cmd_rowop;
+                        r_row    <= cmd_row;
+                        r_vdata  <= cmd_vdata;
+                        r_scale  <= cmd_scale;
+                        r_mask   <= cmd_mask;
+                        kk       <= 7'd0;
+                        mm       <= {(ROW_W+1){1'b0}};
+                        drain    <= 4'd0;
+                        la       <= 4'd0;
+                        use_abuf <= 1'b0;
+                        case (cmd_op)
+                        2'd0: st <= S_ZERO;
+                        2'd1: st <= S_LOADB;
+                        default: begin
+                            st        <= S_ROW;
+                            row_q     <= 1'b1;
+                            row_mul_q <= (cmd_rowop == 2'd1);
+                            row_fma_q <= (cmd_rowop == 2'd2);
+                        end
+                        endcase
+                        // r_k and r_dt are not latched yet: decide from the command.
+                        if (cmd_op == 2'd1 && ABUF != 0 &&
+                            (cmd_dt[1] ? ((cmd_k != `TNCA_MMA_K64) || (ABUF == 2))
+                                       : ((cmd_k == `TNCA_MMA_K16) || (ABUF == 2 && cmd_k == `TNCA_MMA_K32)))) begin
+                            use_abuf <= 1'b1;
+                            st       <= S_LOADA;
+                        end
+                    end
+                end
+
+                //---------------------------------------------------------------
+                // m.zero: one row per cycle through the file's zero port
+                S_ZERO: begin
+                    z_en  <= 1'b1;
+                    z_row <= mm[ROW_W-1:0];
+                    if (mm == ROWS-1) begin
+                        mm <= {(ROW_W+1){1'b0}};
+                        st <= S_DONE;
+                    end else begin
+                        mm <= mm + 1'b1;
+                    end
+                end
+
+                //---------------------------------------------------------------
+                // ABUF: the A fragment's registers, one read each, before any MAC.
+                S_LOADA: if (!vrf_wait) begin
+                    abuf[la[ABUF_IW-1:0]] <= vrf_data;
+                    if ({3'd0, la} == a_regs - 7'd1) st <= S_LOADB;
+                    else                             la <= la + 1'b1;
+                end
+
+                //---------------------------------------------------------------
+                // One vector read holds B[k][.] for the whole m sweep.
+                S_LOADB: if (!vrf_wait) begin
+                    for (i = 0; i < VLEN; i = i + 1)
+                        b_row[i*BW +: BW] <= (MAC_DP != 0 && r_dp) ? b_dp[i][BW-1:0] : b_nd[i];
+                    mm <= {(ROW_W+1){1'b0}};
+                    st <= S_MAC;
+                end
+
+                //---------------------------------------------------------------
+                // Nothing is issued into the MAC pipeline while the A element
+                // has not arrived: tg_v[0] staying low is what stops the array
+                // multiplying whatever happened to be on the bus.
+                S_MAC: if (!vrf_wait) begin
+                    tg_v[0]    <= 1'b1;
+                    tg_slot[0] <= r_slot;
+                    tg_row[0]  <= mm[ROW_W-1:0];
+                    tg_mask[0] <= {VLEN{1'b1}};
+
+                    if (mm == ROWS-1) begin
+                        mm <= {(ROW_W+1){1'b0}};
+                        if (kk == k_limit - {4'd0, kstep}) begin
+                            // The last A element and the last B row have now been
+                            // read. Nothing in this command will touch the vector
+                            // file again, so the fragments are free from here --
+                            // PIPE cycles before the result lands.
+                            src_free     <= r_sf_en;
+                            src_free_bar <= r_sf_bar;
+                            drain <= PIPE[3:0] + 4'd1;
+                            st    <= S_DRAIN;
+                        end else begin
+                            kk <= kk + {4'd0, kstep};
+                            st <= S_LOADB;
+                        end
+                    end else begin
+                        mm <= mm + 1'b1;
+                    end
+                end
+
+                //---------------------------------------------------------------
+                // a.vwrite writes directly; a.mul.row and a.fma.row go through the
+                // MAC array so they get the single rounding the ISA specifies.
+                S_ROW: begin
+                    if (r_rowop == 2'd0) begin
+                        direct_w    <= 1'b1;
+                        st <= S_DONE;
+                    end else begin
+                        tg_v[0]    <= 1'b1;
+                        tg_slot[0] <= r_slot;
+                        tg_row[0]  <= r_row;
+                        tg_mask[0] <= r_mask;
+                        drain      <= PIPE[3:0] + 4'd1;
+                        st         <= S_DRAIN;
+                    end
+                end
+
+                //---------------------------------------------------------------
+                S_DRAIN: begin
+                    if (drain == 4'd0) st <= S_DONE;
+                    else               drain <= drain - 1'b1;
+                end
+
+                //---------------------------------------------------------------
+                S_DONE: begin
+                    done        <= 1'b1;
+                    done_slot   <= r_slot;
+                    done_bar_en <= r_bar_en;
+                    done_bar    <= r_bar;
+                    st          <= S_IDLE;
+                end
+
+                default: st <= S_IDLE;
+                endcase
+            end
+        end
+    end else begin : g_seq1
     always @(posedge clk) begin
         if (!rst_n || flush) begin
             st          <= S_IDLE;
             done        <= 1'b0;
             src_free    <= 1'b0;
             done_bar_en <= 1'b0;
+            done_keep   <= 1'b0;
+            pend_freed  <= 1'b0;
             z_en        <= 1'b0;
             direct_w    <= 1'b0;
             row_q       <= 1'b0;
             row_mul_q   <= 1'b0;
             row_fma_q   <= 1'b0;
-            for (i = 0; i < PIPE; i = i + 1) tg_v[i] <= 1'b0;
+            p_v         <= 1'b0;
+            q_live      <= 1'b0;
+            f_req       <= 1'b0;
+            b_ok        <= 1'b0;
+            use_abuf    <= 1'b0;
+            for (i = 0; i < PIPE; i = i + 1) begin
+                tg_v[i]    <= 1'b0;
+                tg_last[i] <= 1'b0;
+            end
         end else begin
             done        <= 1'b0;
             src_free    <= 1'b0;
             done_bar_en <= 1'b0;
+            done_keep   <= 1'b0;
+            pend_freed  <= 1'b0;
             z_en        <= 1'b0;
             direct_w    <= 1'b0;
             row_q       <= 1'b0;
             row_mul_q   <= 1'b0;
             row_fma_q   <= 1'b0;
-            // R41 T2 round 5: the a.vwrite payload is copied every cycle --
-            // it is read only under direct_w, the cycle after S_ROW, and r_*
-            // change only in S_IDLE -- so its enable is not r_rowop's decode
-            // routed to every bit (r_rowop -> direct_* CE, +1.054 ns tile 1).
             direct_slot <= r_slot;
             direct_row  <= r_row;
             direct_mask <= r_mask;
@@ -461,8 +863,71 @@ module tnca_matrix #(
                 tg_slot[i] <= tg_slot[i-1];
                 tg_row[i]  <= tg_row[i-1];
                 tg_mask[i] <= tg_mask[i-1];
+                tg_last[i] <= tg_last[i-1];
             end
-            tg_v[0] <= 1'b0;
+            tg_v[0]    <= 1'b0;
+            tg_last[0] <= 1'b0;
+
+            //---------------------------------------------------------------
+            // The vector read: what came back, and what to ask for next.
+            if (f_a_take) begin
+                abuf[f_pd ? la_p[4:0] : la_n[4:0]] <= vrf_data;
+                if (f_pd) la_p <= la_p + 6'd1;
+                else      la_n <= la_n + 6'd1;
+            end
+            if (f_b_take) begin
+                for (i = 0; i < VLEN; i = i + 1)
+                    b_row[i*BW +: BW] <= s_dp ? b_dp[i][BW-1:0] : b_nd[i];
+                b_ok <= 1'b1;
+            end
+            if (f_take) f_req <= 1'b0;
+            if (pick_en) begin
+                f_req  <= pk_v;
+                f_isb  <= pk_bcur || pk_bnx || pk_pb;
+                f_nx   <= pk_bnx || pk_pb;
+                f_pd   <= pk_pb || pk_pa;
+                f_addr <= pk_bcur ? b_vreg
+                        : pk_acur ? (r_va + {2'd0, la_c})
+                        : pk_bnx  ? bnx_vreg
+                        : pk_pb   ? p_vb
+                        :           (p_va + {2'd0, lap_c});
+                f_tag  <= (pk_bcur || pk_acur || pk_bnx) ? r_tag : p_tag;
+                f_part <= pk_bcur ? b_part : pk_bnx ? bnx_part : 2'd0;
+                f_e8   <= pk_pb ? p_dt[1]  : elem8;
+                f_dp   <= pk_pb ? p_dpv    : dpv;
+                f_bdt1 <= pk_pb ? p_bdt[1] : r_bdt[1];
+                f_g4   <= pk_pb ? p_g4     : g4;
+            end
+
+            // An m.mma is done when its last row's result has been written.
+            if (last_out) begin
+                done        <= 1'b1;
+                done_slot   <= tg_slot[PIPE-1];
+                done_bar_en <= q_bar_en;
+                done_bar    <= q_bar;
+                q_live      <= 1'b0;
+                done_keep   <= ((st == S_MAC) && (r_slot == tg_slot[PIPE-1]))
+                            || (p_v && (p_slot == tg_slot[PIPE-1]))
+                            || (cmd_valid && (cmd_op == 2'd1) && (cmd_slot == tg_slot[PIPE-1]));
+            end
+
+            // An m.mma accepted while one runs waits here.
+            if (cmd_valid && (st != S_IDLE)) begin
+                p_v      <= 1'b1;
+                p_slot   <= cmd_slot;
+                p_va     <= cmd_va;
+                p_vb     <= cmd_vb;
+                p_k      <= cmd_k;
+                p_dt     <= cmd_dt;
+                p_dp     <= cmd_dp;
+                p_bdt    <= cmd_bdt;
+                p_bar_en <= cmd_bar_en;
+                p_bar    <= cmd_bar;
+                p_sf_en  <= cmd_sf_en;
+                p_sf_bar <= cmd_sf_bar;
+                p_tag    <= cmd_tag;
+                la_p     <= 6'd0;
+            end
 
             case (st)
 
@@ -485,6 +950,7 @@ module tnca_matrix #(
                     r_vdata  <= cmd_vdata;
                     r_scale  <= cmd_scale;
                     r_mask   <= cmd_mask;
+                    r_tag    <= cmd_tag;
                     kk       <= 7'd0;
                     mm       <= {(ROW_W+1){1'b0}};
                     drain    <= 4'd0;
@@ -492,7 +958,26 @@ module tnca_matrix #(
                     use_abuf <= 1'b0;
                     case (cmd_op)
                     2'd0: st <= S_ZERO;
-                    2'd1: st <= S_LOADB;
+                    2'd1: begin
+                        // B[0] is asked for at once; A follows it (pick).
+                        st       <= S_MAC;
+                        use_abuf <= 1'b1;
+                        b_ok     <= 1'b0;
+                        la_n     <= 6'd0;
+                        la_p     <= 6'd0;
+                        f_req    <= 1'b1;
+                        f_addr   <= cmd_vb;
+                        f_tag    <= cmd_tag;
+                        f_isb    <= 1'b1;
+                        f_nx     <= 1'b0;
+                        f_pd     <= 1'b0;
+                        f_part   <= 2'd0;
+                        f_e8     <= cmd_dt[1];
+                        f_dp     <= (MAC_DP != 0) && cmd_dp;
+                        f_bdt1   <= cmd_bdt[1];
+                        f_g4     <= (MAC_DP != 0) && cmd_dp && (cmd_dt == `TNCA_MMA_E4M3)
+                                                            && (cmd_bdt == `TNCA_MMA_E4M3);
+                    end
                     default: begin
                         st        <= S_ROW;
                         row_q     <= 1'b1;
@@ -500,18 +985,10 @@ module tnca_matrix #(
                         row_fma_q <= (cmd_rowop == 2'd2);
                     end
                     endcase
-                    // r_k and r_dt are not latched yet: decide from the command.
-                    if (cmd_op == 2'd1 && ABUF != 0 &&
-                        (cmd_dt[1] ? ((cmd_k != `TNCA_MMA_K64) || (ABUF == 2))
-                                   : ((cmd_k == `TNCA_MMA_K16) || (ABUF == 2 && cmd_k == `TNCA_MMA_K32)))) begin
-                        use_abuf <= 1'b1;
-                        st       <= S_LOADA;
-                    end
                 end
             end
 
             //---------------------------------------------------------------
-            // m.zero: one row per cycle through the file's zero port
             S_ZERO: begin
                 z_en  <= 1'b1;
                 z_row <= mm[ROW_W-1:0];
@@ -524,27 +1001,9 @@ module tnca_matrix #(
             end
 
             //---------------------------------------------------------------
-            // ABUF: the A fragment's registers, one read each, before any MAC.
-            S_LOADA: if (!vrf_wait) begin
-                abuf[la[ABUF_IW-1:0]] <= vrf_data;
-                if ({3'd0, la} == a_regs - 7'd1) st <= S_LOADB;
-                else                             la <= la + 1'b1;
-            end
-
-            //---------------------------------------------------------------
-            // One vector read holds B[k][.] for the whole m sweep.
-            S_LOADB: if (!vrf_wait) begin
-                for (i = 0; i < VLEN; i = i + 1)
-                    b_row[i*BW +: BW] <= (MAC_DP != 0 && r_dp) ? b_dp[i][BW-1:0] : b_nd[i];
-                mm <= {(ROW_W+1){1'b0}};
-                st <= S_MAC;
-            end
-
-            //---------------------------------------------------------------
-            // Nothing is issued into the MAC pipeline while the A element
-            // has not arrived: tg_v[0] staying low is what stops the array
-            // multiplying whatever happened to be on the bus.
-            S_MAC: if (!vrf_wait) begin
+            // One row a cycle, k outer and m inner as before; a row waits
+            // only for a B row or an A register that has not arrived.
+            S_MAC: if (iss) begin
                 tg_v[0]    <= 1'b1;
                 tg_slot[0] <= r_slot;
                 tg_row[0]  <= mm[ROW_W-1:0];
@@ -552,18 +1011,23 @@ module tnca_matrix #(
 
                 if (mm == ROWS-1) begin
                     mm <= {(ROW_W+1){1'b0}};
-                    if (kk == k_limit - {4'd0, kstep}) begin
-                        // The last A element and the last B row have now been
-                        // read. Nothing in this command will touch the vector
-                        // file again, so the fragments are free from here --
-                        // PIPE cycles before the result lands.
+                    // b_row is the next step's from here, if it came in
+                    // this cycle; a read ahead still out is now the step's.
+                    if (!f_b_take) b_ok <= 1'b0;
+                    f_nx <= 1'b0;
+                    if (lastk) begin
+                        // The fragments have been read for the last time.
                         src_free     <= r_sf_en;
                         src_free_bar <= r_sf_bar;
-                        drain <= PIPE[3:0] + 4'd1;
-                        st    <= S_DRAIN;
+                        tg_last[0]   <= 1'b1;
+                        q_live       <= 1'b1;
+                        q_bar_en     <= r_bar_en;
+                        q_bar        <= r_bar;
+                        q_tag        <= r_tag;
+                        if (p_v) promote_cmd;
+                        else     st <= S_TAIL;
                     end else begin
-                        kk <= kk + {4'd0, kstep};
-                        st <= S_LOADB;
+                        kk <= kk_nx;
                     end
                 end else begin
                     mm <= mm + 1'b1;
@@ -571,8 +1035,17 @@ module tnca_matrix #(
             end
 
             //---------------------------------------------------------------
-            // a.vwrite writes directly; a.mul.row and a.fma.row go through the
-            // MAC array so they get the single rounding the ISA specifies.
+            // Nothing left to issue: the last results are on their way.
+            S_TAIL: begin
+                if (p_v) begin
+                    b_ok <= 1'b0;
+                    promote_cmd;
+                end else if (last_out && !cmd_valid) begin
+                    st <= S_IDLE;
+                end
+            end
+
+            //---------------------------------------------------------------
             S_ROW: begin
                 if (r_rowop == 2'd0) begin
                     direct_w    <= 1'b1;
@@ -606,5 +1079,6 @@ module tnca_matrix #(
             endcase
         end
     end
+    end endgenerate
 
 endmodule

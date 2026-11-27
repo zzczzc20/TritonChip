@@ -203,8 +203,10 @@ def xl_manifest(spec, name, manifest, knobs, xl):
     configs = [dict(id=p['id'], point=p['id'], point_sha256=p['sha256'], knobs=dict(RUN3_KNOBS, **knobs),
                     timeout_seconds=xl_timeout(p)) for p in xl['points']]
     spec['suites'] = [dict(path=XL_SUITE, sha256=xl['file_sha256'])]
-    spec['board_batches'] = {XL_BATCH: dict(sampling='device-rule', configurations=configs,
-                                            coverage=dict(suite=XL_SUITE, sha256=xl['file_sha256']))}
+    batch = dict(sampling='device-rule', configurations=configs)
+    if not xl.get('subset_of'):
+        batch['coverage'] = dict(suite=XL_SUITE, sha256=xl['file_sha256'])
+    spec['board_batches'] = {XL_BATCH: batch}
     wrapper = f'{{home}}/r42/reg/{name}/{XL_WRAPPER}'
     step = spec['steps'][0]
     step['id'] = XL_BATCH
@@ -231,6 +233,8 @@ def register(a):
         if sha(repo/R3/f) != digest:
             raise SystemExit('run-3 registration copy changed: ' + f)
     xl = None
+    if a.only and (a.suite != 'xl' or not a.of):
+        raise SystemExit('--only needs --suite xl and --of NAME')
     if a.suite == 'xl':
         text = subprocess.run(['git', '-C', str(repo), 'show', f'{commit}:{XL_SUITE}'], capture_output=True,
                               check=True).stdout
@@ -240,6 +244,12 @@ def register(a):
             raise SystemExit(f'{XL_SUITE} of {commit} is not a frozen xl suite')
         if any(p.get('estimate', {}).get('seconds_pessimistic') is None for p in xl['points']):
             raise SystemExit('every xl point needs estimate.seconds_pessimistic (the registered process timeout derives from it)')
+        if a.only:
+            ids = {p['id'] for p in xl['points']}
+            if any(i not in ids for i in a.only):
+                raise SystemExit('--only names a point that is not in ' + XL_SUITE)
+            xl['subset_of'] = a.of
+            xl['points'] = [p for p in xl['points'] if p['id'] in set(a.only)]
     registration = dict(status='registered-not-run', registered_utc=utc(), round='R42', name=name,
                         software=dict(commit=commit, host_dir='{home}/r42/' + a.src_dir,
                                       software_tree=commit_tree_identity(repo, commit),
@@ -252,7 +262,11 @@ def register(a):
                                  'record of 3 timed calls in a new process, else the qualification record is formal)',
                         boundary='unchanged: ArchBench protocol 2, device-cycles-serial-grid at the qualified 100 MHz')
     if xl is not None:
-        registration['changes_against_run3'] = CHANGES + XL_CHANGES
+        registration['changes_against_run3'] = CHANGES + XL_CHANGES + ([
+            f"board_batches.xl: only the point(s) {[p['id'] for p in xl['points']]} (a repeat that completes {xl['subset_of']}: "
+            "their only attempt there ended without any measurement because another user loaded a different image); "
+            "`coverage` is omitted for this subset (board_batch.py checks full coverage of the suite file only when it is given); "
+            "the suite file and every point definition sha256 are still registered and checked"] if xl.get('subset_of') else [])
         registration['suite'] = dict(
             name='xl', file=XL_SUITE, file_sha256=xl['file_sha256'], suite_sha256_field=xl['sha256'],
             points=len(xl['points']), fp8_matmul_points=xl.get('fp8_matmul_points'), max_live_bytes=xl.get('max_live_bytes'),
@@ -467,6 +481,10 @@ def main():
     r.add_argument('--knob', action='append', default=[], help='TNCA_NAME=VALUE added to every configuration')
     r.add_argument('--suite', choices=('original', 'xl'), default='original',
                    help='the 113 original points (default) or the points of archbench/suites/xl.json of COMMIT')
+    r.add_argument('--only', action='append', default=[],
+                   help='xl suite only: register just this point id (repeatable). A repeat of points whose only attempt '
+                        'in an earlier registration (--of NAME) ended without a measurement because the card changed hands')
+    r.add_argument('--of', default=None, help='with --only: the earlier registration NAME this repeat completes')
     q = sub.add_parser('run')
     q.add_argument('--reg', type=Path, required=True)
     q.add_argument('--out', type=Path, required=True)

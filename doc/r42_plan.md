@@ -468,3 +468,12 @@ Not finished by the worker (x86 slots contested): hybrid-LSU OOC at 10/6.67/5 ns
 `synth_r40_multicore.tcl`); the output of four of the kills was lost with the shell, so it cannot prove nothing foreign matched. No other worker's or user's job is known to have died: the early R42-img synthesis pair
 ended with exit 0 (1,212 s and 1,252 s) and the later ones were running when looked at; a check of the R42-img worker's logs for unexplained signals in that window is requested. Also five explicit-PID kills of its own jobs
 and one on GB10 (iverilog mutation script and `vvp`, listed by path). Remedy: every job is started with a recorded PID, signals go only to recorded PIDs after `ps -o pid,user,args -p PID`, `ps`/`pgrep` output never feeds a kill loop.
+
+**2026-11-27 13:20 UTC. `xl-cand3` resumed run ended `failed-preserved` with 31 of 32 xl points measured; one-point repeat registered (`xl-cand3r`) before it runs.**
+After the guarded reload (idle rule met 12:14:56 UTC on another user's image `f9295d5d...`, our run-3 image loaded 12:15 UTC, 100 MHz) the resumed queue measured 45 further runs in 3,309 s on the same
+image and software tree, no further card change; `experiment.py` reuses completed runs and keeps a recorded failure as final, so the step reports `configurations 32, failed [model.fp8_decoder_prefill/xl/fp8-b1-s512-layers28],
+missing_formal [same]`. That point's only attempt is the 11:38 UTC card-change refusal (no workload ran, `to("tnca")` was refused by the image-identity guard): a missing measurement, not a result.
+Records of this stop: `evidence/r42/board/xl-cand3/stop2_{records,logs}.tgz` (and `stop1_*`). To complete the suite without rewriting anything, `tools/r42/board_ab.py register` got `--only POINT --of NAME`
+(xl suite, repeatable): a registration holding just the named point(s), same software commit `44070eb0` and tree, image, board block, knobs, sampling and identity manifest; `coverage` is omitted for the subset because
+`board_batch.py` checks full-suite coverage only when it is given (suite file sha256 and the point definition sha256 stay registered and checked); the change is listed in the registration's
+`changes_against_run3`. Registered as `xl-cand3r` (one point, identity first) and committed before launch. The xl comparison will combine `xl-cand3` (31 points) and `xl-cand3r` (1 point).

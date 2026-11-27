@@ -4,7 +4,7 @@
 # Reads the stop file ~/r42_shrink_out/STOP between jobs: create it to stop launching (running jobs finish). A NAME whose output directory exists is skipped.
 Q=$1; MAX=${2:-1}
 MINAVAIL_MB=${MINAVAIL_MB:-16000}      # do not start a job while MemAvailable is below this (a synthesis of a RAM-heavy unit grows to ~10 GB in child processes; other workers share the host)
-OUTROOT=$HOME/r42_shrink_out; PIDS=$OUTROOT/.pids; STOP=$OUTROOT/STOP
+OUTROOT=$HOME/r42_shrink_out; PIDS=${PIDS_DIR:-$OUTROOT/.pids}; STOP=${STOP_FILE:-$OUTROOT/STOP}
 mkdir -p $PIDS
 mine() { n=0; for f in $PIDS/*.pid; do [ -f "$f" ] || continue; p=$(cat $f); if kill -0 $p 2>/dev/null; then n=$((n+1)); else rm -f $f; fi; done; echo $n; }
 while IFS='|' read -r NAME ENVS TOP FILES GEN; do

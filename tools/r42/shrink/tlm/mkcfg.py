@@ -44,6 +44,22 @@ for k in (1, 2, 3):
     add(f'vrf{k}', dict(vector_int_latency=int(b['vector_int_latency']) + k, vector_fp_latency=int(b['vector_fp_latency']) + k), 3, f'vector forwarding +{k}')
     add(f'iss{k}', dict(branch_taken_cycles=int(b['branch_taken_cycles']) + k, park_refetch_cycles=int(b['park_refetch_cycles']) + k), 3, f'branch/refetch +{k}')
 
+# clock levers of this branch: the dse worker's rule for a core clock change (tools/r42/dse_cfg.py `clock`): HBM round trip and the 8 fitted outlet cycles are
+# fixed in ns, RTL pipeline depths are fixed in cycles (timing closes with the pipeline fixes of the `fx` lever)
+for mhz in (110, 125, 133):
+    r = mhz / 100.0
+    add(f'clk{mhz}', dict(clock_hz=int(mhz * 1e6), hbm_latency_cycles=max(1, round(23 * r)), tl_hbm_write_latency_cycles=max(1, round(23 * r)),
+                          tl_outlet_to_slice_cycles=5 + round(8 * r)), 3, f'{mhz} MHz, HBM and the fitted outlet cycles fixed in ns')
+# per-family pipeline costs of the clock fixes (doc: evidence/r42/shrink/REPORT.md section M3), one cycle each unless stated
+add('te1', dict(dma_setup_cycles=int(b['dma_setup_cycles']) + 1, dma_store_register_cycles=int(b['dma_store_register_cycles']) + 1), 3, 'transfer engine +1')
+add('sfu1', dict(sfu_latency=int(b['sfu_latency']) + 1), 3, 'SFU table stage +1')
+add('bar1', dict(barrier_latency=int(b['barrier_latency']) + 1), 3, 'barrier +1')
+add('fp1', dict(vector_fp_latency=int(b['vector_fp_latency']) + 1, convert_latency=int(b['convert_latency']) + 1, fp_compare_latency=int(b['fp_compare_latency']) + 1), 3, 'FMA first stage (latency 3): vector FP +1')
+L['fx'] = combine(L, ['lsu1', 'vrf1', 'iss1', 'mx1', 'te1', 'sfu1', 'bar1'])
+L['fx']['desc'] = 'every family fix of M3 at +1 cycle: LSU completion, vector forwarding, branch/refetch, matrix completion, transfer engine, SFU, barrier'
+L['fx2'] = combine(L, ['lsu2', 'vrf2', 'iss2', 'mx2', 'te1', 'sfu1', 'bar1'])
+L['fx2']['desc'] = 'the M3 fixes with the four heaviest families at +2'
+
 summary = {}
 out.mkdir(parents=True, exist_ok=True)
 for spec in sys.argv[3:]:

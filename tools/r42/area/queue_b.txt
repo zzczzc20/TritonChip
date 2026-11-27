@@ -1,0 +1,5 @@
+x1_round2_s1_p10|PERIOD=10|area_st_round2|SHIFT=1
+fma_be1_p10|PERIOD=10|area_fma|IMPL=1 LAT=2 BE=1
+fma_be2_p10|PERIOD=10|area_fma|IMPL=1 LAT=2 BE=2
+fma_be5_p10|PERIOD=10|area_fma|IMPL=1 LAT=2 BE=5
+fma_be6_p10|PERIOD=10|area_fma|IMPL=1 LAT=2 BE=6

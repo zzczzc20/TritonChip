@@ -1,0 +1,3 @@
+cvt_new_p10|PERIOD=10 FILES=/home/vivado/r42_area/tools/r42/area/exp/cvt_int_ref.v,/home/vivado/r42_area/rtl/core/tnca_cvt_int.v|cvt_new_top|
+cvt_new_none|SYNTH_ONLY=1 FLATTEN=none PERIOD=10 FILES=/home/vivado/r42_area/tools/r42/area/exp/cvt_int_ref.v,/home/vivado/r42_area/rtl/core/tnca_cvt_int.v|cvt_new_top|
+cvt_ref_none|SYNTH_ONLY=1 FLATTEN=none PERIOD=10 FILES=/home/vivado/r42_area/tools/r42/area/exp/cvt_int_ref.v|cvt_int_top|

@@ -1,0 +1,29 @@
+flat_fma_be13|SYNTH_ONLY=1 FLATTEN=none PERIOD=10|area_fma|IMPL=1 LAT=2 BE=13
+flat_fma_be5n|SYNTH_ONLY=1 FLATTEN=none PERIOD=10|area_fma|IMPL=1 LAT=2 BE=5
+exp_t4|SYNTH_ONLY=1 FILES=/home/vivado/r42_area/tools/r42/area/exp/dsp_infer.v|dsp_t4|
+exp_t5|SYNTH_ONLY=1 FILES=/home/vivado/r42_area/tools/r42/area/exp/dsp_infer.v|dsp_t5|
+exp_t6|SYNTH_ONLY=1 FILES=/home/vivado/r42_area/tools/r42/area/exp/dsp_infer.v|dsp_t6|
+exp_t7|SYNTH_ONLY=1 FILES=/home/vivado/r42_area/tools/r42/area/exp/dsp_infer.v|dsp_t7|
+g_l3xa_p10|PERIOD=10|area_fma2|CUTS=4'b1110 SHIFT=1 XLS_ALIGN=1
+g_l2xa_p10|PERIOD=10|area_fma2|CUTS=4'b1010 SHIFT=1 XLS_ALIGN=1
+g_l2_p10|PERIOD=10|area_fma2|CUTS=4'b1010 SHIFT=1 XLS_ALIGN=0
+flat_g_l3xa|SYNTH_ONLY=1 FLATTEN=none PERIOD=10|area_fma2|CUTS=4'b1110 SHIFT=1 XLS_ALIGN=1
+base_stalign_p10|PERIOD=10|area_st_align|
+base_mac_p10|PERIOD=10|area_mac|CUTS=5'b11101
+flat_mac_base|SYNTH_ONLY=1 FLATTEN=none PERIOD=10|area_mac|CUTS=5'b11101
+flat_mac_be5|SYNTH_ONLY=1 FLATTEN=none PERIOD=10|area_mac|CUTS=5'b11101 BE=5
+flat_mac_be13|SYNTH_ONLY=1 FLATTEN=none PERIOD=10|area_mac|CUTS=5'b11101 BE=13
+g_l3xa_p667|PERIOD=6.67|area_fma2|CUTS=4'b1110 SHIFT=1 XLS_ALIGN=1
+base_l3_p667|PERIOD=6.67|area_fma|IMPL=1 LAT=3
+g_l3_p667|PERIOD=6.67|area_fma2|CUTS=4'b1110 SHIFT=1 XLS_ALIGN=0
+g_l2xa_p5|PERIOD=5|area_fma2|CUTS=4'b1010 SHIFT=1 XLS_ALIGN=1
+g_l2_p5|PERIOD=5|area_fma2|CUTS=4'b1010 SHIFT=1 XLS_ALIGN=0
+g_l3_p5|PERIOD=5|area_fma2|CUTS=4'b1110 SHIFT=1 XLS_ALIGN=0
+base_l3_p10|PERIOD=10|area_fma|IMPL=1 LAT=3
+base_mac_p667|PERIOD=6.67|area_mac|CUTS=5'b11101
+base_mac_p5|PERIOD=5|area_mac|CUTS=5'b11101
+x2_sfu_p10|PERIOD=10|area_sfu|LANES=1
+x2_cvt_p10|PERIOD=10|area_cvt|
+base_stround_p5|PERIOD=5|area_st_round|
+base_stnorm1_p5|PERIOD=5|area_st_norm|IMPL=1
+base_stalign_p5|PERIOD=5|area_st_align|

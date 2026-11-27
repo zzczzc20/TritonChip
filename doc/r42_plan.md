@@ -453,3 +453,11 @@ Tile 0 at the run-3 image parameters (synthesis): 253,898 -> 248,890 LUT (-2.0 %
 about 2-2.5 % of a core and does **not** change the cores per SLR (two per SLR needs a core of about 138k LUT, derived). Run-3 routed census: kernel-clock endpoints with slack
 < 1 ns: 18,548, < 2 ns: 89,603. Consequence for the plan: DSP mapping of the arithmetic is not the lever for 4x (neither area nor clock); the worker continues with tile/LSU
 OOC at 6.67 and 5 ns, the core-run2 regression with the area back end, and the report.
+
+**2026-11-27. `R42-area` merged into `R42` (RTL default-off: `FMA_IMPL`/`BE` default 0 keeps the generated RTL; 90/90 core-run2 PASS with identical cycles at BE 13 + converter). Final report: `evidence/r42/area/REPORT.md`.**
+What it says about the 4x expectation (OOC, synthesis and derived figures, no board number): arithmetic restructure and DSP mapping are worth 2-2.5 % of a core (tile 0 253,898 -> about 248-249k LUT);
+**cores per SLR stay at 1** (2 per SLR need a core of about 138-141k LUT, i.e. -44 % or more, a different core); the routed run-3 image has 18,548 kernel-clock endpoints below +1 ns and 89,603 below +2 ns in
+every unit, so the clock plateau of this netlist is 100-110 MHz and about 120 MHz after fixing the nine path families listed in the report (each costs about one cycle). Together: area/clock iteration of the present
+core gives at most about +20 % wall time through clock, which a new image (a full link) would have to pay for; the 4x-8x expectation has to come from cycles or from a different machine organisation (see `R42-dse`).
+Not finished by the worker (x86 slots contested): hybrid-LSU OOC at 10/6.67/5 ns, tile-0 screen at 6.67 ns, cycle cost of the latency-adding fixes. A clarification about the worker's reported self-killed shells
+(rule: no pattern kills) was requested before closing the item.

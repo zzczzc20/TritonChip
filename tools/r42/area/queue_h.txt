@@ -1,0 +1,6 @@
+n_round2_s1|SYNTH_ONLY=1 FLATTEN=none PERIOD=10|area_st_round2|SHIFT=1
+n_round2_s0|SYNTH_ONLY=1 FLATTEN=none PERIOD=10|area_st_round2|SHIFT=0
+n_round_gen|SYNTH_ONLY=1 FLATTEN=none PERIOD=10|area_st_round|
+n_norm2|SYNTH_ONLY=1 FLATTEN=none PERIOD=10|area_st_norm2|ADD=0
+n_norm_gen|SYNTH_ONLY=1 FLATTEN=none PERIOD=10|area_st_norm|IMPL=1
+n_align_gen|SYNTH_ONLY=1 FLATTEN=none PERIOD=10|area_st_align|

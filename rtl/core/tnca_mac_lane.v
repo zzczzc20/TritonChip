@@ -11,14 +11,19 @@
 //   CUTS[1] after S2 (DP2's shift and addition)
 //   CUTS[2] after S3 (|sum|, RO_48, the mode's product)
 //   CUTS[3] after B0 (align with C)   CUTS[4] after B1 (normalise)
+//   CUTS[5] (BE != 0 only) after the adders inside B1: the P registers of the inferred DSP48E2 of tnca_fmax_add
 // B2 (round) is combinational into the consumer's register, as the FMA's.
 // The latency is IN_REG + popcount(CUTS); today's lane (tnca_fpu_multi with
 // IN_REG=1, LAT=2) has 3, the first and last stage's work only in cut count.
 //==============================================================================
 `default_nettype none
 module tnca_mac_lane #(
-    parameter [4:0] CUTS   = 5'b11101,
-    parameter       IN_REG = 1
+    parameter [5:0] CUTS   = 6'b011101,
+    parameter       IN_REG = 1,
+    // R42 area study: the back end (normalise, round), as tnca_fp32_fma BE:
+    // 0 = the generated stages (default, unchanged); nonzero = the tnca_fmax_* stages (rtl/core) (see tnca_fp32_fma BE, the same
+    // encoding: back end of stages 2 and 3, and with BE / 8 odd also B0). Bit for bit the same function.
+    parameter       BE     = 0
 ) (
     input  wire        clk,
     input  wire        rst_n,
@@ -77,10 +82,29 @@ module tnca_mac_lane #(
                           .ftz(i_k[0]), .out(s1_d));
     tnca_mac_s2_xls u_s2 (.m(s1_o), .out(f1_d));
     tnca_mac_f2_xls u_f2 (.m(f1_o), .out(f2_d));
-    tnca_mac_b0_xls u_b0 (.p(f2_o), .mode(k2[36:35]), .c(k2[34:3]), .sub_c(k2[2]),
-                          .mul_only(k2[1]), .ftz(k2[0]), .out(al_d));
-    tnca_fmad_norm_xls u_b1 (.s(al_o), .out(nm_d));
-    tnca_fma_round_xls u_b2 (.s(nm_o), .out(y));
+    generate
+        if ((BE / 8) % 2 != 0) begin : g_b0_x
+            // B0 = fma32_align_p; a packed mode has no mul_only and no ftz
+            wire fp_mode = (k2[36:35] == 2'd0);
+            tnca_fmax_alignp u_b0 (.p(f2_o), .c(k2[34:3]), .sub_c(k2[2]),
+                                   .mul_only(k2[1] & fp_mode), .ftz(k2[0] & fp_mode), .out(al_d));
+        end else begin : g_b0
+            tnca_mac_b0_xls u_b0 (.p(f2_o), .mode(k2[36:35]), .c(k2[34:3]), .sub_c(k2[2]),
+                                  .mul_only(k2[1]), .ftz(k2[0]), .out(al_d));
+        end
+    endgenerate
+    generate
+        if (BE != 0) begin : g_be_x
+            // B1 = tnca_fmax_add then tnca_fmax_sel; CUTS[5] puts a register between them (the adders' P registers)
+            wire [232:0] cs_o;
+            tnca_fmax_add #(.REG(CUTS[5] ? 1 : 0)) u_b1a (.clk(clk), .s(al_o), .out(cs_o));
+            tnca_fmax_sel u_b1 (.c(cs_o), .out(nm_d));
+            tnca_fmax_round #(.SHIFT((BE / 4) % 2)) u_b2 (.s(nm_o), .out(y));
+        end else begin : g_be
+            tnca_fmad_norm_xls u_b1 (.s(al_o), .out(nm_d));
+            tnca_fma_round_xls u_b2 (.s(nm_o), .out(y));
+        end
+    endgenerate
 
     generate
         if (CUTS[0]) begin : g_c0

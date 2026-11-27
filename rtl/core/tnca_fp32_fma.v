@@ -63,7 +63,15 @@ module tnca_fp32_fma #(
     // 0 = the stages generated from xls/tnca_fma.x (the default, unchanged);
     // 1 = the same function, bit for bit, with each stage replaced by its
     //     proved-equal tnca_fmad.x counterpart where one exists.
-    parameter IMPL = 0
+    parameter IMPL = 0,
+    // R42 area study (tnca_fmax_fma, tb/area, evidence/r42/area): 0 = the generated stages above, unchanged (default);
+    // nonzero = the same function from the area stages, with (BE / 4) % 2 = 1 the staged window shifter in the rounding
+    // stage and (BE / 8) % 2 = 1 the area multiply/align stage instead of the generated one. LAT 2: cuts behind the
+    // alignment and behind the select (as above); LAT 3: one more register, behind the adders (inferred DSP48E2).
+    // (IMPL / 16) % 16 is added to BE, so an image that sets only FMA_IMPL (the parameter that already reaches every FMA
+    // and MAC lane) selects it: FMA_IMPL = 1 + 16 * BE (+ 256 for the vector FPU's area converter); IMPL % 16 is the
+    // generated variant.
+    parameter BE = 0
 ) (
     input  wire        clk,
     input  wire        rst_n,
@@ -77,8 +85,14 @@ module tnca_fp32_fma #(
     output wire [31:0] y
 );
 
+    localparam IMPL_G = IMPL % 16;                 // the generated variant
+    localparam BE_X   = BE + (IMPL / 16) % 16;     // the area back end (IMPL / 256 odd is the area converter of tnca_vector_fpu)
+
     generate
-        if (LAT == 2) begin : g_l2
+        if (LAT == 2 && BE_X != 0) begin : g_l2x
+            tnca_fmax_fma #(.CUTS(4'b1010), .SHIFT((BE_X / 4) % 2), .XLS_ALIGN(((BE_X / 8) % 2) ? 0 : 1)) u_fma_x (
+                .clk(clk), .rst_n(rst_n), .a(a), .b(b), .c(c), .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz), .y(y));
+        end else if (LAT == 2) begin : g_l2
             // xls/tnca_fma.x: FmaAligned and FmaNormalised, flattened by XLS
             localparam W_ALIGN = 150;
             localparam W_NORM  = 122;
@@ -96,7 +110,7 @@ module tnca_fp32_fma #(
                 if (!rst_n) s0_q <= {W_ALIGN{1'b0}};
                 else        s0_q <= s0_d;
 
-            if (IMPL == 1) begin : g_norm_d
+            if (IMPL_G == 1) begin : g_norm_d
                 tnca_fmad_norm_xls u_s1 (.s(s0_q), .out(s1_d));
             end else begin : g_norm
                 tnca_fma_norm_xls u_s1 (.s(s0_q), .out(s1_d));
@@ -106,7 +120,10 @@ module tnca_fp32_fma #(
                 else        s1_q <= s1_d;
 
             tnca_fma_round_xls u_s2 (.s(s1_q), .out(y));
-        end else if (LAT == 3 && IMPL == 1) begin : g_l3d
+        end else if (LAT == 3 && BE_X != 0) begin : g_l3x
+            tnca_fmax_fma #(.CUTS(4'b1110), .SHIFT((BE_X / 4) % 2), .XLS_ALIGN(((BE_X / 8) % 2) ? 0 : 1)) u_fma_x (
+                .clk(clk), .rst_n(rst_n), .a(a), .b(b), .c(c), .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz), .y(y));
+        end else if (LAT == 3 && IMPL_G == 1) begin : g_l3d
             tnca_fmad_l3_xls u_xls (
                 .clk(clk), .rst(!rst_n),
                 .a(a), .b(b), .c(c),

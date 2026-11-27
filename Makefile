@@ -248,7 +248,8 @@ lint: dirs
 # its latency. Both latencies are tested against the same oracle.
 FMA_GEN := $(RTL)/gen/tnca_fma_align_xls.v $(RTL)/gen/tnca_fma_norm_xls.v \
            $(RTL)/gen/tnca_fma_round_xls.v $(RTL)/gen/tnca_fma_l3_xls.v \
-           $(RTL)/gen/tnca_fmad_norm_xls.v $(RTL)/gen/tnca_fmad_l3_xls.v
+           $(RTL)/gen/tnca_fmad_norm_xls.v $(RTL)/gen/tnca_fmad_l3_xls.v \
+           $(RTL)/core/tnca_lzc81.v $(RTL)/core/tnca_fmax_norm.v $(RTL)/core/tnca_fmax_add.v $(RTL)/core/tnca_fmax_sel.v $(RTL)/core/tnca_fmax_round.v $(RTL)/core/tnca_fmax_mul.v $(RTL)/core/tnca_fmax_alignp.v $(RTL)/core/tnca_fmax_align.v $(RTL)/core/tnca_fmax_fma.v
 $(BUILD)/tb_fp32_fma.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
                           $(FMA_GEN) $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -o $@ $^
@@ -262,6 +263,15 @@ $(BUILD)/tb_fp32_fmad.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v 
 $(BUILD)/tb_fp32_fmad_l3.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
                               $(FMA_GEN) $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -P tb_fp32_fma.FMA_LAT=3 -P tb_fp32_fma.FMA_IMPL=1 -o $@ $^
+
+# R42 area: the same bench on tnca_fp32_fma BE=13 (the tnca_fmax_* stages (rtl/core): align, norm, staged round; LUT adders) and
+# BE=14 (with the stage-2 adders marked for DSP48E2)
+$(BUILD)/tb_fp32_fmax.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
+                           $(FMA_GEN) $(RTL_COMMON) | dirs
+	$(IVERILOG) $(IVFLAGS) -P tb_fp32_fma.FMA_IMPL=1 -P tb_fp32_fma.FMA_BE=13 -o $@ $^
+$(BUILD)/tb_fp32_fmax14.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
+                             $(FMA_GEN) $(RTL_COMMON) | dirs
+	$(IVERILOG) $(IVFLAGS) -P tb_fp32_fma.FMA_IMPL=1 -P tb_fp32_fma.FMA_BE=14 -o $@ $^
 
 $(BUILD)/tb_bitops.vvp: $(TB)/core/tb_bitops.v $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -o $@ $^
@@ -327,6 +337,16 @@ fma-deep-impl1: $(BUILD)/tb_fp32_fmad.vvp $(BUILD)/tb_fp32_fmad_l3.vvp
 	   "$(VVP) $(BUILD)/tb_fp32_fmad.vvp +vec=$(BUILD)/fma_deep.txt"
 	@$(TOOLS)/run_test.sh "fp32_fma IMPL=1 (deep, latency 3)" \
 	   "$(VVP) $(BUILD)/tb_fp32_fmad_l3.vvp +vec=$(BUILD)/fma_deep.txt"
+
+# R42 area: fma-deep's sweep (the exact Fraction oracle) on the area back end.
+.PHONY: fma-deep-area
+fma-deep-area: $(BUILD)/tb_fp32_fmax.vvp $(BUILD)/tb_fp32_fmax14.vvp
+	$(PYTHON) $(TOOLS)/model/gen_fma_vectors.py -o $(BUILD)/fma_deep.txt \
+	   -n 400000 --seed 424242
+	@$(TOOLS)/run_test.sh "fp32_fma BE=13 (deep)" \
+	   "$(VVP) $(BUILD)/tb_fp32_fmax.vvp +vec=$(BUILD)/fma_deep.txt"
+	@$(TOOLS)/run_test.sh "fp32_fma BE=14 (deep)" \
+	   "$(VVP) $(BUILD)/tb_fp32_fmax14.vvp +vec=$(BUILD)/fma_deep.txt"
 
 #------------------------------------------------------------------------------
 # Core tests
@@ -790,7 +810,11 @@ core-g2c4: $(patsubst %,$(BUILD)/%.hex,$(G2C4_PROGS)) $(BUILD)/tb_core_g2c4.vvp 
 # R41 G2/run 2: the run-2 merged parameter set (G4's run2/image.tcl at 35513d2d)
 # on the core bench: g2c4's four contexts, MTX_VRF_REG 1 (the banked file's
 # matrix response registered), MTX_ABUF 1, FMA_IMPL 1, MAC_DP 1, MAC_CUTS 29.
-R41_RUN2 := $(R41_G2C4) -P tb_tnca_core.MTX_VRF_REG=1 -P tb_tnca_core.FMA_IMPL=1 \
+# R42 area: `make BUILD=sim/build_area core-run2 R41_RUN2_FMA_IMPL=465` runs the same machine and programs with the area back end
+# (FMA_IMPL = 1 + 16 * 13 + 256: tnca_fmax_fma, staged round and area align in the vector FPU's FMAs and in the MAC lane, and the
+# area int <-> float converter); the default stays 1.
+R41_RUN2_FMA_IMPL ?= 1
+R41_RUN2 := $(R41_G2C4) -P tb_tnca_core.MTX_VRF_REG=1 -P tb_tnca_core.FMA_IMPL=$(R41_RUN2_FMA_IMPL) \
             -P tb_tnca_core.MAC_DP=1 -P tb_tnca_core.MAC_CUTS=29
 $(BUILD)/tb_core_run2.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                            $(TB)/common/tnca_mem_model.v | dirs

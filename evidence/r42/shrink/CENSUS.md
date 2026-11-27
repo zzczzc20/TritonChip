@@ -131,3 +131,11 @@ Arithmetic that is a DSP candidate and is not already one: roughly 120 comparato
 2. The synchronous read costs **no cycle** where the read address is known one cycle early (home data array, acc sweep, `xb_d`, scalar RF with an address move); it costs one cycle for the LSU `landing` and txf `ls_data`
    completion paths. URAM with latency 1 is possible at 100 MHz.
 3. Arithmetic and datapath muxing is about 70 % of the tile and is untouched by hard-block memory.
+
+## 5. Addendum: what the builds measured against this census (OOC, 10 ns synthesis; details in RESULTS.md)
+
+- NUCA home slice unit (wrapper, run-3 parameters): shipped 38,455 LUT / 9,894 LUTRAM; with `DATA_RAM`/`AUX_RAM` 2 (24 URAM) 29,214 LUT / 1,696 LUTRAM: the census attribution above (data array 4.1-6.4k raw LUTRAM, `tg_wdata` 1.2k, `ms_line` 0.6k) was right in order of magnitude; the saving
+  is -9.2k LUT (-24 %), 1.7k LUTRAM remain (request/write-back/response queues, tag banks).
+- Banked VRF unit: shipped 21,289 LUT (the tile instance table says 21,270). Measured: response crossbar `XBAR` 2 -7,373 (census estimate 6.6k), valid bits in RAM -5,323 (census 5.4k), both -12,709.
+- One tile (`tnca_tile` OOC): 249,921 shipped; 230,979 with `FMA_IMPL` 465 + home URAM + VRF `XBAR` 2: -18,942 (-7.6 %). Memory-like logic is therefore not where the area is: the remaining 231k is 70+ % arithmetic and datapath multiplexing.
+- 4x slice (`SETS` 128): URAM version 42,903 LUT (line array in the same 8 URAM; the cost is the tag arrays and the 3 x 1,024 valid/dirty/claim flip-flops with their 8-way read and victim muxes, +13.7k logic); shipped LUTRAM version 76,444 (29,794 LUTRAM).

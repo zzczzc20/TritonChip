@@ -72,6 +72,10 @@ module tnca_home_pipe #(
     // finishes one (HOME_LINE_PIPE 2), instead of idling a cycle between
     // them, so single-target read misses fill at one line a cycle.
     parameter FILL_CHAIN = 0,
+    // R42 shrink: where the line data array lives. 0 (default): distributed RAM with an asynchronous read, as before.
+    // 1: block RAM; 2: UltraRAM. Both read synchronously: S2 presents the index of the line S3 will use and the data is
+    // the output register one cycle later, exactly when the asynchronous read would have delivered it, so no cycle is added.
+    parameter DATA_RAM = 0,
     parameter [63:0] TMU_BASE = 64'h0000_0000_7FFF_0000
 ) (
     input  wire                     clk,
@@ -201,7 +205,10 @@ module tnca_home_pipe #(
     //==========================================================================
     // Arrays: data (one read, one write port), tags per way (registered read)
     //==========================================================================
-    (* ram_style = "distributed" *) reg [LINE_BITS-1:0] data_mem [0:LINES-1];
+    (* ram_style = "distributed" *) reg [LINE_BITS-1:0] data_mem [0:LINES-1];   // DATA_RAM 0
+    (* ram_style = "block" *)       reg [LINE_BITS-1:0] data_mem_blk [0:LINES-1];  // DATA_RAM 1 (never touched when 0)
+    (* ram_style = "ultra" *)       reg [LINE_BITS-1:0] data_mem_uram [0:LINES-1]; // DATA_RAM 2 (never touched when 0)
+    wire [LINE_BITS-1:0] dline_q;                                                // synchronous read result (DATA_RAM != 0)
     reg [LINES-1:0]  v_bits, d_bits, cl_bits;   // valid, dirty, claimed by an MSHR
     reg [WAY_W-1:0]  victim_ptr [0:SETS-1];
 
@@ -415,7 +422,12 @@ module tnca_home_pipe #(
     reg                  s3_wb;          // the victim is dirty: queue its writeback
     reg [ADDR_W-1:0]     s3_wb_addr;
     reg [11:0]           s3_off;         // TMU register offset
-    wire [LINE_BITS-1:0] s3_line = data_mem[s3_index];
+    wire [LINE_BITS-1:0] s3_line;
+    generate if (DATA_RAM == 0) begin : g_s3_line_lut
+        assign s3_line = data_mem[s3_index];
+    end else begin : g_s3_line_ram
+        assign s3_line = dline_q;
+    end endgenerate
     wire [WORD_BITS-1:0] s3_amo_res = cache_amo_new(s3_aop, s3_be, s3_line, s3_wdata, {448'd0, s3_cmp});
     wire s3_push = s3_v && (s3_kind != K_ALLOC);
     wire s3_dw   = s3_v && (s3_kind == K_HIT_WR || s3_kind == K_INSTALL ||
@@ -423,6 +435,21 @@ module tnca_home_pipe #(
     wire s3_hold = s3_v && ((s3_push && rsq_full) || (s3_wb && wbq_full) ||
                             (s3_kind == K_MMIO_WR && !tmu_wr_ready));
     wire s3_go   = s3_v && !s3_hold;
+
+    //==========================================================================
+    // DATA_RAM 1/2: the synchronous read of the data array. The index S3 will use is known in S2 (the hit way, or the victim
+    // way for a writeback), so the read is issued there and the line is in the output register when S3 starts; it is held
+    // while S3 holds (no enable). The maintenance scan reads in M_WAIT and uses the line in M_SCAN, with the tag. Ordering
+    // (a request is live until S2 acts; the arbiter starts none behind an older request of the same line; a fill writes only
+    // a claimed, invalid line) means no write to the line read can fall in the cycle of its read: tb_home_pipe_miter checks it.
+    //==========================================================================
+    wire [LINE_W-1:0] dr_index = (m_state == M_WAIT) ? m_index : (s2_hit ? s2_hit_index : s2_vic_index);
+    wire              dr_en    = (m_state == M_WAIT) || (m_state != M_SCAN && !s3_hold);
+    // The read itself sits in the main clocked block (next to the write port) because it must see this cycle's write: a victim
+    // line S2 reads in the very cycle S3 merges a store into it (another request of the same set, so the arbiter's same-line
+    // rule does not apply) has to return the merged line, as the asynchronous read in S3 would one cycle later.
+    reg  [LINE_BITS-1:0] dline_r;
+    assign dline_q = dline_r;
 
     //==========================================================================
     // Fill unit: one target of one filled MSHR per cycle
@@ -754,7 +781,7 @@ module tnca_home_pipe #(
                 end else begin
                     if (v_bits[m_index] && m_overlap) begin
                         if (d_bits[m_index]) begin
-                            wbq_push = 1; wbq_push_addr = m_address; wbq_push_data = data_mem[m_index];
+                            wbq_push = 1; wbq_push_addr = m_address; wbq_push_data = (DATA_RAM == 0) ? data_mem[m_index] : dline_q;
                         end
                         v_bits[m_index] <= 1'b0; d_bits[m_index] <= 1'b0;
                     end
@@ -780,7 +807,16 @@ module tnca_home_pipe #(
             endcase
 
             // ---- data array write port (S3 or the fill unit, never both) ----
-            if (dw_en) data_mem[dw_index] <= dw_line;
+            if (dw_en) begin
+                if (DATA_RAM == 0)      data_mem[dw_index]      <= dw_line;
+                else if (DATA_RAM == 1) data_mem_blk[dw_index]  <= dw_line;
+                else                    data_mem_uram[dw_index] <= dw_line;
+            end
+            // ---- DATA_RAM 1/2: the synchronous read, write bypassed ----
+            if (DATA_RAM == 1 && dr_en)
+                dline_r <= (dw_en && dw_index == dr_index) ? dw_line : data_mem_blk[dr_index];
+            if (DATA_RAM == 2 && dr_en)
+                dline_r <= (dw_en && dw_index == dr_index) ? dw_line : data_mem_uram[dr_index];
 
             // ---- response queue ----
             if (push) begin

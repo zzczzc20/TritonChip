@@ -387,6 +387,9 @@ core-mmadp: $(TB)/core/progs/t41_mmadp.s $(BUILD)/t41_mmadp.hex $(BUILD)/tb_core
 	@$(TOOLS)/run_test.sh "t41_mmadp (no MATRIX_DP: ILLEGAL_INSTRUCTION)" \
 	   "$(VVP) $(BUILD)/tb_core.vvp +hex=$(BUILD)/t41_mmadp.hex +maxcycles=100000 +expectfault=01"
 
+$(TB)/core/progs/t42_mmaf32.s: $(TB)/core/progs/gen_t42_mmaf32.py $(TOOLS)/model/fp32.py
+	$(PYTHON) $<
+
 $(TB)/core/progs/t12_tensor.s: $(TB)/core/progs/gen_t12_tensor.py $(TOOLS)/model/fp32.py
 	$(PYTHON) $<
 
@@ -394,6 +397,8 @@ $(TB)/core/progs/t14_caps.s: $(TB)/core/progs/gen_t14_caps.py
 	$(PYTHON) $<
 $(TB)/core/progs/t14_caps_dp.s: $(TB)/core/progs/gen_t14_caps.py
 	T14_DP=1 $(PYTHON) $<
+$(TB)/core/progs/t14_caps_f32.s: $(TB)/core/progs/gen_t14_caps.py
+	T14_DP=1 T14_F32=1 $(PYTHON) $<
 
 $(TB)/core/progs/t15_target.s: $(TB)/core/progs/gen_t15_target.py \
                                compiler/targets/tnca-sim-v0.1.json
@@ -929,6 +934,72 @@ matrix-ovl: $(BUILD)/tb_matrix_ovl_dp1v1.vvp $(BUILD)/tb_matrix_ovl_dp1v2.vvp \
 	   $(TOOLS)/run_test.sh "matrix OVL against OVL=0 ($$b, seed $$s)" \
 	     "$(VVP) $(BUILD)/tb_matrix_ovl_$$b.vvp +seed=$$s +segs=$(MTX_OVL_SEGS)" || exit 1; \
 	 done; done
+
+# R42: core-r42-fp32's bench -- the run-2 parameter set with MAC_F32=1
+# (m.mma.f32.async, ISA sec 9C.5).
+R42_FP32 := $(R41_RUN2) -P tb_tnca_core.MAC_F32=1
+$(BUILD)/tb_core_r42fp32.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                              $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R42_FP32) -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_r42fp32_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                                  $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R42_FP32) -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+$(TB)/core/progs/t15_target_r42_fp32.s: $(TB)/core/progs/gen_t15_target.py \
+                                        compiler/targets/tnca-sim-r42-fp32.json
+	$(PYTHON) $< tnca-sim-r42-fp32
+# m.mma.f32.async against the sequential binary32 FMA oracle: on the profile's
+# machine (in-order and slow, reordered memory), on the reference core with
+# only MAC_F32 (tnca_fpu_multi MACs, behavioural register file, with and
+# without the A buffer), and the refusal on machines without the capability
+# (the reference core, and the R41 run-2 core).
+.PHONY: core-mmaf32
+core-mmaf32: $(TB)/core/progs/t42_mmaf32.s $(BUILD)/t42_mmaf32.hex $(BUILD)/tb_core.vvp \
+             $(BUILD)/tb_core_run2.vvp $(BUILD)/tb_core_r42fp32.vvp $(BUILD)/tb_core_r42fp32_ooo.vvp | dirs
+	@$(TOOLS)/run_test.sh "t42_mmaf32 (r42fp32)" \
+	   "$(VVP) $(BUILD)/tb_core_r42fp32.vvp +hex=$(BUILD)/t42_mmaf32.hex +maxcycles=3000000" || exit 1
+	@$(TOOLS)/run_test.sh "t42_mmaf32 (r42fp32, ooo mem)" \
+	   "$(VVP) $(BUILD)/tb_core_r42fp32_ooo.vvp +hex=$(BUILD)/t42_mmaf32.hex +maxcycles=4000000" || exit 1
+	@for a in 0 1; do \
+	   $(IVERILOG) $(IVFLAGS) -P tb_tnca_core.MAC_F32=1 -P tb_tnca_core.MTX_ABUF=$$a \
+	      -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	      -o $(BUILD)/tb_core_f32_abuf$$a.vvp $(TB)/core/tb_tnca_core.v || exit 1; \
+	   $(TOOLS)/run_test.sh "t42_mmaf32 (MAC_F32=1 alone, MTX_ABUF=$$a)" \
+	      "$(VVP) $(BUILD)/tb_core_f32_abuf$$a.vvp +hex=$(BUILD)/t42_mmaf32.hex +maxcycles=3000000" || exit 1; \
+	 done
+	@$(TOOLS)/run_test.sh "t42_mmaf32 (no MATRIX_F32: ILLEGAL_INSTRUCTION)" \
+	   "$(VVP) $(BUILD)/tb_core.vvp +hex=$(BUILD)/t42_mmaf32.hex +maxcycles=100000 +expectfault=01"
+	@$(TOOLS)/run_test.sh "t42_mmaf32 (run2, no MATRIX_F32: ILLEGAL_INSTRUCTION)" \
+	   "$(VVP) $(BUILD)/tb_core_run2.vvp +hex=$(BUILD)/t42_mmaf32.hex +maxcycles=100000 +expectfault=01"
+
+# core-run2's program list on core-r42-fp32's machine, with its own capability
+# and target read-backs, plus t41_mmadp and t42_mmaf32.
+.PHONY: core-r42fp32
+core-r42fp32: export ARGS_t04_roles := +roles=2
+core-r42fp32: export ARGS_t05_fault := +roles=2 +expectfault=01
+core-r42fp32: export ARGS_t13_share := +roles=2 +aliasvrf
+core-r42fp32: export ARGS_t15_target_r42_fp32 := +allroles
+core-r42fp32: export ARGS_t41_boundary := +roles=1
+core-r42fp32: export ARGS_t18_squash := +roles=2
+core-r42fp32: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-r42fp32: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-r42fp32: export ARGS_t39_slice := +allroles +slice
+core-r42fp32: export ARGS_t39_pair := +roles=2 +pair
+core-r42fp32: export ARGS_t32_xpose_badsize := +expectfault=04
+R42FP32_PROGS := $(patsubst t14_caps_dp,t14_caps_f32,$(patsubst t15_target_vrf_v5_x8_g2c4_dp,t15_target_r42_fp32,$(RUN2_PROGS)))
+core-r42fp32: $(patsubst %,$(BUILD)/%.hex,$(R42FP32_PROGS)) $(BUILD)/t41_mmadp.hex $(BUILD)/t42_mmaf32.hex \
+              $(BUILD)/tb_core_r42fp32.vvp $(BUILD)/tb_core_r42fp32_ooo.vvp | dirs
+	@for p in $(R42FP32_PROGS) t41_mmadp t42_mmaf32; do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (r42fp32)" \
+	     "$(VVP) $(BUILD)/tb_core_r42fp32.vvp +hex=$(BUILD)/$$p.hex +maxcycles=3000000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r42fp32, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_r42fp32_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=4000000 $$extra" \
+	     || exit 1; \
+	 done
 
 .PHONY: core-mtx-vrf-reg
 core-mtx-vrf-reg:

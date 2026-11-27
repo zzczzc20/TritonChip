@@ -724,6 +724,20 @@ module tnca_decoder (
                 bad = bad | (f_mod[1:0] == 2'd3)
                           | (f_mod[4] && (f_c[5:0] == 6'd63));
             end
+            `TNCA_M_MMAF32: begin
+                // ISA sec 9C.5: m.mma.async's fields over binary32 fragments.
+                // One K16 step only -- a 16x16 binary32 fragment is sixteen
+                // registers -- so mod[1:0] must be zero, and there is no
+                // input format to name: mod[3:2] and mod[9:5] are reserved,
+                // zero. mod[4] is source-free, as for m.mma.async. Whether
+                // the machine has the capability is the core's check
+                // (MAC_F32), not the decoder's.
+                `TNCA_DEC_DST_A `TNCA_DEC_SRC_SC
+                o_va_idx = f_a; u_a = 1'b1;
+                o_vb_idx = f_b; u_b = 1'b1;
+                u_mod = 10'h010;
+                bad = bad | (f_mod[4] && (f_c[5:0] == 6'd63));
+            end
             default: bad = 1'b1;
             endcase
         end

@@ -116,3 +116,6 @@
 `ifndef TNCA_UARCH_MAC_CUTS
 `define TNCA_UARCH_MAC_CUTS 29
 `endif
+`ifndef TNCA_UARCH_MAC_F32
+`define TNCA_UARCH_MAC_F32 0
+`endif

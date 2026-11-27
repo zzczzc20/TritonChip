@@ -14,7 +14,7 @@ op.gemv/small/fp16-k256-n512                                         69491    55
 op.gemv/tiny/fp16-k64-n64                                             4811     3458 0.719=     3499 0.727=     4694 0.976=     4720 0.981=     3129 0.650=     3162 0.657=     4640 0.964=     3445 0.716=     3126 0.650=     3128 0.650=
 op.linear/tiny/fp16-m16-k64-n64                                       4453     3727 0.837=     3725 0.837=     4384 0.985=     4363 0.980=     3377 0.758=     3359 0.754=     4361 0.979=     3726 0.837=     3374 0.758=     3378 0.759=
 op.matmul/small/fp16-m64-k128-n128                                   41583    24269 0.584=               -    38528 0.927=               -               -               -               -               -    19006 0.457=               -
-op.matmul/small/fp32-m64-k128-n128                                  115164               -               -               -               -               -               -    76869 0.667=               -               -               -
+op.matmul/small/fp32-m64-k128-n128                                  115164               -               -               -               -               -               -    76869 0.667=               -    71202 0.618=               -
 op.matmul/tiny/fp16-m16-k32-n16                                       1910     1562 0.818=     1558 0.816=     1873 0.981=     1870 0.979=     1484 0.777=     1489 0.780=     1911 1.001=     1561 0.817=     1488 0.779=     1489 0.780=
 op.matmul/tiny/fp32-m16-k32-n16                                       3261     3251 0.997=               -     3251 0.997=               -     3250 0.997=               -     2424 0.743=     2419 0.742=     2298 0.705=     2298 0.705=
 op.rmsnorm/tiny/fp16-r4-d64                                           1453     1483 1.021=               -     1483 1.021=               -     1484 1.021=               -               -               -     1484 1.021=               -
@@ -29,7 +29,7 @@ geometric mean LM/A: 0.896 over 9 points
 geometric mean LMN/A: 0.759 over 4 points
 geometric mean F/A: 0.890 over 9 points
 geometric mean LF/A: 0.795 over 5 points
-geometric mean LMF/A: 0.826 over 16 points
+geometric mean LMF/A: 0.812 over 17 points
 geometric mean LMFN/A: 0.746 over 5 points
 
-records: 104, not pass: [('L', 'model.mlp/tiny/fp16-t16-d64')]
+records: 105, not pass: [('L', 'model.mlp/tiny/fp16-t16-d64')]

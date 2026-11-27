@@ -1,0 +1,15 @@
+model.fp8_layer_decode/xl/fp8-b1-p2048-layers1
+op.argmax/xl/fp16-r16-v151936
+op.attention_decode/xl/fp16-b1-h16-kv8-l2048-d128
+op.attention_decode/xl/fp16-b1-h16-kv8-l4096-d128
+op.attention_decode/xl/fp16-b1-h16-kv8-l8192-d128
+op.fp8_act_quant/xl/fp8-m2048-k2048
+op.fp8_act_quant/xl/fp8-m2048-k6144
+op.fp8_linear/xl/fp8-m1-k2048-n12288
+op.fp8_linear/xl/fp8-m1-k2048-n4096
+op.fp8_linear/xl/fp8-m1-k6144-n2048
+op.fp8_linear/xl/fp8-m16-k2048-n12288
+op.fp8_linear/xl/fp8-m16-k6144-n2048
+op.rmsnorm_residual/xl/fp16-r2048-d2048
+op.rope/xl/fp16-b1-h16-s2048-d128
+op.swiglu/xl/fp16-r2048-i6144

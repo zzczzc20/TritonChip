@@ -1,0 +1,401 @@
+{
+ "base": {
+  "keys": {},
+  "cores": 3,
+  "desc": "calibrated three-core run-3 model"
+ },
+ "c4": {
+  "keys": {
+   "nx": "2",
+   "ny": "2",
+   "outlets": "4",
+   "active_outlets": "4"
+  },
+  "cores": 4,
+  "desc": "4 cores, 2x2 mesh, 1 home slice and 1 outlet per core (assumed scaling of the 3-core shell)"
+ },
+ "c6": {
+  "keys": {
+   "nx": "3",
+   "ny": "2",
+   "outlets": "6",
+   "active_outlets": "6"
+  },
+  "cores": 6,
+  "desc": "6 cores, 3x2 mesh, 1 home slice and 1 outlet per core"
+ },
+ "c6o3": {
+  "keys": {
+   "nx": "3",
+   "ny": "2",
+   "outlets": "3",
+   "active_outlets": "3"
+  },
+  "cores": 6,
+  "desc": "6 cores, 3x2 mesh, 6 home slices, outlets stay 3 (HBM side unchanged)"
+ },
+ "c8": {
+  "keys": {
+   "nx": "4",
+   "ny": "2",
+   "outlets": "8",
+   "active_outlets": "8"
+  },
+  "cores": 8,
+  "desc": "8 cores, 4x2 mesh, 1 home slice and 1 outlet per core"
+ },
+ "clk150": {
+  "keys": {
+   "clock_hz": "150000000",
+   "hbm_latency_cycles": "34",
+   "tl_hbm_write_latency_cycles": "34",
+   "tl_outlet_to_slice_cycles": "17"
+  },
+  "cores": 3,
+  "desc": "150 MHz; HBM round trip and the 8 fitted outlet cycles fixed in ns; RTL pipeline depths fixed in cycles (timing closes)"
+ },
+ "clk150p": {
+  "keys": {
+   "clock_hz": "150000000",
+   "hbm_latency_cycles": "34",
+   "tl_hbm_write_latency_cycles": "34",
+   "tl_outlet_to_slice_cycles": "17",
+   "noc_stages": "4",
+   "tl_noc_inject_cycles": "2",
+   "tl_noc_eject_cycles": "3",
+   "tl_slice_hit_latency": "5",
+   "tl_slice_to_outlet_cycles": "5",
+   "branch_taken_cycles": "5",
+   "park_refetch_cycles": "7",
+   "vector_int_latency": "4",
+   "vector_fp_latency": "7",
+   "convert_latency": "7",
+   "scalar_latency": "2",
+   "sfu_latency": "29",
+   "lsu_complete_cycles": "4",
+   "load_latency": "7"
+  },
+  "cores": 3,
+  "desc": "150 MHz as above, plus assumed extra pipeline registers on on-chip paths (x1+(r-1)/2)"
+ },
+ "clk200": {
+  "keys": {
+   "clock_hz": "200000000",
+   "hbm_latency_cycles": "46",
+   "tl_hbm_write_latency_cycles": "46",
+   "tl_outlet_to_slice_cycles": "21"
+  },
+  "cores": 3,
+  "desc": "200 MHz; HBM round trip and the 8 fitted outlet cycles fixed in ns; RTL pipeline depths fixed in cycles (timing closes)"
+ },
+ "clk200p": {
+  "keys": {
+   "clock_hz": "200000000",
+   "hbm_latency_cycles": "46",
+   "tl_hbm_write_latency_cycles": "46",
+   "tl_outlet_to_slice_cycles": "21",
+   "noc_stages": "5",
+   "tl_noc_inject_cycles": "2",
+   "tl_noc_eject_cycles": "3",
+   "tl_slice_hit_latency": "6",
+   "tl_slice_to_outlet_cycles": "6",
+   "branch_taken_cycles": "6",
+   "park_refetch_cycles": "8",
+   "vector_int_latency": "5",
+   "vector_fp_latency": "8",
+   "convert_latency": "8",
+   "scalar_latency": "2",
+   "sfu_latency": "35",
+   "lsu_complete_cycles": "5",
+   "load_latency": "8"
+  },
+  "cores": 3,
+  "desc": "200 MHz as above, plus assumed extra pipeline registers on on-chip paths (x1+(r-1)/2)"
+ },
+ "clk250": {
+  "keys": {
+   "clock_hz": "250000000",
+   "hbm_latency_cycles": "58",
+   "tl_hbm_write_latency_cycles": "58",
+   "tl_outlet_to_slice_cycles": "25"
+  },
+  "cores": 3,
+  "desc": "250 MHz; HBM round trip and the 8 fitted outlet cycles fixed in ns; RTL pipeline depths fixed in cycles (timing closes)"
+ },
+ "clk250p": {
+  "keys": {
+   "clock_hz": "250000000",
+   "hbm_latency_cycles": "58",
+   "tl_hbm_write_latency_cycles": "58",
+   "tl_outlet_to_slice_cycles": "25",
+   "noc_stages": "6",
+   "tl_noc_inject_cycles": "2",
+   "tl_noc_eject_cycles": "4",
+   "tl_slice_hit_latency": "7",
+   "tl_slice_to_outlet_cycles": "7",
+   "branch_taken_cycles": "7",
+   "park_refetch_cycles": "9",
+   "vector_int_latency": "6",
+   "vector_fp_latency": "9",
+   "convert_latency": "9",
+   "scalar_latency": "2",
+   "sfu_latency": "41",
+   "lsu_complete_cycles": "6",
+   "load_latency": "9"
+  },
+  "cores": 3,
+  "desc": "250 MHz as above, plus assumed extra pipeline registers on on-chip paths (x1+(r-1)/2)"
+ },
+ "o6": {
+  "keys": {
+   "outlets": "6",
+   "active_outlets": "6"
+  },
+  "cores": 3,
+  "desc": "6 HBM outlets for 3 cores (2 per core)"
+ },
+ "out64": {
+  "keys": {
+   "outstanding": "64",
+   "mshrs": "64",
+   "targets": "128"
+  },
+  "cores": 3,
+  "desc": "outstanding lines per outlet 32->64, MSHR 32->64"
+ },
+ "lat_half": {
+  "keys": {
+   "hbm_latency_cycles": "12",
+   "tl_hbm_write_latency_cycles": "12",
+   "tl_outlet_to_slice_cycles": "9"
+  },
+  "cores": 3,
+  "desc": "HBM round trip halved (23->12) and outlet return 13->9: what a faster memory path would give"
+ },
+ "noc1": {
+  "keys": {
+   "noc_stages": "1",
+   "tl_noc_inject_cycles": "1",
+   "tl_noc_eject_cycles": "1"
+  },
+  "cores": 3,
+  "desc": "NoC hop latency 3->1"
+ },
+ "lane2": {
+  "keys": {
+   "tl_memory_lanes": "2"
+  },
+  "cores": 3,
+  "desc": "two NoC/home lanes (home engine and links duplicated)"
+ },
+ "port2": {
+  "keys": {
+   "core_mem_ports": "2"
+  },
+  "cores": 3,
+  "desc": "two core memory ports (LSU and tensor engine each get a port; tnca_mem_mux.v has one)"
+ },
+ "lsuf16": {
+  "keys": {
+   "lsu_fast_slots": "16"
+  },
+  "cores": 3,
+  "desc": "hybrid LSU: line-path landing slots 8->16"
+ },
+ "lsus4": {
+  "keys": {
+   "lsu_slow_units": "4"
+  },
+  "cores": 3,
+  "desc": "hybrid LSU: word-path units 2->4 (gather/scatter/scalar)"
+ },
+ "lsuf4": {
+  "keys": {
+   "lsu_fast_slots": "4"
+  },
+  "cores": 3,
+  "desc": "hybrid LSU: line-path landing slots 8->4 (cheaper LSU)"
+ },
+ "sfu2": {
+  "keys": {
+   "sfu_occupancy": "14",
+   "sfu_latency": "15"
+  },
+  "cores": 3,
+  "desc": "SFU_LANES=2 (rtl/core/tnca_sfu.v: VLEN/LANES passes + LAT 6): occupancy 14, latency 15"
+ },
+ "sfu4": {
+  "keys": {
+   "sfu_occupancy": "10",
+   "sfu_latency": "11"
+  },
+  "cores": 3,
+  "desc": "SFU_LANES=4 (rtl/core/tnca_sfu.v: VLEN/LANES passes + LAT 6): occupancy 10, latency 11"
+ },
+ "sfu16": {
+  "keys": {
+   "sfu_occupancy": "7",
+   "sfu_latency": "8"
+  },
+  "cores": 3,
+  "desc": "SFU_LANES=16 (rtl/core/tnca_sfu.v: VLEN/LANES passes + LAT 6): occupancy 7, latency 8"
+ },
+ "vi1": {
+  "keys": {
+   "issue_vector_cycles": "1",
+   "issue_shuffle_cycles": "1"
+  },
+  "cores": 3,
+  "desc": "single-cycle issue of vector-datapath instructions (the base model uses 2; mechanism in the RTL not identified: operand fetch width is the candidate)"
+ },
+ "vrf8": {
+  "keys": {
+   "vrf_banks": "8",
+   "vrf_bank_conflict_cycles": "1"
+  },
+  "cores": 3,
+  "desc": "VRF banks 4->8"
+ },
+ "vrf0": {
+  "keys": {
+   "vrf_bank_conflict_cycles": "0"
+  },
+  "cores": 3,
+  "desc": "no VRF bank conflicts (ideal register-file read ports)"
+ },
+ "te16": {
+  "keys": {
+   "dma_unit_slots": "16"
+  },
+  "cores": 3,
+  "desc": "tensor-engine load slots 8->16"
+ },
+ "te32": {
+  "keys": {
+   "dma_unit_slots": "32"
+  },
+  "cores": 3,
+  "desc": "tensor-engine load slots 8->32"
+ },
+ "te64": {
+  "keys": {
+   "dma_unit_slots": "64"
+  },
+  "cores": 3,
+  "desc": "tensor-engine load slots 8->64"
+ },
+ "le0": {
+  "keys": {
+   "dma_queue": "8",
+   "dma_line_engine": "1",
+   "dma_line_buffers": "64",
+   "dma_line_rf_cycles": "1",
+   "dma_line_elig": "1"
+  },
+  "cores": 3,
+  "desc": "line engine, RTL eligibility rule (tnca_tensor.v le_elig)"
+ },
+ "le2": {
+  "keys": {
+   "dma_queue": "8",
+   "dma_line_engine": "1",
+   "dma_line_buffers": "64",
+   "dma_line_rf_cycles": "1",
+   "dma_line_elig": "2"
+  },
+  "cores": 3,
+  "desc": "LINE_HALF: half-line (32 B) rows eligible (dma_line_elig=2; RTL in R42-lineelig)"
+ },
+ "le2x": {
+  "keys": {
+   "dma_queue": "8",
+   "dma_line_engine": "1",
+   "dma_line_buffers": "64",
+   "dma_line_rf_cycles": "1",
+   "dma_line_elig": "2",
+   "dma_xpose_line_buffer": "1"
+  },
+  "cores": 3,
+  "desc": "LINE_HALF + transposed line buffer"
+ },
+ "g4": {
+  "keys": {
+   "mtx_dp_g_override": "4",
+   "mtx_dp_b_regs": "1"
+  },
+  "cores": 3,
+  "desc": "K-fusion group G=4 (timing only; equivalent to a 2x wider lane array for engine busy time)"
+ },
+ "g8": {
+  "keys": {
+   "mtx_dp_g_override": "8",
+   "mtx_dp_b_regs": "1"
+  },
+  "cores": 3,
+  "desc": "K-fusion group G=8 (timing only; equivalent to a 4x wider lane array for engine busy time)"
+ },
+ "mpf": {
+  "keys": {
+   "mtx_dp_prefetch": "1"
+  },
+  "cores": 3,
+  "desc": "MTX_PIPE: next step B register read under the current sweep"
+ },
+ "s1": {
+  "keys": {
+   "issue_free_mode": "1"
+  },
+  "cores": 3,
+  "desc": "scalar/branch instructions of matrix K loops free (hardware loop + hoisting upper bound)"
+ },
+ "s2": {
+  "keys": {
+   "issue_free_mode": "2"
+  },
+  "cores": 3,
+  "desc": "every instruction of matrix K loops free of the issue slot (macro-command upper bound)"
+ },
+ "hl": {
+  "keys": {
+   "issue_free_mode": "5"
+  },
+  "cores": 3,
+  "desc": "hardware loop: scalar/branch of EVERY innermost loop free and taken branch free (upper bound)"
+ },
+ "dual": {
+  "keys": {
+   "issue_free_mode": "4"
+  },
+  "cores": 3,
+  "desc": "2-wide issue, upper bound: scalar/branch/special/predicate instructions never take the issue slot"
+ },
+ "br0": {
+  "keys": {
+   "branch_taken_cycles": "0",
+   "park_refetch_cycles": "1"
+  },
+  "cores": 3,
+  "desc": "zero-cost taken branch and context switch"
+ },
+ "sets64": {
+  "keys": {
+   "sets": "64"
+  },
+  "cores": 3,
+  "desc": "NUCA slice 64 sets x 8 ways x 64 B = 32 KiB per slice (was 16 KiB)"
+ },
+ "sets128": {
+  "keys": {
+   "sets": "128"
+  },
+  "cores": 3,
+  "desc": "NUCA slice 128 sets x 8 ways x 64 B = 64 KiB per slice (was 16 KiB)"
+ },
+ "sets512": {
+  "keys": {
+   "sets": "512"
+  },
+  "cores": 3,
+  "desc": "NUCA slice 512 sets x 8 ways x 64 B = 256 KiB per slice (was 16 KiB)"
+ }
+}

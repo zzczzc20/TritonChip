@@ -1,0 +1,16 @@
+op.matmul/large/fp16-m48-k2048-n2048
+op.matmul/large/fp16-m48-k4096-n4096
+op.linear/large/fp16-m48-k2048-n8192
+op.linear/large/fp16-m48-k4096-n11008
+model.mlp/large/fp16-t48-d2048
+model.gpt2_block/large/fp16-d1024-h16-b1-s64
+model.llama_prefill/large/fp16-b1-s64
+model.llama_prefill/large/fp16-b1-s48
+model.llama_decode/large/fp16-b1-p480
+model.llama_decode/large/fp16-b1-p496
+op.conv2d/large/fp32-n1-cin64-h28-w28-cout64
+model.resnet_block/large/fp32-n1-c64-hw28
+op.matmul/large/fp32-m48-k2048-n2048
+op.transpose/large/fp32-r1024-c4096
+op.embedding/large/fp16-v8192-d2048-t512
+op.attention_prefill/large/fp16-b1-h4-s512-d64

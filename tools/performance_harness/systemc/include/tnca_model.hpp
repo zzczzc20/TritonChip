@@ -165,7 +165,7 @@ struct Config {
             // R42 xfer what-ifs (default off): mirror of rtl/core/tnca_tensor.v at TENSOR_LINE 1
             "dma_line_elig","dma_xpose_line_buffer","mtx_abuf_k32",
             // R42 dse what-ifs (default off), see chip.cpp
-            "lsu_hybrid","lsu_fast_slots","lsu_slow_units","core_mem_ports","issue_vector_cycles","issue_two_src_cycles"};return k;}
+            "lsu_hybrid","lsu_fast_slots","lsu_slow_units","core_mem_ports","issue_vector_cycles","issue_two_src_cycles","issue_vint_cycles","issue_vfp_cycles","issue_cvt_cycles","issue_shuffle_cycles","issue_sfu_cycles","issue_vlsu_cycles","issue_vred_cycles"};return k;}
     u64 get_or(const std::string& k,u64 fallback)const{auto i=v.find(k);return i==v.end()?fallback:i->second;}
     // Hot-path copies of fixed geometry (set once by cache_hot()).
     u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;

@@ -12,6 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kfuse_speed_proxies as KP   # noqa: E402,F401  (registers its proxies)
+import kfuse_speed_xl_points       # noqa: E402,F401  (registers the Hub FP8 proxies of the kfuse-speed study)
 import archbench.ops as O          # noqa: E402
 import archbench.models as M       # noqa: E402
 from archbench.registry import Demand   # noqa: E402
@@ -108,6 +109,7 @@ conv(1, 64, 28, 28, 64, 'op.conv2d/large/fp32-n8-cin64-h56-w56-cout64')
 resnet(1, 64, 28, 'model.resnet_block/large/fp32-n8-c64-hw56')
 mm32(48, 2048, 2048, 'op.matmul/large/fp32-m2048-k2048-n2048')
 transpose(1024, 4096, 'op.transpose/hbm/fp32-r8192-c8192')
+reg('op.transpose/large/fp32-r1024-c4096', 'op.transpose/large/fp32-r4096-c4096', 'bytes')
 embedding(8192, 2048, 512, 'op.embedding/hbm/fp16-v65536-d2048-t8192')
 eltwise('silu', O.SiLU, 1, 2, 1, 1 << 22, 'op.silu/hbm/fp16-n67108864')
 softmax(256, 8192, 'op.softmax/hbm/fp16-r4096-c8192')
@@ -121,7 +123,7 @@ O.op('linear', 'large', 'fp16', dict(m=96, k=2048, n=6144, bias=0),
 reg('op.linear/large/fp16-m96-k2048-n6144-bias0', 'op.linear/xl/fp16-m2048-k2048-n6144-bias0', 'macs')
 
 
-def gqa_prefill(h, kv, s, stands_for):
+def gqa_prefill(h, kv, s, stands_for_list):
     import archbench.xl as X
     tri = s * (s + 1) // 2
 
@@ -131,9 +133,16 @@ def gqa_prefill(h, kv, s, stands_for):
                              X._randn(g, (1, kv, s, X.HD), 1.0, X.FP16))
     O.op('attention_prefill', 'large', 'fp16', dict(b=1, h=h, kv=kv, s=s, d=X.HD), make,
          Demand(macs=2 * h * X.HD * tri, fp_ops=3 * h * tri, sfu_ops=h * tri, read_bytes=(h + 2 * kv) * s * X.HD * 2, write_bytes=h * s * X.HD * 2),
-         note='proxy of ' + stands_for)
-    reg(f'op.attention_prefill/large/fp16-b1-h{h}-kv{kv}-s{s}-d{X.HD}', stands_for, 'macs')
+         note='proxy of ' + ', '.join(stands_for_list))
+    for st in stands_for_list:
+        reg(f'op.attention_prefill/large/fp16-b1-h{h}-kv{kv}-s{s}-d{X.HD}', st, 'macs')
 
 
-gqa_prefill(4, 2, 512, 'op.attention_prefill/xl/fp16-b1-h16-kv8-s1024-d128')
-gqa_prefill(4, 2, 512, 'op.attention_prefill/xl/fp16-b1-h16-kv8-s2048-d128')
+gqa_prefill(4, 2, 512, ['op.attention_prefill/xl/fp16-b1-h16-kv8-s1024-d128', 'op.attention_prefill/xl/fp16-b1-h16-kv8-s2048-d128'])
+
+
+if __name__ == '__main__':      # python tools/r42/dse_proxies.py OUT.json  (needs the archbench imports: run where torch exists)
+    import json
+    out = {stands: dict(proxy=pid, kind=kind) for stands, (pid, kind) in PROXY_FOR.items()}
+    Path(sys.argv[1]).write_text(json.dumps(out, indent=1, sort_keys=True))
+    print(len(out), 'proxies ->', sys.argv[1])

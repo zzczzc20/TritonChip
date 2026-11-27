@@ -33,12 +33,18 @@ STRUCT = ['noc_stages', 'tl_noc_inject_cycles', 'tl_noc_eject_cycles', 'tl_slice
           'scalar_latency', 'sfu_latency', 'lsu_complete_cycles', 'load_latency']
 
 
+# The DSE base model = `cal` (calibrated three-core run-3 model, kfuse-speed) + three structural corrections calibrated on single-core RTL
+# (evidence/r42/dse/REPORT.md section 2): the hybrid LSU (fast line path + 2 word units, mode drains) and a 2-cycle issue stage for
+# vector-datapath instructions other than shuffles.
+DSE_BASE = dict(lsu_hybrid=1, lsu_fast_slots=8, lsu_slow_units=2, issue_vector_cycles=2, issue_shuffle_cycles=1)
+
+
 def base(name='cal'):
-    values, ports = K.base_variants()[name if name != 'cal_hy' else 'cal']
+    values, ports = K.base_variants()['cal']
     v = dict(values)
     v.update(mtx_dp='1', mtx_dp_extra_latency='3')
-    if name == 'cal_hy':
-        v.update(lsu_hybrid='1', lsu_fast_slots='8', lsu_slow_units='2')
+    if name == 'dse':
+        v.update(DSE_BASE)
     return {k: str(x) for k, x in v.items()}
 
 
@@ -86,14 +92,15 @@ def levers(b):
     add('lane2', dict(tl_memory_lanes=2), 3, 'two NoC/home lanes (home engine and links duplicated)')
     add('port2', dict(core_mem_ports=2), 3, 'two core memory ports (LSU and tensor engine each get a port; tnca_mem_mux.v has one)')
     # --- core load/store ---
-    add('lsu16', dict(tl_lsu_units=16, lsu_slots=64, lsu_beat_slots=16), 3, 'LSU units 8->16, slots 32->64, beat slots 8->16')
-    add('lsu4', dict(tl_lsu_units=4, lsu_slots=16), 3, 'LSU units 8->4, slots 32->16 (cheaper LSU)')
-    add('lsuhy', dict(lsu_hybrid=1, lsu_fast_slots=8, lsu_slow_units=2), 3, 'hybrid LSU as built (fast line path 8 slots + 2 word units, mode drains)')
+    add('lsuf16', dict(lsu_fast_slots=16), 3, 'hybrid LSU: line-path landing slots 8->16')
+    add('lsus4', dict(lsu_slow_units=4), 3, 'hybrid LSU: word-path units 2->4 (gather/scatter/scalar)')
+    add('lsuf4', dict(lsu_fast_slots=4), 3, 'hybrid LSU: line-path landing slots 8->4 (cheaper LSU)')
     # --- vector / SFU / VRF ---
     for s in (2, 4, 16):
         occ = 16 // s + 6
         add(f'sfu{s}', dict(sfu_occupancy=occ, sfu_latency=occ + 1), 3,
             f'SFU_LANES={s} (rtl/core/tnca_sfu.v: VLEN/LANES passes + LAT 6): occupancy {occ}, latency {occ + 1}')
+    add('vi1', dict(issue_vector_cycles=1, issue_shuffle_cycles=1), 3, 'single-cycle issue of vector-datapath instructions (the base model uses 2; mechanism in the RTL not identified: operand fetch width is the candidate)')
     add('vrf8', dict(vrf_banks=8, vrf_bank_conflict_cycles=1), 3, 'VRF banks 4->8')
     add('vrf0', dict(vrf_bank_conflict_cycles=0), 3, 'no VRF bank conflicts (ideal register-file read ports)')
     # --- tensor engine ---

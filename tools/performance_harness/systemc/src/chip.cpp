@@ -314,7 +314,6 @@ struct Core : sc_module {
     // Program-scope fault and deadline state.
     bool aborting=false;Outcome fault;sc_time deadline=SC_ZERO_TIME;
     // Timing constants (configuration, uncalibrated).
-    u64 t_issue_vec=0,t_issue_2src=0;sc_time issue_vec_time,issue_2src_time;
     u64 t_issue,t_scalar,t_mul,t_vint,t_vfp,t_cvt,t_cmp,t_pred,t_shuf,t_red,t_fred,t_sfu_occ,t_sfu,t_load,t_bar,t_acc,
         t_rf,t_mac,t_mac_unbuf,t_pipe,t_done,t_zero,t_row,t_launch;bool abuf,abuf_k32=false;
     // What-if packed MMA (m.mma.dp, hypothetical; Config optional keys):
@@ -382,7 +381,14 @@ struct Core : sc_module {
         issue_time=x.cycles(t_issue);lsu_key=key("lsu");t_lsu_slots=g("lsu_slots");t_beat_slots=g("lsu_beat_slots");
         units.resize(x.c.get_or("tl_lsu_units",2));
         hybrid=x.c.get_or("lsu_hybrid",0)!=0;
-        t_issue_vec=x.c.get_or("issue_vector_cycles",t_issue);issue_vec_time=x.cycles(t_issue_vec);t_issue_2src=x.c.get_or("issue_two_src_cycles",t_issue);issue_2src_time=x.cycles(t_issue_2src);
+        {u64 iv=x.c.get_or("issue_vector_cycles",t_issue);occ_cls.fill(t_issue);
+         for(K k:{K::Vint,K::Vfp,K::Cvt,K::Shuffle,K::Sfu,K::Reduce,K::Extract,K::Insert})occ_cls[unsigned(k)]=iv;
+         occ_cls[unsigned(K::Lsu)]=iv;
+         auto o=[&](const char* key,std::initializer_list<K> ks){u64 v=x.c.get_or(key,0);if(v)for(K k:ks)occ_cls[unsigned(k)]=v;};
+         o("issue_vint_cycles",{K::Vint});o("issue_vfp_cycles",{K::Vfp});o("issue_cvt_cycles",{K::Cvt});o("issue_shuffle_cycles",{K::Shuffle});
+         o("issue_sfu_cycles",{K::Sfu});o("issue_vlsu_cycles",{K::Lsu});o("issue_vred_cycles",{K::Reduce,K::Extract,K::Insert});
+         t_issue_2src=x.c.get_or("issue_two_src_cycles",t_issue);
+         occ_any=iv!=t_issue || t_issue_2src!=t_issue;for(auto v:occ_cls)occ_any=occ_any||v!=t_issue;}
         if(x.c.get_or("core_mem_ports",1)==2){port.twin=&port2;port2.service=nullptr;}
         if(hybrid){fast_units.resize(x.c.get_or("lsu_fast_slots",8));slow_units.resize(x.c.get_or("lsu_slow_units",2));}
         pipe=g("core_pipeline")!=0;t_branch=g("branch_taken_cycles");t_park=g("park_refetch_cycles");n_banks=g("vrf_banks");
@@ -445,13 +451,20 @@ struct Core : sc_module {
         if(pipe){issue.available=std::max(issue.available,t);*c_freeze+=cycles_of(t-now);}
         go(f,t);
     }
-    void issue_slot(Frame& f,bool vector_op=false,unsigned nsrc=0){
+    // R42 dse: issue-stage occupancy per instruction class (keys issue_vector_cycles for every vector-datapath class, then the
+    // per-class issue_{vint,vfp,cvt,shuffle,sfu,vlsu,vred}_cycles, then issue_two_src_cycles for an instruction that reads two vector
+    // registers). All default to issue_cycles: the shipped configurations are unchanged.
+    std::array<u64,unsigned(K::Count)> occ_cls{};bool occ_any=false;u64 t_issue_2src=0;
+    u64 issue_occupancy(const Inst& in){
+        if(!occ_any)return t_issue;
+        u64 occ=in.kind==K::Lsu?(in.func>=16?occ_cls[unsigned(K::Lsu)]:t_issue):occ_cls[unsigned(in.kind)];
+        if(t_issue_2src>occ){unsigned srcs[3];if(vec_sources(in,srcs)>=2)occ=t_issue_2src;}
+        return occ;
+    }
+    void issue_slot(Frame& f,u64 occ=0){
         if(x.functional){if(++untimed_burst>=4096){untimed_burst=0;wait(SC_ZERO_TIME);}return;} // let spinning peers run
-        // R42 dse (issue_vector_cycles, default = issue_cycles): a vector-datapath instruction occupies the issue stage longer
-        // issue_two_src_cycles (default = issue_cycles): an instruction that reads two or more vector registers
-        u64 occ=t_issue;sc_time occ_t=issue_time;
-        if(vector_op && t_issue_vec>occ){occ=t_issue_vec;occ_t=issue_vec_time;}
-        if(nsrc>=2 && t_issue_2src>occ){occ=t_issue_2src;occ_t=issue_2src_time;}
+        if(!occ)occ=t_issue;
+        sc_time occ_t=occ==t_issue?issue_time:x.cycles(occ);
         if(!quantum){issue.use(x,occ_t,occ);return;}
         sc_time t=lt(f),begin=std::max(issue.available,t);
         *issue.service+=occ;*issue.queue+=cycles_of(begin-t);
@@ -672,9 +685,7 @@ struct Core : sc_module {
                     c.t_red_vec=sv[14];c.t_fred_vec=sv[15];
                 }
             } lat_zero(*this,kfree && free_mode==3);
-            unsigned issue_srcs[3],issue_nsrc=(t_issue_2src>t_issue)?vec_sources(in,issue_srcs):0;
-            if(!kfree && !slot_a)issue_slot(f,in.kind==K::Vint || in.kind==K::Vfp || in.kind==K::Cvt || in.kind==K::Shuffle || in.kind==K::Sfu ||
-                in.kind==K::Reduce || in.kind==K::Extract || in.kind==K::Insert || (in.kind==K::Lsu && in.func>=16),issue_nsrc);
+            if(!kfree && !slot_a)issue_slot(f,issue_occupancy(in));
             if(pipe)last_issue=lnow(f);
             ++class_counts[unsigned(in.kind)];
             switch(in.kind){

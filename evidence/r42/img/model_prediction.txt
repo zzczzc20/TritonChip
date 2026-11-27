@@ -1,32 +1,32 @@
 VL 15 points
-VF 8 points
-VLF 15 points
+VF 9 points
+VLF 16 points
 VLM 9 points
-VLMF 15 points
+VLMF 16 points
 
 ######## VL
-=== arm VL (/tmp/claude-1000/-home-ubuntu-TritonChip/3dd1d4a8-6f0c-47d5-bf28-f88428fc463d/scratchpad/img/byarm/VL): 14 points measured on both sides
-  groups (family, dtype): attention_decode/fp16 1.009, attention_prefill/fp16 0.989, bmm/fp16 0.876, gemv/fp16 0.762, linear/fp16 0.837, matmul/fp16 0.690, matmul/fp32 0.997
-  measured  1.014x (+1.4 %) over 9 affected points of 113; 1.638 x 1.014 = 1.661
-  family    1.042x (+4.2 %) over 31 affected points of 113; 1.638 x 1.042 = 1.707
-  family/2  1.030x (+3.0 %) over 31 affected points of 113; 1.638 x 1.030 = 1.686
-  models    1.030x (+3.0 %) over 31 affected points of 113; 1.638 x 1.030 = 1.686
+=== arm VL (/tmp/claude-1000/-home-ubuntu-TritonChip/3dd1d4a8-6f0c-47d5-bf28-f88428fc463d/scratchpad/img/byarm/VL): 15 points measured on both sides
+  groups (family, dtype): attention_decode/fp16 1.009, attention_prefill/fp16 0.989, bmm/fp16 0.876, gemv/fp16 0.762, linear/fp16 0.837, matmul/fp16 0.690, matmul/fp32 0.997, mlp/fp16 0.810
+  measured  1.016x (+1.6 %) over 10 affected points of 113; 1.638 x 1.016 = 1.664
+  family    1.050x (+5.0 %) over 35 affected points of 113; 1.638 x 1.050 = 1.719
+  family/2  1.035x (+3.5 %) over 35 affected points of 113; 1.638 x 1.035 = 1.695
+  models    1.055x (+5.5 %) over 49 affected points of 113; 1.638 x 1.055 = 1.727
 
 ######## VF
-=== arm VF (/tmp/claude-1000/-home-ubuntu-TritonChip/3dd1d4a8-6f0c-47d5-bf28-f88428fc463d/scratchpad/img/byarm/VF): 8 points measured on both sides
-  groups (family, dtype): attention_decode/fp16 1.008, attention_prefill/fp16 0.910, bmm/fp16 0.999, conv2d/fp32 0.812, gemv/fp16 0.964, linear/fp16 0.979, matmul/fp16 1.001, matmul/fp32 0.743
-  measured  1.006x (+0.6 %) over 8 affected points of 113; 1.638 x 1.006 = 1.647
-  family    1.031x (+3.1 %) over 39 affected points of 113; 1.638 x 1.031 = 1.689
-  family/2  1.023x (+2.3 %) over 39 affected points of 113; 1.638 x 1.023 = 1.676
-  models    1.023x (+2.3 %) over 39 affected points of 113; 1.638 x 1.023 = 1.676
+=== arm VF (/tmp/claude-1000/-home-ubuntu-TritonChip/3dd1d4a8-6f0c-47d5-bf28-f88428fc463d/scratchpad/img/byarm/VF): 9 points measured on both sides
+  groups (family, dtype): attention_decode/fp16 1.008, attention_prefill/fp16 0.910, bmm/fp16 0.999, conv2d/fp32 0.812, gemv/fp16 0.964, linear/fp16 0.979, matmul/fp16 1.001, matmul/fp32 0.704
+  measured  1.009x (+0.9 %) over 9 affected points of 113; 1.638 x 1.009 = 1.653
+  family    1.033x (+3.3 %) over 39 affected points of 113; 1.638 x 1.033 = 1.692
+  family/2  1.025x (+2.5 %) over 39 affected points of 113; 1.638 x 1.025 = 1.678
+  models    1.025x (+2.5 %) over 39 affected points of 113; 1.638 x 1.025 = 1.678
 
 ######## VLF
-=== arm VLF (/tmp/claude-1000/-home-ubuntu-TritonChip/3dd1d4a8-6f0c-47d5-bf28-f88428fc463d/scratchpad/img/byarm/VLF): 14 points measured on both sides
-  groups (family, dtype): attention_decode/fp16 1.008, attention_prefill/fp16 0.910, bmm/fp16 0.876, conv2d/fp32 0.812, gemv/fp16 0.756, linear/fp16 0.837, matmul/fp16 0.691, matmul/fp32 0.742
-  measured  1.020x (+2.0 %) over 10 affected points of 113; 1.638 x 1.020 = 1.670
-  family    1.072x (+7.2 %) over 39 affected points of 113; 1.638 x 1.072 = 1.756
-  family/2  1.052x (+5.2 %) over 39 affected points of 113; 1.638 x 1.052 = 1.722
-  models    1.052x (+5.2 %) over 39 affected points of 113; 1.638 x 1.052 = 1.722
+=== arm VLF (/tmp/claude-1000/-home-ubuntu-TritonChip/3dd1d4a8-6f0c-47d5-bf28-f88428fc463d/scratchpad/img/byarm/VLF): 16 points measured on both sides
+  groups (family, dtype): attention_decode/fp16 1.008, attention_prefill/fp16 0.910, bmm/fp16 0.876, conv2d/fp32 0.812, gemv/fp16 0.756, linear/fp16 0.837, matmul/fp16 0.691, matmul/fp32 0.704, mlp/fp16 0.810
+  measured  1.025x (+2.5 %) over 12 affected points of 113; 1.638 x 1.025 = 1.679
+  family    1.082x (+8.2 %) over 43 affected points of 113; 1.638 x 1.082 = 1.772
+  family/2  1.059x (+5.9 %) over 43 affected points of 113; 1.638 x 1.059 = 1.735
+  models    1.079x (+7.9 %) over 57 affected points of 113; 1.638 x 1.079 = 1.767
 
 ######## VLM
 === arm VLM (/tmp/claude-1000/-home-ubuntu-TritonChip/3dd1d4a8-6f0c-47d5-bf28-f88428fc463d/scratchpad/img/byarm/VLM): 9 points measured on both sides
@@ -37,19 +37,19 @@ VLMF 15 points
   models    1.034x (+3.4 %) over 23 affected points of 113; 1.638 x 1.034 = 1.694
 
 ######## VLMF
-=== arm VLMF (/tmp/claude-1000/-home-ubuntu-TritonChip/3dd1d4a8-6f0c-47d5-bf28-f88428fc463d/scratchpad/img/byarm/VLMF): 15 points measured on both sides
-  groups (family, dtype): attention_decode/fp16 1.019, attention_prefill/fp16 0.914, bmm/fp16 0.852, conv2d/fp32 0.796, gemv/fp16 0.676, linear/fp16 0.759, matmul/fp16 0.597, matmul/fp32 0.705
-  measured  1.026x (+2.6 %) over 10 affected points of 113; 1.638 x 1.026 = 1.680
-  family    1.093x (+9.3 %) over 39 affected points of 113; 1.638 x 1.093 = 1.790
-  family/2  1.066x (+6.6 %) over 39 affected points of 113; 1.638 x 1.066 = 1.746
-  models    1.066x (+6.6 %) over 39 affected points of 113; 1.638 x 1.066 = 1.746
+=== arm VLMF (/tmp/claude-1000/-home-ubuntu-TritonChip/3dd1d4a8-6f0c-47d5-bf28-f88428fc463d/scratchpad/img/byarm/VLMF): 16 points measured on both sides
+  groups (family, dtype): attention_decode/fp16 1.019, attention_prefill/fp16 0.914, bmm/fp16 0.852, conv2d/fp32 0.796, gemv/fp16 0.676, linear/fp16 0.759, matmul/fp16 0.597, matmul/fp32 0.705, mlp/fp16 0.785
+  measured  1.028x (+2.8 %) over 11 affected points of 113; 1.638 x 1.028 = 1.684
+  family    1.103x (+10.3 %) over 43 affected points of 113; 1.638 x 1.103 = 1.806
+  family/2  1.073x (+7.3 %) over 43 affected points of 113; 1.638 x 1.073 = 1.758
+  models    1.097x (+9.7 %) over 57 affected points of 113; 1.638 x 1.097 = 1.796
 
 ######## sensitivity: the pointwise families included (the profile-name layout effect, +2 to +9 %, extended to their board points)
-=== arm VLMF (/tmp/claude-1000/-home-ubuntu-TritonChip/3dd1d4a8-6f0c-47d5-bf28-f88428fc463d/scratchpad/img/byarm/VLMF): 15 points measured on both sides
-  measured  1.025x (+2.5 %) over 14 affected points of 113; 1.638 x 1.025 = 1.678
-  family    1.088x (+8.8 %) over 55 affected points of 113; 1.638 x 1.088 = 1.781
-  family/2  1.062x (+6.2 %) over 55 affected points of 113; 1.638 x 1.062 = 1.740
-  models    1.062x (+6.2 %) over 55 affected points of 113; 1.638 x 1.062 = 1.740
+=== arm VLMF (/tmp/claude-1000/-home-ubuntu-TritonChip/3dd1d4a8-6f0c-47d5-bf28-f88428fc463d/scratchpad/img/byarm/VLMF): 16 points measured on both sides
+  measured  1.027x (+2.7 %) over 15 affected points of 113; 1.638 x 1.027 = 1.682
+  family    1.097x (+9.7 %) over 59 affected points of 113; 1.638 x 1.097 = 1.797
+  family/2  1.069x (+6.9 %) over 59 affected points of 113; 1.638 x 1.069 = 1.751
+  models    1.093x (+9.3 %) over 73 affected points of 113; 1.638 x 1.093 = 1.789
 
 ######## xl tier (xl-cand2 board cycles as the reference)
 

@@ -63,7 +63,9 @@ def main():
                 continue
             r0 = r[0]
             if r0['status'] != 'pass':
-                row += f'{"FAIL":>16s}'
+                # the failure stays the first record; later records of the same arm and point (reruns) are listed beside it
+                again = ','.join(str(x['cycles']) for x in r[1:] if x['status'] == 'pass')
+                row += f'{("FAIL>" + again) if again else "FAIL":>16s}'
                 continue
             txt = f'{r0["cycles"]}'
             if n != base and bc:

@@ -71,7 +71,8 @@ op.swiglu/tiny/fp16-n256                                      1660    1660 1.000
 op.transpose/tiny/fp32-r32-c32                                2268    2282 1.006
 geomean t17_f.jsonl / t17_origin.jsonl: 0.977 over 21 points
 not pass: none
-model.mlp/tiny/fp16-t16-d64                                  79976             -
-model.resnet_block/tiny/fp32-n1-c8-hw8                      269705             -
-op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8                     120608             -
+model.mlp/tiny/fp16-t16-d64                                  79976   74972 0.937
+model.resnet_block/tiny/fp32-n1-c8-hw8                      269705  199798 0.741
+op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8                     120608   89080 0.739
+geomean models_lmf_a.jsonl / tiny_origin.jsonl: 0.800 over 3 points
 not pass: none

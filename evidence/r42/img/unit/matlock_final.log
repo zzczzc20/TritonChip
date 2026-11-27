@@ -1,0 +1,11 @@
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=0 ABUF=0 MAC_F32=0 seed=1: 24225 cycles identical, 100 commands (73 m.mma), 112 done events, 22868 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=0 ABUF=0 MAC_F32=1 seed=1: 24225 cycles identical, 100 commands (73 m.mma), 112 done events, 22868 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=0 ABUF=1 MAC_F32=0 seed=1: 24493 cycles identical, 100 commands (73 m.mma), 112 done events, 13193 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=0 ABUF=1 MAC_F32=1 seed=1: 24493 cycles identical, 100 commands (73 m.mma), 112 done events, 13193 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=1 ABUF=0 MAC_F32=0 seed=1: 54009 cycles identical, 100 commands (73 m.mma), 112 done events, 52652 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=1 ABUF=0 MAC_F32=1 seed=1: 54009 cycles identical, 100 commands (73 m.mma), 112 done events, 52652 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=1 ABUF=1 MAC_F32=0 seed=1: 41679 cycles identical, 100 commands (73 m.mma), 112 done events, 30389 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=1 ABUF=1 MAC_F32=1 seed=1: 41679 cycles identical, 100 commands (73 m.mma), 112 done events, 30389 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=1 ABUF=1 MAC_F32=0 seed=1: 54591 cycles identical, 100 commands (73 m.mma), 112 done events, 40317 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=1 ABUF=1 MAC_F32=1 seed=1: 54591 cycles identical, 100 commands (73 m.mma), 112 done events, 40317 vector reads
+MATLOCK 10 of 10 configurations cycle-identical

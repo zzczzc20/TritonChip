@@ -1,0 +1,2 @@
+{"point": "model.mlp/tiny/fp16-t16-d64", "output_sha256": "8e58c1396e23ccd8810a579c7eb218ec6468009b1779160d6c2a5a183a3f2bdf", "tensors": [["torch.float16", [16, 64]]]}
+{"point": "model.mlp/tiny/fp16-t16-d64", "output_sha256": "8e58c1396e23ccd8810a579c7eb218ec6468009b1779160d6c2a5a183a3f2bdf", "tensors": [["torch.float16", [16, 64]]]}

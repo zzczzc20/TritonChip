@@ -1,0 +1,7 @@
+VRF MITER PASS: XB=0 VLDB=1 SEED=7 cycles=400000 mismatches=0 | accepted reads=988567 responses=988564 writes offered=399798 accepted=375142
+VRF MITER PASS: XB=1 VLDB=0 SEED=1 cycles=400000 mismatches=0 | accepted reads=987721 responses=987719 writes offered=400007 accepted=374821
+VRF MITER PASS: XB=1 VLDB=0 SEED=2 cycles=400000 mismatches=0 | accepted reads=641789 responses=1069638 writes offered=400008 accepted=375129
+VRF MITER PASS: XB=1 VLDB=0 SEED=3 cycles=400000 mismatches=0 | accepted reads=988688 responses=988686 writes offered=560364 accepted=511166
+VRF MITER PASS: XB=2 VLDB=0 SEED=4 cycles=400000 mismatches=0 | accepted reads=988577 responses=988574 writes offered=400786 accepted=375617
+VRF MITER PASS: XB=2 VLDB=0 SEED=5 cycles=400000 mismatches=0 | accepted reads=641064 responses=1069476 writes offered=399166 accepted=374340
+VRF MITER PASS: XB=2 VLDB=0 SEED=6 cycles=400000 mismatches=0 | accepted reads=987796 responses=987795 writes offered=559531 accepted=510552

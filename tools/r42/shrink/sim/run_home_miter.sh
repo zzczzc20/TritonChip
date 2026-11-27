@@ -37,6 +37,7 @@ run_one() {
     done
 }
 export -f run_one; export OUT COMBOS
+[ -n "${CYC:-}" ] && sed -i "s/tb.CYCLES=[0-9]*/tb.CYCLES=$CYC/" $OUT/matrix.txt
 cat $OUT/matrix.txt | xargs -P $JOBS -I{} bash -c 'run_one "{}"'
 grep -h "^MITER" $OUT/*_d?a?.log | sort > $OUT/summary.txt
 echo MITER_MATRIX_DONE >> $OUT/summary.txt

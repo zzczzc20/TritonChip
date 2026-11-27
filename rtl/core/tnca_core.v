@@ -916,12 +916,12 @@ module tnca_core #(
         // the duplicate came back after the instruction had gone.
         wire [2:0] of_want = of_need & ~of_have;
 
-        wire [VW-1:0] of_r0 = of_fwd[0] ? w_vdata : vrf_rsp_data[0*VW +: VW];
-        wire [VW-1:0] of_r1 = of_fwd[1] ? w_vdata : vrf_rsp_data[1*VW +: VW];
-        wire [VW-1:0] of_r2 = of_fwd[2] ? w_vdata : vrf_rsp_data[2*VW +: VW];
-        wire [VW-1:0] of_v0 = of_arrive[0] ? of_r0 : of_d0;
-        wire [VW-1:0] of_v1 = of_arrive[1] ? of_r1 : of_d1;
-        wire [VW-1:0] of_v2 = of_arrive[2] ? of_r2 : of_d2;
+        // A forwarded source is used in the cycle it is forwarded and is not held: if the instruction cannot leave R
+        // that cycle the source is read from the bank in the next one (its producer has written by then), so the
+        // holding registers of_d* keep their single input, the bank response.
+        wire [VW-1:0] of_v0 = of_fwd[0] ? w_vdata : (of_arrive_rsp[0] ? vrf_rsp_data[0*VW +: VW] : of_d0);
+        wire [VW-1:0] of_v1 = of_fwd[1] ? w_vdata : (of_arrive_rsp[1] ? vrf_rsp_data[1*VW +: VW] : of_d1);
+        wire [VW-1:0] of_v2 = of_fwd[2] ? w_vdata : (of_arrive_rsp[2] ? vrf_rsp_data[2*VW +: VW] : of_d2);
 
         always @(posedge clk) begin
             if (!rst_n) begin
@@ -929,7 +929,7 @@ module tnca_core #(
             end else if (!stall_front) begin
                 of_got <= 3'b000;      // the instruction left R
             end else begin
-                of_got <= of_have;
+                of_got <= of_got | of_arrive_rsp;   // a forwarded source is not held (see of_v0)
             end
         end
 
@@ -941,9 +941,9 @@ module tnca_core #(
         // as well is harmless: the next occupant of R starts with of_got
         // clear and reads of_d* only after its own response lands.
         always @(posedge clk) begin
-            if (of_arrive[0]) of_d0 <= of_r0;
-            if (of_arrive[1]) of_d1 <= of_r1;
-            if (of_arrive[2]) of_d2 <= of_r2;
+            if (of_arrive_rsp[0]) of_d0 <= vrf_rsp_data[0*VW +: VW];
+            if (of_arrive_rsp[1]) of_d1 <= vrf_rsp_data[1*VW +: VW];
+            if (of_arrive_rsp[2]) of_d2 <= vrf_rsp_data[2*VW +: VW];
         end
 
         // The operands travel into X with their instruction.

@@ -102,7 +102,61 @@ TLM for the core counts (what the model gives if the tile did fit; base clock): 
 Halving the lane counts would remove about 25k (MAC) + 12k (FMA) and still leave about 160k.
 
 
-__M3__
+
+## 6. M3: clock (nine path families of the area report section B)
+
+### 6.1 Measurements (OOC, routed)
+
+**One tile alone at 6.67 ns (150 MHz), default RTL** (`tile_screen.tcl`: whole `tnca_tile` pinned to SLR0, no shell, no other tile, no SLR crossing; `tilescreen/s0_*`): **WNS -0.521 ns, TNS -566, 3,488 failing endpoints of 257,651**, worst path 7.19 ns; after placement only: WNS -0.018 (24 endpoints). The tile alone therefore closes at about 7.2 ns (139 MHz) in isolation. Failing endpoints by owner (`tile_census.py`):
+
+| Unit | endpoints failing at 6.67 | worst slack | worst path (levels, ns, net share) | start -> end |
+|---|--:|--:|---|---|
+| hybrid LSU `u_lsu` | 580 | -0.521 | 20 lv, 7.17 ns, 78 % | `fast/rr_reg` -> `out_vector_reg` |
+| home slice | 852 | -0.520 | 16 lv, 7.17 ns, 81 % | `rq_addr_reg` -> `g_tag[].read_tag_reg` (S1 tag read) |
+| core own logic | 491 | -0.454 | 19 lv, 7.10 ns, 76 % | `x_sd_q_reg` -> `w_sdata_reg` |
+| vector FPU | 694 | -0.452 | 21 lv, 7.10 ns, 63 % | `cvt_x_reg` -> `dly_v_reg` (the int/float converter) |
+| barrier | 162 | -0.422 | 20 lv, 6.99 ns, 72 % | `x_sd_q_reg` -> `fault_bar_reg` |
+| matrix engine | 566 | -0.414 | 21 lv, 7.06 ns, 51 % | `a_q` -> MAC lane `q_reg` |
+| banked VRF | 94 | -0.405 | 17 lv, 7.06 ns, 82 % | `st_reg` -> `s1_vld_reg` (valid-bit read) |
+| transfer engine | 49 | -0.284 | 18 lv, 6.65 ns, 49 % | `dl_word_reg` -> DSP input |
+| vector ALU, scalar RF, predicate RF, host mux | 0 | +0.05 .. +0.8 | | |
+Caveat read with the counts: the tool optimises only paths that fail the constraint, so the number of endpoints between 5 and 6.67 ns (84,217 below 1.5 ns slack) says where the optimiser stopped, not how many paths are intrinsically that long; only a run at the target constraint gives that count.
+Result after the shrink (same screen on the step-3 tile): S3ROW
+
+**Units at 6.67 ns (OOC, routed WNS; path = 6.67 - WNS):**
+
+| Unit | WNS 6.67 | path | source |
+|---|--:|--:|---|
+| banked VRF, shipped | +0.792 | 5.88 | this branch |
+| banked VRF, `XBAR` 2 | **+1.110** | 5.56 | this branch |
+| home slice, shipped | +0.081 | 6.59 | this branch (worst: tag-read path) |
+| home slice, `DATA_RAM`/`AUX_RAM` 2 | -0.078 | 6.75 | this branch (same tag-read path; the URAM paths are not the worst; 22 % fewer CLB: 5,000 against 6,403) |
+| hybrid LSU | +0.095 | 6.57 | this branch (`rr_reg` -> `out_vector`, the image's worst family) |
+| FMA (today, latency 2 / latency 3) | +0.941 / +1.219 | 5.73 / 5.45 | area worker; at 5 ns +0.309 / +0.441 |
+| MAC lane (today / BE 13) | +0.333 / +0.466 | 6.34 / 6.20 | area worker; at 5 ns -0.664 |
+The image derate: the same families are 1.4 to 1.6 times longer in the routed run-3 image than in OOC (LSU 6.57 ns OOC, 9.85 ns image; FMA first stage 4.67 / at least 7.6; tile alone 7.19 / image kernel clock 10 ns with +0.111 slack): shell, SLR crossings, 95.6 % SLR0 packing and HBM clocking.
+
+### 6.2 The nine families: the pipeline change, evidence, and cycle cost (TLM, 77 tiny/small/medium points run, the others inherit; effect on the 145-point mean of one cycle each, correction for the inheritance applied)
+
+| # | Family (area report B, endpoints within 1 ns in the image) | Exact change | Built here? | OOC evidence | Cycle cost key | S145 (2.072 = 100 %) |
+|---|---|---|---|---|---|---|
+| 1 | NUCA slice (6,599): reset -> `data_mem` LUTRAM WE, 9.28 ns, 98 % net | data array in URAM (write enable is no longer a LUTRAM write); replicated registered reset | URAM yes; reset tree no | home 6.67: shipped +0.081, URAM -0.078 (tag read path decides) | none | 100.0 % |
+| 2 | device/control cross-SLR (2,970): LSU `fast/valid_reg` -> `control/rsp_status`, 14 levels | register the status bit | no | not in a tile screen | none (+1 on the MMIO status read) | 100.0 % |
+| 3 | hybrid LSU (6,580): `fast/rr_reg` -> `out_vector`, 24-25 levels, 9.85 ns | split the rotating pick over 64 slots from the `landing` read + shift + lane extract: registered pick, +1 stage | no | LSU unit 6.67: +0.095 (path 6.57); tile screen -0.521 | `lsu_complete_cycles`, `load_latency` +1 | 99.6 % |
+| 4 | core control (768): `w_vdata` 10 lv; pc/insn 16-23 lv | deeper issue/branch path | no | tile screen: 491 failing, `x_sd_q` -> `w_sdata` | `branch_taken_cycles`, `park_refetch_cycles` +1 | 99.3 % |
+| 5 | banked VRF (328): `of_acc_q` -> `s1_byp_mask`/`s1_vld`, 16-18 lv | one-hot registered selects (built); forward mask re-timed | `XBAR` yes (+0.32 ns at 6.67); forward re-time no | VRF 6.67: +0.792 -> +1.110; tile screen `st_reg` -> `s1_vld` -0.405 | `vector_int_latency`, `vector_fp_latency` +1 | 99.4 % |
+| 6 | transfer engine (55): `t_ps` -> `cm_cnt`, 18 lv | re-time the counters | no | tile screen: 49 failing (-0.284) | `dma_setup_cycles`, `dma_store_register_cycles` +1 | 99.9 % |
+| 7 | matrix engine (679): operand capture -> MAC multiplier, 15 lv | one more operand register | no | MAC lane 6.67 +0.333 (5 ns -0.664); tile screen 566 failing (-0.414) | `mtx_complete_cycles` +1 | 100.0 % |
+| 8 | vector FPU (468): reset -> `acc_reg` CE/R; FMA `s0_q`; SFU `cnt` -> exp2 | reset tree (0 cycles); FMA latency 3; SFU table stage | no (the area worker built latency-3 FMA selectable) | FMA 6.67 +0.941 / lat 3 +1.219; tile screen `cvt_x` -> `dly_v` -0.452 | `vector_fp_latency` +1 (99.7 %); `sfu_latency` +1 (99.9 %) | |
+| 9 | barrier (53): `u_srf` valid -> `done_epoch` CE, 18 lv | re-time the epoch update | no | tile screen: 162 failing (-0.422) | `barrier_latency` +1 | 100.0 % |
+All nine at +1 cycle: **S145 2.032 (-1.9 %)**; the four heaviest at +2: 1.982 (-4.3 %) (TLM, base clock 100 MHz). Single-family effects are 0 to -0.7 %.
+
+### 6.3 What clock this netlist reaches (derived from the above; not a measurement of an image)
+
+- **As it is: 100 MHz** (run-3 image, measured by the R41 link: kernel clock +0.111 ns at 10 ns). The tile alone in isolation: 7.19 ns (139 MHz); image/OOC derate 1.4-1.6.
+- **With the nine fixes and the shrink: 120-125 MHz is plausible, not shown.** To run the image at 8 ns the OOC tile has to reach about 5.5-5.7 ns, i.e. each failing family loses 1.2-1.5 ns (one or two logic levels of 16-21), the cost being 1.9 % cycles (TLM). If it closed, the TLM says S145 **2.448 at 125 MHz** (full bundle, `clk125fx`) against 2.072 at 100 MHz. The shrink helps in two inferred ways: SLR0 packing falls from 95.6 % to 89.9 % (the R41 calibration charged 1.0 ns at at least 96 % packing), and the VRF/slice paths shorten (VRF +0.32 ns).
+- **150 MHz: no evidence.** It needs the OOC tile at about 4.8 ns: 2.4 ns below today's isolated tile and below the unit WNS of every unit except FMA (the FMA meets 5 ns; the MAC lane does not, -0.664 at 5 ns). The TLM would give S145 **2.863** with all fixes at +1 cycle (full bundle, `clk150fx`; the cost would be higher than +1 each at that depth: `fx2` -4.3 % at 100 MHz) if it closed. No run, OOC or image, shows closure at 6.67 ns of anything bigger than a unit.
+
 
 ## 7. What failed, what was not done (kept, not hidden)
 

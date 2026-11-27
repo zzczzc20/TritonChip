@@ -385,3 +385,15 @@ candidate = R42 head 9c795da3 (ab-int2 software) plus the xl definitions, i.e. W
   frozen tolerance (worst error/tolerance 0.893, `op.fp8_act_quant`); heap peak 2.27 GB of the 8 GiB window.
 - Next: the `R42-fp8sw` Hub-kernel changes (single-core RTL 1.68x per K block for M >= 16, TLM projection 1.42x on the 18 FP8 points) go
   into the next candidate together with `R42-xfer` and `R42-copy`, measured against these same baselines.
+
+**2026-11-27. Third board round registered (`ab-int3`, `xl-cand3`), before any measured run.** Candidate = R42 `44070eb0`: the merge of
+`R42-fp8sw` (Hub FP8 kernel lowering), `R42-copy` (embedding, transpose, cumsum lowering) and `R42-xfer` (N-blocked 16x32x16 GEMM
+tile by default) on top of the ab-int2 software; tree `files:aaab5ffc...`, staged on the FPGA host as `~/r42/src_int3`. Same run-3 image
+`791b8af2`, same baselines (`b41-run3-base` for the 113 points, `xl-base` for the 32 xl points), default knobs, same guarded recipe (15
+idle minutes before any load; the card currently holds another user's image, idle). Gate evidence before the registration (single-core
+RTL screen, thor): `make compiler` passes; tiny tier 27/27 pass, S_geo 1.449 against main; the slower-than-2 % points of the three
+workers are known: `op.add/tiny/fp32-n256` (R42-red tiled default, +6.5 %), `op.transpose/small` +2.3 % (screen memory port has no
+latency, the copy worker isolated the code in `_transposed_rows_load`), `model.mlp/small` +5.2 % (N-blocked tile; the screen cannot show
+K-loop gains, rtl-3c shows linear/small -18 %). The board decides; any point slower than 2 % on the board is listed with its cause.
+Hardware screen finished meanwhile (`R42-lineelig`, not in this candidate): half-line rows on the tensor engine, +597 LUT/core,
+three-core stand-in 0.74-0.81x cycles on GEMM-shaped tiny/small points; model prediction +4 % (2-7 %) on the 113 geometric mean.

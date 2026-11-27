@@ -1,0 +1,99 @@
+{
+ "schema": "tnca-r42-board-ab/1",
+ "name": "ab-int3",
+ "registration": {
+  "status": "registered-not-run",
+  "registered_utc": "2026-11-27T08:25:25.067341+00:00",
+  "round": "R42",
+  "name": "ab-int3",
+  "software": {
+   "commit": "44070eb06d67468ccf208643c5a0e93f89d8bfdf",
+   "host_dir": "{home}/r42/src_int3",
+   "software_tree": "files:aaab5ffcdaa086f6043fcc22fc18626228ec5027c3608e010315ee779e415394",
+   "staging": "git archive 44070eb06d67468ccf208643c5a0e93f89d8bfdf -- . ':!evidence' ':!e7c' | tar x"
+  },
+  "knobs": {
+   "TNCA_ACTIVE_CORES": "3",
+   "TNCA_TORCH_DEVICE": "native",
+   "TNCA_TRANSFER_POLICY": "resident"
+  },
+  "extra_knobs": {},
+  "image": {
+   "sha256": "791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09",
+   "uuid": "ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3"
+  },
+  "generator": "tools/r42/board_ab.py register",
+  "changes_against_run3": [
+   "id, hypothesis, competing_explanations, expected_*: R42 wording",
+   "registration: R42 block (software commit, tree identity, knobs); the run-3 block is kept as derived_from",
+   "steps[].argv --manifest and sources: the manifest is read from {home}/r42/reg/NAME/ (outside the measured tree, so the tree stays byte-equal to its commit) instead of spec/r41/run3/board/",
+   "board.memory_map.source and sources: {home}/r41run3/xclbin_hbm_map.json (same file, same sha256) instead of spec/r41/run3/xclbin_hbm_map.json, which is not in the repository",
+   "estimates: removed (only --dry-run reads them; evidence/ is not staged)",
+   "identity manifest: the `source` step (review of the frozen RTL image source archive, an R41 delivery check) and its two tool sources are removed; the clock verification and the three identity points are unchanged",
+   "board.load_policy: R42 wording",
+   "optional --knob entries are added to every configuration (none for the baseline)"
+  ],
+  "sampling": "unchanged: spec/r41/stage1/plan.json measurement.long_device_tasks (qualification record 0 warm-up + 1 timed call; a point at <= 1 s device time then gets a formal record of 3 timed calls in a new process, else the qualification record is formal)",
+  "boundary": "unchanged: ArchBench protocol 2, device-cycles-serial-grid at the qualified 100 MHz"
+ },
+ "manifests": {
+  "identity": {
+   "file": "ab-int3-identity.json",
+   "id": "ab-int3-identity",
+   "sha256": "bb583489842dfa79bd310688334b395c7b2036da3d14632f0760c4805dceb7f4"
+  },
+  "suite": {
+   "file": "ab-int3.json",
+   "id": "ab-int3",
+   "sha256": "eed4dcb6f945bf95aa9a5f4c558e37b39ac85b93a03db18448d2fe07a954c86a"
+  }
+ },
+ "harness": {
+  "host_dir": "{home}/r42/src_base",
+  "commit_note": "unchanged main 4b61abd8 tree"
+ },
+ "image": {
+  "path": "{home}/r41run3/tnca_u280.xclbin",
+  "sha256": "791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09",
+  "uuid": "ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3",
+  "approval": "{home}/r41run3/author_approval.json",
+  "clock_mhz": 100,
+  "device": "0000:04:00.1"
+ },
+ "python": "{home}/tc_env/torchenv/bin/python",
+ "budget_seconds": 10800,
+ "checks": [
+  {
+   "manifest": "identity",
+   "path": "identity/batch.json",
+   "field": [
+    "status"
+   ],
+   "equals": "complete"
+  },
+  {
+   "manifest": "identity",
+   "path": "identity/batch.json",
+   "field": [
+    "configurations"
+   ],
+   "equals": 3
+  },
+  {
+   "manifest": "identity",
+   "path": "clock.json",
+   "field": [
+    "status"
+   ],
+   "equals": "pass"
+  },
+  {
+   "manifest": "suite",
+   "path": "original/batch.json",
+   "field": [
+    "configurations"
+   ],
+   "equals": 113
+  }
+ ]
+}

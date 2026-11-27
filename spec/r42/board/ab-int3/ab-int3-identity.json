@@ -1,0 +1,302 @@
+{
+ "schema": "tnca-experiment-spec/1",
+ "id": "ab-int3-identity",
+ "allowed_hosts": [
+  "acf3019"
+ ],
+ "hypothesis": "R42 ab-int3: the 113 original ArchBench points (three identity points first) pass their numerical and structural checks on the R41 run-3 image with the registered software tree, and give its serial-grid device cycles at 100 MHz.",
+ "competing_explanations": [
+  "the software tree differs from run 3 (compiler, runtime, harness) and changes cycles or numerics",
+  "a workload fails, falls back, times out, or is omitted from its registered checks",
+  "the card identity or clock changes during the run (shared card)"
+ ],
+ "expected_counter_changes": [
+  "baseline tree (main 4b61abd8): serial-grid cycles equal to the run-3 records within run-to-run noise",
+  "candidate tree: cycles change only where the candidate changes generated code or the runtime",
+  "no host fallback and no upload/download inside resident calls"
+ ],
+ "expected_observations": [
+  "every registered configuration completes with its numerical and structural checks passing",
+  "the experiment records the observed image, clock, software tree and raw results"
+ ],
+ "board": {
+  "image": "{home}/r41run3/tnca_u280.xclbin",
+  "image_sha256": "791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09",
+  "image_uuid": "ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3",
+  "clock_evidence": "{home}/r41run3/qualified_clock.json",
+  "clock_hz": 100000000,
+  "device": "0000:04:00.1",
+  "mgmt_device": "0000:04:00.0",
+  "backend": "fpga-u280-multicore",
+  "backend_args": {
+   "xclbin": "{home}/r41run3/tnca_u280.xclbin",
+   "image_profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "core_count": 3,
+   "memory_ports": 3,
+   "hbm_dma": true,
+   "hbm_bytes": 8589934592,
+   "device_clock": true
+  },
+  "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+  "transport": {
+   "deadline_cycles": 200000000000,
+   "host_timeout_seconds": 28800,
+   "source": "evidence/r40/v3/campaign_fe1b/campaign.json transport"
+  },
+  "memory_map": {
+   "window_base": 0,
+   "window_bytes": 8589934592,
+   "local_limit": 131072,
+   "bank": "MBG[0:31]",
+   "physical_pcs": "PC0-PC31",
+   "source": "{home}/r41run3/xclbin_hbm_map.json",
+   "source_sha256": "8afe58d986d58d462b177ecca99cf9dfbf0dc514183ac0121a203ce47cd86cce"
+  },
+  "image_source": {
+   "commit": "8d237223b9ab9cf6afc4228d6bc7149bf4a96086",
+   "branch": "r41-hbm-bw",
+   "record": "{home}/r41run3/source_review.json",
+   "parameters": "evidence/r41/hbm_bw/g4/run2/image.tcl",
+   "run": "evidence/r41/hbm_bw/g4/run2/BRINGUP.md"
+  },
+  "load_policy": "approved run-3 image; loaded only by tools/r42/board_ab.py after 15 consecutive idle minutes through program.sh --check/--go; every FPGA step checks identity"
+ },
+ "sources": [
+  "tools/performance_harness",
+  "archbench",
+  "python/tnca",
+  "compiler/python",
+  "compiler/targets",
+  "tools/asm",
+  "isa",
+  "{home}/r41run3/xclbin_hbm_map.json",
+  "{home}/r41run3/source_review.json",
+  "archbench",
+  "spec/r40/suites",
+  "spec/r41/stage1/plan.json",
+  "{home}/r42/reg/ab-int3/ab-int3-identity.json"
+ ],
+ "env": {
+  "MAX_JOBS": "1",
+  "OMP_NUM_THREADS": "1",
+  "MKL_NUM_THREADS": "1",
+  "CUDA_VISIBLE_DEVICES": "",
+  "PYTHONFAULTHANDLER": "1",
+  "PYTHONPATH": "{root}:{root}/python:{root}/compiler/python:{root}/tools/asm",
+  "TRITON_CACHE_DIR": "{out}/caches/triton",
+  "TORCHINDUCTOR_CACHE_DIR": "{out}/caches/inductor",
+  "TORCH_EXTENSIONS_DIR": "{out}/caches/torch-extensions"
+ },
+ "registration": {
+  "status": "registered-not-run",
+  "registered_utc": "2026-11-27T08:25:25.067341+00:00",
+  "round": "R42",
+  "name": "ab-int3",
+  "software": {
+   "commit": "44070eb06d67468ccf208643c5a0e93f89d8bfdf",
+   "host_dir": "{home}/r42/src_int3",
+   "software_tree": "files:aaab5ffcdaa086f6043fcc22fc18626228ec5027c3608e010315ee779e415394",
+   "staging": "git archive 44070eb06d67468ccf208643c5a0e93f89d8bfdf -- . ':!evidence' ':!e7c' | tar x"
+  },
+  "knobs": {
+   "TNCA_ACTIVE_CORES": "3",
+   "TNCA_TORCH_DEVICE": "native",
+   "TNCA_TRANSFER_POLICY": "resident"
+  },
+  "extra_knobs": {},
+  "image": {
+   "sha256": "791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09",
+   "uuid": "ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3"
+  },
+  "generator": "tools/r42/board_ab.py register",
+  "changes_against_run3": [
+   "id, hypothesis, competing_explanations, expected_*: R42 wording",
+   "registration: R42 block (software commit, tree identity, knobs); the run-3 block is kept as derived_from",
+   "steps[].argv --manifest and sources: the manifest is read from {home}/r42/reg/NAME/ (outside the measured tree, so the tree stays byte-equal to its commit) instead of spec/r41/run3/board/",
+   "board.memory_map.source and sources: {home}/r41run3/xclbin_hbm_map.json (same file, same sha256) instead of spec/r41/run3/xclbin_hbm_map.json, which is not in the repository",
+   "estimates: removed (only --dry-run reads them; evidence/ is not staged)",
+   "identity manifest: the `source` step (review of the frozen RTL image source archive, an R41 delivery check) and its two tool sources are removed; the clock verification and the three identity points are unchanged",
+   "board.load_policy: R42 wording",
+   "optional --knob entries are added to every configuration (none for the baseline)"
+  ],
+  "sampling": "unchanged: spec/r41/stage1/plan.json measurement.long_device_tasks (qualification record 0 warm-up + 1 timed call; a point at <= 1 s device time then gets a formal record of 3 timed calls in a new process, else the qualification record is formal)",
+  "boundary": "unchanged: ArchBench protocol 2, device-cycles-serial-grid at the qualified 100 MHz",
+  "derived_from": "evidence/r42/board/run3_registration/r3-s2-identity.json",
+  "derived_from_sha256": "1c15dbbc8563e0f1922634e791db3a6d6c41f81966a421efd4d639ccf649e7aa",
+  "run3_registration": {
+   "status": "registered-not-run",
+   "derived_from": "spec/r41/stage2/board/s2-identity.json",
+   "derived_from_sha256": "a3cbe02c3aacda31ea07bd6cb6474153ef4b0d8b02336a662eca76816acbdf68",
+   "generator": "tools/r41/run2_board/manifests.py",
+   "image_source_commit": "8d237223b9ab9cf6afc4228d6bc7149bf4a96086",
+   "source_scope": "frozen image source separately verified; runtime tree recorded by experiment.py",
+   "inherited_expected_observations": [
+    "identity: loaded UUID 49964b17..., counter 100 MHz before and after every step",
+    "source: rtl, flow/fpga, flow/synth, xls, profiles and targets byte-identical to c9f2578",
+    "clock: qualified_clock.json passes tnca.operating_clock.qualified_clock; xclbinutil DATA_CLK 100 MHz",
+    "smoke: 3 points x 1 process, status pass, evidence_level measured-board, clock_hz 100000000"
+   ],
+   "inherited_registration": {
+    "status": "registered-not-run",
+    "registered_utc": "2026-10-23",
+    "contract": "doc/r41_tasks_and_acceptance.md S2-01 (S2-04/S2-05 board items)",
+    "launch": "evidence/r41/stage2/board/launches/board_queue.sh",
+    "generator": "tools/performance_harness/stage2_board.py",
+    "expected_board_hours": 0.1,
+    "purpose": "S2-01 items 3 and 6: actual 100 MHz, image hash/source/parameters/clock bound together",
+    "knobs": {
+     "TNCA_ACTIVE_CORES": "3",
+     "TNCA_TORCH_DEVICE": "native",
+     "TNCA_TRANSFER_POLICY": "resident"
+    },
+    "reference": "Stage 1 B40 board records of the same points and knobs (evidence/r41/stage1, evidence/r40/v3/R40-04.hbm/board_run_fe1b)"
+   }
+  }
+ },
+ "steps": [
+  {
+   "id": "clock",
+   "kind": "fpga",
+   "timeout_seconds": 600,
+   "argv": [
+    "{python}",
+    "tools/performance_harness/clock_qualify.py",
+    "verify",
+    "--evidence",
+    "{home}/r41run3/qualified_clock.json",
+    "--image",
+    "{home}/r41run3/tnca_u280.xclbin",
+    "--uuid",
+    "ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3",
+    "--out",
+    "{out}/clock.json"
+   ],
+   "timing_boundary": "read-only sysfs counter and xclbinutil; no device work",
+   "cache_state": "none",
+   "outputs": [
+    "{out}/clock.json"
+   ]
+  },
+  {
+   "id": "identity",
+   "kind": "fpga",
+   "argv": [
+    "{python}",
+    "tools/performance_harness/board_batch.py",
+    "--manifest",
+    "{home}/r42/reg/ab-int3/ab-int3-identity.json",
+    "--batch",
+    "identity",
+    "--root",
+    "{root}",
+    "--out",
+    "{out}/identity",
+    "--python",
+    "{python}"
+   ],
+   "timeout_seconds": 21600,
+   "timing_boundary": "ArchBench protocol 2: cold call untimed; registered warm-up/timed steady calls; device-cycles-serial-grid and device-graph-makespan from first accepted launch to last device completion (MMIO common-clock endpoints); request-latency recorded, not ranked",
+   "cache_state": "fresh experiment-local Triton/Inductor/extension caches under {out}/caches; one ArchBench process per run",
+   "outputs": [
+    "{out}/identity/batch.json",
+    "{out}/identity/formal.jsonl"
+   ]
+  }
+ ],
+ "plan": "spec/r41/stage1/plan.json",
+ "plan_sha256": "6eb1a3d3d0a629ecf1db637689248177cbb1ea4382e3c5d62838ea5df90f8030",
+ "measurement": {
+  "long_device_tasks": {
+   "qualification_samples": 1,
+   "short_threshold_seconds": 1,
+   "short_timed_samples": 3,
+   "long_timed_samples": 1,
+   "anchor_stability_samples": 3
+  },
+  "host_latency": {
+   "warmup": 5,
+   "timed": 30,
+   "blocks": 3,
+   "order": "interleaved seeded A/B"
+  },
+  "borderline_device_recheck": {
+   "additional_samples_per_arm": 3,
+   "max_recheck_blocks": 2
+  },
+  "bootstrap": {
+   "resamples": 2000,
+   "seed": 20261020,
+   "alpha": 0.05
+  },
+  "overall_nonregression_budget": 0.05,
+  "report_point_regression_above": 0.05,
+  "confirmed_new_default_regression_block": 0.1
+ },
+ "suites": [
+  {
+   "path": "spec/r40/suites/existing.json",
+   "sha256": "f3e4ba5f3a346d45d3289b4b58f380d0103f4a5edfe6c88abd6b136868154a0f"
+  },
+  {
+   "path": "spec/r40/suites/large.json",
+   "sha256": "9279cf341d9c631f103a15abdbff1d6d932329fbc0a0336352bbac8b22b223bf"
+  },
+  {
+   "path": "spec/r40/suites/hbm-tier.json",
+   "sha256": "a36483591c755273db172d11455301e8a9a164932340a5827fccd0f5703d5d6f"
+  },
+  {
+   "path": "spec/r40/suites/hbm.json",
+   "sha256": "7cebc8d2c6e6cab8a688418ce16e36785cd603385bff1e6028a0657c89120dfd"
+  },
+  {
+   "path": "spec/r40/suites/R40-03.gemm-reuse.json",
+   "sha256": "2ae243782413f4970616dfef3e02aca60e8f8f34907d18cf2ea4a6ac48807c3f"
+  },
+  {
+   "path": "spec/r40/suites/R40-09.tune.json",
+   "sha256": "2e5a0c346123f6cd2fe896baa176be3dc2138d6bd4e189b62564ae67f1347484"
+  }
+ ],
+ "board_batches": {
+  "identity": {
+   "sampling": "fixed",
+   "fixed": {
+    "warmup": 0,
+    "timed": 1
+   },
+   "configurations": [
+    {
+     "id": "op.add/tiny/fp16-n1000",
+     "point": "op.add/tiny/fp16-n1000",
+     "point_sha256": "f5f7f2ddaf105584a49a973c66f605ac8c77b0647a64fcb875af80803953064d",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "op.matmul/tiny/fp16-m16-k32-n16",
+     "point": "op.matmul/tiny/fp16-m16-k32-n16",
+     "point_sha256": "f1472816b16b6a6d11abaa85899817c50a0a2bb2ff72d305940e45d94bd3d1a7",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    },
+    {
+     "id": "model.llama_decode/tiny/fp16-b1-p16",
+     "point": "model.llama_decode/tiny/fp16-b1-p16",
+     "point_sha256": "9889060c587f03f485fbc2e16e4c3b6788cf830c616747040259517c3e81b63a",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     }
+    }
+   ]
+  }
+ }
+}

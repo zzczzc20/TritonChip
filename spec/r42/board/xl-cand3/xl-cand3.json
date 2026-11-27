@@ -1,0 +1,638 @@
+{
+ "schema": "tnca-experiment-spec/1",
+ "id": "xl-cand3",
+ "allowed_hosts": [
+  "acf3019"
+ ],
+ "hypothesis": "R42 xl-cand3: the 32 xl ArchBench points, 18 of them FP8 matrix multiplications (full suite) pass their numerical and structural checks on the R41 run-3 image with the registered software tree, and give its serial-grid device cycles at 100 MHz.",
+ "competing_explanations": [
+  "the software tree differs from run 3 (compiler, runtime, harness) and changes cycles or numerics",
+  "a workload fails, falls back, times out, or is omitted from its registered checks",
+  "the card identity or clock changes during the run (shared card)"
+ ],
+ "expected_counter_changes": [
+  "no board record of an xl point exists before this run: the baseline arm (main 4b61abd8 plus the archbench additions of R42-xl) is the first measurement of every point",
+  "candidate arm: cycles change only where the candidate changes generated code or the runtime",
+  "no host fallback and no upload/download inside resident calls"
+ ],
+ "expected_observations": [
+  "every registered configuration completes with its numerical and structural checks passing",
+  "the experiment records the observed image, clock, software tree and raw results"
+ ],
+ "board": {
+  "image": "{home}/r41run3/tnca_u280.xclbin",
+  "image_sha256": "791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09",
+  "image_uuid": "ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3",
+  "clock_evidence": "{home}/r41run3/qualified_clock.json",
+  "clock_hz": 100000000,
+  "device": "0000:04:00.1",
+  "mgmt_device": "0000:04:00.0",
+  "backend": "fpga-u280-multicore",
+  "backend_args": {
+   "xclbin": "{home}/r41run3/tnca_u280.xclbin",
+   "image_profile": "core-vrf-sync-v5-x8-g2c4-dp",
+   "core_count": 3,
+   "memory_ports": 3,
+   "hbm_dma": true,
+   "hbm_bytes": 8589934592,
+   "device_clock": true
+  },
+  "profile": "core-vrf-sync-v5-x8-g2c4-dp",
+  "transport": {
+   "deadline_cycles": 200000000000,
+   "host_timeout_seconds": 28800,
+   "source": "evidence/r40/v3/campaign_fe1b/campaign.json transport"
+  },
+  "memory_map": {
+   "window_base": 0,
+   "window_bytes": 8589934592,
+   "local_limit": 131072,
+   "bank": "MBG[0:31]",
+   "physical_pcs": "PC0-PC31",
+   "source": "{home}/r41run3/xclbin_hbm_map.json",
+   "source_sha256": "8afe58d986d58d462b177ecca99cf9dfbf0dc514183ac0121a203ce47cd86cce"
+  },
+  "image_source": {
+   "commit": "8d237223b9ab9cf6afc4228d6bc7149bf4a96086",
+   "branch": "r41-hbm-bw",
+   "record": "{home}/r41run3/source_review.json",
+   "parameters": "evidence/r41/hbm_bw/g4/run2/image.tcl",
+   "run": "evidence/r41/hbm_bw/g4/run2/BRINGUP.md"
+  },
+  "load_policy": "approved run-3 image; loaded only by tools/r42/board_ab.py after 15 consecutive idle minutes through program.sh --check/--go; every FPGA step checks identity"
+ },
+ "sources": [
+  "tools/performance_harness",
+  "archbench",
+  "python/tnca",
+  "compiler/python",
+  "compiler/targets",
+  "tools/asm",
+  "isa",
+  "{home}/r41run3/xclbin_hbm_map.json",
+  "{home}/r41run3/source_review.json",
+  "archbench",
+  "spec/r41/stage1/plan.json",
+  "{home}/r42/reg/xl-cand3/xl-cand3.json",
+  "{home}/r42/reg/xl-cand3/xl_board_batch.py"
+ ],
+ "env": {
+  "MAX_JOBS": "1",
+  "OMP_NUM_THREADS": "1",
+  "MKL_NUM_THREADS": "1",
+  "CUDA_VISIBLE_DEVICES": "",
+  "PYTHONFAULTHANDLER": "1",
+  "PYTHONPATH": "{root}:{root}/python:{root}/compiler/python:{root}/tools/asm",
+  "TRITON_CACHE_DIR": "{out}/caches/triton",
+  "TORCHINDUCTOR_CACHE_DIR": "{out}/caches/inductor",
+  "TORCH_EXTENSIONS_DIR": "{out}/caches/torch-extensions"
+ },
+ "registration": {
+  "status": "registered-not-run",
+  "registered_utc": "2026-11-27T08:25:25.341341+00:00",
+  "round": "R42",
+  "name": "xl-cand3",
+  "software": {
+   "commit": "44070eb06d67468ccf208643c5a0e93f89d8bfdf",
+   "host_dir": "{home}/r42/src_int3",
+   "software_tree": "files:aaab5ffcdaa086f6043fcc22fc18626228ec5027c3608e010315ee779e415394",
+   "staging": "git archive 44070eb06d67468ccf208643c5a0e93f89d8bfdf -- . ':!evidence' ':!e7c' | tar x"
+  },
+  "knobs": {
+   "TNCA_ACTIVE_CORES": "3",
+   "TNCA_TORCH_DEVICE": "native",
+   "TNCA_TRANSFER_POLICY": "resident"
+  },
+  "extra_knobs": {},
+  "image": {
+   "sha256": "791b8af28f2583e4b29cd4bb191d44e8692bed41b7132c493d86818cb0c7ee09",
+   "uuid": "ea1fa1af-cf1a-fda3-a5d2-e4b88a63abe3"
+  },
+  "generator": "tools/r42/board_ab.py register",
+  "changes_against_run3": [
+   "id, hypothesis, competing_explanations, expected_*: R42 wording",
+   "registration: R42 block (software commit, tree identity, knobs); the run-3 block is kept as derived_from",
+   "steps[].argv --manifest and sources: the manifest is read from {home}/r42/reg/NAME/ (outside the measured tree, so the tree stays byte-equal to its commit) instead of spec/r41/run3/board/",
+   "board.memory_map.source and sources: {home}/r41run3/xclbin_hbm_map.json (same file, same sha256) instead of spec/r41/run3/xclbin_hbm_map.json, which is not in the repository",
+   "estimates: removed (only --dry-run reads them; evidence/ is not staged)",
+   "identity manifest: the `source` step (review of the frozen RTL image source archive, an R41 delivery check) and its two tool sources are removed; the clock verification and the three identity points are unchanged",
+   "board.load_policy: R42 wording",
+   "optional --knob entries are added to every configuration (none for the baseline)",
+   "board_batches: the batch `xl` lists the points of archbench/suites/xl.json in file order (coverage-checked against the same file) instead of the 113 original points; the suite file sha256 is registered in `suites`",
+   "steps[0]: id `xl`, run through the registered copy of tools/r42/xl_board_batch.py (a subclass of board_batch.Batch) instead of board_batch.py directly; outputs under {out}/xl",
+   "configurations[].timeout_seconds: per-point process timeout, max(1200 s, 4 x the point estimate.seconds_pessimistic of xl.json, the larger of the two planning estimates there: the nominal one assumes an FP8 efficiency that no board run has confirmed); the run-3 value was the plan budget (28800 s) for every point",
+   "sampling: the device rule is unchanged (a qualification record, then 3 timed samples in a new process for points at <= 1 s device time); in addition a point whose qualification process took more than 300 s of wall time keeps the qualification record as its only formal record",
+   "hypothesis / expected_*: xl wording"
+  ],
+  "sampling": "unchanged: spec/r41/stage1/plan.json measurement.long_device_tasks (qualification record 0 warm-up + 1 timed call; a point at <= 1 s device time then gets a formal record of 3 timed calls in a new process, else the qualification record is formal); xl: additionally the qualification record is the only formal record when its process took more than 300 s of wall time",
+  "boundary": "unchanged: ArchBench protocol 2, device-cycles-serial-grid at the qualified 100 MHz",
+  "suite": {
+   "name": "xl",
+   "file": "archbench/suites/xl.json",
+   "file_sha256": "42dd79b5939c72a8eb26deb4ff97d65dee84373deb7f23b97d10dbd060b4bd16",
+   "suite_sha256_field": "2fd48cb3da4817c1129e4fef95e6ea6ef177c6d791da68bc5f4dd0c0cd8779d2",
+   "points": 32,
+   "fp8_matmul_points": 18,
+   "max_live_bytes": 2293153224,
+   "memory_cap_bytes": 3221225472,
+   "plan": "doc/r42_plan.md section 4",
+   "tolerances": "the frozen per-point tolerances of the suite file; none changed",
+   "timeout_rule": "max(1200 s, 4 x estimate.seconds_pessimistic of the point in the suite file)",
+   "timeouts_seconds": {
+    "model.fp8_decoder_decode/xl/fp8-b1-p2048-layers28": 1200,
+    "model.fp8_decoder_prefill/xl/fp8-b1-s2048-layers4": 5843,
+    "model.fp8_decoder_prefill/xl/fp8-b1-s512-layers28": 7911,
+    "model.fp8_layer_decode/xl/fp8-b1-p2048-layers1": 1200,
+    "model.fp8_layer_prefill/xl/fp8-b1-s512-layers1": 1200,
+    "op.argmax/xl/fp16-r16-v151936": 1200,
+    "op.attention_decode/xl/fp16-b1-h16-kv8-l2048-d128": 1200,
+    "op.attention_decode/xl/fp16-b1-h16-kv8-l4096-d128": 1200,
+    "op.attention_decode/xl/fp16-b1-h16-kv8-l8192-d128": 1200,
+    "op.attention_prefill/xl/fp16-b1-h16-kv8-s1024-d128": 1200,
+    "op.attention_prefill/xl/fp16-b1-h16-kv8-s2048-d128": 1200,
+    "op.embedding/xl/fp16-v151936-d2048-t2048": 1200,
+    "op.fp8_act_quant/xl/fp8-m2048-k2048": 1200,
+    "op.fp8_act_quant/xl/fp8-m2048-k6144": 1200,
+    "op.fp8_linear/xl/fp8-m1-k2048-n12288": 1200,
+    "op.fp8_linear/xl/fp8-m1-k2048-n151936": 1200,
+    "op.fp8_linear/xl/fp8-m1-k2048-n4096": 1200,
+    "op.fp8_linear/xl/fp8-m1-k6144-n2048": 1200,
+    "op.fp8_linear/xl/fp8-m16-k2048-n12288": 1200,
+    "op.fp8_linear/xl/fp8-m16-k2048-n151936": 1200,
+    "op.fp8_linear/xl/fp8-m16-k6144-n2048": 1200,
+    "op.fp8_linear/xl/fp8-m2048-k2048-n12288": 1200,
+    "op.fp8_linear/xl/fp8-m2048-k2048-n2048": 1200,
+    "op.fp8_linear/xl/fp8-m2048-k2048-n4096": 1200,
+    "op.fp8_linear/xl/fp8-m2048-k6144-n2048": 1200,
+    "op.fp8_linear/xl/fp8-m512-k2048-n12288": 1200,
+    "op.fp8_linear/xl/fp8-m512-k6144-n2048": 1200,
+    "op.gemv/xl/fp16-k2048-n151936": 1200,
+    "op.linear/xl/fp16-m2048-k2048-n6144-bias0": 1200,
+    "op.rmsnorm_residual/xl/fp16-r2048-d2048": 1200,
+    "op.rope/xl/fp16-b1-h16-s2048-d128": 1200,
+    "op.swiglu/xl/fp16-r2048-i6144": 1200
+   },
+   "sampling_cap": "a qualification process above 300 s of wall time is the formal record (1 sample)",
+   "memory_map": {
+    "window_bytes": 8589934592,
+    "note": "unchanged run-3 map (explicit 8 GiB HBM_STRIPED allocation, MBG[0:31]); the run-3 heap capacity is 8 GiB - 4 KiB, above the 3 GiB live cap of the xl points (tools/r42/xl_memory_check.py reads it from the run-3 records)"
+   }
+  },
+  "derived_from": "evidence/r42/board/run3_registration/r3-s2-original-suite.json",
+  "derived_from_sha256": "1696ea1b9ce6d00d3c6a39a96477c46f6a5773dad22d8c49c1b65e46c35a4d77",
+  "run3_registration": {
+   "status": "registered-not-run",
+   "derived_from": "spec/r41/stage2/board/s2-original-suite.json",
+   "derived_from_sha256": "aae3c4de48fad32ae497a58309af9160a178f865fd2e59600a0c1a8ad9b0a8e1",
+   "generator": "tools/r41/run2_board/manifests.py",
+   "image_source_commit": "8d237223b9ab9cf6afc4228d6bc7149bf4a96086",
+   "source_scope": "frozen image source separately verified; runtime tree recorded by experiment.py",
+   "inherited_expected_observations": [
+    "113 configurations pass numerically (max_rel_err <= tol), evidence_level measured-board",
+    "device cycles per point recorded for the S2-01 cycles/wall-time report vs B40"
+   ],
+   "inherited_registration": {
+    "status": "registered-not-run",
+    "registered_utc": "2026-10-23",
+    "contract": "doc/r41_tasks_and_acceptance.md S2-01 (S2-04/S2-05 board items)",
+    "launch": "evidence/r41/stage2/board/launches/board_queue.sh",
+    "generator": "tools/performance_harness/stage2_board.py",
+    "expected_board_hours": 2.0,
+    "coverage": "spec/r40/suites/hbm.json (113 unique points) as existing.json + hbm-tier.json + large.json",
+    "order": "native tiny/small/medium, HBM tier, large (longest last)",
+    "sampling_rule": "plan.json measurement.long_device_tasks: qualification record (0 warm-up, 1 timed call); when every configuration of a group qualifies at <= 1 s, a formal record with 3 timed calls, else the qualification record is formal (1 timed call); anchors: 3 independent interleaved processes; borderline rechecks (3 more samples per arm, at most 2 blocks) only by a later registered judgement, never by repeating until significant",
+    "knobs": {
+     "TNCA_ACTIVE_CORES": "3",
+     "TNCA_TORCH_DEVICE": "native",
+     "TNCA_TRANSFER_POLICY": "resident"
+    },
+    "reference": "Stage 1 B40 board records of the same points and knobs (evidence/r41/stage1, evidence/r40/v3/R40-04.hbm/board_run_fe1b)"
+   }
+  }
+ },
+ "steps": [
+  {
+   "id": "xl",
+   "kind": "fpga",
+   "argv": [
+    "{python}",
+    "{home}/r42/reg/xl-cand3/xl_board_batch.py",
+    "--manifest",
+    "{home}/r42/reg/xl-cand3/xl-cand3.json",
+    "--batch",
+    "xl",
+    "--root",
+    "{root}",
+    "--out",
+    "{out}/xl",
+    "--python",
+    "{python}"
+   ],
+   "timeout_seconds": 259200,
+   "timing_boundary": "ArchBench protocol 2: cold call untimed; registered warm-up/timed steady calls; device-cycles-serial-grid and device-graph-makespan from first accepted launch to last device completion (MMIO common-clock endpoints); request-latency recorded, not ranked",
+   "cache_state": "fresh experiment-local Triton/Inductor/extension caches under {out}/caches; one ArchBench process per run",
+   "outputs": [
+    "{out}/xl/batch.json",
+    "{out}/xl/formal.jsonl"
+   ]
+  }
+ ],
+ "plan": "spec/r41/stage1/plan.json",
+ "plan_sha256": "6eb1a3d3d0a629ecf1db637689248177cbb1ea4382e3c5d62838ea5df90f8030",
+ "measurement": {
+  "long_device_tasks": {
+   "qualification_samples": 1,
+   "short_threshold_seconds": 1,
+   "short_timed_samples": 3,
+   "long_timed_samples": 1,
+   "anchor_stability_samples": 3
+  },
+  "host_latency": {
+   "warmup": 5,
+   "timed": 30,
+   "blocks": 3,
+   "order": "interleaved seeded A/B"
+  },
+  "borderline_device_recheck": {
+   "additional_samples_per_arm": 3,
+   "max_recheck_blocks": 2
+  },
+  "bootstrap": {
+   "resamples": 2000,
+   "seed": 20261020,
+   "alpha": 0.05
+  },
+  "overall_nonregression_budget": 0.05,
+  "report_point_regression_above": 0.05,
+  "confirmed_new_default_regression_block": 0.1
+ },
+ "suites": [
+  {
+   "path": "archbench/suites/xl.json",
+   "sha256": "42dd79b5939c72a8eb26deb4ff97d65dee84373deb7f23b97d10dbd060b4bd16"
+  }
+ ],
+ "board_batches": {
+  "xl": {
+   "sampling": "device-rule",
+   "configurations": [
+    {
+     "id": "model.fp8_decoder_decode/xl/fp8-b1-p2048-layers28",
+     "point": "model.fp8_decoder_decode/xl/fp8-b1-p2048-layers28",
+     "point_sha256": "31d06b57df86119b7227171310d82bc8052fc703034c073b4bf9796a5450a160",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "model.fp8_decoder_prefill/xl/fp8-b1-s2048-layers4",
+     "point": "model.fp8_decoder_prefill/xl/fp8-b1-s2048-layers4",
+     "point_sha256": "e6f3ab3429eb841d926b5c4682551f4724ac075c6ac866788bf084178ead3a21",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 5843
+    },
+    {
+     "id": "model.fp8_decoder_prefill/xl/fp8-b1-s512-layers28",
+     "point": "model.fp8_decoder_prefill/xl/fp8-b1-s512-layers28",
+     "point_sha256": "706a882afdc50e9f438812765aa8ce456820ec906c897fdf3f0af3dbec51d3f2",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 7911
+    },
+    {
+     "id": "model.fp8_layer_decode/xl/fp8-b1-p2048-layers1",
+     "point": "model.fp8_layer_decode/xl/fp8-b1-p2048-layers1",
+     "point_sha256": "154cebd2f54b4120f5dfd8edfc98cc0971068d3591a4d368c4364685054232b9",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "model.fp8_layer_prefill/xl/fp8-b1-s512-layers1",
+     "point": "model.fp8_layer_prefill/xl/fp8-b1-s512-layers1",
+     "point_sha256": "d0d6bc105d461851fd5e903bbc1219f8b763a53ab60aec1e03ace080626aac8d",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.argmax/xl/fp16-r16-v151936",
+     "point": "op.argmax/xl/fp16-r16-v151936",
+     "point_sha256": "177dbcda727575d007402b026732e324512ff6750ed4e7f7dc7de25f49cd9184",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.attention_decode/xl/fp16-b1-h16-kv8-l2048-d128",
+     "point": "op.attention_decode/xl/fp16-b1-h16-kv8-l2048-d128",
+     "point_sha256": "919f0bc578929bfd3edb09a2cc8e17e3c157e803b71ca3d2e00af5ad4c389b2e",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.attention_decode/xl/fp16-b1-h16-kv8-l4096-d128",
+     "point": "op.attention_decode/xl/fp16-b1-h16-kv8-l4096-d128",
+     "point_sha256": "fdbd8009cf7f7ba251aa06178a6088f67eccb6b3d87a220104a0b025efdbecfd",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.attention_decode/xl/fp16-b1-h16-kv8-l8192-d128",
+     "point": "op.attention_decode/xl/fp16-b1-h16-kv8-l8192-d128",
+     "point_sha256": "f208cc72607767eae0713c3ca72ae0f45062e16d473964e9bcd29a9dc606e0dc",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.attention_prefill/xl/fp16-b1-h16-kv8-s1024-d128",
+     "point": "op.attention_prefill/xl/fp16-b1-h16-kv8-s1024-d128",
+     "point_sha256": "d98d9b3e9982f2b6aebcb419f1b7e89b456e7a1b8c7b147991aef0bbf3c4de8b",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.attention_prefill/xl/fp16-b1-h16-kv8-s2048-d128",
+     "point": "op.attention_prefill/xl/fp16-b1-h16-kv8-s2048-d128",
+     "point_sha256": "aac61a910b2acb27ef42a365fe430d42a43813ecc1ed1d0baaf3ae764dbc97c6",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.embedding/xl/fp16-v151936-d2048-t2048",
+     "point": "op.embedding/xl/fp16-v151936-d2048-t2048",
+     "point_sha256": "ee1fd5113fcf6150f4123973ea42b442f9a5f8d7470eb8f01071d291f9ac5e7f",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.fp8_act_quant/xl/fp8-m2048-k2048",
+     "point": "op.fp8_act_quant/xl/fp8-m2048-k2048",
+     "point_sha256": "8a2ec384ac3de2a4a14715b5e97852d3f6019a58a10a1fa80dae2c11926ac0f8",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.fp8_act_quant/xl/fp8-m2048-k6144",
+     "point": "op.fp8_act_quant/xl/fp8-m2048-k6144",
+     "point_sha256": "03133e5f67ae8b9c5db94576d49c53246f5d6d313c9c0c565718c75ef86f63c5",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.fp8_linear/xl/fp8-m1-k2048-n12288",
+     "point": "op.fp8_linear/xl/fp8-m1-k2048-n12288",
+     "point_sha256": "15911313ef57875f40cc0fac4789603f01a76fc5d8315bff3990548e963c1fa2",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.fp8_linear/xl/fp8-m1-k2048-n151936",
+     "point": "op.fp8_linear/xl/fp8-m1-k2048-n151936",
+     "point_sha256": "0203308e11757d663ae934bf8fb030485e177eca623fa4f8ec3e41c4baa2e0a0",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.fp8_linear/xl/fp8-m1-k2048-n4096",
+     "point": "op.fp8_linear/xl/fp8-m1-k2048-n4096",
+     "point_sha256": "15da736bea87d9e3a743ad7c76fad926f38ea50d5ee3b9eadf09f5a9fd0038b7",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.fp8_linear/xl/fp8-m1-k6144-n2048",
+     "point": "op.fp8_linear/xl/fp8-m1-k6144-n2048",
+     "point_sha256": "45a8f1faada427eccf968fdf4d01e1d98203eb3223f5ccb30c31d3cee97e7ada",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.fp8_linear/xl/fp8-m16-k2048-n12288",
+     "point": "op.fp8_linear/xl/fp8-m16-k2048-n12288",
+     "point_sha256": "9ec66448679d1cfc90376d647695adf9681b0a633fab65370f519efb5372b0e7",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.fp8_linear/xl/fp8-m16-k2048-n151936",
+     "point": "op.fp8_linear/xl/fp8-m16-k2048-n151936",
+     "point_sha256": "393aefe8d652e4b5964cf849ca1e38fb8edca53c13a3f71c3a95906eee5da93e",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.fp8_linear/xl/fp8-m16-k6144-n2048",
+     "point": "op.fp8_linear/xl/fp8-m16-k6144-n2048",
+     "point_sha256": "c67f1591f965117c51068db4de405eb4e8cd403a13a1b7eb0e9dd3c9ed5c97fd",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.fp8_linear/xl/fp8-m2048-k2048-n12288",
+     "point": "op.fp8_linear/xl/fp8-m2048-k2048-n12288",
+     "point_sha256": "22a5dce846e071c04fbd3edcadf613b27fbb2edb4731dde47dc70b64a98e0410",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.fp8_linear/xl/fp8-m2048-k2048-n2048",
+     "point": "op.fp8_linear/xl/fp8-m2048-k2048-n2048",
+     "point_sha256": "b13e6a796e6dea3389bd9737c5bbce9473eaada75066613c82dbc132a12dc6fc",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.fp8_linear/xl/fp8-m2048-k2048-n4096",
+     "point": "op.fp8_linear/xl/fp8-m2048-k2048-n4096",
+     "point_sha256": "9b3cfa8a19e9aff1fbf995ba8ccdc2ddb1355fd5a35a0ead830d5e0510e2fab7",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.fp8_linear/xl/fp8-m2048-k6144-n2048",
+     "point": "op.fp8_linear/xl/fp8-m2048-k6144-n2048",
+     "point_sha256": "660d244e9261ca32d82dc40b89e6393d00a3e1b977169f6515ab004208012c83",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.fp8_linear/xl/fp8-m512-k2048-n12288",
+     "point": "op.fp8_linear/xl/fp8-m512-k2048-n12288",
+     "point_sha256": "bfbfd2099bc44d5704025f9ad2e2a93860d169f66d0994ee0a6aaef9612d12bc",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.fp8_linear/xl/fp8-m512-k6144-n2048",
+     "point": "op.fp8_linear/xl/fp8-m512-k6144-n2048",
+     "point_sha256": "49ee5e8c31716478c815832a3fef42799f54f20dd94b3d6e3a1550802062dbf3",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.gemv/xl/fp16-k2048-n151936",
+     "point": "op.gemv/xl/fp16-k2048-n151936",
+     "point_sha256": "1515c5e68d528438da6a4cf12202ce9e593259cfc1ea426e3903a7eb8074fffb",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.linear/xl/fp16-m2048-k2048-n6144-bias0",
+     "point": "op.linear/xl/fp16-m2048-k2048-n6144-bias0",
+     "point_sha256": "3d50cb30e3e6d7d57030682ffa0857d79343d80543f334021428d249ca2bed81",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.rmsnorm_residual/xl/fp16-r2048-d2048",
+     "point": "op.rmsnorm_residual/xl/fp16-r2048-d2048",
+     "point_sha256": "0fee763e28d951843e6325cc3d4aff44483b83cc823ae7dd6fe291de38351511",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.rope/xl/fp16-b1-h16-s2048-d128",
+     "point": "op.rope/xl/fp16-b1-h16-s2048-d128",
+     "point_sha256": "9b1dc9aa7718bf1f42d3dec58ff805f482f792e7317a1f4f4c16493aab921cc0",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    },
+    {
+     "id": "op.swiglu/xl/fp16-r2048-i6144",
+     "point": "op.swiglu/xl/fp16-r2048-i6144",
+     "point_sha256": "b8f2e4d6541cf1a41d51518719cb1b6c057bbc3ffb0fcdc0a9882ca8cf561bb4",
+     "knobs": {
+      "TNCA_ACTIVE_CORES": "3",
+      "TNCA_TORCH_DEVICE": "native",
+      "TNCA_TRANSFER_POLICY": "resident"
+     },
+     "timeout_seconds": 1200
+    }
+   ],
+   "coverage": {
+    "suite": "archbench/suites/xl.json",
+    "sha256": "42dd79b5939c72a8eb26deb4ff97d65dee84373deb7f23b97d10dbd060b4bd16"
+   }
+  }
+ }
+}

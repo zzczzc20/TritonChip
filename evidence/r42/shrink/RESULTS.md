@@ -23,9 +23,9 @@ Nothing here is a routed image or a board number.
 |---|---|--:|--:|--:|---|--:|---|
 | 0 default | 1 / 0 | **249,921** | 17,024 | 69,184 | 39.5 RAMB tiles / 0 / 269 | | reproduces the shipped RTL; kernel synthesis tile 0 of the area worker: 253,898 |
 | 1 + area FMA/MAC back end and `tnca_cvt_int` (area worker, bit-identical) | 465 / 0 | **242,807** | 17,633 | 69,178 | 39.5 / 0 / 269 | **-7,114 (-2.8 %)** | area worker, kernel flow: -5.0k (BE 13), about -6.4k with the converter |
-| 2 + home slice arrays in URAM | 465 / 10 | not run alone | | | | -8,385 (unit table below) | |
-| 3 + VRF response crossbar `XBAR` 2 | 465 / 42 | **230,979** | 8,812 | 69,348 | 39.5 RAMB tiles / 24 / 269 | **-18,942 (-7.6 %) against step 0** | unit deltas in the tile: home -8,385, VRF -7,432, vector FPU -4,047, matrix -2,489, vector ALU +2,847 (synthesis variation between runs of the same RTL, section 7), others ~0 |
-Steps 1-3 together; the intermediate tile runs were not made. The per-unit deltas of the two tile runs are in `ooc/tile_s0_s3_units.txt`.
+| 2 + home slice arrays in URAM | 465 / 10 | **236,905** | 9,443 | 69,374 | 39.5 / 24 / 269 | **-5,902** | the home instance alone is -8,385 (37,606 -> 29,221); vector ALU +1,116, vector FPU +876, core own +560 move without any change to them |
+| 3 + VRF response crossbar `XBAR` 2 | 465 / 42 | **230,979** | 8,812 | 69,348 | 39.5 / 24 / 269 | **-5,926; -18,942 (-7.6 %) against step 0** | the VRF instance alone is -7,432 (21,283 -> 13,851); vector ALU +1,731 more and vector FPU -1,094, core own +635 |
+Per-unit LUT of the four tile runs: `ooc/tile_s0_s3_units.txt`. **The instances the changes touch moved by exactly their unit deltas** (home -8,385, VRF -7,432, matrix and vector FPU back end -6.4k together); the tile totals move less because other, untouched units change size between the runs (vector ALU 21,489 -> 21,489 -> 22,605 -> 24,336, vector FPU 45.4k -> 46.3k -> 45.2k): Vivado's synthesis is not stable at the +-1-3k level per unit when the hierarchy next to it changes. Use the instance deltas for attribution and the tile totals with +-3k.
 
 ## 3. M1: the candidates, measured (OOC unit level, run-3 tile parameters, 10 ns, hierarchy kept)
 

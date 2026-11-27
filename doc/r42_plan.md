@@ -477,3 +477,10 @@ Records of this stop: `evidence/r42/board/xl-cand3/stop2_{records,logs}.tgz` (an
 (xl suite, repeatable): a registration holding just the named point(s), same software commit `44070eb0` and tree, image, board block, knobs, sampling and identity manifest; `coverage` is omitted for the subset because
 `board_batch.py` checks full-suite coverage only when it is given (suite file sha256 and the point definition sha256 stay registered and checked); the change is listed in the registration's
 `changes_against_run3`. Registered as `xl-cand3r` (one point, identity first) and committed before launch. The xl comparison will combine `xl-cand3` (31 points) and `xl-cand3r` (1 point).
+
+**2026-11-27 13:48 UTC. `xl-cand3r` stopped before any run: the card changed hands again during the guarded 15-minute idle wait.** Queue start 13:28:51 on our image (already loaded), then the queue's own idle wait
+(`wait_idle`, 15 consecutive idle minutes before the identity manifest); at about 13:48 another user's image `f9295d5d...` (300 MHz) replaced ours and the queue stopped with
+`loaded image f9295d5d... is not the declared image ea1fa1af...`. No identity point and no xl point ran, so no number and no failed record exists for the point. Records: `evidence/r42/board/xl-cand3r/stop1_{records,logs}.tgz`.
+Observation: both stops of this series (11:38, 13:48) came while our image sat loaded and idle (between runs, or in the queue's idle wait); the other user's loads follow the same idle rule, so our own mandatory idle
+waits (about 30 minutes per queue: before the identity manifest and again before the suite step) are exactly the windows in which the card can be taken. Resumed 13:50 UTC (`board_ab.sh resume xl-cand3r`: fresh 15 idle minutes,
+guarded reload of the author-approved run-3 image, then identity and the one xl point).

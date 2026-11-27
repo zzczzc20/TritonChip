@@ -1,8 +1,10 @@
 """Explicit RTL stand-in for MMIO v2; shares the board host binding."""
 from pathlib import Path
 import argparse
+import hashlib
 import operator
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -243,10 +245,30 @@ class MulticoreMMIOLink(SimLink):
         if header is not None:
             command += [str(header)]
         command += [f'tb/fpga/{top}.v']
+        # R42-img: an opt-in cache of the elaborated bench (R42_VVP_CACHE=<dir>), keyed by the command and the content of every
+        # RTL and bench source: a screen that runs many points on one image elaborates it once. Not a TNCA_* setting (the
+        # stand-in tools clear those); unset, the build is as it was.
+        cache = os.environ.get('R42_VVP_CACHE')
+        cached = None
+        if cache:
+            digest = hashlib.sha256('\0'.join(a for a in command if a != output).encode())
+            sources = sorted(root.glob('rtl/**/*.v')) + sorted(root.glob('rtl/**/*.vh')) + sorted(root.glob('tb/common/*.v')) \
+                + [root / 'tb' / 'fpga' / f'{top}.v'] + ([header] if header is not None else [])
+            for p in sources:
+                digest.update(p.read_bytes())
+            cached = Path(cache) / f'{digest.hexdigest()[:24]}.vvp'
+            if cached.exists():
+                shutil.copyfile(cached, output)
+                return output
         result = subprocess.run(command, cwd=root, capture_output=True, text=True, timeout=1800)
         if result.returncode:
             raise DependencyFailed('multicore MMIO harness did not elaborate',
                                    detail={'diagnostic': result.stderr[-2000:]})
+        if cached is not None:
+            Path(cache).mkdir(parents=True, exist_ok=True)
+            tmp = cached.with_suffix(f'.tmp{os.getpid()}')
+            shutil.copyfile(output, tmp)
+            os.replace(tmp, cached)
         return output
 
 

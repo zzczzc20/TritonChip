@@ -63,7 +63,17 @@ module tnca_fp32_fma #(
     // 0 = the stages generated from xls/tnca_fma.x (the default, unchanged);
     // 1 = the same function, bit for bit, with each stage replaced by its
     //     proved-equal tnca_fmad.x counterpart where one exists.
-    parameter IMPL = 0
+    parameter IMPL = 0,
+    // R42 area study: IMPL / 16 is added to BE, so an image that sets only FMA_IMPL (the parameter that already reaches
+    // every FMA and MAC lane) selects the area back end: FMA_IMPL = 1 + 16 * BE. IMPL % 16 is the generated variant above.
+    // BE selects the implementation of the LAT=2 instance (stage 1, 2 and 3; LAT=3 refuses to elaborate with BE != 0).
+    // 0 = the generated stages (the default, unchanged);
+    // nonzero = the tnca_fmax_* stages (rtl/core): BE % 4 = 2 infers the stage-2 adders onto DSP48E2 (else carry chains),
+    // (BE / 4) % 2 = 1 selects the staged right shifter with its running sticky bit in stage 3,
+    // (BE / 8) % 2 = 1 replaces stage 1 (multiply, align) by tnca_fmax_align. Any nonzero BE uses tnca_fmax_norm and
+    // tnca_fmax_round for stages 2 and 3.
+    // Every value is the same function as IMPL=1, bit for bit (tb/area/tb_area_stages.v).
+    parameter BE = 0
 ) (
     input  wire        clk,
     input  wire        rst_n,
@@ -77,6 +87,9 @@ module tnca_fp32_fma #(
     output wire [31:0] y
 );
 
+    localparam IMPL_G = IMPL % 16;                 // the generated variant
+    localparam BE_X   = BE + IMPL / 16;            // the area back end
+
     generate
         if (LAT == 2) begin : g_l2
             // xls/tnca_fma.x: FmaAligned and FmaNormalised, flattened by XLS
@@ -87,16 +100,26 @@ module tnca_fp32_fma #(
             wire [W_NORM-1:0]  s1_d;
             reg  [W_NORM-1:0]  s1_q;
 
-            tnca_fma_align_xls u_s0 (
-                .a(a), .b(b), .c(c),
-                .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz),
-                .out(s0_d)
-            );
+            if ((BE_X / 8) % 2 != 0) begin : g_align_x
+                tnca_fmax_align u_s0 (
+                    .a(a), .b(b), .c(c),
+                    .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz),
+                    .out(s0_d)
+                );
+            end else begin : g_align
+                tnca_fma_align_xls u_s0 (
+                    .a(a), .b(b), .c(c),
+                    .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz),
+                    .out(s0_d)
+                );
+            end
             always @(posedge clk)
                 if (!rst_n) s0_q <= {W_ALIGN{1'b0}};
                 else        s0_q <= s0_d;
 
-            if (IMPL == 1) begin : g_norm_d
+            if (BE_X != 0) begin : g_norm_x
+                tnca_fmax_norm #(.ADD((BE_X % 4) == 2 ? 1 : 0)) u_s1 (.s(s0_q), .out(s1_d));
+            end else if (IMPL_G == 1) begin : g_norm_d
                 tnca_fmad_norm_xls u_s1 (.s(s0_q), .out(s1_d));
             end else begin : g_norm
                 tnca_fma_norm_xls u_s1 (.s(s0_q), .out(s1_d));
@@ -105,8 +128,15 @@ module tnca_fp32_fma #(
                 if (!rst_n) s1_q <= {W_NORM{1'b0}};
                 else        s1_q <= s1_d;
 
-            tnca_fma_round_xls u_s2 (.s(s1_q), .out(y));
-        end else if (LAT == 3 && IMPL == 1) begin : g_l3d
+            if (BE_X != 0) begin : g_round_x
+                tnca_fmax_round #(.SHIFT((BE_X / 4) % 2)) u_s2 (.s(s1_q), .out(y));
+            end else begin : g_round
+                tnca_fma_round_xls u_s2 (.s(s1_q), .out(y));
+            end
+        end else if (LAT == 3 && BE_X != 0) begin : g_bad_be
+            // the area back end exists for LAT = 2 only: refuse, as for an unsupported LAT, with a port no instance has
+            tnca_fma_l3_xls u_missing_be (.BE_needs_LAT_2(1'b1));
+        end else if (LAT == 3 && IMPL_G == 1) begin : g_l3d
             tnca_fmad_l3_xls u_xls (
                 .clk(clk), .rst(!rst_n),
                 .a(a), .b(b), .c(c),

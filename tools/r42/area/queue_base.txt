@@ -1,0 +1,14 @@
+base_fma_i1_p10|PERIOD=10|area_fma|IMPL=1 LAT=2
+base_fma_i1_p667|PERIOD=6.67|area_fma|IMPL=1 LAT=2
+base_fma_i1_p5|PERIOD=5|area_fma|IMPL=1 LAT=2
+base_fma_i0_p10|PERIOD=10|area_fma|IMPL=0 LAT=2
+base_stalign_p10|PERIOD=10|area_st_align|
+base_stnorm1_p10|PERIOD=10|area_st_norm|IMPL=1
+base_stround_p10|PERIOD=10|area_st_round|
+base_mac_p10|PERIOD=10|area_mac|CUTS=5'b11101
+base_mac_p667|PERIOD=6.67|area_mac|CUTS=5'b11101
+base_mac_p5|PERIOD=5|area_mac|CUTS=5'b11101
+base_fma_i1_l3_p5|PERIOD=5|area_fma|IMPL=1 LAT=3
+base_stalign_p5|PERIOD=5|area_st_align|
+base_stnorm1_p5|PERIOD=5|area_st_norm|IMPL=1
+base_stround_p5|PERIOD=5|area_st_round|

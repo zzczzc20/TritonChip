@@ -1,0 +1,2 @@
+tile_base_p667|PERIOD=6.67|/home/vivado/r42_area_out/tile0_base_synth.dcp|0
+tile_base_p5|PERIOD=5|/home/vivado/r42_area_out/tile0_base_synth.dcp|0

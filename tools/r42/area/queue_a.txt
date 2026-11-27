@@ -1,0 +1,13 @@
+x1_norm2_add1_p10|PERIOD=10|area_st_norm2|ADD=1
+x1_round2_p10|PERIOD=10|area_st_round2|SHIFT=0
+base_stnorm1_p10|PERIOD=10|area_st_norm|IMPL=1
+base_stround_p10|PERIOD=10|area_st_round|
+base_stalign_p10|PERIOD=10|area_st_align|
+x2_sfu_p10|PERIOD=10|area_sfu|LANES=1
+x2_cvt_p10|PERIOD=10|area_cvt|
+base_mac_p10|PERIOD=10|area_mac|CUTS=5'b11101
+base_mac_p667|PERIOD=6.67|area_mac|CUTS=5'b11101
+base_mac_p5|PERIOD=5|area_mac|CUTS=5'b11101
+x1_norm2_add0_p5|PERIOD=5|area_st_norm2|ADD=0
+x1_norm2_add1_p5|PERIOD=5|area_st_norm2|ADD=1
+base_fma_i1_l3_p5|PERIOD=5|area_fma|IMPL=1 LAT=3

@@ -1,0 +1,4 @@
+x2_sfu_p10|PERIOD=10|area_sfu|LANES=1
+x2_cvt_p10|PERIOD=10|area_cvt|
+x1_norm2_add0_p5|PERIOD=5|area_st_norm2|ADD=0
+x1_norm2_add1_p5|PERIOD=5|area_st_norm2|ADD=1

@@ -1,0 +1,4 @@
+flat_fma_i1|SYNTH_ONLY=1 FLATTEN=none PERIOD=10|area_fma|IMPL=1 LAT=2
+flat_fma_be1|SYNTH_ONLY=1 FLATTEN=none PERIOD=10|area_fma|IMPL=1 LAT=2 BE=1
+flat_fma_be5|SYNTH_ONLY=1 FLATTEN=none PERIOD=10|area_fma|IMPL=1 LAT=2 BE=5
+flat_fma_be13|SYNTH_ONLY=1 FLATTEN=none PERIOD=10|area_fma|IMPL=1 LAT=2 BE=13

@@ -321,7 +321,7 @@ module tnca_matrix #(
                            : acc_rd[g];
 
             if (MAC_DP != 0) begin : g_lane
-                tnca_mac_lane #(.CUTS(MAC_CUTS), .IN_REG(OPND_REG)) u_mac (
+                tnca_mac_lane #(.CUTS(MAC_CUTS), .IN_REG(OPND_REG), .BE(FMA_IMPL / 16)) u_mac (
                     .clk(clk), .rst_n(rst_n),
                     .mode((row_any || !r_dp) ? 2'd0 : g4 ? 2'd2 : 2'd1),
                     .fmt(mac_fmt), .fa(r_dt), .fb(r_bdt),

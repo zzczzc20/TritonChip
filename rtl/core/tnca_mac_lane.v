@@ -18,7 +18,11 @@
 `default_nettype none
 module tnca_mac_lane #(
     parameter [4:0] CUTS   = 5'b11101,
-    parameter       IN_REG = 1
+    parameter       IN_REG = 1,
+    // R42 area study: the back end (normalise, round), as tnca_fp32_fma BE:
+    // 0 = the generated stages (default, unchanged); nonzero = the tnca_fmax_* stages (rtl/core) (see tnca_fp32_fma BE, the same
+    // encoding: back end of stages 2 and 3, and with BE / 8 odd also B0). Bit for bit the same function.
+    parameter       BE     = 0
 ) (
     input  wire        clk,
     input  wire        rst_n,
@@ -77,10 +81,26 @@ module tnca_mac_lane #(
                           .ftz(i_k[0]), .out(s1_d));
     tnca_mac_s2_xls u_s2 (.m(s1_o), .out(f1_d));
     tnca_mac_f2_xls u_f2 (.m(f1_o), .out(f2_d));
-    tnca_mac_b0_xls u_b0 (.p(f2_o), .mode(k2[36:35]), .c(k2[34:3]), .sub_c(k2[2]),
-                          .mul_only(k2[1]), .ftz(k2[0]), .out(al_d));
-    tnca_fmad_norm_xls u_b1 (.s(al_o), .out(nm_d));
-    tnca_fma_round_xls u_b2 (.s(nm_o), .out(y));
+    generate
+        if ((BE / 8) % 2 != 0) begin : g_b0_x
+            // B0 = fma32_align_p; a packed mode has no mul_only and no ftz
+            wire fp_mode = (k2[36:35] == 2'd0);
+            tnca_fmax_alignp u_b0 (.p(f2_o), .c(k2[34:3]), .sub_c(k2[2]),
+                                   .mul_only(k2[1] & fp_mode), .ftz(k2[0] & fp_mode), .out(al_d));
+        end else begin : g_b0
+            tnca_mac_b0_xls u_b0 (.p(f2_o), .mode(k2[36:35]), .c(k2[34:3]), .sub_c(k2[2]),
+                                  .mul_only(k2[1]), .ftz(k2[0]), .out(al_d));
+        end
+    endgenerate
+    generate
+        if (BE != 0) begin : g_be_x
+            tnca_fmax_norm #(.ADD((BE % 4) == 2 ? 1 : 0)) u_b1 (.s(al_o), .out(nm_d));
+            tnca_fmax_round #(.SHIFT((BE / 4) % 2)) u_b2 (.s(nm_o), .out(y));
+        end else begin : g_be
+            tnca_fmad_norm_xls u_b1 (.s(al_o), .out(nm_d));
+            tnca_fma_round_xls u_b2 (.s(nm_o), .out(y));
+        end
+    endgenerate
 
     generate
         if (CUTS[0]) begin : g_c0

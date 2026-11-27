@@ -248,7 +248,8 @@ lint: dirs
 # its latency. Both latencies are tested against the same oracle.
 FMA_GEN := $(RTL)/gen/tnca_fma_align_xls.v $(RTL)/gen/tnca_fma_norm_xls.v \
            $(RTL)/gen/tnca_fma_round_xls.v $(RTL)/gen/tnca_fma_l3_xls.v \
-           $(RTL)/gen/tnca_fmad_norm_xls.v $(RTL)/gen/tnca_fmad_l3_xls.v
+           $(RTL)/gen/tnca_fmad_norm_xls.v $(RTL)/gen/tnca_fmad_l3_xls.v \
+           $(RTL)/core/tnca_lzc81.v $(RTL)/core/tnca_fmax_norm.v $(RTL)/core/tnca_fmax_round.v $(RTL)/core/tnca_fmax_mul.v $(RTL)/core/tnca_fmax_alignp.v $(RTL)/core/tnca_fmax_align.v
 $(BUILD)/tb_fp32_fma.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
                           $(FMA_GEN) $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -o $@ $^
@@ -262,6 +263,15 @@ $(BUILD)/tb_fp32_fmad.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v 
 $(BUILD)/tb_fp32_fmad_l3.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
                               $(FMA_GEN) $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -P tb_fp32_fma.FMA_LAT=3 -P tb_fp32_fma.FMA_IMPL=1 -o $@ $^
+
+# R42 area: the same bench on tnca_fp32_fma BE=13 (the tnca_fmax_* stages (rtl/core): align, norm, staged round; LUT adders) and
+# BE=14 (with the stage-2 adders marked for DSP48E2)
+$(BUILD)/tb_fp32_fmax.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
+                           $(FMA_GEN) $(RTL_COMMON) | dirs
+	$(IVERILOG) $(IVFLAGS) -P tb_fp32_fma.FMA_IMPL=1 -P tb_fp32_fma.FMA_BE=13 -o $@ $^
+$(BUILD)/tb_fp32_fmax14.vvp: $(TB)/core/tb_fp32_fma.v $(RTL)/core/tnca_fp32_fma.v \
+                             $(FMA_GEN) $(RTL_COMMON) | dirs
+	$(IVERILOG) $(IVFLAGS) -P tb_fp32_fma.FMA_IMPL=1 -P tb_fp32_fma.FMA_BE=14 -o $@ $^
 
 $(BUILD)/tb_bitops.vvp: $(TB)/core/tb_bitops.v $(RTL_COMMON) | dirs
 	$(IVERILOG) $(IVFLAGS) -o $@ $^
@@ -327,6 +337,16 @@ fma-deep-impl1: $(BUILD)/tb_fp32_fmad.vvp $(BUILD)/tb_fp32_fmad_l3.vvp
 	   "$(VVP) $(BUILD)/tb_fp32_fmad.vvp +vec=$(BUILD)/fma_deep.txt"
 	@$(TOOLS)/run_test.sh "fp32_fma IMPL=1 (deep, latency 3)" \
 	   "$(VVP) $(BUILD)/tb_fp32_fmad_l3.vvp +vec=$(BUILD)/fma_deep.txt"
+
+# R42 area: fma-deep's sweep (the exact Fraction oracle) on the area back end.
+.PHONY: fma-deep-area
+fma-deep-area: $(BUILD)/tb_fp32_fmax.vvp $(BUILD)/tb_fp32_fmax14.vvp
+	$(PYTHON) $(TOOLS)/model/gen_fma_vectors.py -o $(BUILD)/fma_deep.txt \
+	   -n 400000 --seed 424242
+	@$(TOOLS)/run_test.sh "fp32_fma BE=13 (deep)" \
+	   "$(VVP) $(BUILD)/tb_fp32_fmax.vvp +vec=$(BUILD)/fma_deep.txt"
+	@$(TOOLS)/run_test.sh "fp32_fma BE=14 (deep)" \
+	   "$(VVP) $(BUILD)/tb_fp32_fmax14.vvp +vec=$(BUILD)/fma_deep.txt"
 
 #------------------------------------------------------------------------------
 # Core tests

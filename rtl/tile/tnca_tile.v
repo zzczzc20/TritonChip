@@ -38,7 +38,7 @@ module tnca_tile #(
     parameter LW          = 4,
     parameter VREGS_PER_RCTX = 64,
     // R41 G2 resource sizing (defaults: the delivered machine): accumulator slots, mbarriers, the barrier epoch width
-    parameter ACC_N = 16, ACC_W = 4, BAR_N = 32, BAR_W = 5, BAR_EPOCH_W = 48, FMA_IMPL = 0, MAC_DP = 0, MAC_CUTS = 29,
+    parameter ACC_N = 16, ACC_W = 4, BAR_N = 32, BAR_W = 5, BAR_EPOCH_W = 48, FMA_IMPL = 0, MAC_DP = 0, MAC_CUTS = 29, MAC_F32 = 0,
     // and the home slice's physical address width (64: unchanged; below 64 an
     // address at or above 2^(PHYS_ADDR_W-1) is folded so it stays out of range)
     parameter PHYS_ADDR_W = 64,
@@ -56,6 +56,7 @@ module tnca_tile #(
     parameter VRF_PREFETCH = 0,
     parameter RCTX_SWITCH = 0,
     parameter MTX_ABUF = 0,
+    parameter MTX_PIPE = 0,
     parameter MTX_VRF_REG = 0,
     // R42 shrink: area options as one bit field, 0 (default) = the shipped RTL. [1:0] home line data array RAM (0 distributed, 1 block, 2 UltraRAM:
     // tnca_home_pipe DATA_RAM), [3:2] home MSHR line buffer + target data RAM (AUX_RAM), [5:4] VRF response crossbar (tnca_vrf_banked XBAR),
@@ -66,6 +67,8 @@ module tnca_tile #(
     parameter HOME_LINE_WRITE_NOFILL = 0,   // R41 G4: full-line stores allocate without a fill
     parameter HOME_LINE_PIPE = 0,                // R41 G4: pipelined home (tnca_home_pipe) when HYBRID_LSU; 2: chained fills
     parameter TENSOR_LINE = 0,                   // R41 G4: the transfer engine's line path when HYBRID_LSU
+    parameter TENSOR_LINE_HALF = 0,   // R42: half-line rows in the line engine (tnca_tensor LINE_HALF)
+    parameter TENSOR_TAG_W = 0,   // R42: log2 of the line engine's word-walk tags (0: CTAG_W); at most PORT tag width - 3
     parameter SFU_LANES = 1,
     parameter NOC_PAYLOAD_W = HYBRID_LSU ? 720 : 216,
     parameter LSU_INFLIGHT = 1,
@@ -222,17 +225,17 @@ module tnca_tile #(
     wire [CORE_DW-1:0] c_rsp_rdata;
 
     tnca_core #(
-        .HYBRID_LSU(HYBRID_LSU),.TENSOR_LINE(TENSOR_LINE),.SFU_LANES(SFU_LANES),
+        .HYBRID_LSU(HYBRID_LSU),.TENSOR_LINE(TENSOR_LINE),.TENSOR_LINE_HALF(TENSOR_LINE_HALF),.TENSOR_TAG_W(TENSOR_TAG_W),.SFU_LANES(SFU_LANES),
         .MEM_DW(CORE_DW),.MEM_BYTES(CORE_BYTES),.MEM_SHIFT(HYBRID_LSU ? 6 : 3),
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(LW),
-        .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
+        .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .MAC_F32(MAC_F32), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
         .CORE_ID(TILE_ID), .NUM_CORES(NUM_TILES),
         .USE_BANKED_VRF(USE_BANKED_VRF),
         .VRF_BYPASS(VRF_BYPASS),
         .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH),
         .RCTX_SWITCH(RCTX_SWITCH),
-        .MTX_ABUF(MTX_ABUF),
+        .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE),
         .MTX_VRF_REG(MTX_VRF_REG),
         .VRF_XBAR((SHRINK >> 4) & 3), .VRF_VLD_RAM((SHRINK >> 6) & 1),
         .LSU_INFLIGHT(LSU_INFLIGHT),

@@ -41,7 +41,8 @@ _DTYPE_BITS = {'f16': 16, 'bf16': 16, 'e5m2': 8, 'e4m3': 8}
 # Which CAPABILITY0 bit each fragment format needs (ISA sec 11). The two FP8
 # encodings share one bit because they share one widening path.
 _DTYPE_CAP = {'f16': 'matrix_f16', 'bf16': 'matrix_bf16',
-              'e5m2': 'matrix_fp8', 'e4m3': 'matrix_fp8'}
+              'e5m2': 'matrix_fp8', 'e4m3': 'matrix_fp8',
+              'f32': 'matrix_f32'}
 
 
 @dataclass

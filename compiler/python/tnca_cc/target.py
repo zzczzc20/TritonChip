@@ -36,6 +36,7 @@ _CAPABILITY_USE = {
     'matrix_bf16': 'emit m.mma.async with BF16 inputs',
     'matrix_fp8': 'emit m.mma.async with OCP FP8 (E5M2 or E4M3) inputs',
     'matrix_dp': 'emit m.mma.dp.async (grouped dot-product accumulation, ISA sec 9C.4)',
+    'matrix_f32': 'emit m.mma.f32.async (binary32 fragments, ISA sec 9C.5)',
     'tensor_dma': 'emit t.ld.async / t.st.async',
     'tensor_store': 'emit t.st.async (window -> global)',
     'mbarrier': 'emit mbarrier operations',
@@ -257,7 +258,7 @@ class TargetInfo:
     # Capabilities a target file names only where they are true (R41 X8,
     # tools/isa/gen_target.py): absent is False, so the files of every image
     # built before them stay byte-identical and keep the old lowering.
-    _OPTIONAL_CAPABILITIES = frozenset({'tensor_transpose_8bit', 'matrix_dp'})
+    _OPTIONAL_CAPABILITIES = frozenset({'tensor_transpose_8bit', 'matrix_dp', 'matrix_f32'})
 
     def has(self, capability):
         if (capability in self._OPTIONAL_CAPABILITIES

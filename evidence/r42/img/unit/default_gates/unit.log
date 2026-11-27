@@ -1,0 +1,42 @@
+iverilog -g2005 -I rtl/common -o sim/build/tb_fp32_fma.vvp tb/core/tb_fp32_fma.v rtl/core/tnca_fp32_fma.v rtl/gen/tnca_fma_align_xls.v rtl/gen/tnca_fma_norm_xls.v rtl/gen/tnca_fma_round_xls.v rtl/gen/tnca_fma_l3_xls.v rtl/gen/tnca_fmad_norm_xls.v rtl/gen/tnca_fmad_l3_xls.v rtl/common/tnca_elastic_link.v rtl/common/tnca_fifo.v rtl/common/tnca_line_link.v rtl/common/tnca_lzc.v rtl/common/tnca_popc.v
+iverilog -g2005 -I rtl/common -P tb_fp32_fma.FMA_LAT=3 -o sim/build/tb_fp32_fma_l3.vvp tb/core/tb_fp32_fma.v rtl/core/tnca_fp32_fma.v rtl/gen/tnca_fma_align_xls.v rtl/gen/tnca_fma_norm_xls.v rtl/gen/tnca_fma_round_xls.v rtl/gen/tnca_fma_l3_xls.v rtl/gen/tnca_fmad_norm_xls.v rtl/gen/tnca_fmad_l3_xls.v rtl/common/tnca_elastic_link.v rtl/common/tnca_fifo.v rtl/common/tnca_line_link.v rtl/common/tnca_lzc.v rtl/common/tnca_popc.v
+python3 tools/model/gen_fma_vectors.py -o sim/build/fma_vectors.txt -n 20000
+41240 vectors -> sim/build/fma_vectors.txt
+iverilog -g2005 -I rtl/common -o sim/build/tb_decoder.vvp tb/core/tb_decoder.v rtl/core/tnca_decoder.v
+python3 tools/model/gen_decoder_vectors.py -o sim/build/dec_vectors.txt
+802 vectors -> sim/build/dec_vectors.txt
+iverilog -g2005 -I rtl/common -o sim/build/tb_bitops.vvp tb/core/tb_bitops.v rtl/common/tnca_elastic_link.v rtl/common/tnca_fifo.v rtl/common/tnca_line_link.v rtl/common/tnca_lzc.v rtl/common/tnca_popc.v
+iverilog -g2005 -I rtl/common -o sim/build/tb_mul64.vvp tb/core/tb_mul64.v rtl/core/tnca_mul64.v
+python3 tb/core/progs/gen_t03_fp.py
+330 lines, 193 checks -> /home/zhongchun/r42/img/tb/core/progs/t03_fp.s
+python3 tb/core/progs/gen_t11_matrix.py
+71 checks -> /home/zhongchun/r42/img/tb/core/progs/t11_matrix.s
+python3 tb/core/progs/gen_t12_tensor.py
+17 checks -> /home/zhongchun/r42/img/tb/core/progs/t12_tensor.s
+iverilog -g2005 -o sim/build/tb_cvt_xls.vvp tb/xls/tb_cvt_xls.v rtl/gen/tnca_cvt_xls.v rtl/gen/tnca_cvt_comb_xls.v
+python3 tools/model/gen_cvt_vectors.py -o sim/build/cvt_xls_vectors.txt
+866495 vectors -> sim/build/cvt_xls_vectors.txt (657920 exhaustive, 208575 from binary32)
+iverilog -g2005 -o sim/build/tb_sfu_xls.vvp tb/xls/tb_sfu_xls.v rtl/gen/tnca_sfu_exp2_xls.v rtl/gen/tnca_sfu_log2_xls.v rtl/gen/tnca_sfu_rcp_xls.v rtl/gen/tnca_sfu_rsqrt_xls.v
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -o sim/build/tb_sfu_core.vvp tb/core/tb_sfu_core.v
+python3 tools/model/gen_sfu_vectors.py -o sim/build/sfu_vectors.txt -n 6000
+16740 vectors -> sim/build/sfu_vectors.txt (6000 inputs x 4 ops, plus 48 sec 8.8 specials)
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen \
+   -o sim/build/tb_fpu_multi.vvp tb/xls/tb_fpu_multi.v
+python3 tools/model/gen_fpu_multi_vectors.py -o sim/build/fpu_multi_vectors.txt -n 1500
+5012 vectors -> sim/build/fpu_multi_vectors.txt (5 formats; FP8 exhaustive in a)
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -o sim/build/tb_vector_fpu_f2i.vvp tb/core/tb_vector_fpu_f2i.v
+python3 tools/model/gen_f2i_vectors.py -o sim/build/f2i_vectors.txt
+181632 vectors (21614 SystemC floats + 1080 directed) x 8 -> sim/build/f2i_vectors.txt
+python3 tb/core/progs/gen_t40_f2i.py
+472 lines, 96 checks -> /home/zhongchun/r42/img/tb/core/progs/t40_f2i.s
+  bitops                 PASS   tb_bitops: 60471 checks, 0 failures
+  mul64                  PASS   tb_mul64: 60000 checks, 0 failures
+  fp32_fma               PASS   tb_fp32_fma: 41240 vectors, 0 failures
+  fp32_fma (latency 3)   PASS   tb_fp32_fma: 41240 vectors, 0 failures
+  decoder                PASS   tb_decoder: 802 vectors, 0 failures
+  cvt_xls                PASS   tb_cvt_xls: 866495 vectors x 2 instances (pipelined, unpipelined), 0 failures
+  vector_fpu_f2i         PASS   tb_vector_fpu_f2i: 181632 vectors, 0 failures
+  sfu_xls                PASS   tb_sfu_xls: 16740 vectors within 2^-22 (exp2=3462 log2=3633 rcp=6011 rsqrt=3634), 431 exact, 0 outside
+  sfu_core               PASS   tb_sfu_core: 1042 batches of 16 lanes (16672 vectors), 0 failures
+  fpu_multi              PASS   tb_fpu_multi: 5012 vectors, 0 failures
+  asm round-trip        PASS   56569 instructions, 64 programs, 0 mismatches

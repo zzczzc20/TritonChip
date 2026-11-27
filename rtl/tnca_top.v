@@ -45,7 +45,7 @@ module tnca_top #(
     parameter LW          = 4,
     parameter VREGS_PER_RCTX = 64,
     // R41 G2 resource sizing (defaults: the delivered machine): accumulator slots, mbarriers, the barrier epoch width
-    parameter ACC_N = 16, ACC_W = 4, BAR_N = 32, BAR_W = 5, BAR_EPOCH_W = 48, FMA_IMPL = 0, MAC_DP = 0, MAC_CUTS = 29,
+    parameter ACC_N = 16, ACC_W = 4, BAR_N = 32, BAR_W = 5, BAR_EPOCH_W = 48, FMA_IMPL = 0, MAC_DP = 0, MAC_CUTS = 29, MAC_F32 = 0,
     // and the home slice's physical address width (64: unchanged; below 64 an
     // address at or above 2^(PHYS_ADDR_W-1) is folded so it stays out of range)
     parameter PHYS_ADDR_W = 64,
@@ -57,6 +57,7 @@ module tnca_top #(
     parameter VRF_PREFETCH = 0,
     parameter RCTX_SWITCH = 0,
     parameter MTX_ABUF = 0,
+    parameter MTX_PIPE = 0,
     parameter MTX_VRF_REG = 0,
     parameter SHRINK = 0,      // R42 shrink: bit field of area options (see tnca_tile.v); 0 = the shipped RTL
     parameter HYBRID_LSU = 0,
@@ -64,6 +65,8 @@ module tnca_top #(
     parameter HOME_LINE_WRITE_NOFILL = 0,   // R41 G4: full-line stores allocate without a fill
     parameter HOME_LINE_PIPE = 0,                // R41 G4: pipelined home (tnca_home_pipe) when HYBRID_LSU
     parameter TENSOR_LINE = 0,                   // R41 G4: the transfer engine's line path when HYBRID_LSU
+    parameter TENSOR_LINE_HALF = 0,   // R42: half-line rows in the line engine (tnca_tensor LINE_HALF)
+    parameter TENSOR_TAG_W = 0,   // R42: log2 of the line engine's word-walk tags (0: CTAG_W); at most PORT tag width - 3
     parameter SFU_LANES = 1,
     parameter NOC_PAYLOAD_W = HYBRID_LSU ? 720 : 216,
     parameter LSU_INFLIGHT = 1,
@@ -483,18 +486,18 @@ module tnca_top #(
     generate
         for (t = 0; t < N; t = t + 1) begin : g_tile
             tnca_tile #(
-                .HYBRID_LSU(HYBRID_LSU),.HOME_BACKGROUND_READS(HOME_BACKGROUND_READS),.HOME_LINE_WRITE_NOFILL(HOME_LINE_WRITE_NOFILL),.HOME_LINE_PIPE(HOME_LINE_PIPE),.TENSOR_LINE(TENSOR_LINE),.SFU_LANES(SFU_LANES),.NOC_PAYLOAD_W(NOC_PAYLOAD_W),
+                .HYBRID_LSU(HYBRID_LSU),.HOME_BACKGROUND_READS(HOME_BACKGROUND_READS),.HOME_LINE_WRITE_NOFILL(HOME_LINE_WRITE_NOFILL),.HOME_LINE_PIPE(HOME_LINE_PIPE),.TENSOR_LINE(TENSOR_LINE),.TENSOR_LINE_HALF(TENSOR_LINE_HALF),.TENSOR_TAG_W(TENSOR_TAG_W),.SFU_LANES(SFU_LANES),.NOC_PAYLOAD_W(NOC_PAYLOAD_W),
                 .CACHE_MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .NUCA_REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT), .NUCA_CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE), .NUCA_SHARED_DATA_READ(NUCA_SHARED_DATA_READ), .NUCA_REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK),
                 .TILE_ID(t), .NUM_TILES(N), .GLOBAL_GRID(GLOBAL_GRID), .HOST_ACCESS(HOST_ACCESS && GLOBAL_GRID && t==0), .NX(NX), .NY(NY), .XW(XW), .YW(YW),
                 .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN),
-                .LW(LW), .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .PHYS_ADDR_W(PHYS_ADDR_W),
+                .LW(LW), .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .MAC_F32(MAC_F32), .PHYS_ADDR_W(PHYS_ADDR_W),
                 .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
                 .USE_BANKED_VRF(USE_BANKED_VRF),
                 .VRF_BYPASS(VRF_BYPASS),
                 .FE_NOBUBBLE(FE_NOBUBBLE),
                 .VRF_PREFETCH(VRF_PREFETCH),
                 .RCTX_SWITCH(RCTX_SWITCH),
-                .MTX_ABUF(MTX_ABUF),
+                .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE),
                 .MTX_VRF_REG(MTX_VRF_REG),
                 .SHRINK(SHRINK),
                 .LSU_INFLIGHT(LSU_INFLIGHT),

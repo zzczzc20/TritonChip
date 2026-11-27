@@ -1,0 +1,13 @@
+PASS DIRECTED LINE_HALF=1 LSW=5 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=503 halves=487 half_stores=142 cycles=37374
+PASS DIRECTED LINE_HALF=1 LSW=5 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=503 halves=487 half_stores=142 cycles=16250
+PASS DIRECTED LINE_HALF=1 LSW=5 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=503 halves=487 half_stores=142 cycles=90254
+PASS DIRECTED LINE_HALF=1 LSW=6 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=503 halves=487 half_stores=142 cycles=37374
+PASS DIRECTED LINE_HALF=1 LSW=6 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=503 halves=487 half_stores=142 cycles=16250
+PASS DIRECTED LINE_HALF=1 LSW=6 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=503 halves=487 half_stores=142 cycles=90254
+PASS DIRECTED LINE_HALF=0 LSW=5 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=16 halves=0 half_stores=0 cycles=37624
+PASS DIRECTED LINE_HALF=0 LSW=5 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=16 halves=0 half_stores=0 cycles=16378
+PASS DIRECTED LINE_HALF=0 LSW=5 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=16 halves=0 half_stores=0 cycles=90900
+PASS DIRECTED LINE_HALF=0 LSW=6 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=16 halves=0 half_stores=0 cycles=37624
+PASS DIRECTED LINE_HALF=0 LSW=6 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=16 halves=0 half_stores=0 cycles=16378
+PASS DIRECTED LINE_HALF=0 LSW=6 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=16 halves=0 half_stores=0 cycles=90900
+DIRECTED 12 of 12 configurations pass

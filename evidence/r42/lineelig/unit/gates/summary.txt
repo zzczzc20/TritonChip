@@ -1,0 +1,11 @@
+make unit exit 0
+make core-g2c4 exit 0
+make core-run2 exit 0
+make core-mmadp exit 0
+make core-abuf16 exit 0
+make r41-xpose8-rtl exit 0
+make r38-xpose-rtl exit 0
+tensor_line_tests exit 0
+tensor_bounds_tests exit 0
+mutants exit 0
+GATES_DONE

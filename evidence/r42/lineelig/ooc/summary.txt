@@ -1,0 +1,9 @@
+unit / variant                                     LUT  LUTRAM      FF  BRAM  URAM  DSP  WNS ns  WHS ns
+tnca_tensor, unchanged (base commit file)        18870    1534    9494     0     0   15   1.731   0.006
+tnca_tensor, current file, LINE_HALF 0           18870    1534    9494     0     0   15   1.731   0.006
+tnca_tensor, current file, LINE_HALF 1           19467    1518    9717     0     0   15   2.557   0.008
+tnca_tensor, unchanged, 32 word tags             20930    1532   10599     0     0   15   2.195   0.007
+tnca_tensor, LINE_HALF 1, 32 word tags           23172    1518   10831     0     0   15   2.181   0.010
+tnca_matrix, unchanged, ABUF 1                   59740    3129   15628     0     0  128   1.219   0.009
+tnca_matrix, current file, ABUF 1                59740    3129   15628     0     0  128   1.219   0.009
+tnca_matrix, current file, ABUF 2                59752    3129   15627     0     0  128   1.917   0.005

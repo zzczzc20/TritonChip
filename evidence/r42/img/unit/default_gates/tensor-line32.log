@@ -1,0 +1,136 @@
+python3 tools/r42/lineelig_tests.py miter
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=1 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=5 xpose=20 lines=1112 halves=769 half_stores=339 cycles=66700
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=1 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=5 xpose=20 lines=1112 halves=769 half_stores=339 cycles=33144
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=1 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=5 xpose=20 lines=1112 halves=769 half_stores=339 cycles=167276
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=2 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=20 lines=656 halves=254 half_stores=107 cycles=54146
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=2 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=20 lines=656 halves=254 half_stores=107 cycles=26860
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=2 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=20 lines=656 halves=254 half_stores=107 cycles=134164
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=3 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=3 xpose=17 lines=859 halves=544 half_stores=258 cycles=55598
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=3 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=3 xpose=17 lines=859 halves=544 half_stores=258 cycles=28314
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=3 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=3 xpose=17 lines=859 halves=544 half_stores=258 cycles=137458
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=4 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=15 lines=709 halves=505 half_stores=229 cycles=54558
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=4 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=15 lines=709 halves=505 half_stores=229 cycles=27306
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=4 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=15 lines=709 halves=505 half_stores=229 cycles=135066
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=5 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=18 lines=887 halves=665 half_stores=304 cycles=62648
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=5 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=18 lines=887 halves=665 half_stores=304 cycles=32454
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=5 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=18 lines=887 halves=665 half_stores=304 cycles=155696
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=6 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=1 xpose=14 lines=1331 halves=1026 half_stores=606 cycles=58838
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=6 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=1 xpose=14 lines=1331 halves=1026 half_stores=606 cycles=30480
+PASS LINE_HALF=1 LSW=5 TGW=4 seed=6 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=1 xpose=14 lines=1331 halves=1026 half_stores=606 cycles=145614
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=1 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=5 xpose=20 lines=1112 halves=769 half_stores=339 cycles=66700
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=1 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=5 xpose=20 lines=1112 halves=769 half_stores=339 cycles=33144
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=1 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=5 xpose=20 lines=1112 halves=769 half_stores=339 cycles=167276
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=2 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=20 lines=656 halves=254 half_stores=107 cycles=54146
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=2 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=20 lines=656 halves=254 half_stores=107 cycles=26860
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=2 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=20 lines=656 halves=254 half_stores=107 cycles=134164
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=3 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=3 xpose=17 lines=859 halves=544 half_stores=258 cycles=55598
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=3 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=3 xpose=17 lines=859 halves=544 half_stores=258 cycles=28314
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=3 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=3 xpose=17 lines=859 halves=544 half_stores=258 cycles=137458
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=4 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=15 lines=709 halves=505 half_stores=229 cycles=54558
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=4 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=15 lines=709 halves=505 half_stores=229 cycles=27306
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=4 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=15 lines=709 halves=505 half_stores=229 cycles=135066
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=5 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=18 lines=887 halves=665 half_stores=304 cycles=62648
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=5 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=18 lines=887 halves=665 half_stores=304 cycles=32454
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=5 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=18 lines=887 halves=665 half_stores=304 cycles=155696
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=6 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=1 xpose=14 lines=1331 halves=1026 half_stores=606 cycles=58838
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=6 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=1 xpose=14 lines=1331 halves=1026 half_stores=606 cycles=30480
+PASS LINE_HALF=1 LSW=6 TGW=4 seed=6 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=1 xpose=14 lines=1331 halves=1026 half_stores=606 cycles=145614
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=1 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=5 xpose=20 lines=1112 halves=769 half_stores=339 cycles=57296
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=1 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=5 xpose=20 lines=1112 halves=769 half_stores=339 cycles=32830
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=1 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=5 xpose=20 lines=1112 halves=769 half_stores=339 cycles=132016
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=2 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=20 lines=656 halves=254 half_stores=107 cycles=48404
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=2 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=20 lines=656 halves=254 half_stores=107 cycles=26688
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=2 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=20 lines=656 halves=254 half_stores=107 cycles=111706
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=3 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=3 xpose=17 lines=859 halves=544 half_stores=258 cycles=50534
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=3 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=3 xpose=17 lines=859 halves=544 half_stores=258 cycles=28074
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=3 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=3 xpose=17 lines=859 halves=544 half_stores=258 cycles=116124
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=4 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=15 lines=709 halves=505 half_stores=229 cycles=48956
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=4 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=15 lines=709 halves=505 half_stores=229 cycles=27108
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=4 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=15 lines=709 halves=505 half_stores=229 cycles=113688
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=5 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=18 lines=887 halves=665 half_stores=304 cycles=55700
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=5 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=18 lines=887 halves=665 half_stores=304 cycles=32212
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=5 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=18 lines=887 halves=665 half_stores=304 cycles=125678
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=6 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=1 xpose=14 lines=1331 halves=1026 half_stores=606 cycles=52958
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=6 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=1 xpose=14 lines=1331 halves=1026 half_stores=606 cycles=30290
+PASS LINE_HALF=1 LSW=6 TGW=5 seed=6 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=1 xpose=14 lines=1331 halves=1026 half_stores=606 cycles=120836
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=1 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=5 xpose=20 lines=343 halves=0 half_stores=0 cycles=66700
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=1 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=5 xpose=20 lines=343 halves=0 half_stores=0 cycles=33144
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=1 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=5 xpose=20 lines=343 halves=0 half_stores=0 cycles=167276
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=2 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=20 lines=402 halves=0 half_stores=0 cycles=54146
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=2 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=20 lines=402 halves=0 half_stores=0 cycles=26860
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=2 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=20 lines=402 halves=0 half_stores=0 cycles=134164
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=3 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=3 xpose=17 lines=315 halves=0 half_stores=0 cycles=55598
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=3 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=3 xpose=17 lines=315 halves=0 half_stores=0 cycles=28314
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=3 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=3 xpose=17 lines=315 halves=0 half_stores=0 cycles=137458
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=4 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=15 lines=204 halves=0 half_stores=0 cycles=54558
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=4 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=15 lines=204 halves=0 half_stores=0 cycles=27306
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=4 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=15 lines=204 halves=0 half_stores=0 cycles=135066
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=5 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=18 lines=222 halves=0 half_stores=0 cycles=62648
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=5 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=18 lines=222 halves=0 half_stores=0 cycles=32454
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=5 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=18 lines=222 halves=0 half_stores=0 cycles=155696
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=6 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=1 xpose=14 lines=305 halves=0 half_stores=0 cycles=58838
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=6 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=1 xpose=14 lines=305 halves=0 half_stores=0 cycles=30480
+PASS LINE_HALF=0 LSW=5 TGW=4 seed=6 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=1 xpose=14 lines=305 halves=0 half_stores=0 cycles=145614
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=1 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=5 xpose=20 lines=343 halves=0 half_stores=0 cycles=57296
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=1 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=5 xpose=20 lines=343 halves=0 half_stores=0 cycles=32830
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=1 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=5 xpose=20 lines=343 halves=0 half_stores=0 cycles=132016
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=2 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=20 lines=402 halves=0 half_stores=0 cycles=48404
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=2 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=20 lines=402 halves=0 half_stores=0 cycles=26688
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=2 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=20 lines=402 halves=0 half_stores=0 cycles=111706
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=3 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=3 xpose=17 lines=315 halves=0 half_stores=0 cycles=50534
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=3 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=3 xpose=17 lines=315 halves=0 half_stores=0 cycles=28074
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=3 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=3 xpose=17 lines=315 halves=0 half_stores=0 cycles=116124
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=4 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=15 lines=204 halves=0 half_stores=0 cycles=48956
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=4 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=15 lines=204 halves=0 half_stores=0 cycles=27108
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=4 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=3 xpose=15 lines=204 halves=0 half_stores=0 cycles=113688
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=5 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=18 lines=222 halves=0 half_stores=0 cycles=55700
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=5 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=18 lines=222 halves=0 half_stores=0 cycles=32212
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=5 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=18 lines=222 halves=0 half_stores=0 cycles=125678
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=6 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=1 xpose=14 lines=305 halves=0 half_stores=0 cycles=52958
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=6 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=1 xpose=14 lines=305 halves=0 half_stores=0 cycles=30290
+PASS LINE_HALF=0 LSW=6 TGW=5 seed=6 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=1 xpose=14 lines=305 halves=0 half_stores=0 cycles=120836
+MITER 90 of 90 configurations pass
+python3 tools/r42/lineelig_tests.py directed
+PASS DIRECTED LINE_HALF=1 LSW=5 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=503 halves=487 half_stores=142 cycles=37374
+PASS DIRECTED LINE_HALF=1 LSW=5 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=503 halves=487 half_stores=142 cycles=16250
+PASS DIRECTED LINE_HALF=1 LSW=5 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=503 halves=487 half_stores=142 cycles=90254
+PASS DIRECTED LINE_HALF=1 LSW=6 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=503 halves=487 half_stores=142 cycles=37374
+PASS DIRECTED LINE_HALF=1 LSW=6 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=503 halves=487 half_stores=142 cycles=16250
+PASS DIRECTED LINE_HALF=1 LSW=6 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=503 halves=487 half_stores=142 cycles=90254
+PASS DIRECTED LINE_HALF=0 LSW=5 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=16 halves=0 half_stores=0 cycles=37624
+PASS DIRECTED LINE_HALF=0 LSW=5 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=16 halves=0 half_stores=0 cycles=16378
+PASS DIRECTED LINE_HALF=0 LSW=5 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=16 halves=0 half_stores=0 cycles=90900
+PASS DIRECTED LINE_HALF=0 LSW=6 vw=20 rq=20 lat=40 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=16 halves=0 half_stores=0 cycles=37624
+PASS DIRECTED LINE_HALF=0 LSW=6 vw=0 rq=0 lat=8 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=16 halves=0 half_stores=0 cycles=16378
+PASS DIRECTED LINE_HALF=0 LSW=6 vw=40 rq=40 lat=120 TENSOR LINE MITER PASS seed=1 commands=x completions=91 faults=0 xpose=0 lines=16 halves=0 half_stores=0 cycles=90900
+DIRECTED 12 of 12 configurations pass
+python3 tools/r42/lineelig_tests.py core
+PASS t12_tensor         line=0 half=0: 3258 cycles  line=1 half=0: 1758 cycles  line=1 half=1: 1347 cycles
+PASS t30_xpose          line=0 half=0: 5160 cycles  line=1 half=0: 3679 cycles  line=1 half=1: 3679 cycles
+PASS t33_xpose8         line=0 half=0: 6946 cycles  line=1 half=0: 3977 cycles  line=1 half=1: 3977 cycles
+PASS t33_tdesc_load     line=0 half=0: 19112 cycles  line=1 half=0: 11391 cycles  line=1 half=1: 11340 cycles
+PASS t34_tdesc_store    line=0 half=0: 18030 cycles  line=1 half=0: 13619 cycles  line=1 half=1: 13557 cycles
+PASS t17_descfault      line=0 half=0: 522 cycles  line=1 half=0: 57 cycles  line=1 half=1: 57 cycles
+PASS t35_tdesc_fpad2    line=0 half=0: 541 cycles  line=1 half=0: 76 cycles  line=1 half=1: 76 cycles
+PASS t39_freeze_drop    line=0 half=0: 4356 cycles  line=1 half=0: 3312 cycles  line=1 half=1: 3312 cycles
+CORE 24 of 24 runs pass
+python3 tools/r41/tensor_line_tests.py
+PASS seed=1 vw_stall=20 req_stall=20 maxlat=40 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=8 xpose=23 lines=362 halves=0 half_stores=0 cycles=65220
+PASS seed=1 vw_stall=0 req_stall=0 maxlat=8 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=8 xpose=23 lines=362 halves=0 half_stores=0 cycles=30370
+PASS seed=1 vw_stall=40 req_stall=40 maxlat=120 TENSOR LINE MITER PASS seed=1 commands=400 completions=416 faults=8 xpose=23 lines=362 halves=0 half_stores=0 cycles=162668
+PASS seed=2 vw_stall=20 req_stall=20 maxlat=40 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=15 lines=430 halves=0 half_stores=0 cycles=73732
+PASS seed=2 vw_stall=0 req_stall=0 maxlat=8 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=15 lines=430 halves=0 half_stores=0 cycles=37418
+PASS seed=2 vw_stall=40 req_stall=40 maxlat=120 TENSOR LINE MITER PASS seed=2 commands=400 completions=416 faults=2 xpose=15 lines=430 halves=0 half_stores=0 cycles=183724
+PASS seed=3 vw_stall=20 req_stall=20 maxlat=40 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=2 xpose=16 lines=489 halves=0 half_stores=0 cycles=74286
+PASS seed=3 vw_stall=0 req_stall=0 maxlat=8 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=2 xpose=16 lines=489 halves=0 half_stores=0 cycles=36988
+PASS seed=3 vw_stall=40 req_stall=40 maxlat=120 TENSOR LINE MITER PASS seed=3 commands=400 completions=416 faults=2 xpose=16 lines=489 halves=0 half_stores=0 cycles=182336
+PASS seed=4 vw_stall=20 req_stall=20 maxlat=40 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=4 xpose=18 lines=573 halves=0 half_stores=0 cycles=74984
+PASS seed=4 vw_stall=0 req_stall=0 maxlat=8 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=4 xpose=18 lines=573 halves=0 half_stores=0 cycles=36680
+PASS seed=4 vw_stall=40 req_stall=40 maxlat=120 TENSOR LINE MITER PASS seed=4 commands=400 completions=416 faults=4 xpose=18 lines=573 halves=0 half_stores=0 cycles=186202
+PASS seed=5 vw_stall=20 req_stall=20 maxlat=40 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=14 lines=555 halves=0 half_stores=0 cycles=58920
+PASS seed=5 vw_stall=0 req_stall=0 maxlat=8 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=14 lines=555 halves=0 half_stores=0 cycles=28078
+PASS seed=5 vw_stall=40 req_stall=40 maxlat=120 TENSOR LINE MITER PASS seed=5 commands=400 completions=416 faults=4 xpose=14 lines=555 halves=0 half_stores=0 cycles=145538
+PASS seed=6 vw_stall=20 req_stall=20 maxlat=40 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=5 xpose=21 lines=396 halves=0 half_stores=0 cycles=66704
+PASS seed=6 vw_stall=0 req_stall=0 maxlat=8 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=5 xpose=21 lines=396 halves=0 half_stores=0 cycles=32222
+PASS seed=6 vw_stall=40 req_stall=40 maxlat=120 TENSOR LINE MITER PASS seed=6 commands=400 completions=416 faults=5 xpose=21 lines=396 halves=0 half_stores=0 cycles=165410
+TENSOR LINE 18 of 18 configurations pass

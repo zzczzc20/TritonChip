@@ -64,6 +64,7 @@ CAPABILITY_BY_MAJOR = {
 
 CAPABILITY_BY_MNEMONIC = {
     'm.mma.dp.async': 'matrix_dp',
+    'm.mma.f32.async': 'matrix_f32',
     'v.ld.gather': 'gather_scatter',
     'v.st.scatter': 'gather_scatter',
     # The engine stores since the rank-5 descriptor work (tb/core/progs/

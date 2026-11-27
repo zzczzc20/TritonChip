@@ -1,0 +1,24 @@
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen \
+   -P tb_matrix_ovl.MAC_DP=1 -P tb_matrix_ovl.VRF_MODE=1 \
+   -o sim/build/tb_matrix_ovl_dp1v1.vvp tb/core/tb_matrix_ovl.v
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen \
+   -P tb_matrix_ovl.MAC_DP=1 -P tb_matrix_ovl.VRF_MODE=2 \
+   -o sim/build/tb_matrix_ovl_dp1v2.vvp tb/core/tb_matrix_ovl.v
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen \
+   -P tb_matrix_ovl.MAC_DP=1 -P tb_matrix_ovl.VRF_MODE=0 \
+   -o sim/build/tb_matrix_ovl_dp1v0.vvp tb/core/tb_matrix_ovl.v
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen \
+   -P tb_matrix_ovl.MAC_DP=0 -P tb_matrix_ovl.VRF_MODE=1 \
+   -o sim/build/tb_matrix_ovl_dp0v1.vvp tb/core/tb_matrix_ovl.v
+  matrix OVL against OVL=0 (dp1v1, seed 1) PASS   
+  matrix OVL against OVL=0 (dp1v1, seed 2) PASS   
+  matrix OVL against OVL=0 (dp1v1, seed 3) PASS   
+  matrix OVL against OVL=0 (dp1v2, seed 1) PASS   
+  matrix OVL against OVL=0 (dp1v2, seed 2) PASS   
+  matrix OVL against OVL=0 (dp1v2, seed 3) PASS   
+  matrix OVL against OVL=0 (dp1v0, seed 1) PASS   
+  matrix OVL against OVL=0 (dp1v0, seed 2) PASS   
+  matrix OVL against OVL=0 (dp1v0, seed 3) PASS   
+  matrix OVL against OVL=0 (dp0v1, seed 1) PASS   
+  matrix OVL against OVL=0 (dp0v1, seed 2) PASS   
+  matrix OVL against OVL=0 (dp0v1, seed 3) PASS   

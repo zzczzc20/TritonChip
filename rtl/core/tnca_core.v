@@ -86,6 +86,11 @@ module tnca_core #(
     //               buffer first (tnca_matrix ABUF) instead of one register
     //               read per MAC.
     parameter MTX_ABUF       = 0,
+    //   MTX_PIPE (R42) the matrix unit's overlapped sequencer (tnca_matrix
+    //               OVL): A buffered during the first k step, B read ahead,
+    //               no drain turn-around, and one m.mma accepted while
+    //               another runs. 0 = the R41 unit, cycle for cycle.
+    parameter MTX_PIPE       = 0,
     //   MTX_VRF_REG (R41 K8) register the banked VRF's matrix response.
     //               The matrix's valid handshake absorbs the extra cycle.
     parameter MTX_VRF_REG    = 0,
@@ -100,6 +105,8 @@ module tnca_core #(
     // (tnca_tensor LINE_ENGINE) on the hybrid line port; 0 keeps the word
     // engine behind tnca_word_line_adapter. Needs HYBRID_LSU.
     parameter TENSOR_LINE    = 0,
+    parameter TENSOR_LINE_HALF = 0,   // R42: half-line rows in the line engine (tnca_tensor LINE_HALF)
+    parameter TENSOR_TAG_W = 0,   // R42: log2 of the line engine's word-walk tags (0: CTAG_W); at most PORT tag width - 3
     parameter LSU_INFLIGHT   = 1,
     //   FPU_OVERLAP (R39-10) ordinary vector FP issues during an SFU pass,
     //               and an SFU pass starts with ordinary FP in flight: the
@@ -179,7 +186,11 @@ module tnca_core #(
     // sec 9C.4) executes, CAPABILITY0.MATRIX_DP set; 0 = the machine as before
     // (the encoding raises ILLEGAL_INSTRUCTION). MAC_CUTS: the lane's register cuts.
     parameter MAC_DP         = 0,
-    parameter MAC_CUTS       = 29
+    parameter MAC_CUTS       = 29,
+    // R42: 1 = the matrix engine executes m.mma.f32.async (ISA sec 9C.5,
+    // binary32 fragments through the same MACs), CAPABILITY0.MATRIX_F32 set;
+    // 0 = the machine as before (the encoding raises ILLEGAL_INSTRUCTION).
+    parameter MAC_F32        = 0
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -593,6 +604,9 @@ module tnca_core #(
     // ISA sec 9C.4: m.mma.dp.async is legal only with CAPABILITY0.MATRIX_DP.
     wire mmadp_unsupported = (dec_major == `TNCA_MAJ_MATRIX) &&
                              (dec_func  == `TNCA_M_MMADP) && (MAC_DP == 0);
+    // ISA sec 9C.5: m.mma.f32.async is legal only with CAPABILITY0.MATRIX_F32.
+    wire mmaf32_unsupported = (dec_major == `TNCA_MAJ_MATRIX) &&
+                              (dec_func  == `TNCA_M_MMAF32) && (MAC_F32 == 0);
 
     // Check the encoded logical barrier before RSLICE inserts context bits.
     // Otherwise an oversized local index silently names a different slice.
@@ -603,7 +617,7 @@ module tnca_core #(
            (dec_func == `TNCA_MB_INVAL)) && (dec_ra_idx >= d_bar_count)));
 
     wire d_illegal = dec_illegal | vreg_oob | sfu_unsupported
-                   | wrspecial_unsupported | atomic_unsupported | mmadp_unsupported | d_bar_index_oob;
+                   | wrspecial_unsupported | atomic_unsupported | mmadp_unsupported | mmaf32_unsupported | d_bar_index_oob;
 
     //==========================================================================
     // Register files (read in X)
@@ -622,6 +636,14 @@ module tnca_core #(
     wire [VLEN*ELEN-1:0] mtx_vrf_data;
     wire                 mtx_vrf_req;
     reg  [RCTX_W-1:0]    mtx_rctx;
+    // MTX_PIPE: the engine carries each command's context itself (it may
+    // read for a pending command while another runs) and says more about
+    // what it holds. All of these are zero/unused with MTX_PIPE = 0.
+    wire                 mtxp_pend_ok, mtxp_slot_live, mtxp_done_keep, mtxp_pend_freed;
+    wire                 mtxp_pend_v, mtxp_ret_v;
+    wire [RCTX_W-1:0]    mtxp_vrf_tag, mtxp_cur_tag, mtxp_pend_tag, mtxp_ret_tag;
+    wire [RCTX_W-1:0]    mtx_rctx_rd  = (MTX_PIPE != 0) ? mtxp_vrf_tag : mtx_rctx;
+    wire [RCTX_W-1:0]    mtx_rctx_cur = (MTX_PIPE != 0) ? mtxp_cur_tag : mtx_rctx;
     // The transfer engine's window READ port: a t.st.async's source. Held
     // until valid, like the matrix unit's (immediate on the behavioural file,
     // a cycle later through the banked file's arbitration).
@@ -784,7 +806,7 @@ module tnca_core #(
             .ra_rctx(x_rctx), .ra_idx(x_va_idx), .ra_data(va_data),
             .rb_rctx(x_rctx), .rb_idx(x_vb_idx), .rb_data(vb_data),
             .rc_rctx(x_rctx), .rc_idx(x_vc_idx), .rc_data(vc_data),
-            .rd_rctx(mtx_rctx), .rd_idx(mtx_vrf_addr),
+            .rd_rctx(mtx_rctx_rd), .rd_idx(mtx_vrf_addr),
             .rd_data(mtx_vrf_data),
             .re_rctx(txf_vr_rctx), .re_idx(txf_vr_idx),
             .re_data(txf_vr_data),
@@ -1100,7 +1122,7 @@ module tnca_core #(
         wire [4:0] rq_v = {txf_vr_req && !txf_vr_valid,
                            mtx_vrf_req && !mtx_vrf_rsp_valid && !mtx_vrf_valid_w, rq_src};
         wire [RCTX_W-1:0] rq_src_rctx = pf_sel ? d_rctx : r_rctx;
-        wire [5*RCTX_W-1:0] rq_rctx = {txf_vr_rctx, mtx_rctx, {3{rq_src_rctx}}};
+        wire [5*RCTX_W-1:0] rq_rctx = {txf_vr_rctx, mtx_rctx_rd, {3{rq_src_rctx}}};
         wire [5*8-1:0] rq_idx = pf_sel
             ? {txf_vr_idx, mtx_vrf_addr, d_pf_vc_idx, d_pf_vb_idx, d_pf_va_idx}
             : {txf_vr_idx, mtx_vrf_addr, r_vc_idx, r_vb_idx, r_va_idx};
@@ -1346,7 +1368,8 @@ module tnca_core #(
     reg [5:0] r_sb2_q, r_sb3_q, r_sb4_q, r_sb5_q;
     reg       r_mma_sf_q, r_txfer_q;
     wire d_mma_sf = (dec_major == `TNCA_MAJ_MATRIX) &&
-                    (dec_func == `TNCA_M_MMA || dec_func == `TNCA_M_MMADP)
+                    (dec_func == `TNCA_M_MMA || dec_func == `TNCA_M_MMADP ||
+                     (MAC_F32 != 0 && dec_func == `TNCA_M_MMAF32))
                  && dec_mod[4];
     always @(posedge clk) begin
         if (!stall_front) begin
@@ -1402,10 +1425,22 @@ module tnca_core #(
                              && (r_func  == `TNCA_A_VREAD);
     wire [ACC_W-1:0] r_acc_s = r_ra_idx[ACC_W-1:0];
 
-    wire acc_free_d = !sb_acc[r_acc_d] || (mtx_done && (mtx_done_slot == r_acc_d));
-    wire acc_free_s = !sb_acc[r_acc_s] || (mtx_done && (mtx_done_slot == r_acc_s));
+    // MTX_PIPE: a done does not release a slot another accepted m.mma still
+    // writes (mtxp_done_keep), and an m.mma may be issued onto a slot the
+    // engine's m.mma commands hold: with pend_ok the only claims are theirs,
+    // and the engine runs its commands in issue order, so the accumulation
+    // order on a slot is the program's.
+    wire mtx_done_rel = mtx_done && !mtxp_done_keep
+                        && !((MTX_PIPE != 0) && mtx_cmd_valid
+                             && (x_dsti[ACC_W-1:0] == mtx_done_slot));
+    wire acc_free_d = !sb_acc[r_acc_d] || (mtx_done_rel && (mtx_done_slot == r_acc_d));
+    wire acc_free_s = !sb_acc[r_acc_s] || (mtx_done_rel && (mtx_done_slot == r_acc_s));
+    wire r_is_mma = (r_major == `TNCA_MAJ_MATRIX)
+                    && ((r_func == `TNCA_M_MMA) || (r_func == `TNCA_M_MMADP)
+                        || (MAC_F32 != 0 && r_func == `TNCA_M_MMAF32));
+    wire r_mma_pend = (MTX_PIPE != 0) && r_is_mma && mtxp_pend_ok;
 
-    wire hz_acc = (r_valid && r_acc_dst && !acc_free_d)
+    wire hz_acc = (r_valid && r_acc_dst && !acc_free_d && !r_mma_pend)
                 | (r_acc_src && !acc_free_s);
 
     assign r_vsrc_haz = hz_va | hz_vb | hz_vc;
@@ -1581,7 +1616,8 @@ module tnca_core #(
          ((x_func == `TNCA_MB_TEST) || (x_func == `TNCA_MB_WAIT)) &&
          !token_bar_valid(sa_data[15:0], x_bar_sl, x_sl, slice_k)) ||
         ((x_major == `TNCA_MAJ_MATRIX) &&
-         ((x_func == `TNCA_M_MMA) || (x_func == `TNCA_M_MMADP)) &&
+         ((x_func == `TNCA_M_MMA) || (x_func == `TNCA_M_MMADP) ||
+          (MAC_F32 != 0 && x_func == `TNCA_M_MMAF32)) &&
          (!token_bar_valid(sc_data[15:0], x_bar_sl, x_sl, slice_k) ||
           (x_mod[4] && !token_bar_valid(sb2_raw[15:0], x_bar_sl, x_sl, slice_k)))) ||
         ((x_major == `TNCA_MAJ_TXFER) &&
@@ -1623,7 +1659,8 @@ module tnca_core #(
 
     wire mtx_cmd_valid = x_is_mtx && !x_is_avread;
     // m.mma.async and m.mma.dp.async (ISA sec 9C, 9C.4): the same command shape.
-    wire x_is_mma_any = (x_func == `TNCA_M_MMA) || (x_func == `TNCA_M_MMADP);
+    wire x_is_mma_any = (x_func == `TNCA_M_MMA) || (x_func == `TNCA_M_MMADP) ||
+                        (MAC_F32 != 0 && x_func == `TNCA_M_MMAF32);
 
     wire [1:0] mtx_cmd_op =
         ((x_major == `TNCA_MAJ_MATRIX) && (x_func == `TNCA_M_ZERO)) ? 2'd0 :
@@ -1645,7 +1682,9 @@ module tnca_core #(
     tnca_matrix #(
         .VLEN(VLEN), .ELEN(ELEN), .ACC_N(ACC_N), .ACC_W(ACC_W),
         .ROWS(ACC_ROWS), .ROW_W(ACC_ROW_W), .BAR_W(BAR_W), .FMA_LAT(FP_LAT), .FMA_IMPL(FMA_IMPL),
-        .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .ABUF(MTX_ABUF)
+        .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .ABUF(MTX_ABUF), .MAC_F32(MAC_F32),
+        .OVL(MTX_PIPE), .TAG_W(RCTX_W),
+        .VRF_LAT((USE_BANKED_VRF != 0) ? ((MTX_VRF_REG != 0) ? 2 : 1) : 0)
     ) u_mtx (
         .clk(clk), .rst_n(rst_n), .flush(launch_valid),
         .cmd_valid(mtx_cmd_valid), .cmd_op(mtx_cmd_op),
@@ -1653,6 +1692,7 @@ module tnca_core #(
         .cmd_va(x_va_idx), .cmd_vb(x_vb_idx),
         .cmd_k(x_mod[1:0]), .cmd_dt(x_mod[3:2]),
         .cmd_dp((x_major == `TNCA_MAJ_MATRIX) && (x_func == `TNCA_M_MMADP)), .cmd_bdt(x_mod[6:5]),
+        .cmd_f32((x_major == `TNCA_MAJ_MATRIX) && (x_func == `TNCA_M_MMAF32)),
         .cmd_bar_en(mtx_bar_en), .cmd_bar(mtx_bar),
         // ISA sec 9C mod[4]: also signal source-free, on the barrier whose
         // token sits in Sc+1.
@@ -1661,7 +1701,13 @@ module tnca_core #(
         .cmd_sf_bar(sb2_raw[BAR_W-1:0] | x_bar_sl),
         .cmd_rowop(mtx_rowop), .cmd_row(sa_data[ACC_ROW_W-1:0]),
         .cmd_vdata(vb_data), .cmd_scale(mtx_scale), .cmd_mask(lane_mask),
+        .cmd_tag(x_rctx),
         .busy(mtx_busy),
+        .pend_ok(mtxp_pend_ok), .cmd_slot_live(mtxp_slot_live),
+        .done_keep(mtxp_done_keep), .pend_freed(mtxp_pend_freed),
+        .vrf_tag(mtxp_vrf_tag), .cur_tag(mtxp_cur_tag),
+        .pend_v(mtxp_pend_v), .pend_tag(mtxp_pend_tag),
+        .ret_v(mtxp_ret_v), .ret_tag(mtxp_ret_tag),
         .vrf_addr(mtx_vrf_addr), .vrf_data(mtx_vrf_data),
         .vrf_req(mtx_vrf_req), .vrf_valid(mtx_vrf_valid),
         .ard_slot(x_ra_idx[ACC_W-1:0]), .ard_row(sb_data[ACC_ROW_W-1:0]),
@@ -2127,13 +2173,22 @@ module tnca_core #(
         assign tn_rsp_valid=tm_rsp_valid;assign tn_rsp_tag=tm_rsp_tag;assign tn_rsp_rdata=tm_rsp_rdata;
     end endgenerate
 
+    // R42: the line engine's word walk may have more tags in flight than the core's per-client tag
+    // (TENSOR_TAG_W; 0 keeps CTAG_W). The tag rides under the port tag's path and descriptor bits.
+    localparam TXT_W = (TXF_LINE && TENSOR_TAG_W != 0) ? TENSOR_TAG_W : CTAG_W;
+`ifndef SYNTHESIS
+    initial if (TXF_LINE && TXT_W > MTAG_W - 2) begin
+        $display("FATAL tnca_core: TENSOR_TAG_W %0d does not fit the port tag (at most %0d)", TXT_W, MTAG_W - 2);
+        $finish;
+    end
+`endif
     tnca_tensor #(
         .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
         .DESC_N(DESC_N), .DESC_W(DESC_W), .WIN_N(WIN_N), .WIN_W(WIN_W),
         .BAR_W(BAR_W), .MEM_DW(TENSOR_DW), .MEM_BYTES(TENSOR_BYTES),
-        .TAG_W(CTAG_W), .NTAG(1 << CTAG_W), .HAS_XPOSE(HAS_TENSOR_XPOSE),
+        .TAG_W(TXT_W), .NTAG(1 << TXT_W), .HAS_XPOSE(HAS_TENSOR_XPOSE),
         .MUL_PIPE(TENSOR_MUL_PIPE),
-        .LINE_ENGINE(TXF_LINE ? 1 : 0), .LSLOT_N(1 << (MTAG_W - 1)), .LSLOT_W(MTAG_W - 1),
+        .LINE_ENGINE(TXF_LINE ? 1 : 0), .LINE_HALF(TENSOR_LINE_HALF), .LSLOT_N(1 << (MTAG_W - 1)), .LSLOT_W(MTAG_W - 1),
         .PTAG_W(TP_TW), .PORT_DW(TP_DW), .PORT_BYTES(TP_BY)
     ) u_txf (
         .clk(clk), .rst_n(rst_n), .flush(launch_valid),
@@ -2224,6 +2279,7 @@ module tnca_core #(
                                       | (64'd1 << `TNCA_CAP_MATRIX_BF16)
                                       | (64'd1 << `TNCA_CAP_MATRIX_FP8)
                                       | (MAC_DP ? (64'd1 << `TNCA_CAP_MATRIX_DP) : 64'd0)
+                                      | (MAC_F32 ? (64'd1 << `TNCA_CAP_MATRIX_F32) : 64'd0)
                                       // The transfer engine decodes and
                                       // executes TXFER unconditionally, so the
                                       // bit must be set: ISA sec 11 says a
@@ -2475,7 +2531,11 @@ module tnca_core #(
     // or one in X this cycle. ISA sec 9A.5 allows exactly this precision.
     reg  [RCTX_W-1:0] txf_rctx;          // who issued the transfer engine's command
     wire arr_mtx = (RPAIR != 0)
-                 ? ((mtx_busy && mtx_rctx == r_rctx) || (mtx_cmd_valid && x_rctx == r_rctx))
+                 ? ((mtx_busy && mtx_rctx_cur == r_rctx) || (mtx_cmd_valid && x_rctx == r_rctx)
+                    // MTX_PIPE: also the pending command, and the one whose
+                    // last results are landing behind the running command
+                    || (mtxp_pend_v && mtxp_pend_tag == r_rctx)
+                    || (mtxp_ret_v && mtxp_ret_tag == r_rctx))
                  : mtx_busy;
     // R41 G4 (TENSOR_LINE): line commands still in flight after the engine
     // took the next one count for the context that issued them.
@@ -2492,7 +2552,7 @@ module tnca_core #(
     wire stall_txf = r_needs_txf && !txf_free_next;
 
     wire r_needs_mtx = r_valid && (r_fu == `TNCA_FU_MATRIX);
-    wire mtx_free_next = !mtx_busy && !mtx_cmd_valid;
+    wire mtx_free_next = (!mtx_busy || r_mma_pend) && !mtx_cmd_valid;
     wire stall_mtx = r_needs_mtx && !mtx_free_next;
 
     wire stall_lsu = r_needs_lsu && !lsu_free_next;
@@ -2567,11 +2627,24 @@ module tnca_core #(
     // producers issuing their transfers. The context wakes when an engine
     // goes idle (eng_freed) or as before.
     reg  mtx_busy_q, txf_busy_q;
-    wire eng_freed = (RCTX_SWITCH >= 2) && ((mtx_busy_q && !mtx_busy) || (txf_busy_q && !txf_busy));
+    // MTX_PIPE: also when the pending matrix command became the running one.
+    wire eng_freed = (RCTX_SWITCH >= 2) && ((mtx_busy_q && !mtx_busy) || (txf_busy_q && !txf_busy)
+                                            || mtxp_pend_freed);
     always @(posedge clk) begin
         mtx_busy_q <= rst_n && mtx_busy;
         txf_busy_q <= rst_n && txf_busy;
     end
+    // What R's instruction gives way for. A latent race of RCTX_SWITCH=2:
+    // an instruction that waited only for a transfer-engine command in X
+    // which never makes the engine busy (w.release, td.release: one cycle)
+    // gave way and its context was parked with no wake to come. t39_slice
+    // +allroles hangs on it once the matrix timing moves; the R41
+    // elaboration misses it by cycle alignment. Under MTX_PIPE an engine
+    // must BE busy for the instruction to give way (a command in X that
+    // does occupy the engine parks the context one cycle later); with
+    // MTX_PIPE = 0 the term is the R41 one, cycle for cycle.
+    wire eng_wait = (MTX_PIPE != 0) ? ((stall_mtx && mtx_busy) || (stall_txf && txf_busy))
+                                    : (stall_mtx || stall_txf);
     // A parked context wakes on a writeback to one of its registers (every
     // register write passes through W) or an accumulator's completion.
     reg [NUM_RCTX-1:0] rctx_wake;
@@ -2612,7 +2685,7 @@ module tnca_core #(
                                       || x_illegal || x_amo
                                       || ((x_fu == `TNCA_FU_BAR) && (x_func == `TNCA_MB_WAIT)));
     wire rp_go = (RCTX_SWITCH != 0) && r_valid && r_of_idle
-               && (hazard || ((RCTX_SWITCH >= 2) && (stall_mtx || stall_txf)))
+               && (hazard || ((RCTX_SWITCH >= 2) && eng_wait))
                && d_valid && (d_rctx != r_rctx)
                && !x_may_redirect && !vrf_wb_freeze;
     assign stall_front = stall_raw && !rp_go;
@@ -3196,7 +3269,7 @@ module tnca_core #(
                 endcase
             end
 
-            if (mtx_done) sb_acc[mtx_done_slot] <= 1'b0;
+            if (mtx_done_rel) sb_acc[mtx_done_slot] <= 1'b0;
 
             if (!stall_front && r_valid && !kill_r) begin
                 case (r_dstc)
@@ -3215,7 +3288,9 @@ module tnca_core #(
                 `TNCA_DST_S: if (x_dsti[5:0] != 6'd0) sb_s[x_rctx*64 + x_dsti[5:0]] <= 1'b0;
                 `TNCA_DST_V: sb_v[x_rctx*VREGS_PER_RCTX + x_dsti] <= 1'b0;
                 `TNCA_DST_P: if (x_dsti[3:0] != 4'd0) sb_p[x_rctx*16 + x_dsti[3:0]] <= 1'b0;
-                `TNCA_DST_A: sb_acc[x_dsti[ACC_W-1:0]] <= 1'b0;
+                // MTX_PIPE: unless a running or pending m.mma holds the slot
+                // (the rejected one was issued onto it).
+                `TNCA_DST_A: if (!mtxp_slot_live) sb_acc[x_dsti[ACC_W-1:0]] <= 1'b0;
                 default: ;
                 endcase
             end
@@ -3448,7 +3523,7 @@ module tnca_core #(
     //   rsb_clm/rel the same for the instruction entering R (F05)
     //   hold_rel    a held D or R source was released while it waited (F05)
     wire cov_sw_cand = (RCTX_SWITCH != 0) && r_valid && r_of_idle
-                     && (hazard || ((RCTX_SWITCH >= 2) && (stall_mtx || stall_txf)))
+                     && (hazard || ((RCTX_SWITCH >= 2) && eng_wait))
                      && d_valid && (d_rctx != r_rctx) && !vrf_wb_freeze;
     reg [31:0] cov_sw_inhibit, cov_sw_redir, cov_hold_ops, cov_pf_drop, cov_mem_claim;
     reg [31:0] cov_fwd_s, cov_fwd_p;
@@ -3607,7 +3682,7 @@ module tnca_core #(
                          $time, d_whit, r_whit);
             // R41 F02: the registered indices and opcode tests equal what R
             // would compute from its own fields.
-            if (r_valid && ((r_mma_sf !== ((r_major == `TNCA_MAJ_MATRIX) && (r_func == `TNCA_M_MMA || r_func == `TNCA_M_MMADP) && r_mod[4]))
+            if (r_valid && ((r_mma_sf !== ((r_major == `TNCA_MAJ_MATRIX) && (r_func == `TNCA_M_MMA || r_func == `TNCA_M_MMADP || (MAC_F32 != 0 && r_func == `TNCA_M_MMAF32)) && r_mod[4]))
                             || (r_txfer_q !== (r_major == `TNCA_MAJ_TXFER))
                             || (r_sb2_idx !== (r_mma_sf ? (r_sc_idx + 6'd1) : (r_sb_idx + 6'd1)))
                             || (r_sb3_idx !== r_sb_idx + 6'd2) || (r_sb4_idx !== r_sb_idx + 6'd3)

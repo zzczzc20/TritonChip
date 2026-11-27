@@ -1,0 +1,8 @@
+{"point": "op.gemv/tiny/fp16-k64-n64", "output_sha256": "7e26f4c11cded9a51263402ad0e5f989a2bf92487085ef03784f4c23c7064a8e", "tensors": [["torch.float16", [1, 64]]]}
+{"point": "op.gemv/tiny/fp16-k64-n64", "output_sha256": "7e26f4c11cded9a51263402ad0e5f989a2bf92487085ef03784f4c23c7064a8e", "tensors": [["torch.float16", [1, 64]]]}
+{"point": "op.linear/tiny/fp16-m16-k64-n64", "output_sha256": "79a254a54299ecdfecb345d0cc12b7d709a7dcfc4f09c8c1bc74c855438ca7cb", "tensors": [["torch.float16", [16, 64]]]}
+{"point": "op.linear/tiny/fp16-m16-k64-n64", "output_sha256": "79a254a54299ecdfecb345d0cc12b7d709a7dcfc4f09c8c1bc74c855438ca7cb", "tensors": [["torch.float16", [16, 64]]]}
+{"point": "op.matmul/tiny/fp16-m16-k32-n16", "output_sha256": "b4bacac11429f6a8e956a76d5fcc96d778ba344b8b29ce390ba50c15fca3f90b", "tensors": [["torch.float16", [16, 16]]]}
+{"point": "op.matmul/tiny/fp16-m16-k32-n16", "output_sha256": "b4bacac11429f6a8e956a76d5fcc96d778ba344b8b29ce390ba50c15fca3f90b", "tensors": [["torch.float16", [16, 16]]]}
+{"point": "op.bmm/tiny/fp16-b2-m16-k16-n16", "output_sha256": "424959079d36634a14e92736d49ea5f5501a9432f1a1d4b2dd10257cba37e8d6", "tensors": [["torch.float16", [2, 16, 16]]]}
+{"point": "op.bmm/tiny/fp16-b2-m16-k16-n16", "output_sha256": "424959079d36634a14e92736d49ea5f5501a9432f1a1d4b2dd10257cba37e8d6", "tensors": [["torch.float16", [2, 16, 16]]]}

@@ -144,6 +144,7 @@ module tnca_u50_xo #(
     parameter RSLICE           = 0,
     parameter RPAIR            = 0,
     parameter MTX_ABUF         = 0,
+    parameter MTX_PIPE         = 0,
     parameter HAS_TENSOR_XPOSE = 0,
     // ap_clk / DEV_DIV is the device clock: 1 -> 100 MHz with the 100 MHz
     // kernel clock, measured on the U280 on 2026-10-09 (see above). The /2
@@ -237,7 +238,7 @@ module tnca_u50_xo #(
         .FPU_OVERLAP(FPU_OVERLAP),
         .RSLICE(RSLICE),
         .RPAIR(RPAIR),
-        .MTX_ABUF(MTX_ABUF),
+        .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .VREGS_PER_RCTX(VREGS_PER_RCTX)
     ) u_top (

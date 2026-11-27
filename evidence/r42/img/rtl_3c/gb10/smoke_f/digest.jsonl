@@ -1,0 +1,2 @@
+{"point": "op.matmul/tiny/fp32-m16-k32-n16", "output_sha256": "d0dcc40a46064afdc77d40681d58b539c680af06be8bcd02a9086b13a1d25e8a", "tensors": [["torch.float32", [16, 16]]]}
+{"point": "op.matmul/tiny/fp32-m16-k32-n16", "output_sha256": "d0dcc40a46064afdc77d40681d58b539c680af06be8bcd02a9086b13a1d25e8a", "tensors": [["torch.float32", [16, 16]]]}

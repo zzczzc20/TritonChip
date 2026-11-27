@@ -88,6 +88,9 @@
 `ifndef TNCA_UARCH_MTX_ABUF
 `define TNCA_UARCH_MTX_ABUF 0
 `endif
+`ifndef TNCA_UARCH_MTX_PIPE
+`define TNCA_UARCH_MTX_PIPE 0
+`endif
 `ifndef TNCA_UARCH_FPU_OVERLAP
 `define TNCA_UARCH_FPU_OVERLAP 0
 `endif
@@ -112,4 +115,7 @@
 `endif
 `ifndef TNCA_UARCH_MAC_CUTS
 `define TNCA_UARCH_MAC_CUTS 29
+`endif
+`ifndef TNCA_UARCH_MAC_F32
+`define TNCA_UARCH_MAC_F32 0
 `endif

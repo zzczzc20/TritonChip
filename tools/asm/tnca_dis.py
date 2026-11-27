@@ -89,6 +89,9 @@ def disassemble(word, addr=0):
             name += '.' + MMA_DT_NAME[da]
         if (mod >> 4) & 1:
             name += '.sf'
+    elif sfx == 'mmaf32':
+        if (mod >> 4) & 1:
+            name += '.sf'
     elif sfx == 'txf':
         name += '.' + SIZE_NAME.get(mod & 7, '?')
         if (mod >> 5) & 1:

@@ -1,0 +1,78 @@
+point                                                   t17_origin    t17_merged       t17_lmf
+op.add/tiny/fp16-n1000                                        2370    2370 1.000    2351 0.992
+op.add/tiny/fp32-n256                                          825     825 1.000     825 1.000
+op.argmax/tiny/fp16-r2-v256                                   1996    1996 1.000    2042 1.023
+op.attention_decode/tiny/fp16-b1-h2-l16-d16                   9181    9181 1.000    9188 1.001
+op.attention_prefill/tiny/fp16-b1-h2-s16-d16                 23363   23363 1.000   20621 0.883
+op.bmm/tiny/fp16-b2-m16-k16-n16                               1864    1864 1.000    1808 0.970
+op.cumsum/tiny/fp32-r4-c64                                    1075    1075 1.000    1092 1.016
+op.embedding/tiny/fp16-v256-d64-t16                           4248    4248 1.000    4329 1.019
+op.gelu_tanh/tiny/fp16-n256                                   1972    1972 1.000    1972 1.000
+op.gemv/tiny/fp16-k64-n64                                     4760    4760 1.000    4642 0.975
+op.layernorm/tiny/fp16-r4-d64                                 2043    2043 1.000    1988 0.973
+op.linear/tiny/fp16-m16-k64-n64                               5575    5575 1.000    5459 0.979
+op.matmul/tiny/fp16-m16-k32-n16                               1007    1007 1.000     994 0.987
+op.matmul/tiny/fp32-m16-k32-n16                               3184    3184 1.000    2204 0.692
+op.rmsnorm/tiny/fp16-r4-d64                                   1406    1406 1.000    1389 0.988
+op.rope/tiny/fp16-b1-h2-s16-d16                               3863    3863 1.000    3826 0.990
+op.silu/tiny/fp16-n256                                        1462    1462 1.000    1462 1.000
+op.softmax/tiny/fp16-r4-c64                                   2465    2465 1.000    2447 0.993
+op.softmax/tiny/fp32-r3-c37                                   1340    1340 1.000    1282 0.957
+op.swiglu/tiny/fp16-n256                                      1660    1660 1.000    1660 1.000
+op.transpose/tiny/fp32-r32-c32                                2268    2268 1.000    2282 1.006
+geomean t17_merged.jsonl / t17_origin.jsonl: 1.000 over 21 points
+geomean t17_lmf.jsonl / t17_origin.jsonl: 0.971 over 21 points
+not pass: none
+point                                                   t17_origin         t17_m
+op.add/tiny/fp16-n1000                                        2370    2351 0.992
+op.add/tiny/fp32-n256                                          825     825 1.000
+op.argmax/tiny/fp16-r2-v256                                   1996    2042 1.023
+op.attention_decode/tiny/fp16-b1-h2-l16-d16                   9181    9188 1.001
+op.attention_prefill/tiny/fp16-b1-h2-s16-d16                 23363   23005 0.985
+op.bmm/tiny/fp16-b2-m16-k16-n16                               1864    1808 0.970
+op.cumsum/tiny/fp32-r4-c64                                    1075    1092 1.016
+op.embedding/tiny/fp16-v256-d64-t16                           4248    4329 1.019
+op.gelu_tanh/tiny/fp16-n256                                   1972    1972 1.000
+op.gemv/tiny/fp16-k64-n64                                     4760    4642 0.975
+op.layernorm/tiny/fp16-r4-d64                                 2043    1988 0.973
+op.linear/tiny/fp16-m16-k64-n64                               5575    5459 0.979
+op.matmul/tiny/fp16-m16-k32-n16                               1007     994 0.987
+op.matmul/tiny/fp32-m16-k32-n16                               3184    3192 1.003
+op.rmsnorm/tiny/fp16-r4-d64                                   1406    1389 0.988
+op.rope/tiny/fp16-b1-h2-s16-d16                               3863    3826 0.990
+op.silu/tiny/fp16-n256                                        1462    1462 1.000
+op.softmax/tiny/fp16-r4-c64                                   2465    2447 0.993
+op.softmax/tiny/fp32-r3-c37                                   1340    1282 0.957
+op.swiglu/tiny/fp16-n256                                      1660    1660 1.000
+op.transpose/tiny/fp32-r32-c32                                2268    2282 1.006
+geomean t17_m.jsonl / t17_origin.jsonl: 0.993 over 21 points
+not pass: none
+point                                                   t17_origin         t17_f
+op.add/tiny/fp16-n1000                                        2370    2351 0.992
+op.add/tiny/fp32-n256                                          825     825 1.000
+op.argmax/tiny/fp16-r2-v256                                   1996    2042 1.023
+op.attention_decode/tiny/fp16-b1-h2-l16-d16                   9181    9188 1.001
+op.attention_prefill/tiny/fp16-b1-h2-s16-d16                 23363   20809 0.891
+op.bmm/tiny/fp16-b2-m16-k16-n16                               1864    1870 1.003
+op.cumsum/tiny/fp32-r4-c64                                    1075    1092 1.016
+op.embedding/tiny/fp16-v256-d64-t16                           4248    4329 1.019
+op.gelu_tanh/tiny/fp16-n256                                   1972    1972 1.000
+op.gemv/tiny/fp16-k64-n64                                     4760    4725 0.993
+op.layernorm/tiny/fp16-r4-d64                                 2043    1988 0.973
+op.linear/tiny/fp16-m16-k64-n64                               5575    5537 0.993
+op.matmul/tiny/fp16-m16-k32-n16                               1007    1025 1.018
+op.matmul/tiny/fp32-m16-k32-n16                               3184    2298 0.722
+op.rmsnorm/tiny/fp16-r4-d64                                   1406    1389 0.988
+op.rope/tiny/fp16-b1-h2-s16-d16                               3863    3826 0.990
+op.silu/tiny/fp16-n256                                        1462    1462 1.000
+op.softmax/tiny/fp16-r4-c64                                   2465    2447 0.993
+op.softmax/tiny/fp32-r3-c37                                   1340    1282 0.957
+op.swiglu/tiny/fp16-n256                                      1660    1660 1.000
+op.transpose/tiny/fp32-r32-c32                                2268    2282 1.006
+geomean t17_f.jsonl / t17_origin.jsonl: 0.977 over 21 points
+not pass: none
+model.mlp/tiny/fp16-t16-d64                                  79976   74972 0.937
+model.resnet_block/tiny/fp32-n1-c8-hw8                      269705  199798 0.741
+op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8                     120608   89080 0.739
+geomean models_lmf_a.jsonl / tiny_origin.jsonl: 0.800 over 3 points
+not pass: none

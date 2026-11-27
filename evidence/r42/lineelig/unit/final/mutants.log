@@ -1,0 +1,20 @@
+CAUGHT load: source half inverted
+CAUGHT load: destination half inverted
+CAUGHT load: lanes all enabled
+CAUGHT load: source half recorded from the window offset
+CAUGHT load: destination half recorded from the address
+CAUGHT load: piece flag dropped
+CAUGHT store: byte enables of the wrong half
+CAUGHT store: byte enables all ones
+CAUGHT store: register half inverted
+CAUGHT store: data not replicated
+CAUGHT walk: piece step 16 bytes
+CAUGHT walk: window offset step 64 bytes
+CAUGHT walk: row ends one piece early
+CAUGHT eligibility: row alignment not checked
+CAUGHT eligibility: strides not checked
+CAUGHT eligibility: containment not checked
+CAUGHT eligibility: row length not checked
+CAUGHT store: next register read after the first piece
+CAUGHT store: register kept too long
+MUTANTS 19 of 19 caught

@@ -1,0 +1,11 @@
+PASS MAC_DP=1 VRF_MODE=1 MAC_F32=1 seed=1 random: 313 commands (143 m.mma), busy cycles OVL=0 65582, OVL=1 40457 (61.6 %)
+PASS MAC_DP=1 VRF_MODE=2 MAC_F32=1 seed=1 random: 313 commands (143 m.mma), busy cycles OVL=0 83406, OVL=1 41967 (50.3 %)
+PASS MAC_DP=1 VRF_MODE=0 MAC_F32=1 seed=1 random: 313 commands (143 m.mma), busy cycles OVL=0 42259, OVL=1 38506 (91.1 %)
+MATOVL 3 of 3 configurations pass
+PASS MAC_DP=0 VRF_MODE=1 MAC_F32=1 seed=1 random: 246 commands (132 m.mma), busy cycles OVL=0 85558, OVL=1 54813 (64.0 %)
+PASS MAC_DP=0 VRF_MODE=1 MAC_F32=1 seed=2 random: 294 commands (139 m.mma), busy cycles OVL=0 76859, OVL=1 48634 (63.2 %)
+MATOVL 2 of 2 configurations pass
+PASS MAC_DP=1 VRF_MODE=1 MAC_F32=0 seed=1 random: 303 commands (146 m.mma), busy cycles OVL=0 77636, OVL=1 44981 (57.9 %)
+PASS MAC_DP=1 VRF_MODE=1 MAC_F32=0 seed=2 random: 318 commands (141 m.mma), busy cycles OVL=0 66541, OVL=1 42245 (63.4 %)
+MATOVL 2 of 2 configurations pass
+EXIT=0

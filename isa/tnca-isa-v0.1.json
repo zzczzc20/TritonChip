@@ -728,6 +728,20 @@
       "maskable": false
     },
     {
+      "mnemonic": "m.mma.f32.async",
+      "major": "MATRIX",
+      "major_code": 64,
+      "func": 3,
+      "operands": [
+        "ad",
+        "va",
+        "vb",
+        "sc"
+      ],
+      "suffix_class": "mmaf32",
+      "maskable": false
+    },
+    {
       "mnemonic": "m.zero",
       "major": "MATRIX",
       "major_code": 64,

@@ -1,0 +1,34 @@
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=0 ABUF=0 MAC_F32=0 seed=1627102984: 75591 cycles identical, 300 commands (206 m.mma), 336 done events, 71536 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=0 ABUF=0 MAC_F32=0 seed=-1631804340: 66908 cycles identical, 300 commands (202 m.mma), 330 done events, 62946 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=0 ABUF=0 MAC_F32=1 seed=1627102984: 75591 cycles identical, 300 commands (206 m.mma), 336 done events, 71536 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=0 ABUF=0 MAC_F32=1 seed=-1631804340: 66908 cycles identical, 300 commands (202 m.mma), 330 done events, 62946 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=0 ABUF=1 MAC_F32=0 seed=1627102984: 76447 cycles identical, 300 commands (206 m.mma), 336 done events, 41265 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=0 ABUF=1 MAC_F32=0 seed=-1631804340: 67816 cycles identical, 300 commands (202 m.mma), 330 done events, 29302 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=0 ABUF=1 MAC_F32=1 seed=1627102984: 76447 cycles identical, 300 commands (206 m.mma), 336 done events, 41265 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=0 ABUF=1 MAC_F32=1 seed=-1631804340: 67816 cycles identical, 300 commands (202 m.mma), 330 done events, 29302 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=1 ABUF=0 MAC_F32=0 seed=1627102984: 168955 cycles identical, 300 commands (206 m.mma), 336 done events, 164900 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=1 ABUF=0 MAC_F32=0 seed=-1631804340: 149333 cycles identical, 300 commands (202 m.mma), 330 done events, 145371 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=1 ABUF=0 MAC_F32=1 seed=1627102984: 168955 cycles identical, 300 commands (206 m.mma), 336 done events, 164900 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=1 ABUF=0 MAC_F32=1 seed=-1631804340: 149333 cycles identical, 300 commands (202 m.mma), 330 done events, 145371 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=1 ABUF=1 MAC_F32=0 seed=1627102984: 130236 cycles identical, 300 commands (206 m.mma), 336 done events, 95064 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=1 ABUF=1 MAC_F32=0 seed=-1631804340: 106193 cycles identical, 300 commands (202 m.mma), 330 done events, 67751 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=1 ABUF=1 MAC_F32=1 seed=1627102984: 130236 cycles identical, 300 commands (206 m.mma), 336 done events, 95064 vector reads
+PASS MATRIX LOCK PASS MAC_DP=1 VRF_MODE=1 ABUF=1 MAC_F32=1 seed=-1631804340: 106193 cycles identical, 300 commands (202 m.mma), 330 done events, 67751 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=0 ABUF=0 MAC_F32=0 seed=1627102984: 97319 cycles identical, 300 commands (206 m.mma), 336 done events, 93704 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=0 ABUF=0 MAC_F32=0 seed=-1631804340: 83474 cycles identical, 300 commands (202 m.mma), 330 done events, 79946 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=0 ABUF=0 MAC_F32=1 seed=1627102984: 97319 cycles identical, 300 commands (206 m.mma), 336 done events, 93704 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=0 ABUF=0 MAC_F32=1 seed=-1631804340: 83474 cycles identical, 300 commands (202 m.mma), 330 done events, 79946 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=0 ABUF=1 MAC_F32=0 seed=1627102984: 98175 cycles identical, 300 commands (206 m.mma), 336 done events, 53065 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=0 ABUF=1 MAC_F32=0 seed=-1631804340: 84382 cycles identical, 300 commands (202 m.mma), 330 done events, 37470 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=0 ABUF=1 MAC_F32=1 seed=1627102984: 98175 cycles identical, 300 commands (206 m.mma), 336 done events, 53065 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=0 ABUF=1 MAC_F32=1 seed=-1631804340: 84382 cycles identical, 300 commands (202 m.mma), 330 done events, 37470 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=1 ABUF=0 MAC_F32=0 seed=1627102984: 219592 cycles identical, 300 commands (206 m.mma), 336 done events, 215977 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=1 ABUF=0 MAC_F32=0 seed=-1631804340: 188187 cycles identical, 300 commands (202 m.mma), 330 done events, 184659 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=1 ABUF=0 MAC_F32=1 seed=1627102984: 219592 cycles identical, 300 commands (206 m.mma), 336 done events, 215977 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=1 ABUF=0 MAC_F32=1 seed=-1631804340: 188187 cycles identical, 300 commands (202 m.mma), 330 done events, 184659 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=1 ABUF=1 MAC_F32=0 seed=1627102984: 167320 cycles identical, 300 commands (206 m.mma), 336 done events, 122220 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=1 ABUF=1 MAC_F32=0 seed=-1631804340: 133418 cycles identical, 300 commands (202 m.mma), 330 done events, 86582 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=1 ABUF=1 MAC_F32=1 seed=1627102984: 167320 cycles identical, 300 commands (206 m.mma), 336 done events, 122220 vector reads
+PASS MATRIX LOCK PASS MAC_DP=0 VRF_MODE=1 ABUF=1 MAC_F32=1 seed=-1631804340: 133418 cycles identical, 300 commands (202 m.mma), 330 done events, 86582 vector reads
+MATLOCK 32 of 32 configurations cycle-identical
+EXIT=0

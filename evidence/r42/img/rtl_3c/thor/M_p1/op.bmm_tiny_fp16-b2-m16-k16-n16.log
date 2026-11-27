@@ -1,0 +1,13 @@
+NvRmMemInitNvmap failed: error Permission denied
+NvRmMemMgrInit failed: Memory Manager Not supported, line 333
+NvRmMemMgrInit failed: error type 196626
+W1127 21:41:52.919000 2594067 torch/utils/cpp_extension.py:183] No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
+NvRmMemInitNvmap failed: error Permission denied
+NvRmMemMgrInit failed: Memory Manager Not supported, line 333
+NvRmMemMgrInit failed: error type 196626
+libnvrm_gpu.so: NvRmGpuLibOpen failed, error=196625
+NvRmMemInitNvmap failed: error Permission denied
+NvRmMemMgrInit failed: Memory Manager Not supported, line 333
+NvRmMemMgrInit failed: error type 196626
+libnvrm_gpu.so: NvRmGpuLibOpen failed, error=196625
+op.bmm/tiny/fp16-b2-m16-k16-n16 pass [1544] [1549]

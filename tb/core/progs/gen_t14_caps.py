@@ -27,13 +27,16 @@ HAS_SFU = 1
 # R41 G2: T14_DP=1 generates t14_caps_dp.s for a core built with MAC_DP=1,
 # whose CAPABILITY0 also has MATRIX_DP (bit 12) and which executes it.
 DP = os.environ.get('T14_DP', '0') == '1'
+# R42: T14_F32=1 (with T14_DP=1) generates t14_caps_f32.s for a core built
+# with MAC_F32=1 as well: MATRIX_F32 (bit 13), and m.mma.f32.async executes.
+F32 = os.environ.get('T14_F32', '0') == '1'
 
 CAP = {
     'VECTOR_FP32': 0, 'SFU': 1, 'GATHER_SCATTER': 2,
     'ATOMICS_DEVICE': 3, 'SYSTEM_ATOMICS': 4,
     'MATRIX_F16': 5, 'MATRIX_BF16': 6, 'TENSOR_DMA': 7,
     'MBARRIER': 8, 'PACKED_F16': 9, 'CACHE_HINTS': 10, 'MATRIX_FP8': 11,
-    'MATRIX_DP': 12,
+    'MATRIX_DP': 12, 'MATRIX_F32': 13,
 }
 
 # What this build implements. Anything not listed must read 0, and its
@@ -45,6 +48,8 @@ if HAS_SFU:
     IMPLEMENTED.append('SFU')
 if DP:
     IMPLEMENTED.append('MATRIX_DP')
+if F32:
+    IMPLEMENTED.append('MATRIX_F32')
 
 EXPECT = 0
 for name in IMPLEMENTED:
@@ -217,6 +222,24 @@ if DP:
     w(f"    .assert_lane v6, #15, #{F32_SIXTEEN:#x}, #{n}")
     n += 1
     w("")
+if F32:
+    # bit 13 MATRIX_F32 -- m.mma.f32.async executes: binary32 fragments, one
+    # row a register, every element 1.0, so every element of C is exactly 16.0
+    w("    // bit 13 MATRIX_F32 -- a real binary32 product")
+    w("    .li       s12, #0x3f800000")
+    for _v in range(16, 48):
+        w(f"    v.splat   v{_v}, s12")
+    w("    m.zero    a2")
+    w("    mb.arm    s8, b0, #0, #1")
+    w("    m.mma.f32.async a2, v16, v32, s8")
+    w("    mb.wait   s8")
+    w("    .li       s5, #9")
+    w("    a.vread   v6, a2, s5")
+    w(f"    .assert_lane v6, #0,  #{F32_SIXTEEN:#x}, #{n}")
+    n += 1
+    w(f"    .assert_lane v6, #15, #{F32_SIXTEEN:#x}, #{n}")
+    n += 1
+    w("")
 w("    exit")
 w("")
 
@@ -244,6 +267,6 @@ emit_words(IDX_BASE, [((2 * k + 1) << 32) | (2 * k) for k in range(8)], "idx")
 emit_words(VAL_BASE, [(GVAL(2 * k + 1) << 32) | GVAL(2 * k)
                       for k in range(8)], "vals")
 
-path = os.path.join(HERE, 't14_caps_dp.s' if DP else 't14_caps.s')
+path = os.path.join(HERE, 't14_caps_f32.s' if F32 else 't14_caps_dp.s' if DP else 't14_caps.s')
 open(path, 'w').write('\n'.join(out) + '\n')
 print(f"wrote {path}: CAPABILITY0 expected {EXPECT:#x}")

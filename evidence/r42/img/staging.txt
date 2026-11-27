@@ -1,0 +1,33 @@
+# R42-img: the staged source tree and how an approved image would be linked (nothing here was linked, loaded or requested from the card)
+
+Branch      R42-img (origin), merge of origin/R42-lineelig, origin/R42-mtx and origin/R42-fp32 on origin/R42 e2fdfb2f, plus the integration commits.
+Code state  commit 88890078 (everything after it changes evidence/ and tools/r42/ only; the RTL, the profiles, the targets and the flow are those of 88890078).
+Archive     stage_88890078.tar.gz = git archive of 88890078 without evidence/, doc/, tutorial/, examples/, deliverables/, plus
+            evidence/r42/img/images/*.tcl and evidence/r41/hbm_bw/g4/run2/image.tcl (the run-3 image, for reference);
+            sha256 67bc6d529393efca90fb5b133e7c73e70d220d0ba217aaa17aca4250cb4dabbb
+Staged on   the x86 host: ~/r42img/stage/src_88890078.tgz (same sha256) and extracted to ~/r42img/stage/src_88890078 (not on the FPGA host: it has no reason to be
+            there before the author approves a link).
+
+Images (parameter files; each is the run-3 parameter set evidence/r41/hbm_bw/g4/run2/image.tcl, link 3, image 791b8af2, plus the lines named)
+  evidence/r42/img/images/image_lf.tcl     + TENSOR_LINE_HALF 1, MAC_F32 1                      profile core-r42-img-lf    (the recommended image)
+  evidence/r42/img/images/image_lmf.tcl    + TENSOR_LINE_HALF 1, MTX_PIPE 1, MAC_F32 1           profile core-r42-img       (all three items)
+  evidence/r42/img/images/image_{base,l,m,f,lm,mf}.tcl                                           the other arms of the study (screens)
+  Every other parameter is the run-3 one: 3 cores, MEM_PORTS 3, AXI_DATA_W 512, AXI_OUT_N 32, NUM_RCTX 4, BAR_N 8, HYBRID_LSU 1, TENSOR_LINE 1, LSU_INFLIGHT 1,
+  HOME_LINE_PIPE 2, HOME_MSHR_N 64, LINE_SLOTS 64, HBM_STRIPED 1, FMA_IMPL 1, MAC_DP 1, MAC_CUTS 29, MTX_VRF_REG 1, MTX_ABUF 1, SETS 32, WAYS 8, ...
+  How the parameters reach the cores: tnca_multicore_hbm_xo -> (tnca_multicore_fpga / tnca_multicore_axi / tnca_multicore_shell) -> tnca_top -> tnca_tile -> tnca_core
+  (TENSOR_LINE_HALF -> tnca_tensor LINE_HALF; MTX_PIPE -> tnca_matrix OVL; MAC_F32 -> tnca_matrix, tnca_decoder and the capability word). flow/fpga/package_xo.tcl passes
+  every TNCA_IMAGE_PARAMS entry as a generic of the kernel; a name the top does not have is an error there. Software: the profile selects the compiler target
+  (compiler/targets/tnca-sim-r42-img-lf.json: matrix_f32 set, so an fp32 tl.dot becomes m.mma.f32.async; every other lowering is the default one).
+
+Checks of the staged tree (domain: packaging, no implementation)
+  XO packaging dry run on the x86 host from ~/r42img/stage/src_88890078 for both images (flow/fpga/package_xo.tcl, multicore-hbm, xcu280-fsvh2892-2L-e):
+    exit 0, TNCA_KERNEL_XML m_axi dataWidth=512 ports=3, TNCA_PKG_FILES=94, TNCA_PKG_HEADERS=7, 0 critical warnings, xo 408 KB;
+    TNCA_IMAGE_PARAM lines include TENSOR_LINE_HALF=1 and MAC_F32=1 (and MTX_PIPE=1 for image_lmf) (logs: ooc/package_*.log.gz)
+  Kernel synthesis of every arm (flow/fpga/synth_r40_multicore.tcl at the image parameters) and a routed tile-0 screen: ooc/ooc_summary.txt
+
+How the link would be started (the recipe of evidence/r41/hbm_bw/g4/run2/README.md; the author's approval and the card's idle rule are not part of this file)
+  source ~/x86_link_env.sh; export XILINX_HLS=$HOME/Xilinx/Vitis_HLS/2023.2; PATH as in that README
+  RUN_SOURCE=~/r42img/stage/src_88890078; FRESH_BUILD_ROOT must not exist
+  setsid nohup nice -n 5 bash flow/fpga/run_r40_attempt01.sh $FRESH_BUILD_ROOT $RUN_SOURCE/evidence/r42/img/images/image_lf.tcl
+  Budget: the author allows five full synthesis and place-and-route runs for Stage 2 in total; evidence/r41/hbm_bw/g4/run3/route_prepackage/README.md calls the run-3 link the third
+  full link and the task brief says at least two are used, so this would be one more of the remaining ones; the count is the lead's to state.

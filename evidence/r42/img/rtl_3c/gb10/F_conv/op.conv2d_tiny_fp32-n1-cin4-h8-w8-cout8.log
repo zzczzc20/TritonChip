@@ -1,0 +1,1 @@
+op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8 pass [47844] [2875, 2454, 42530]

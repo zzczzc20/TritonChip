@@ -383,6 +383,8 @@ $(TB)/core/progs/t11_matrix.s: $(TB)/core/progs/gen_t11_matrix.py $(TOOLS)/model
 
 $(TB)/core/progs/t41_mmadp.s: $(TB)/core/progs/gen_t41_mmadp.py $(TOOLS)/model/fdp.py
 	$(PYTHON) $<
+$(TB)/core/progs/t42_mmaovl.s: $(TB)/core/progs/gen_t42_mmaovl.py $(TOOLS)/model/fdp.py
+	$(PYTHON) $<
 
 # R41 G2: m.mma.dp.async (ISA sec 9C.4) through the core with the shared MAC
 # lane (MAC_DP=1), at three register-cut placements (latency 3, 4, 5), against
@@ -405,6 +407,9 @@ core-mmadp: $(TB)/core/progs/t41_mmadp.s $(BUILD)/t41_mmadp.hex $(BUILD)/tb_core
 	@$(TOOLS)/run_test.sh "t41_mmadp (no MATRIX_DP: ILLEGAL_INSTRUCTION)" \
 	   "$(VVP) $(BUILD)/tb_core.vvp +hex=$(BUILD)/t41_mmadp.hex +maxcycles=100000 +expectfault=01"
 
+$(TB)/core/progs/t42_mmaf32.s: $(TB)/core/progs/gen_t42_mmaf32.py $(TOOLS)/model/fp32.py
+	$(PYTHON) $<
+
 $(TB)/core/progs/t12_tensor.s: $(TB)/core/progs/gen_t12_tensor.py $(TOOLS)/model/fp32.py
 	$(PYTHON) $<
 
@@ -412,6 +417,8 @@ $(TB)/core/progs/t14_caps.s: $(TB)/core/progs/gen_t14_caps.py
 	$(PYTHON) $<
 $(TB)/core/progs/t14_caps_dp.s: $(TB)/core/progs/gen_t14_caps.py
 	T14_DP=1 $(PYTHON) $<
+$(TB)/core/progs/t14_caps_f32.s: $(TB)/core/progs/gen_t14_caps.py
+	T14_DP=1 T14_F32=1 $(PYTHON) $<
 
 $(TB)/core/progs/t15_target.s: $(TB)/core/progs/gen_t15_target.py \
                                compiler/targets/tnca-sim-v0.1.json
@@ -844,6 +851,241 @@ core-run2: $(patsubst %,$(BUILD)/%.hex,$(RUN2_PROGS)) $(BUILD)/t41_mmadp.hex \
 	     "$(VVP) $(BUILD)/tb_core_run2_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=4000000 $$extra" \
 	     || exit 1; \
 	 done
+
+# R42 lineelig: half-line rows in the line-wide transfer engine (tnca_tensor LINE_HALF, image parameter
+# TENSOR_LINE_HALF, profile core-r42-line32): the miter against the word engine, the directed boxes with the
+# pieces each must move, and the core's tensor programs; -lock compares every output of every cycle with the
+# engine of the base commit (git is needed for it).
+LINE32_BASE ?= 44070eb0
+.PHONY: tensor-line32 tensor-line32-lock
+tensor-line32: | dirs
+	$(PYTHON) tools/r42/lineelig_tests.py miter
+	$(PYTHON) tools/r42/lineelig_tests.py directed
+	$(PYTHON) tools/r42/lineelig_tests.py core
+	$(PYTHON) tools/r41/tensor_line_tests.py
+tensor-line32-lock: | dirs
+	git show $(LINE32_BASE):rtl/core/tnca_tensor.v | sed 's/^module tnca_tensor #(/module tnca_tensor_ref #(/' > $(BUILD)/tnca_tensor_ref.v
+	$(PYTHON) tools/r42/lineelig_tests.py lock --ref $(BUILD)/tnca_tensor_ref.v
+
+# R42 lineelig: core-run2's machine with the sixteen-register A buffer (MTX_ABUF 2: FP16/BF16 K32 and FP8 K64
+# fragments are buffered too), same program list and arguments as core-run2.
+$(BUILD)/tb_core_abuf16.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                             $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R41_RUN2) -P tb_tnca_core.MTX_ABUF=2 -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_abuf16_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                                 $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R41_RUN2) -P tb_tnca_core.MTX_ABUF=2 -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+.PHONY: core-abuf16
+core-abuf16: export ARGS_t04_roles := +roles=2
+core-abuf16: export ARGS_t05_fault := +roles=2 +expectfault=01
+core-abuf16: export ARGS_t13_share := +roles=2 +aliasvrf
+core-abuf16: export ARGS_t15_target_vrf_v5_x8_g2c4_dp := +allroles
+core-abuf16: export ARGS_t41_boundary := +roles=1
+core-abuf16: export ARGS_t18_squash := +roles=2
+core-abuf16: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-abuf16: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-abuf16: export ARGS_t39_slice := +allroles +slice
+core-abuf16: export ARGS_t39_pair := +roles=2 +pair
+core-abuf16: export ARGS_t32_xpose_badsize := +expectfault=04
+core-abuf16: $(patsubst %,$(BUILD)/%.hex,$(RUN2_PROGS)) $(BUILD)/t41_mmadp.hex \
+             $(BUILD)/tb_core_abuf16.vvp $(BUILD)/tb_core_abuf16_ooo.vvp | dirs
+	@for p in $(RUN2_PROGS) t41_mmadp; do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (abuf16)" \
+	     "$(VVP) $(BUILD)/tb_core_abuf16.vvp +hex=$(BUILD)/$$p.hex +maxcycles=3000000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (abuf16, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_abuf16_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=4000000 $$extra" \
+	     || exit 1; \
+	 done
+
+# R42: the matrix unit's overlapped sequencer (tnca_core MTX_PIPE=1, profile
+# core-r42) on the run-2 core bench, same program list as core-run2.
+$(BUILD)/tb_core_r42.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                          $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R41_RUN2) -P tb_tnca_core.MTX_PIPE=1 -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_r42_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                              $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R41_RUN2) -P tb_tnca_core.MTX_PIPE=1 -P tb_tnca_core.MEM_LATENCY=6 \
+	   -P tb_tnca_core.RANDOM_STALL=1 -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+# the same with the banked file's matrix response unregistered (the device
+# simulation's elaboration of the profile: tnca_shell has no MTX_VRF_REG)
+$(BUILD)/tb_core_r42_v0.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                             $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R41_RUN2) -P tb_tnca_core.MTX_PIPE=1 -P tb_tnca_core.MTX_VRF_REG=0 -o $@ $(TB)/core/tb_tnca_core.v
+.PHONY: core-r42
+core-r42: export ARGS_t04_roles := +roles=2
+core-r42: export ARGS_t05_fault := +roles=2 +expectfault=01
+core-r42: export ARGS_t13_share := +roles=2 +aliasvrf
+core-r42: export ARGS_t15_target_vrf_v5_x8_g2c4_dp := +allroles
+core-r42: export ARGS_t41_boundary := +roles=1
+core-r42: export ARGS_t18_squash := +roles=2
+core-r42: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-r42: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-r42: export ARGS_t39_slice := +allroles +slice
+core-r42: export ARGS_t39_pair := +roles=2 +pair
+core-r42: export ARGS_t32_xpose_badsize := +expectfault=04
+core-r42: $(patsubst %,$(BUILD)/%.hex,$(RUN2_PROGS)) $(BUILD)/t41_mmadp.hex $(BUILD)/t42_mmaovl.hex \
+          $(BUILD)/tb_core_r42.vvp $(BUILD)/tb_core_r42_ooo.vvp $(BUILD)/tb_core_r42_v0.vvp \
+          $(BUILD)/tb_core_run2.vvp | dirs
+	@for p in $(RUN2_PROGS) t41_mmadp t42_mmaovl; do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (r42)" \
+	     "$(VVP) $(BUILD)/tb_core_r42.vvp +hex=$(BUILD)/$$p.hex +maxcycles=3000000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r42, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_r42_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=4000000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r42, MTX_VRF_REG 0)" \
+	     "$(VVP) $(BUILD)/tb_core_r42_v0.vvp +hex=$(BUILD)/$$p.hex +maxcycles=3000000 $$extra" \
+	     || exit 1; \
+	 done
+	@$(TOOLS)/run_test.sh "t42_mmaovl (run2: MTX_PIPE 0)" \
+	   "$(VVP) $(BUILD)/tb_core_run2.vvp +hex=$(BUILD)/t42_mmaovl.hex +maxcycles=3000000"
+
+# R42: tnca_matrix OVL=1 against OVL=0, random command lists (tb_matrix_ovl.v)
+MTX_OVL_SEEDS ?= 1 2 3
+MTX_OVL_SEGS ?= 20
+$(BUILD)/tb_matrix_ovl_dp%.vvp: $(RTL_DEPS) $(TB)/core/tb_matrix_ovl.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen \
+	   -P tb_matrix_ovl.MAC_DP=$(word 1,$(subst v, ,$*)) -P tb_matrix_ovl.VRF_MODE=$(word 2,$(subst v, ,$*)) \
+	   -o $@ $(TB)/core/tb_matrix_ovl.v
+.PHONY: matrix-ovl
+matrix-ovl: $(BUILD)/tb_matrix_ovl_dp1v1.vvp $(BUILD)/tb_matrix_ovl_dp1v2.vvp \
+            $(BUILD)/tb_matrix_ovl_dp1v0.vvp $(BUILD)/tb_matrix_ovl_dp0v1.vvp
+	@for b in dp1v1 dp1v2 dp1v0 dp0v1; do for s in $(MTX_OVL_SEEDS); do \
+	   $(TOOLS)/run_test.sh "matrix OVL against OVL=0 ($$b, seed $$s)" \
+	     "$(VVP) $(BUILD)/tb_matrix_ovl_$$b.vvp +seed=$$s +segs=$(MTX_OVL_SEGS)" || exit 1; \
+	 done; done
+
+# R42: core-r42-fp32's bench -- the run-2 parameter set with MAC_F32=1
+# (m.mma.f32.async, ISA sec 9C.5).
+R42_FP32 := $(R41_RUN2) -P tb_tnca_core.MAC_F32=1
+$(BUILD)/tb_core_r42fp32.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                              $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R42_FP32) -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_r42fp32_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                                  $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R42_FP32) -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+$(TB)/core/progs/t15_target_r42_fp32.s: $(TB)/core/progs/gen_t15_target.py \
+                                        compiler/targets/tnca-sim-r42-fp32.json
+	$(PYTHON) $< tnca-sim-r42-fp32
+# m.mma.f32.async against the sequential binary32 FMA oracle: on the profile's
+# machine (in-order and slow, reordered memory), on the reference core with
+# only MAC_F32 (tnca_fpu_multi MACs, behavioural register file, with and
+# without the A buffer), and the refusal on machines without the capability
+# (the reference core, and the R41 run-2 core).
+.PHONY: core-mmaf32
+core-mmaf32: $(TB)/core/progs/t42_mmaf32.s $(BUILD)/t42_mmaf32.hex $(BUILD)/tb_core.vvp \
+             $(BUILD)/tb_core_run2.vvp $(BUILD)/tb_core_r42fp32.vvp $(BUILD)/tb_core_r42fp32_ooo.vvp | dirs
+	@$(TOOLS)/run_test.sh "t42_mmaf32 (r42fp32)" \
+	   "$(VVP) $(BUILD)/tb_core_r42fp32.vvp +hex=$(BUILD)/t42_mmaf32.hex +maxcycles=3000000" || exit 1
+	@$(TOOLS)/run_test.sh "t42_mmaf32 (r42fp32, ooo mem)" \
+	   "$(VVP) $(BUILD)/tb_core_r42fp32_ooo.vvp +hex=$(BUILD)/t42_mmaf32.hex +maxcycles=4000000" || exit 1
+	@for a in 0 1; do \
+	   $(IVERILOG) $(IVFLAGS) -P tb_tnca_core.MAC_F32=1 -P tb_tnca_core.MTX_ABUF=$$a \
+	      -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	      -o $(BUILD)/tb_core_f32_abuf$$a.vvp $(TB)/core/tb_tnca_core.v || exit 1; \
+	   $(TOOLS)/run_test.sh "t42_mmaf32 (MAC_F32=1 alone, MTX_ABUF=$$a)" \
+	      "$(VVP) $(BUILD)/tb_core_f32_abuf$$a.vvp +hex=$(BUILD)/t42_mmaf32.hex +maxcycles=3000000" || exit 1; \
+	 done
+	@$(TOOLS)/run_test.sh "t42_mmaf32 (no MATRIX_F32: ILLEGAL_INSTRUCTION)" \
+	   "$(VVP) $(BUILD)/tb_core.vvp +hex=$(BUILD)/t42_mmaf32.hex +maxcycles=100000 +expectfault=01"
+	@$(TOOLS)/run_test.sh "t42_mmaf32 (run2, no MATRIX_F32: ILLEGAL_INSTRUCTION)" \
+	   "$(VVP) $(BUILD)/tb_core_run2.vvp +hex=$(BUILD)/t42_mmaf32.hex +maxcycles=100000 +expectfault=01"
+
+# core-run2's program list on core-r42-fp32's machine, with its own capability
+# and target read-backs, plus t41_mmadp and t42_mmaf32.
+.PHONY: core-r42fp32
+core-r42fp32: export ARGS_t04_roles := +roles=2
+core-r42fp32: export ARGS_t05_fault := +roles=2 +expectfault=01
+core-r42fp32: export ARGS_t13_share := +roles=2 +aliasvrf
+core-r42fp32: export ARGS_t15_target_r42_fp32 := +allroles
+core-r42fp32: export ARGS_t41_boundary := +roles=1
+core-r42fp32: export ARGS_t18_squash := +roles=2
+core-r42fp32: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-r42fp32: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-r42fp32: export ARGS_t39_slice := +allroles +slice
+core-r42fp32: export ARGS_t39_pair := +roles=2 +pair
+core-r42fp32: export ARGS_t32_xpose_badsize := +expectfault=04
+R42FP32_PROGS := $(patsubst t14_caps_dp,t14_caps_f32,$(patsubst t15_target_vrf_v5_x8_g2c4_dp,t15_target_r42_fp32,$(RUN2_PROGS)))
+core-r42fp32: $(patsubst %,$(BUILD)/%.hex,$(R42FP32_PROGS)) $(BUILD)/t41_mmadp.hex $(BUILD)/t42_mmaf32.hex \
+              $(BUILD)/tb_core_r42fp32.vvp $(BUILD)/tb_core_r42fp32_ooo.vvp | dirs
+	@for p in $(R42FP32_PROGS) t41_mmadp t42_mmaf32; do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (r42fp32)" \
+	     "$(VVP) $(BUILD)/tb_core_r42fp32.vvp +hex=$(BUILD)/$$p.hex +maxcycles=3000000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r42fp32, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_r42fp32_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=4000000 $$extra" \
+	     || exit 1; \
+	 done
+
+# R42-img: core-r42-img's bench -- the run-2 parameter set with MAC_F32=1 and MTX_PIPE=1 (m.mma.f32.async on the
+# overlapped sequencer), in-order and slow reordered memory, and with the banked file's matrix response unregistered.
+R42_IMG := $(R41_RUN2) -P tb_tnca_core.MAC_F32=1 -P tb_tnca_core.MTX_PIPE=1
+$(BUILD)/tb_core_r42img.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                             $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R42_IMG) -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_r42img_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                                 $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R42_IMG) -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_r42img_v0.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                                $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R42_IMG) -P tb_tnca_core.MTX_VRF_REG=0 -o $@ $(TB)/core/tb_tnca_core.v
+$(TB)/core/progs/t15_target_r42_img.s: $(TB)/core/progs/gen_t15_target.py \
+                                       compiler/targets/tnca-sim-r42-img.json
+	$(PYTHON) $< tnca-sim-r42-img
+.PHONY: core-r42img
+core-r42img: export ARGS_t04_roles := +roles=2
+core-r42img: export ARGS_t05_fault := +roles=2 +expectfault=01
+core-r42img: export ARGS_t13_share := +roles=2 +aliasvrf
+core-r42img: export ARGS_t15_target_r42_img := +allroles
+core-r42img: export ARGS_t41_boundary := +roles=1
+core-r42img: export ARGS_t18_squash := +roles=2
+core-r42img: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-r42img: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-r42img: export ARGS_t39_slice := +allroles +slice
+core-r42img: export ARGS_t39_pair := +roles=2 +pair
+core-r42img: export ARGS_t32_xpose_badsize := +expectfault=04
+R42IMG_PROGS := $(patsubst t14_caps_dp,t14_caps_f32,$(patsubst t15_target_vrf_v5_x8_g2c4_dp,t15_target_r42_img,$(RUN2_PROGS)))
+core-r42img: $(patsubst %,$(BUILD)/%.hex,$(R42IMG_PROGS)) $(BUILD)/t41_mmadp.hex $(BUILD)/t42_mmaf32.hex $(BUILD)/t42_mmaovl.hex \
+             $(BUILD)/tb_core_r42img.vvp $(BUILD)/tb_core_r42img_ooo.vvp $(BUILD)/tb_core_r42img_v0.vvp | dirs
+	@for p in $(R42IMG_PROGS) t41_mmadp t42_mmaf32 t42_mmaovl; do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (r42img)" \
+	     "$(VVP) $(BUILD)/tb_core_r42img.vvp +hex=$(BUILD)/$$p.hex +maxcycles=3000000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r42img, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_r42img_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=4000000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r42img, MTX_VRF_REG 0)" \
+	     "$(VVP) $(BUILD)/tb_core_r42img_v0.vvp +hex=$(BUILD)/$$p.hex +maxcycles=3000000 $$extra" \
+	     || exit 1; \
+	 done
+
+# R42-img: the integrated matrix engine. Lockstep: the engine at default parameters against the delivered one (the
+# base commit's engine, MATRIX_REF, with the module renamed tnca_matrix_ref); ovl: the overlapped sequencer against the one
+# it replaces with the binary32 format in the command list.
+MATRIX_REF ?= $(BUILD)/tnca_matrix_ref.v
+.PHONY: matrix-lock matrix-ovl-f32
+matrix-lock: | dirs
+	$(PYTHON) tools/r42/img_tests.py matlock --ref $(MATRIX_REF)
+matrix-ovl-f32: | dirs
+	$(PYTHON) tools/r42/img_tests.py matovl
 
 .PHONY: core-mtx-vrf-reg
 core-mtx-vrf-reg:

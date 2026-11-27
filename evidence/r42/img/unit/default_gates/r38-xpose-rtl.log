@@ -1,0 +1,3 @@
+  t30_xpose              PASS   cycles=3757 issued=1641 hazard=693 lsu=0 wb=0 squash=228
+  t31_xpose_illegal      PASS   cycles=113 issued=18 hazard=7 lsu=0 wb=0 squash=1
+  t32_xpose_badsize      PASS   cycles=115 issued=18 hazard=7 lsu=0 wb=0 squash=1

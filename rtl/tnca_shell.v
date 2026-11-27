@@ -77,7 +77,7 @@ module tnca_shell #(
     parameter PHYS_W         = `TNCA_UARCH_PHYS_W,
     parameter LSU_TAG_W      = `TNCA_IF_LSU_TAG_W,
     parameter HAS_SFU        = `TNCA_UARCH_HAS_SFU,
-    parameter ACC_N = 16, ACC_W = 4, BAR_N = `TNCA_UARCH_BAR_N, BAR_W = `TNCA_UARCH_BAR_W, BAR_EPOCH_W = `TNCA_UARCH_BAR_EPOCH_W, FMA_IMPL = `TNCA_UARCH_FMA_IMPL, MAC_DP = `TNCA_UARCH_MAC_DP, MAC_CUTS = `TNCA_UARCH_MAC_CUTS,
+    parameter ACC_N = 16, ACC_W = 4, BAR_N = `TNCA_UARCH_BAR_N, BAR_W = `TNCA_UARCH_BAR_W, BAR_EPOCH_W = `TNCA_UARCH_BAR_EPOCH_W, FMA_IMPL = `TNCA_UARCH_FMA_IMPL, MAC_DP = `TNCA_UARCH_MAC_DP, MAC_CUTS = `TNCA_UARCH_MAC_CUTS, MAC_F32 = `TNCA_UARCH_MAC_F32,
     // Forwarded to the core, not because this shell uses them, but
     // because spec/r1_profiles.json names them in its elaboration and a
     // platform that cannot set them cannot reproduce the profile. They
@@ -98,6 +98,7 @@ module tnca_shell #(
     parameter RSLICE         = `TNCA_UARCH_RSLICE,
     parameter RPAIR          = `TNCA_UARCH_RPAIR,
     parameter MTX_ABUF       = `TNCA_UARCH_MTX_ABUF,
+    parameter MTX_PIPE       = `TNCA_UARCH_MTX_PIPE,
     parameter FPU_OVERLAP    = `TNCA_UARCH_FPU_OVERLAP,
     parameter HAS_TENSOR_XPOSE = `TNCA_UARCH_HAS_TENSOR_XPOSE,
     parameter CORE_ID        = 0,
@@ -301,7 +302,7 @@ module tnca_shell #(
 
     tnca_core #(
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(4),
-        .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .PHYS_VREGS(PHYS_VREGS),
+        .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .MAC_F32(MAC_F32), .PHYS_VREGS(PHYS_VREGS),
         .PHYS_W(PHYS_W), .CORE_ID(CORE_ID), .NUM_CORES(NUM_CORES),
         .HAS_SFU(HAS_SFU), .HAS_ATOMICS(HAS_ATOMICS),
         .HAS_SYS_ATOMICS(HAS_SYS_ATOMICS),
@@ -309,7 +310,7 @@ module tnca_shell #(
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
-        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) u_core (
         .clk(clk), .rst_n(rst_n),

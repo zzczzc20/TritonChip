@@ -34,6 +34,16 @@ inline void mma(Tile& C,const std::vector<Vector>& A,const std::vector<Vector>& 
         C[m][n]=v;
     }
 }
+// m.mma.f32.async (ISA sec 9C.5): binary32 fragments, one row a register, K16;
+// the same one-rounding-per-k sum with no widening.
+inline void mma_f32(Tile& C,const std::vector<Vector>& A,const std::vector<Vector>& B){
+    if(A.size()<16 || B.size()<16)throw std::runtime_error("MMA.F32 fragment is sixteen registers");
+    for(unsigned m=0;m<16;++m)for(unsigned n=0;n<16;++n){
+        U32 v=C[m][n];
+        for(unsigned k=0;k<16;++k)v=tnca_numeric::fma32(A[m][k],B[k][n],v);
+        C[m][n]=v;
+    }
+}
 // m.mma.dp.async (ISA sec 9C.4): dtype codes are the mod[3:2] / mod[6:5] fields.
 // A and B are read at their own element widths (the layout rule of sec 9C.2
 // applies to each fragment separately).

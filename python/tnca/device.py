@@ -96,7 +96,7 @@ _HBM = ['-P', 'tnca_device.DATA_AXI=1', '-P', f'tnca_device.AXI_WORDS={HBM_SIM_W
 # overrides are part of the cache key, and archbench records them with
 # `--set` like any other knob.
 RTL_SWITCHES = ('VRF_BYPASS', 'FE_NOBUBBLE', 'VRF_PREFETCH', 'RCTX_SWITCH', 'LSU_INFLIGHT',
-                'FPU_OVERLAP', 'MTX_ABUF',
+                'FPU_OVERLAP', 'MTX_ABUF', 'MTX_PIPE',
                 # R40-04's AXI mechanisms, for an /hbm memory mode
                 # (tb/device/tnca_device.v): burst lines, buffered lines,
                 # lines ahead, writes in flight

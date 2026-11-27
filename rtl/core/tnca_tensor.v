@@ -99,6 +99,15 @@ module tnca_tensor #(
     // commands are in flight at once. Every other transfer (and every
     // descriptor load) runs the original word walk, placed into a line.
     parameter LINE_ENGINE = 0,
+    // R42 lineelig: half-line rows (default 0: the engine as it was). With
+    // LINE_ENGINE and 1, a transfer whose every row is a whole number of
+    // 32-byte pieces, in the tensor, with 32-byte-aligned row starts and
+    // outer strides -- and that the whole-line rule above does not take --
+    // also moves as line requests, one per 32-byte piece: the piece's line
+    // is read (or its 32 bytes written through byte enables) and the piece
+    // goes to, or comes from, 8 lanes of its window register through the
+    // lane enables. A 16 x 16 fp16 tile (rows of 32 bytes) is such a box.
+    parameter LINE_HALF = 0,
     parameter LSLOT_N   = 32,
     parameter LSLOT_W   = 5,
     parameter CMD_N     = 8,
@@ -328,6 +337,7 @@ module tnca_tensor #(
     // R41 G4 LINE_ENGINE: line slots (the line buffers) and command records
     //==========================================================================
     localparam LE = (LINE_ENGINE != 0);
+    localparam LH = LE && (LINE_HALF != 0);   // R42: half-line rows
     localparam [4:0] S_LRUN = 5'd17,    // load: one 64-byte line request a step
                      S_LSREAD = 5'd18,  // store: reading the line's window register
                      S_LSRUN = 5'd19,   // store: one 64-byte line request
@@ -346,6 +356,13 @@ module tnca_tensor #(
     reg  [7:0]           ls_vreg [0:LSLOT_N-1];
     reg  [RCTX_W-1:0]    ls_rctx [0:LSLOT_N-1];
     reg  [VLEN*ELEN-1:0] ls_data [0:LSLOT_N-1];
+    // R42 half-line rows. A load's slot holds a whole line of which one 32-byte
+    // half is wanted: ls_h the slot is a piece, ls_hs the half of the line that
+    // holds it, ls_hd the half of the window register it goes to. t_lh: the
+    // command being issued moves pieces; t_pn: the piece of the current row.
+    reg  [LSLOT_N-1:0]   ls_h, ls_hs, ls_hd;
+    reg                  t_lh;
+    reg  [7:0]           t_pn;
     reg  [CMD_N-1:0]     cm_v, cm_open;
     reg  [9:0]           cm_cnt  [0:CMD_N-1];
     reg                  cm_ben  [0:CMD_N-1];
@@ -355,8 +372,15 @@ module tnca_tensor #(
     reg  [31:0]          t_line;             // line of the current row
     wire [31:0]          t_row_lines = t_row_bytes >> 6;
     wire [7:0]           l_vreg = t_wbase + t_flat[13:6] + t_line[7:0];
-    wire                 l_more = !(last_row && (t_line + 32'd1 == t_row_lines));   // a line after this one
-    wire                 pf_req = (st == S_LSRUN) && !pf_v && l_more;
+    // R42 half-line rows (hm): t_line stays 0, t_flat is the window byte offset of the
+    // current piece (it advances by 32 a request), t_ps the piece's address, t_pn counts
+    // the row's pieces. The next register of a store is wanted only after a register's
+    // second piece (t_flat[5]), when a piece after this one exists.
+    wire                 hm = LH && t_lh;
+    wire [31:0]          t_row_pcs = t_row_bytes >> 5;
+    wire                 l_more = hm ? !(last_row && ({24'd0, t_pn} + 32'd1 == t_row_pcs))
+                                     : !(last_row && (t_line + 32'd1 == t_row_lines));   // a line after this one
+    wire                 pf_req = (st == S_LSRUN) && !pf_v && l_more && (!hm || t_flat[5]);
     wire [63:0]          l_addr = t_ps + {26'd0, t_line, 6'd0};
 
     reg [LSLOT_W-1:0] lfree, lrdy_slot;
@@ -896,9 +920,15 @@ module tnca_tensor #(
         assign mem_req_valid = l_req || d_req || lg_mem;
         assign mem_req_addr  = l_req ? l_addr : d_req ? (dl_addr + {58'd0, dlq[1:0], 6'd0}) : lg_req_addr;
         assign mem_req_we    = l_req ? (st == S_LSRUN) : d_req ? 1'b0 : lg_req_we;
-        assign mem_req_be    = (l_req || d_req) ? {PORT_BYTES{1'b1}}
+        // R42 half-line rows: a store's piece is written through the byte enables of its half of
+        // the line, from the register's half it sits in (written to both halves of the data).
+        wire [PORT_BYTES-1:0] hl_be   = ({PORT_BYTES{1'b1}} >> (PORT_BYTES/2)) << (t_ps[5] ? PORT_BYTES/2 : 0);
+        wire [VLEN*ELEN/2-1:0] hl_half = t_flat[5] ? sr_data[VLEN*ELEN-1 -: VLEN*ELEN/2] : sr_data[VLEN*ELEN/2-1:0];
+        assign mem_req_be    = (l_req && hm && (st == S_LSRUN)) ? hl_be
+                             : (l_req || d_req) ? {PORT_BYTES{1'b1}}
                              : ({{(PORT_BYTES-MEM_BYTES){1'b0}}, lg_req_be} << {lg_req_addr[5:3], 3'b000});
-        assign mem_req_wdata = l_req ? sr_data
+        assign mem_req_wdata = (l_req && hm) ? {2{hl_half}}
+                             : l_req ? sr_data
                              : ({{(PORT_DW-MEM_DW){1'b0}}, lg_req_wdata} << {lg_req_addr[5:3], 6'b000000});
         assign mem_req_tag   = l_req ? {1'b1, {(PTAG_W-1-LSLOT_W){1'b0}}, lfree}
                              : d_req ? {2'b01, {(PTAG_W-4){1'b0}}, dlq[1:0]}
@@ -935,6 +965,10 @@ module tnca_tensor #(
     wire le_elig = LE && !t_xpose && ((t_acc[5:0] + t_CB[5:0]) == 6'd0) &&
                    (((t_s0 | t_s1 | t_s2 | t_s3) & 64'h3f) == 64'd0) &&
                    (t_row_bytes[5:0] == 6'd0) && g_inside;
+    // R42 half-line rows: not whole lines, but whole 32-byte pieces, each on a 32-byte boundary.
+    wire le_half = LH && !t_xpose && !le_elig && ((t_acc[4:0] + t_CB[4:0]) == 5'd0) &&
+                   (((t_s0 | t_s1 | t_s2 | t_s3) & 64'h1f) == 64'd0) &&
+                   (t_row_bytes[4:0] == 5'd0) && g_inside;
 
     //==========================================================================
     // Descriptor parsing, once the 256 bytes are in (ISA sec 9D.3)
@@ -1184,6 +1218,13 @@ module tnca_tensor #(
                     vw_idx     <= ls_vreg[lrdy_slot];
                     vw_lane_en <= {VLEN{1'b1}};
                     vw_data    <= ls_data[lrdy_slot];
+                    // R42 half-line rows: the wanted half of the line, into 8 lanes
+                    if (LH && ls_h[lrdy_slot]) begin
+                        vw_lane_en <= ls_hd[lrdy_slot] ? {{(VLEN/2){1'b1}}, {(VLEN/2){1'b0}}}
+                                                       : {{(VLEN/2){1'b0}}, {(VLEN/2){1'b1}}};
+                        vw_data    <= ls_hs[lrdy_slot] ? {2{ls_data[lrdy_slot][VLEN*ELEN-1 -: VLEN*ELEN/2]}}
+                                                       : {2{ls_data[lrdy_slot][VLEN*ELEN/2-1:0]}};
+                    end
                     ls_v[lrdy_slot]   <= 1'b0;
                     ls_rdy[lrdy_slot] <= 1'b0;
                 end
@@ -1194,6 +1235,11 @@ module tnca_tensor #(
                     ls_cid[lfree]  <= t_cid;
                     ls_vreg[lfree] <= l_vreg;
                     ls_rctx[lfree] <= t_rctx;
+                    if (LH) begin
+                        ls_h[lfree]  <= hm;
+                        ls_hs[lfree] <= l_addr[5];
+                        ls_hd[lfree] <= t_flat[5];
+                    end
                 end
                 for (c = 0; c < CMD_N; c = c + 1)
                     cm_cnt[c] <= cm_cnt[c]
@@ -1420,9 +1466,10 @@ module tnca_tensor #(
                         x_row <= 32'd0;
                         x_oob_q <= x_oob_f(32'd0, 32'd0);
                         st <= S_XRUN;
-                    end else if (le_elig && cfree_have) begin
+                    end else if ((le_elig || le_half) && cfree_have) begin
                         // R41 G4: whole lines; the command gets a record and
                         // the walk is free again once its lines are issued.
+                        // (R42: or 32-byte pieces, le_half.)
                         cm_v[cfree]    <= 1'b1;
                         cm_open[cfree] <= 1'b1;
                         cm_cnt[cfree]  <= 10'd0;
@@ -1431,9 +1478,11 @@ module tnca_tensor #(
                         cm_rctx[cfree] <= t_rctx;
                         t_cid  <= cfree;
                         t_line <= 32'd0;
+                        t_lh   <= le_half;
+                        t_pn   <= 8'd0;
                         t_bar_en <= 1'b0;
                         st <= t_store ? S_LSREAD : S_LRUN;
-                    end else if (le_elig) begin
+                    end else if (le_elig || le_half) begin
                         // a line command waits for a free record
                         st <= S_TMUL;
                     end else
@@ -1645,17 +1694,49 @@ module tnca_tensor #(
             // a reader the completion releases must find it written.
             //---------------------------------------------------------------
             // R41 G4 LINE_ENGINE: one 64-byte line of the row per step.
-            S_LRUN, S_LSRUN: begin
+            S_LRUN, S_LSRUN: begin : s_lrun
+              // R42 half-line rows: hm_first, a piece that is its register's first, so a store
+              // keeps the register it holds for the next piece
+              reg hm_first;
+              hm_first = hm && !t_flat[5];
               if ((st == S_LSRUN) && pf_req && vr_valid && !l_fire) begin
                 sr_next <= vr_data;
                 pf_v    <= 1'b1;
               end
               if (l_fire) begin
                 // the next store line's register: prefetched, arriving now, or still to read
-                if (st == S_LSRUN && l_more) begin
+                if (st == S_LSRUN && l_more && !hm_first) begin
                     if (pf_v) begin sr_data <= sr_next; pf_v <= 1'b0; end
                     else if (pf_req && vr_valid) sr_data <= vr_data;
                 end
+                if (hm) begin
+                    // pieces: t_flat the window offset of the next piece, t_ps its address
+                    t_flat <= t_flat + 32'd32;
+                    if ({24'd0, t_pn} + 32'd1 == t_row_pcs) begin
+                        t_pn <= 8'd0;
+                        if (last_row) st <= S_LEND;
+                        else begin
+                            if (st == S_LSRUN && !hm_first && !pf_v && !(pf_req && vr_valid)) st <= S_LSREAD;
+                            if (inc3) begin
+                                t_i3 <= t_i3 + 32'd1; t_P3 <= t_P3 + t_s3; t_ps <= t_P3 + t_s3 + t_CB;
+                            end else if (inc2) begin
+                                t_i2 <= t_i2 + 32'd1; t_i3 <= 32'd0;
+                                t_P2 <= t_P2 + t_s2; t_P3 <= t_P2 + t_s2; t_ps <= t_P2 + t_s2 + t_CB;
+                            end else if (inc1) begin
+                                t_i1 <= t_i1 + 32'd1; t_i2 <= 32'd0; t_i3 <= 32'd0;
+                                t_P1 <= t_P1 + t_s1; t_P2 <= t_P1 + t_s1; t_P3 <= t_P1 + t_s1; t_ps <= t_P1 + t_s1 + t_CB;
+                            end else begin
+                                t_i0 <= t_i0 + 32'd1; t_i1 <= 32'd0; t_i2 <= 32'd0; t_i3 <= 32'd0;
+                                t_P0 <= t_P0 + t_s0; t_P1 <= t_P0 + t_s0;
+                                t_P2 <= t_P0 + t_s0; t_P3 <= t_P0 + t_s0; t_ps <= t_P0 + t_s0 + t_CB;
+                            end
+                        end
+                    end else begin
+                        t_pn <= t_pn + 8'd1;
+                        t_ps <= t_ps + 64'd32;
+                        if (st == S_LSRUN && !hm_first && !pf_v && !(pf_req && vr_valid)) st <= S_LSREAD;
+                    end
+                end else
                 if (t_line + 32'd1 == t_row_lines) begin
                     t_line <= 32'd0;
                     t_flat <= t_flat + t_row_bytes;

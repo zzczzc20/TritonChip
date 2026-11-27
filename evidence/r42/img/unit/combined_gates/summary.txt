@@ -1,0 +1,2 @@
+make core-r42img exit 0 12:39:16
+GATES_DONE

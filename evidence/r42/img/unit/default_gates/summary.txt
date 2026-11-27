@@ -1,0 +1,13 @@
+make unit exit 0 08:36:14
+make core-g2c4 exit 0 08:46:40
+make core-run2 exit 0 08:55:46
+make core-mmadp exit 0 08:58:22
+make core-abuf16 exit 0 09:06:30
+make r41-xpose8-rtl exit 0 09:07:05
+make r38-xpose-rtl exit 0 09:07:17
+make tensor-line32 exit 0 09:42:21
+make core-r42 exit 0 09:56:18
+make matrix-ovl exit 0 10:24:32
+make core-mmaf32 exit 0 10:27:02
+make core-r42fp32 exit 0 10:35:41
+GATES_DONE

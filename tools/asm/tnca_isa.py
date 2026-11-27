@@ -292,6 +292,8 @@ ISA = {
     'm.mma.async': ('MATRIX', 0x01, ('ad', 'va', 'vb', 'sc'),     'mma'),
     # ISA sec 9C.4 (approved 2026-10-29): grouped dot-product accumulation
     'm.mma.dp.async': ('MATRIX', 0x02, ('ad', 'va', 'vb', 'sc'),  'mmadp'),
+    # ISA sec 9C.5 (R42): m.mma.async over binary32 fragments, one K16 step
+    'm.mma.f32.async': ('MATRIX', 0x03, ('ad', 'va', 'vb', 'sc'), 'mmaf32'),
 
     # ---- tensor descriptor / window (ISA sec 9D) ---------------------------
     'td.load':     ('TDESC', 0x00, ('dd', 'mem_s'),               None),

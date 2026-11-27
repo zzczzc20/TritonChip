@@ -1,0 +1,23 @@
+2026-11-27T09:08:06Z idef synth exit 0 1212 s
+2026-11-27T09:08:46Z base synth exit 0 1252 s
+2026-11-27T09:41:51Z base tile0 exit 0 1985 s
+2026-11-27T12:46:50Z l-a099878e synth exit 0 1238 s
+2026-11-27T12:46:50Z lmf-a099878e synth exit 0 1238 s
+2026-11-27T13:25:46Z l-a099878e tile0 exit 0 2336 s
+2026-11-27T13:26:25Z lmf-a099878e tile0 exit 0 2375 s
+2026-11-27T13:46:18Z m-a099878e synth exit 0 1232 s
+2026-11-27T13:46:21Z f-a099878e synth exit 0 1196 s
+2026-11-27T14:30:35Z f-a099878e tile0 exit 0 2654 s
+2026-11-27T14:32:58Z m-a099878e tile0 exit 0 2799 s
+2026-11-27T15:10:07Z lf-a099878e synth exit 0 2216 s
+2026-11-27T15:42:20Z idef tile0 exit 0 4289 s
+2026-11-27T16:00:54Z unit u_base exit 0 1105 s
+2026-11-27T16:19:12Z unit u_f exit 0 1098 s
+2026-11-27T16:20:46Z lf-a099878e tile0 exit 0 4239 s
+2026-11-27T16:21:33Z package lmf exit 0
+2026-11-27T16:21:37Z package lf exit 0
+2026-11-27T16:22:58Z package src_88890078 lmf exit 0
+2026-11-27T16:23:24Z package src_88890078 lf exit 0
+2026-11-27T16:30:26Z unit u_m exit 0 674 s
+2026-11-27T16:44:52Z unit u_mf exit 0 866 s
+2026-11-27T16:59:59Z unit u_def exit 0 907 s

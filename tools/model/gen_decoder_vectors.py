@@ -161,6 +161,8 @@ m.mma.dp.async a1, v8, v16, s2
 m.mma.dp.async.k32.e4m3 a1, v8, v16, s2
 m.mma.dp.async.k64.f16.e4m3.sf a1, v8, v16, s2
 m.mma.dp.async.bf16.e5m2 a1, v8, v16, s2
+m.mma.f32.async a1, v8, v24, s2
+m.mma.f32.async.sf a1, v8, v24, s2
 td.load d0, [s9]
 td.release d15
 w.def w1, #8, #8
@@ -298,6 +300,13 @@ def main():
     emit(encode(MAJ['MATRIX'], 0x02, d=1, a=2, b=3, c=4, mod=0x03), True, "mmadp_k3")
     emit(encode(MAJ['MATRIX'], 0x02, d=1, a=2, b=3, c=4, mod=0x080), True, "mmadp_mod7")
     emit(encode(MAJ['MATRIX'], 0x02, d=1, a=2, b=3, c=4, mod=0x200), True, "mmadp_mod9")
+    # m.mma.f32.async (sec 9C.5): only mod[4] is meaningful
+    emit(encode(MAJ['MATRIX'], 0x03, d=1, a=2, b=3, c=4, mod=0x10), False, "mmaf32_sf")
+    emit(encode(MAJ['MATRIX'], 0x03, d=1, a=2, b=3, c=4, mod=0x01), True, "mmaf32_k32")
+    emit(encode(MAJ['MATRIX'], 0x03, d=1, a=2, b=3, c=4, mod=0x04), True, "mmaf32_dt")
+    emit(encode(MAJ['MATRIX'], 0x03, d=1, a=2, b=3, c=4, mod=0x20), True, "mmaf32_mod5")
+    emit(encode(MAJ['MATRIX'], 0x03, d=1, a=2, b=3, c=63, mod=0x10), True, "mmaf32_sf_s63")
+    emit(encode(MAJ['MATRIX'], 0x04, d=1, a=2, b=3, c=4, mod=0x00), True, "matrix_func4")
 
     # ---- illegal modifiers ----------------------------------------------
     emit(encode(MAJ['SALU'], 0x18, d=1, a=2, b=3, mod=0x0a), True, "cc_o_on_int")

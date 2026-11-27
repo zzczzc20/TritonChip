@@ -47,13 +47,15 @@ GROUP = {'tiny': 'light', 'small': 'light', 'medium': 'light', 'large': 'heavy',
 def screen(levers=None):
     """one-at-a-time effect of each configuration against the head-software base model, from every set that was run for it"""
     B = C.board()
-    bb = E.Bundle('head_dse_base')
+    bbase = E.Bundle('head_dse_base')
+    BASE_OF = {'le2': 'le0'}     # LINE_HALF is measured against the line engine of the image (RTL-3c old arm), not against the word engine
     names = levers or sorted({p.name[len('head_dse_'):].rsplit('_', 1)[0] for p in COL.glob('head_dse_*_tsm.json')})
     rows = {}
     for n in names:
         if n == 'base':
             continue
         bc = E.Bundle(f'head_dse_{n}', LEV.get(n, {}).get('cores', 3))
+        bb = E.Bundle(f'head_dse_{BASE_OF[n]}') if n in BASE_OF else bbase
         f = mhz(n)
         direct = {}
         for pid in B:

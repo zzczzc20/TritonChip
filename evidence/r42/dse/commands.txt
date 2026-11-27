@@ -20,3 +20,4 @@ tools/r42/dse_gb10/dse_sets.sh ~/r42/dse head dse_base tsm hv px xd xp         #
 #    one-at-a-time: head dse_<lever> tsm for 31 levers; hv for c6 clk200 vi1 memideal c6o3 sets128 sets512; px xd xp for c6 clk200 vi1; full bundles (tsm hv px xd xp) for k1..k9; k10 tsm hv
 # 5. analysis (local, seconds): python3 tools/r42/dse_validate_all.py val_dse_base --out evidence/r42/dse/validation_all_val_dse_base.json ;
 #    python3 tools/r42/dse_report.py screen ; python3 tools/r42/dse_report.py full head_dse_k1 ... ; python3 tools/r42/dse_tables.py > evidence/r42/dse/tables.txt
+# 6. default-off identity of the new TLM keys: config cal (no new key) on the final binary against the first binary's results: tiny tier 27 of 27 cycle-identical (col/ident_cal_v5.json against col/v1_tsm_cal.json)

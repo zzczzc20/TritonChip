@@ -1,0 +1,931 @@
+{
+ "base": {
+  "S145": {
+   "low": 1.8463323639079696,
+   "central": 2.072014155839515,
+   "high": 2.072014155839515
+  },
+  "S145_sw_at_round2": 1.556498470397682,
+  "clock": 100.0,
+  "kinds": {
+   "proxy": 20,
+   "direct": 112,
+   "parts": 5,
+   "wave": 8
+  },
+  "by_tier": {
+   "large": 2.2984393772195855,
+   "medium": 2.452409504915318,
+   "small": 2.2326032423023654,
+   "tiny": 1.5473048281028274,
+   "hbm": 2.8442617878305896,
+   "xl": 1.800976014650472
+  },
+  "by_family": {
+   "add": 2.944175735989026,
+   "argmax": 1.636112168752101,
+   "attention_decode": 1.5639132751228302,
+   "attention_prefill": 3.396641615929171,
+   "bmm": 4.717341143518998,
+   "conv2d": 1.3244243296751357,
+   "copy": 5.588821355150661,
+   "cumsum": 3.6461515055371736,
+   "embedding": 19.99424121140754,
+   "fp8_act_quant": 1.0384043402720295,
+   "fp8_decoder_decode": 1.8376818183676822,
+   "fp8_decoder_prefill": 1.878497494613413,
+   "fp8_layer_decode": 1.952638726490437,
+   "fp8_layer_prefill": 1.7488448378286545,
+   "fp8_linear": 1.4759099592156262,
+   "gelu_tanh": 1.885310042340863,
+   "gemv": 1.4085650336706188,
+   "gpt2_block": 1.935989735044966,
+   "layernorm": 2.2327653677668486,
+   "linear": 1.36281244316664,
+   "llama_decode": 2.2275546382658917,
+   "llama_prefill": 1.9398147306119022,
+   "matmul": 1.398653377094793,
+   "mlp": 1.2275099000041882,
+   "resnet_block": 1.3364102148972736,
+   "rmsnorm": 3.1016913665342325,
+   "rmsnorm_residual": 1.9786390608257687,
+   "rope": 1.5598875519023623,
+   "silu": 1.7847148744417296,
+   "softmax": 1.722006124836308,
+   "swiglu": 1.763224892146442,
+   "transpose": 2.6705187131083115
+  },
+  "rows": {
+   "model.gpt2_block/large/fp16-d1024-h16-b1-s512": {
+    "kind": "proxy",
+    "ratio": 0.6851261647214458,
+    "sw": 0.6851261647214458,
+    "hw": 1.0
+   },
+   "model.gpt2_block/medium/fp16-d160-h5-b1-s64": {
+    "kind": "direct",
+    "ratio": 0.8925641488410597,
+    "sw": 0.8925641488410597,
+    "hw": 1.0
+   },
+   "model.gpt2_block/small/fp16-d128-h4-b1-s64": {
+    "kind": "direct",
+    "ratio": 0.90084848140305,
+    "sw": 0.90084848140305,
+    "hw": 1.0
+   },
+   "model.gpt2_block/tiny/fp16-d64-h4-b1-s16": {
+    "kind": "direct",
+    "ratio": 0.9668554764174752,
+    "sw": 0.9668554764174752,
+    "hw": 1.0
+   },
+   "model.llama_decode/hbm/fp16-b1-p512": {
+    "kind": "direct",
+    "ratio": 0.8201003676308974,
+    "sw": 0.8201003676308974,
+    "hw": 1.0
+   },
+   "model.llama_decode/large/fp16-b1-p512": {
+    "kind": "proxy",
+    "ratio": 0.803219601138026,
+    "sw": 0.803219601138026,
+    "hw": 1.0
+   },
+   "model.llama_decode/medium/fp16-b1-p256": {
+    "kind": "direct",
+    "ratio": 0.911873750559834,
+    "sw": 0.911873750559834,
+    "hw": 1.0
+   },
+   "model.llama_decode/small/fp16-b1-p128": {
+    "kind": "direct",
+    "ratio": 0.9232309948404717,
+    "sw": 0.9232309948404717,
+    "hw": 1.0
+   },
+   "model.llama_decode/tiny/fp16-b1-p16": {
+    "kind": "direct",
+    "ratio": 0.8268075012498537,
+    "sw": 0.8268075012498537,
+    "hw": 1.0
+   },
+   "model.llama_prefill/hbm/fp16-b1-s512": {
+    "kind": "proxy",
+    "ratio": 0.7418418278754458,
+    "sw": 0.7418418278754458,
+    "hw": 1.0
+   },
+   "model.llama_prefill/large/fp16-b1-s512": {
+    "kind": "proxy",
+    "ratio": 0.7360677692435204,
+    "sw": 0.7360677692435204,
+    "hw": 1.0
+   },
+   "model.llama_prefill/medium/fp16-b1-s64": {
+    "kind": "direct",
+    "ratio": 0.8077148930908788,
+    "sw": 0.8077148930908788,
+    "hw": 1.0
+   },
+   "model.llama_prefill/small/fp16-b1-s64": {
+    "kind": "direct",
+    "ratio": 0.8230468764401188,
+    "sw": 0.8230468764401188,
+    "hw": 1.0
+   },
+   "model.llama_prefill/tiny/fp16-b1-s16": {
+    "kind": "direct",
+    "ratio": 0.808497759379851,
+    "sw": 0.808497759379851,
+    "hw": 1.0
+   },
+   "model.mlp/large/fp16-t512-d2048": {
+    "kind": "proxy",
+    "ratio": 0.6634032502530572,
+    "sw": 0.6634032502530572,
+    "hw": 1.0
+   },
+   "model.mlp/medium/fp16-t128-d128": {
+    "kind": "direct",
+    "ratio": 0.8676966627137981,
+    "sw": 0.8676966627137981,
+    "hw": 1.0
+   },
+   "model.mlp/small/fp16-t64-d128": {
+    "kind": "direct",
+    "ratio": 0.8671561224467559,
+    "sw": 0.8671561224467559,
+    "hw": 1.0
+   },
+   "model.mlp/tiny/fp16-t16-d64": {
+    "kind": "direct",
+    "ratio": 0.9824280804893336,
+    "sw": 0.9824280804893336,
+    "hw": 1.0
+   },
+   "model.resnet_block/large/fp32-n8-c64-hw56": {
+    "kind": "proxy",
+    "ratio": 0.9360475019166695,
+    "sw": 0.9360475019166695,
+    "hw": 1.0
+   },
+   "model.resnet_block/medium/fp32-n1-c24-hw16": {
+    "kind": "direct",
+    "ratio": 0.9358739997692908,
+    "sw": 0.9358739997692908,
+    "hw": 1.0
+   },
+   "model.resnet_block/small/fp32-n1-c16-hw16": {
+    "kind": "direct",
+    "ratio": 0.9388801651309941,
+    "sw": 0.9388801651309941,
+    "hw": 1.0
+   },
+   "model.resnet_block/tiny/fp32-n1-c8-hw8": {
+    "kind": "direct",
+    "ratio": 0.9521190286295756,
+    "sw": 0.9521190286295756,
+    "hw": 1.0
+   },
+   "op.add/hbm/fp16-n67108864": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.add/large/fp16-n16777216": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.add/medium/fp16-n49152": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.add/small/fp16-n16384": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.add/tiny/fp16-n1000": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.add/tiny/fp32-n256": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.argmax/large/fp16-r64-v128256": {
+    "kind": "direct",
+    "ratio": 0.9995047367543353,
+    "sw": 0.9995047367543353,
+    "hw": 1.0
+   },
+   "op.argmax/medium/fp16-r32-v4096": {
+    "kind": "direct",
+    "ratio": 0.9986717182973033,
+    "sw": 0.9986717182973033,
+    "hw": 1.0
+   },
+   "op.argmax/small/fp16-r8-v2048": {
+    "kind": "direct",
+    "ratio": 0.9944390592316719,
+    "sw": 0.9944390592316719,
+    "hw": 1.0
+   },
+   "op.argmax/tiny/fp16-r2-v256": {
+    "kind": "direct",
+    "ratio": 0.9765500794912559,
+    "sw": 0.9765500794912559,
+    "hw": 1.0
+   },
+   "op.attention_decode/large/fp16-b1-h32-l2048-d64": {
+    "kind": "direct",
+    "ratio": 0.9881002523455928,
+    "sw": 0.9881002523455928,
+    "hw": 1.0
+   },
+   "op.attention_decode/medium/fp16-b1-h8-l256-d32": {
+    "kind": "direct",
+    "ratio": 0.9765421439992567,
+    "sw": 0.9765421439992567,
+    "hw": 1.0
+   },
+   "op.attention_decode/small/fp16-b1-h4-l256-d32": {
+    "kind": "direct",
+    "ratio": 0.976701896176562,
+    "sw": 0.976701896176562,
+    "hw": 1.0
+   },
+   "op.attention_decode/tiny/fp16-b1-h2-l16-d16": {
+    "kind": "direct",
+    "ratio": 0.9629957507082153,
+    "sw": 0.9629957507082153,
+    "hw": 1.0
+   },
+   "op.attention_prefill/large/fp16-b1-h32-s512-d64": {
+    "kind": "proxy",
+    "ratio": 0.8380466579852435,
+    "sw": 0.8380466579852435,
+    "hw": 1.0
+   },
+   "op.attention_prefill/medium/fp16-b1-h4-s96-d32": {
+    "kind": "direct",
+    "ratio": 0.812481536366453,
+    "sw": 0.812481536366453,
+    "hw": 1.0
+   },
+   "op.attention_prefill/small/fp16-b1-h4-s64-d32": {
+    "kind": "direct",
+    "ratio": 0.9730592386979998,
+    "sw": 0.9730592386979998,
+    "hw": 1.0
+   },
+   "op.attention_prefill/tiny/fp16-b1-h2-s16-d16": {
+    "kind": "direct",
+    "ratio": 0.9097635090500726,
+    "sw": 0.9097635090500726,
+    "hw": 1.0
+   },
+   "op.bmm/large/fp16-b32-m512-k64-n512": {
+    "kind": "direct",
+    "ratio": 0.9936301622143108,
+    "sw": 0.9936301622143108,
+    "hw": 1.0
+   },
+   "op.bmm/medium/fp16-b16-m64-k32-n64": {
+    "kind": "direct",
+    "ratio": 0.9977190796877727,
+    "sw": 0.9977190796877727,
+    "hw": 1.0
+   },
+   "op.bmm/small/fp16-b8-m64-k32-n64": {
+    "kind": "direct",
+    "ratio": 0.9969011242432978,
+    "sw": 0.9969011242432978,
+    "hw": 1.0
+   },
+   "op.bmm/tiny/fp16-b2-m16-k16-n16": {
+    "kind": "direct",
+    "ratio": 0.9910614525139665,
+    "sw": 0.9910614525139665,
+    "hw": 1.0
+   },
+   "op.conv2d/large/fp32-n8-cin64-h56-w56-cout64": {
+    "kind": "proxy",
+    "ratio": 0.9383939922544358,
+    "sw": 0.9383939922544358,
+    "hw": 1.0
+   },
+   "op.conv2d/medium/fp32-n1-cin24-h16-w16-cout24": {
+    "kind": "direct",
+    "ratio": 0.9378659388343455,
+    "sw": 0.9378659388343455,
+    "hw": 1.0
+   },
+   "op.conv2d/small/fp32-n1-cin16-h16-w16-cout16": {
+    "kind": "direct",
+    "ratio": 0.932413566559908,
+    "sw": 0.932413566559908,
+    "hw": 1.0
+   },
+   "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8": {
+    "kind": "direct",
+    "ratio": 0.9520972316858669,
+    "sw": 0.9520972316858669,
+    "hw": 1.0
+   },
+   "op.copy/hbm/fp16-n67108864": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.cumsum/medium/fp32-r128-c256": {
+    "kind": "direct",
+    "ratio": 0.31179446707160674,
+    "sw": 0.31179446707160674,
+    "hw": 1.0
+   },
+   "op.cumsum/small/fp32-r64-c256": {
+    "kind": "direct",
+    "ratio": 0.30768143139926474,
+    "sw": 0.30768143139926474,
+    "hw": 1.0
+   },
+   "op.cumsum/tiny/fp32-r4-c64": {
+    "kind": "direct",
+    "ratio": 0.3434650455927052,
+    "sw": 0.3434650455927052,
+    "hw": 1.0
+   },
+   "op.embedding/hbm/fp16-v65536-d2048-t8192": {
+    "kind": "proxy",
+    "ratio": 0.04332695219839583,
+    "sw": 0.04332695219839583,
+    "hw": 1.0
+   },
+   "op.embedding/large/fp16-v128256-d2048-t512": {
+    "kind": "direct",
+    "ratio": 0.04409996535416208,
+    "sw": 0.04409996535416208,
+    "hw": 1.0
+   },
+   "op.embedding/medium/fp16-v1024-d128-t256": {
+    "kind": "direct",
+    "ratio": 0.04478363032437146,
+    "sw": 0.04478363032437146,
+    "hw": 1.0
+   },
+   "op.embedding/small/fp16-v1024-d128-t64": {
+    "kind": "direct",
+    "ratio": 0.046447105038612005,
+    "sw": 0.046447105038612005,
+    "hw": 1.0
+   },
+   "op.embedding/tiny/fp16-v256-d64-t16": {
+    "kind": "direct",
+    "ratio": 0.09063027143076215,
+    "sw": 0.09063027143076215,
+    "hw": 1.0
+   },
+   "op.gelu_tanh/large/fp16-n16777216": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.gelu_tanh/medium/fp16-n65536": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.gelu_tanh/small/fp16-n16384": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.gelu_tanh/tiny/fp16-n256": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.gemv/hbm/fp16-k4096-n11008": {
+    "kind": "direct",
+    "ratio": 0.7904808091726053,
+    "sw": 0.7904808091726053,
+    "hw": 1.0
+   },
+   "op.gemv/large/fp16-k2048-n8192": {
+    "kind": "direct",
+    "ratio": 0.7949203478094621,
+    "sw": 0.7949203478094621,
+    "hw": 1.0
+   },
+   "op.gemv/medium/fp16-k320-n448": {
+    "kind": "direct",
+    "ratio": 0.8114245863183922,
+    "sw": 0.8114245863183922,
+    "hw": 1.0
+   },
+   "op.gemv/small/fp16-k256-n512": {
+    "kind": "direct",
+    "ratio": 0.8395380319824012,
+    "sw": 0.8395380319824012,
+    "hw": 1.0
+   },
+   "op.gemv/tiny/fp16-k64-n64": {
+    "kind": "direct",
+    "ratio": 1.0051177072671442,
+    "sw": 1.0051177072671442,
+    "hw": 1.0
+   },
+   "op.layernorm/large/fp16-r512-d2048": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.layernorm/medium/fp16-r128-d512": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.layernorm/small/fp16-r64-d256": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.layernorm/tiny/fp16-r4-d64": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.linear/hbm/fp16-m512-k4096-n11008": {
+    "kind": "proxy",
+    "ratio": 0.7403996927419744,
+    "sw": 0.7403996927419744,
+    "hw": 1.0
+   },
+   "op.linear/large/fp16-m512-k2048-n8192": {
+    "kind": "proxy",
+    "ratio": 0.6472835365681384,
+    "sw": 0.6472835365681384,
+    "hw": 1.0
+   },
+   "op.linear/medium/fp16-m128-k320-n256": {
+    "kind": "direct",
+    "ratio": 0.7238932671109647,
+    "sw": 0.7238932671109647,
+    "hw": 1.0
+   },
+   "op.linear/small/fp16-m64-k256-n256": {
+    "kind": "direct",
+    "ratio": 0.7893206089525108,
+    "sw": 0.7893206089525108,
+    "hw": 1.0
+   },
+   "op.linear/tiny/fp16-m16-k64-n64": {
+    "kind": "direct",
+    "ratio": 0.9138247158049139,
+    "sw": 0.9138247158049139,
+    "hw": 1.0
+   },
+   "op.matmul/hbm/fp16-m4096-k4096-n4096": {
+    "kind": "proxy",
+    "ratio": 0.7882637884823055,
+    "sw": 0.7882637884823055,
+    "hw": 1.0
+   },
+   "op.matmul/large/fp16-m2048-k2048-n2048": {
+    "kind": "proxy",
+    "ratio": 0.7856063688364422,
+    "sw": 0.7856063688364422,
+    "hw": 1.0
+   },
+   "op.matmul/large/fp32-m2048-k2048-n2048": {
+    "kind": "proxy",
+    "ratio": 0.9995756756317007,
+    "sw": 0.9995756756317007,
+    "hw": 1.0
+   },
+   "op.matmul/medium/fp16-m128-k192-n128": {
+    "kind": "direct",
+    "ratio": 0.8139222692754168,
+    "sw": 0.8139222692754168,
+    "hw": 1.0
+   },
+   "op.matmul/medium/fp32-m128-k192-n128": {
+    "kind": "direct",
+    "ratio": 0.996090412448541,
+    "sw": 0.996090412448541,
+    "hw": 1.0
+   },
+   "op.matmul/small/fp16-m64-k128-n128": {
+    "kind": "direct",
+    "ratio": 0.7450960768614892,
+    "sw": 0.7450960768614892,
+    "hw": 1.0
+   },
+   "op.matmul/small/fp32-m64-k128-n128": {
+    "kind": "direct",
+    "ratio": 0.995269962725584,
+    "sw": 0.995269962725584,
+    "hw": 1.0
+   },
+   "op.matmul/tiny/fp16-m16-k32-n16": {
+    "kind": "direct",
+    "ratio": 0.9535218016291327,
+    "sw": 0.9535218016291327,
+    "hw": 1.0
+   },
+   "op.matmul/tiny/fp32-m16-k32-n16": {
+    "kind": "direct",
+    "ratio": 0.9811780336581045,
+    "sw": 0.9811780336581045,
+    "hw": 1.0
+   },
+   "op.rmsnorm/hbm/fp16-r8192-d4096": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.rmsnorm/large/fp16-r512-d2048": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.rmsnorm/medium/fp16-r128-d512": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.rmsnorm/small/fp16-r64-d256": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.rmsnorm/tiny/fp16-r4-d64": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.rope/large/fp16-b1-h32-s512-d64": {
+    "kind": "direct",
+    "ratio": 1.000587832802426,
+    "sw": 1.000587832802426,
+    "hw": 1.0
+   },
+   "op.rope/medium/fp16-b1-h8-s128-d32": {
+    "kind": "direct",
+    "ratio": 0.9997678839862056,
+    "sw": 0.9997678839862056,
+    "hw": 1.0
+   },
+   "op.rope/small/fp16-b1-h4-s64-d32": {
+    "kind": "direct",
+    "ratio": 0.991258669512045,
+    "sw": 0.991258669512045,
+    "hw": 1.0
+   },
+   "op.rope/tiny/fp16-b1-h2-s16-d16": {
+    "kind": "direct",
+    "ratio": 0.8971471471471472,
+    "sw": 0.8971471471471472,
+    "hw": 1.0
+   },
+   "op.silu/hbm/fp16-n67108864": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.silu/large/fp16-n16777216": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.silu/medium/fp16-n65536": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.silu/small/fp16-n16384": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.silu/tiny/fp16-n256": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.softmax/hbm/fp16-r4096-c8192": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.softmax/large/fp16-r4096-c4096": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.softmax/medium/fp16-r80-c512": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.softmax/small/fp16-r64-c512": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.softmax/tiny/fp16-r4-c64": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.softmax/tiny/fp32-r3-c37": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.swiglu/large/fp16-n16777216": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.swiglu/medium/fp16-n49152": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.swiglu/small/fp16-n16384": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.swiglu/tiny/fp16-n256": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.transpose/hbm/fp32-r8192-c8192": {
+    "kind": "proxy",
+    "ratio": 0.2664926386365232,
+    "sw": 0.2664926386365232,
+    "hw": 1.0
+   },
+   "op.transpose/large/fp32-r4096-c4096": {
+    "kind": "direct",
+    "ratio": 0.28427629660573805,
+    "sw": 0.28427629660573805,
+    "hw": 1.0
+   },
+   "op.transpose/medium/fp32-r160-c256": {
+    "kind": "direct",
+    "ratio": 0.3908670347709297,
+    "sw": 0.3908670347709297,
+    "hw": 1.0
+   },
+   "op.transpose/small/fp32-r128-c256": {
+    "kind": "direct",
+    "ratio": 0.3793403270012286,
+    "sw": 0.3793403270012286,
+    "hw": 1.0
+   },
+   "op.transpose/tiny/fp32-r32-c32": {
+    "kind": "direct",
+    "ratio": 0.6481099656357389,
+    "sw": 0.6481099656357389,
+    "hw": 1.0
+   },
+   "model.fp8_decoder_decode/xl/fp8-b1-p2048-layers28": {
+    "kind": "parts",
+    "ratio": 0.7833172000396619,
+    "sw": 0.7833172000396619,
+    "hw": 1.0
+   },
+   "model.fp8_decoder_prefill/xl/fp8-b1-s2048-layers4": {
+    "kind": "parts",
+    "ratio": 0.8696968721296096,
+    "sw": 0.8696968721296096,
+    "hw": 1.0
+   },
+   "model.fp8_decoder_prefill/xl/fp8-b1-s512-layers28": {
+    "kind": "parts",
+    "ratio": 0.765619115296499,
+    "sw": 0.765619115296499,
+    "hw": 1.0
+   },
+   "model.fp8_layer_decode/xl/fp8-b1-p2048-layers1": {
+    "kind": "parts",
+    "ratio": 0.7826816674766105,
+    "sw": 0.7826816674766105,
+    "hw": 1.0
+   },
+   "model.fp8_layer_prefill/xl/fp8-b1-s512-layers1": {
+    "kind": "parts",
+    "ratio": 0.7346711124807547,
+    "sw": 0.7346711124807547,
+    "hw": 1.0
+   },
+   "op.argmax/xl/fp16-r16-v151936": {
+    "kind": "direct",
+    "ratio": 0.9994669484922588,
+    "sw": 0.9994669484922588,
+    "hw": 1.0
+   },
+   "op.attention_decode/xl/fp16-b1-h16-kv8-l2048-d128": {
+    "kind": "direct",
+    "ratio": 0.9882011898736917,
+    "sw": 0.9882011898736917,
+    "hw": 1.0
+   },
+   "op.attention_decode/xl/fp16-b1-h16-kv8-l4096-d128": {
+    "kind": "direct",
+    "ratio": 0.9869199974026047,
+    "sw": 0.9869199974026047,
+    "hw": 1.0
+   },
+   "op.attention_decode/xl/fp16-b1-h16-kv8-l8192-d128": {
+    "kind": "direct",
+    "ratio": 0.9869400897808618,
+    "sw": 0.9869400897808618,
+    "hw": 1.0
+   },
+   "op.attention_prefill/xl/fp16-b1-h16-kv8-s1024-d128": {
+    "kind": "proxy",
+    "ratio": 0.8833494180235038,
+    "sw": 0.8833494180235038,
+    "hw": 1.0
+   },
+   "op.attention_prefill/xl/fp16-b1-h16-kv8-s2048-d128": {
+    "kind": "proxy",
+    "ratio": 0.8833494180235039,
+    "sw": 0.8833494180235039,
+    "hw": 1.0
+   },
+   "op.embedding/xl/fp16-v151936-d2048-t2048": {
+    "kind": "proxy",
+    "ratio": 0.043436462439360245,
+    "sw": 0.043436462439360245,
+    "hw": 1.0
+   },
+   "op.fp8_act_quant/xl/fp8-m2048-k2048": {
+    "kind": "direct",
+    "ratio": 0.9629899146932664,
+    "sw": 0.9629899146932664,
+    "hw": 1.0
+   },
+   "op.fp8_act_quant/xl/fp8-m2048-k6144": {
+    "kind": "direct",
+    "ratio": 0.963098861219775,
+    "sw": 0.963098861219775,
+    "hw": 1.0
+   },
+   "op.fp8_linear/xl/fp8-m1-k2048-n12288": {
+    "kind": "direct",
+    "ratio": 0.6885484354081528,
+    "sw": 0.6885484354081528,
+    "hw": 1.0
+   },
+   "op.fp8_linear/xl/fp8-m1-k2048-n151936": {
+    "kind": "wave",
+    "ratio": 0.6941598567138912,
+    "sw": 0.6941598567138912,
+    "hw": 1.0
+   },
+   "op.fp8_linear/xl/fp8-m1-k2048-n4096": {
+    "kind": "direct",
+    "ratio": 0.695186175538404,
+    "sw": 0.695186175538404,
+    "hw": 1.0
+   },
+   "op.fp8_linear/xl/fp8-m1-k6144-n2048": {
+    "kind": "direct",
+    "ratio": 0.6725562176126995,
+    "sw": 0.6725562176126995,
+    "hw": 1.0
+   },
+   "op.fp8_linear/xl/fp8-m16-k2048-n12288": {
+    "kind": "direct",
+    "ratio": 0.6732649661503445,
+    "sw": 0.6732649661503445,
+    "hw": 1.0
+   },
+   "op.fp8_linear/xl/fp8-m16-k2048-n151936": {
+    "kind": "wave",
+    "ratio": 0.6718782541990221,
+    "sw": 0.6718782541990221,
+    "hw": 1.0
+   },
+   "op.fp8_linear/xl/fp8-m16-k6144-n2048": {
+    "kind": "direct",
+    "ratio": 0.6987019430119354,
+    "sw": 0.6987019430119354,
+    "hw": 1.0
+   },
+   "op.fp8_linear/xl/fp8-m2048-k2048-n12288": {
+    "kind": "wave",
+    "ratio": 0.6718782541990221,
+    "sw": 0.6718782541990221,
+    "hw": 1.0
+   },
+   "op.fp8_linear/xl/fp8-m2048-k2048-n2048": {
+    "kind": "wave",
+    "ratio": 0.6718782541990221,
+    "sw": 0.6718782541990221,
+    "hw": 1.0
+   },
+   "op.fp8_linear/xl/fp8-m2048-k2048-n4096": {
+    "kind": "wave",
+    "ratio": 0.6718782541990221,
+    "sw": 0.6718782541990221,
+    "hw": 1.0
+   },
+   "op.fp8_linear/xl/fp8-m2048-k6144-n2048": {
+    "kind": "wave",
+    "ratio": 0.667372617676641,
+    "sw": 0.667372617676641,
+    "hw": 1.0
+   },
+   "op.fp8_linear/xl/fp8-m512-k2048-n12288": {
+    "kind": "wave",
+    "ratio": 0.6718782541990221,
+    "sw": 0.6718782541990221,
+    "hw": 1.0
+   },
+   "op.fp8_linear/xl/fp8-m512-k6144-n2048": {
+    "kind": "wave",
+    "ratio": 0.667372617676641,
+    "sw": 0.667372617676641,
+    "hw": 1.0
+   },
+   "op.gemv/xl/fp16-k2048-n151936": {
+    "kind": "proxy",
+    "ratio": 0.7872732588970572,
+    "sw": 0.7872732588970572,
+    "hw": 1.0
+   },
+   "op.linear/xl/fp16-m2048-k2048-n6144-bias0": {
+    "kind": "proxy",
+    "ratio": 0.6563085065039798,
+    "sw": 0.6563085065039798,
+    "hw": 1.0
+   },
+   "op.rmsnorm_residual/xl/fp16-r2048-d2048": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   },
+   "op.rope/xl/fp16-b1-h16-s2048-d128": {
+    "kind": "direct",
+    "ratio": 0.9982679824439319,
+    "sw": 0.9982679824439319,
+    "hw": 1.0
+   },
+   "op.swiglu/xl/fp16-r2048-i6144": {
+    "kind": "direct",
+    "ratio": 1.0,
+    "sw": 1.0,
+    "hw": 1.0
+   }
+  }
+ }
+}

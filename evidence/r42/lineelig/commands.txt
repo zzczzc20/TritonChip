@@ -10,7 +10,7 @@ python3 tools/r42/lineelig_tests.py directed            # fixed boxes with the n
 python3 tools/r42/lineelig_tests.py core                # core's tensor programs on tb_core_hybrid: word engine, line engine, line engine + LINE_HALF
 python3 tools/r42/lineelig_tests.py lock --ref tnca_tensor_ref.v --seeds 3   # every output of every cycle against the base commit's engine (git show 44070eb0:rtl/core/tnca_tensor.v, module renamed)
 python3 tools/r42/lineelig_tests.py mutants --seeds 3   # 19 mutants of the half-line logic
-tools/r42/le_gates.sh   # make unit core-g2c4 core-run2 core-mmadp r41-xpose8-rtl r38-xpose-rtl core-abuf16; tensor_line_tests.py; tensor_bounds_tests.py
+scripts/le_gates2.sh TREE LOGDIR   # make unit core-g2c4 core-run2 core-mmadp core-abuf16 r41-xpose8-rtl r38-xpose-rtl; tensor_line_tests.py; tensor_bounds_tests.py; mutants
 #
 # 2. rtl-eng (the engine alone behind a fixed-latency memory)
 tools/r42/run_xp_half.sh TREE OUT ; python3 tools/r42/xp_half_table.py OUT      # word / line / line+half, per K step
@@ -25,3 +25,9 @@ python3 tools/r42/lineelig_table.py OLD_DIR NEW_DIR
 # 4. OOC (domain: out-of-context synthesis and place and route, 10 ns, SLR0 pblock, Vivado 2023.2, xcu280-fsvh2892-2L-e) on the x86 host
 vivado -mode batch -source flow/fpga/screen_r42_tensor.tcl -tclargs COMMON TENSOR_V OUT [NAME=VALUE ...]     # tnca_tensor at the run-2 image geometry
 vivado -mode batch -source flow/fpga/screen_r42_unit.tcl -tclargs tnca_matrix COMMON FILELIST OUT VLEN=16 ELEN=32 ACC_N=16 ACC_W=4 ROWS=16 ROW_W=4 BAR_W=3 FMA_LAT=2 FMA_IMPL=1 MAC_DP=1 MAC_CUTS=29 ABUF=N
+#
+# 5. extra: Vivado RTL elaboration of the board kernel at an image's parameters (the parameters reach every tnca_tensor and tnca_matrix)
+vivado -mode batch -source flow/fpga/elab_r42_image.tcl -tclargs RTL_ROOT IMAGE_TCL OUT          # evidence: ooc/elab_image_params.txt
+# 6. model: tools/r42/lineelig_predict.py board/ab-int2/comparison.json rtl_3c/v1_old_tiny rtl_3c/v1_new_tiny rtl_3c/v1_old_small rtl_3c/v1_new_small --tlm xfer/tables.txt > model_prediction.txt
+# 7. regenerated generated files: python3 tools/isa/gen_support_matrix.py (doc/support_matrix.md), tools/isa/gen_target.py (compiler/targets/tnca-sim-r42-line32.json); make r1-check-generated passes on the generated-file checks
+# Launch scripts of the long stand-in runs: scripts/le_arms{1,2,3}.sh (le_arms*.sh are in the scratchpad; copied below), scripts/le_final.sh

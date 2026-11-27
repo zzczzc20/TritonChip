@@ -1,0 +1,4 @@
+{"point": "op.matmul/tiny/fp16-m16-k32-n16", "output_sha256": "b4bacac11429f6a8e956a76d5fcc96d778ba344b8b29ce390ba50c15fca3f90b", "tensors": [["torch.float16", [16, 16]]]}
+{"point": "op.matmul/tiny/fp16-m16-k32-n16", "output_sha256": "b4bacac11429f6a8e956a76d5fcc96d778ba344b8b29ce390ba50c15fca3f90b", "tensors": [["torch.float16", [16, 16]]]}
+{"point": "op.linear/tiny/fp16-m16-k64-n64", "output_sha256": "79a254a54299ecdfecb345d0cc12b7d709a7dcfc4f09c8c1bc74c855438ca7cb", "tensors": [["torch.float16", [16, 64]]]}
+{"point": "op.linear/tiny/fp16-m16-k64-n64", "output_sha256": "79a254a54299ecdfecb345d0cc12b7d709a7dcfc4f09c8c1bc74c855438ca7cb", "tensors": [["torch.float16", [16, 64]]]}

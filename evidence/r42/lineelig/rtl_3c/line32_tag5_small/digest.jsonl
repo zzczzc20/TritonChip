@@ -1,0 +1,2 @@
+{"point": "op.matmul/small/fp16-m64-k128-n128", "output_sha256": "07d75c1bc668ab713e99b2a279c4fd132d7db7751c412e98264a39bda953a15f", "tensors": [["torch.float16", [64, 128]]]}
+{"point": "op.matmul/small/fp16-m64-k128-n128", "output_sha256": "07d75c1bc668ab713e99b2a279c4fd132d7db7751c412e98264a39bda953a15f", "tensors": [["torch.float16", [64, 128]]]}

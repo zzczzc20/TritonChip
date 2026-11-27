@@ -203,6 +203,11 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--old', type=Path, help='baseline records (xl-base); omitted: report the --new side alone')
     ap.add_argument('--new', type=Path, required=True, help='candidate records (xl-cand)')
+    ap.add_argument('--new-repeat', type=Path, action='append', default=[],
+                    help='records of a one-point repeat registration (`board_ab.py register --only POINT --of NAME`) of the --new '
+                         'side: a point that did not pass on the --new side (a failure or no run, e.g. a card change) takes the '
+                         'row of the repeat if that passes; a point that passed on the --new side is never replaced. Same image, '
+                         'clock and software tree are required; the replaced failures stay in the output')
     ap.add_argument('--out', type=Path)
     ap.add_argument('--threshold', type=float, default=0.02)
     a = ap.parse_args()
@@ -211,6 +216,22 @@ def main():
     (old_meta, old), (new_meta, new) = read_side(a.old), read_side(a.new)
     if old_meta['clock_hz'] != new_meta['clock_hz'] or old_meta['image_sha256'] != new_meta['image_sha256']:
         raise SystemExit('the two runs have a different image or clock; cycles are not comparable as device time')
+    new_meta['repeats'] = []
+    for rp in a.new_repeat:
+        r_meta, r_pts = read_side(rp)
+        if (r_meta['clock_hz'], r_meta['image_sha256'], r_meta['software_tree']) != \
+                (new_meta['clock_hz'], new_meta['image_sha256'], new_meta['software_tree']):
+            raise SystemExit(f'{rp}: a repeat must share image, clock and software tree with the --new side')
+        took = []
+        for cid, row in r_pts.items():
+            if cid in new and new[cid]['outcome'] != 'pass' and row['outcome'] == 'pass':
+                new_meta.setdefault('replaced_failures', {})[cid] = {
+                    k: new[cid].get(k) for k in ('outcome', 'failure_kind', 'failure_detail', 'failed_run', 'runs')}
+                new[cid] = dict(row, source='repeat:' + r_meta['queue_id'])
+                took.append(cid)
+        new_meta['repeats'].append(dict(path=str(rp), queue_id=r_meta['queue_id'], archive_sha256=r_meta['archive_sha256'],
+                                        batch_status=r_meta['batch_status'], points_taken=took))
+    new_meta['outcomes'] = dict(collections.Counter(p['outcome'] for p in new.values()))
     ids = list(old) + [p for p in new if p not in old]
     rows, failed = [], []
     for cid in ids:
@@ -247,7 +268,9 @@ def main():
 
     ratios = [r['new_over_old'] for r in rows]
     registered = len(ids)
-    certified = (not failed and len(rows) == registered and old_meta['batch_status'] == new_meta['batch_status'] == 'complete')
+    new_complete = new_meta['batch_status'] == 'complete' or (
+        bool(new_meta['repeats']) and all(r['batch_status'] == 'complete' for r in new_meta['repeats']))
+    certified = (not failed and len(rows) == registered and old_meta['batch_status'] == 'complete' and new_complete)
     fp8 = [r for r in rows if r['fp8'] or r['family'] in ('fp8_linear', 'fp8_act_quant')]
     summary = dict(
         schema='r42-board-xl-comparison/1', domain='board (U280), device-cycles-serial-grid',

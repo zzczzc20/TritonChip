@@ -14,10 +14,8 @@ Nothing here is a routed image or a board number.
    (`FMA_IMPL` 465) the **one-tile OOC synthesis goes 249,921 -> 230,979 LUT (-18,942, -7.6 %)**, 24 URAM per tile (RAMB unchanged: 32 RAMB36 + 15 RAMB18); the area worker's kernel-synthesis tile was 253,898 (the same netlist in OOC is 1.6 % smaller), so the kernel-flow equivalent is about 234.7k.
 3. **Not enough for more cores.** Two tiles per SLR need a tile of at most 143.2k (4 cores), 140.3k (5), 126.7k (6) synthesis LUT (derived, same floorplan arithmetic as the area report with a +1.5k outlet per extra core in SLR0). 231k is 88k above the 4-core limit. Everything identified, built or estimated, adds up to
    about 195-200k. The blocking units are the matrix lane array (51k), the 16 FMA (24.7k), the converters (15.6k), the vector ALU (21-24k), the home slice (29k after the shrink), LSU (19k), transfer engine (19k), VRF (14k after).
-4. **No speed from the shrink itself.** Every built change keeps the cycle behaviour, so the TLM effect of the shrink alone is 1.000. What the freed area (about -19k per tile, 6 % lower SLR0 packing: 95.6 % -> 89.9 %) buys is the area-priced levers of the dse screen: a 4x larger slice (`sets128`, URAM) +4.7 % (full bundle,
-   S145 2.170 against 2.072), and, in combination (tiny/small/medium points run, heavy points inherit their family), +31 % for a set of five area-priced levers (section 5).
-5. **Clock.** The units measured at 6.67 ns in OOC meet it (VRF 5.88 ns path, 5.56 ns after the crossbar change; FMA, MAC lane from the area worker); the family census of a routed tile at 6.67 ns (section 6) and the image derate of 1.5-2.0 decide what the netlist reaches:
-   about 100-110 MHz as it is, 120-125 MHz with the nine pipeline fixes (derived), and no evidence for 150 MHz. TLM: all nine fixes at +1 cycle cost -8.5 % cycles at 100 MHz (S145 1.895 against 2.072) and -2.0 % at 125 MHz; if timing closed, 125 MHz would be S145 2.34 and 150 MHz 2.76.
+4. **No speed from the shrink itself.** Every built change keeps the cycle behaviour (miters, `core-run2`), so the model effect of the shrink alone is exactly 1.000 (S145 2.072). What the freed area buys is the area-priced levers of the dse screen: the 4x slice (`sets128`, URAM, +13.7k LUT for the tags and flag vectors, net +4.4k against the shipped slice) **2.170 (+4.7 %)**; with four more area-priced levers (`te32`, `le2`, `hl`, `vi1`; `vi1` costs about +14k per core, inference) **2.984 (+44 %)** (full 145-point bundle both).
+5. **Clock.** One routed tile alone at 6.67 ns (default RTL): WNS -0.521, 3,488 failing endpoints, worst path 7.19 ns (139 MHz in isolation); the units meet 6.67 in OOC (VRF, LSU, home slice within +-0.1 ns, FMA/MAC from the area worker). The image derate is 1.4-1.6. The run-3 image reaches 100 MHz; the nine pipeline fixes cost 1.9 % cycles (TLM) and make about 120-125 MHz plausible (derived, not shown); no evidence for 150 MHz. If they closed: S145 **2.448 at 125 MHz**, **2.863 at 150 MHz** (full bundles).
 
 ## 2. Tile LUT after each step (OOC tile synthesis `tnca_tile`, run-3 parameters, tile 0, 10 ns, flatten none)
 
@@ -74,16 +72,19 @@ Recorded anchors: the K-fused E4M3 lane on DSP48E2 (`R42-kfuse-rtl`) is 1,734 LU
 new opcode/mode as the numerics decision requires. The FP16 front end has never been built or screened; the figure is a derivation, not a measurement. Other DSP candidates (estimates): the 120 pairwise comparators of the vector ALU (3.3k LUT, each already followed by a flop; +1-2 cycles on integer min/max reductions) -3k; `u_mul` fabric adders -0.4k;
 the 49 address adders of the slow LSU unit (2 DSP per 64-bit add, operands between registers) up to -2k. Shifters (valu 3.8k, LSU/txf byte shifters 13k) are not DSP-shaped.
 
-## 4. Predicted effect on the 145-point geometric mean (TLM, S145 central; low-high in brackets)
+## 4. Predicted effect on the 145-point geometric mean (TLM, S145 central; low-high in brackets; "full" = all five sets of the 145-point bundle run directly)
 
-| Step | Cycle effect | S145 |
-|---|---|---|
-| today's hardware, head software | | 2.072 (1.853-2.072) |
-| 1-3 (shrink: FMA/MAC back end, URAM slice arrays, VRF crossbar) | none: cycle-exact | 2.072 |
-| + `sets128` (4x slice, URAM; area paid by the shrink) | fewer misses | **2.170** (1.881-2.190) |
-| + four more area-priced levers (`te32` 32 transfer slots, `le2` half-line engine, `hl` hardware loop, `vi1` single-cycle vector issue; the last needs about +14k LUT per core, inference) | | **2.714** (1.951-2.915), tiny/small/medium run, heavy points inherit |
-| + clock 125 MHz with the nine fixes (+1 cycle each) | -2.0 % cycles at 125 MHz | 3.227 (2.400-3.433) |
-These are model predictions, the last two on a partial bundle (77 light points run directly; the family means stand in for the 68 others): the full-bundle runs are listed in section 9 when finished. Not additive in general; the combinations were run as combinations.
+| Step (cumulative) | Cycle effect | S145 | Bundle |
+|---|---|---|---|
+| today's hardware, head software | | 2.072 (1.853-2.072) | full |
+| steps 1-3 (FMA/MAC back end, home slice arrays in URAM, VRF `XBAR` 2): tile 249.9k -> 231.0k | none: cycle-exact | **2.072** | by construction (miters, `core-run2`) |
+| + `sets128`: 4x slice in the same 8 URAM, area paid by the shrink | fewer misses | **2.170** (1.881-2.190) | full |
+| + `te32` (32 transfer slots), `le2` (half-line engine), `hl` (hardware loop), `vi1` (single-cycle vector issue; about +14k LUT per core, inference) | | **2.984** (2.063-3.209) | full |
+| the nine clock fixes at +1 cycle each, 100 MHz | -1.9 % | 2.032 | 77 light points + inheritance, corrected |
+| the same at 125 MHz (HBM and outlet latency fixed in ns) | | **2.448** (2.228-2.518) | full |
+| the same at 150 MHz | | **2.863** (2.627-2.983) | full |
+| area levers (`buy`) + 125 MHz fixes | | 3.46 | light points + inheritance, corrected |
+The clock rows are conditional on timing closing (section 6). Individual cycle costs of the fixes (tsm run, corrected): LSU -0.4 %, forwarding -0.6 %, branch/refetch -0.7 %, FP latency -0.3 %, SFU -0.1 %, transfer engine -0.1 %, matrix -0.05 %, barrier 0. The model is not additive in general; combinations were run as combinations. "Corrected" divides by the same inheritance of the base run (`shr_eval.py`, last column): a run of 77 light points lets the 68 others inherit their family's ratio, which carries the software effect of the light points.
 
 ## 5. M2: tile size, cores per SLR, predicted speed
 
@@ -97,7 +98,8 @@ Floorplan arithmetic (`tools/r42/shrink/floorplan.py`, derived): inputs of the a
 | about 195-200k (plus the DSP candidates) | 3 | 6 cores 126.7k |
 SLR packing after the built shrink (derived from the routed tile 249.6k -> 230.7k): SLR0 95.6 % -> 89.9 %, SLR1 89.7 % -> 84.6 %, SLR2 87.1 % -> 81.3 %.
 
-TLM for the core counts (what the model gives if the tile did fit; base clock): 4 cores S145 2.406 (1.865-2.553), 5 cores 3.011 (2.044-3.260; modelled as a 3x2 mesh with 5 active cores and 6 home slices, so it also gains slice capacity), 6 cores 3.567 (2.125-3.994). Combined with the clock levers: section 9.
+TLM for the core counts (what the model gives if the tile did fit; full bundles): 4 cores **2.406** (1.865-2.553), 5 cores **3.011** (2.044-3.260; modelled as a 3x2 mesh with 5 active cores and 6 home slices, so it also gains slice capacity), 6 cores **3.567** (2.125-3.994). In combination with the clock levers (nine fixes at +1 cycle; the combinations were run
+for the light and heavy points, the rest inherited and corrected): 4 cores at 125 MHz 2.87, 6 cores at 125 MHz 3.66, 6 cores at 150 MHz 4.33. The achieved tile (231k) fits 3 cores, so none of these is reachable with this work: the only entries that apply to the achieved tile are the rows of section 4.
 **Which units block, and by how much:** 4 cores need -88k from the built tile (231k), -53k from the all-in estimate; the largest blocks that stay are the matrix lane array 49-51k, FMA 24.7k, converters 15.6k, vector ALU 21-24k, home slice 29k, LSU 19.4k, transfer engine 19.4k, VRF 13.9k, core own 9.9k.
 Halving the lane counts would remove about 25k (MAC) + 12k (FMA) and still leave about 160k.
 

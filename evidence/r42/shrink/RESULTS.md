@@ -123,7 +123,7 @@ Halving the lane counts would remove about 25k (MAC) + 12k (FMA) and still leave
 | transfer engine | 49 | -0.284 | 18 lv, 6.65 ns, 49 % | `dl_word_reg` -> DSP input |
 | vector ALU, scalar RF, predicate RF, host mux | 0 | +0.05 .. +0.8 | | |
 Caveat read with the counts: the tool optimises only paths that fail the constraint, so the number of endpoints between 5 and 6.67 ns (84,217 below 1.5 ns slack) says where the optimiser stopped, not how many paths are intrinsically that long; only a run at the target constraint gives that count.
-Result after the shrink (same screen on the step-3 tile): S3ROW
+**The same screen on the step-3 tile** (`tile_s3`, FMA_IMPL 465 + home URAM + VRF `XBAR` 2): after placement WNS **+0.289 ns, 0 failing endpoints of 193,795** (default tile: -0.018, 24 of 257,651); in post-route physical optimisation the worst slack was -0.074 ns when this file was written (default tile at the same stage: -0.52 ns); the routed report (`tilescreen/s3_*`) is added when that run ends. The endpoint count fell by 25 % because the removed LUTRAM, valid-bit and crossbar structures had their own endpoints.
 
 **Units at 6.67 ns (OOC, routed WNS; path = 6.67 - WNS):**
 

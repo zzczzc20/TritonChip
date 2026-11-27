@@ -425,3 +425,13 @@ image still waits for the author's approval of that image (SERVERS.md rule), ask
    the routed run-3 reports, per-core LUT/DSP, and the number of cores each SLR then holds.
 4. Images 2 and 3 are built from what steps 2 and 3 support; each is judged by the same board yardstick (113 + xl, cycles and wall time reported
    separately).
+
+**2026-11-27. Board result `ab-int3` (113 original points, run-3 image `791b8af2`, R42 `44070eb0` against `b41-run3-base`).**
+Queue 08:41-10:44 UTC (identity 3/3, `original` step 212 runs, `suite_status complete`, no failed check, no missing formal record), card back to
+idle on the same image afterwards. `board_compare.py`: 113/113 points pass on both sides, **geometric mean new/old 0.4709 = 2.123x** (median ratio
+0.564, ab-int2 was 1.638x); total device cycles 48.18 G -> 31.15 G. **No point is slower than 2 %** (the four candidates listed at registration,
+`op.add/tiny/fp32-n256`, `op.transpose/small`, `model.mlp/small`, and the xl linear point, are all faster on the board: 1.41x, 4.7x, 1.17x for the first three;
+the xl point is measured in `xl-cand3`). By tier (speedup): tiny 1.529, small 2.179, medium 2.413, large 2.259, hbm 2.854. Largest family gains:
+embedding 12.6x, copy 5.7x, transpose 5.1x, bmm 4.8x, rmsnorm 3.1x, attention_prefill 3.0x, add 3.0x, cumsum 2.7x; smallest: mlp 1.15x, linear 1.21x,
+resnet_block 1.34x, conv2d 1.34x, matmul 1.35x, gemv 1.36x. Sample spread inside a formal record: median 0.47 %, max 15.8 %. Evidence:
+`evidence/r42/board/ab-int3/{records.tgz,logs.tgz,comparison.json}`. The 145-point headline needs `xl-cand3` (launched 10:50 UTC on the already loaded image, same guarded recipe).

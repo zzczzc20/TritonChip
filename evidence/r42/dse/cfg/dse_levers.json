@@ -117,7 +117,9 @@
    "clock_hz": "250000000",
    "hbm_latency_cycles": "58",
    "tl_hbm_write_latency_cycles": "58",
-   "tl_outlet_to_slice_cycles": "25"
+   "tl_outlet_to_slice_cycles": "25",
+   "tl_outlet_read_issue_cycles": "2",
+   "tl_outlet_write_issue_cycles": "2"
   },
   "cores": 3,
   "desc": "250 MHz; HBM round trip and the 8 fitted outlet cycles fixed in ns; RTL pipeline depths fixed in cycles (timing closes)"
@@ -128,6 +130,8 @@
    "hbm_latency_cycles": "58",
    "tl_hbm_write_latency_cycles": "58",
    "tl_outlet_to_slice_cycles": "25",
+   "tl_outlet_read_issue_cycles": "2",
+   "tl_outlet_write_issue_cycles": "2",
    "noc_stages": "6",
    "tl_noc_inject_cycles": "2",
    "tl_noc_eject_cycles": "4",

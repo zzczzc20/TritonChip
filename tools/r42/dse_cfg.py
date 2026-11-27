@@ -60,6 +60,8 @@ def clock(b, mhz, pipelined=False):
     kv['hbm_latency_cycles'] = max(1, round(PHYS['hbm_latency_cycles'] * r))
     kv['tl_hbm_write_latency_cycles'] = max(1, round(PHYS['tl_hbm_write_latency_cycles'] * r))
     kv['tl_outlet_to_slice_cycles'] = OUTLET_RTL + round(OUTLET_FIT_EXTRA * r)
+    if r > 2.25:     # a 512-bit outlet at 1 line per cycle needs 64 B x f > 14.4 GB/s (one HBM pseudo channel, 450 MHz x 32 B): 2 cycles per line
+        kv['tl_outlet_read_issue_cycles'] = kv['tl_outlet_write_issue_cycles'] = 2
     if pipelined:
         p = 1 + (r - 1) / 2.0     # assumed: half the extra clock ratio is paid in pipeline registers of on-chip paths
         for k in STRUCT:
@@ -126,14 +128,27 @@ def levers(b):
     return L
 
 
+def combine(L, names):
+    keys, cores, desc = {}, 3, []
+    for n in names:
+        keys.update(L[n]['keys'])
+        cores = max(cores, L[n]['cores'])
+        desc.append(L[n]['desc'])
+    return dict(keys=keys, cores=cores, desc=' | '.join(desc))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('out')
     ap.add_argument('--base', default='cal')
     ap.add_argument('--list', action='store_true')
+    ap.add_argument('--combo', action='append', default=[], help='NAME=lever+lever+...: write a configuration with the levers merged')
     a = ap.parse_args()
     b = base(a.base)
     L = levers(b)
+    for c in a.combo:
+        name, spec = c.split('=')
+        L[name] = combine(L, spec.split('+'))
     if a.list:
         for n, l in L.items():
             print(f'{n:<10} cores={l["cores"]}  {l["desc"]}')

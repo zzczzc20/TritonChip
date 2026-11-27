@@ -52,7 +52,18 @@ def main():
         print(f'  tier xl      n={len(x):>3} geo {C.geo(x):.3f} median|err| {statistics.median(abs(i - 1) for i in x):.3f}')
     if out:
         out.write_text(json.dumps(dict(rows=rows, by_family=res), indent=1))
-    (C.ROOT / 'evidence/r42/dse/validation_families.json').write_text(json.dumps({f: v['usable'] for f, v in res.items()}))
+    # verdict per family and element type (matmul and softmax have fp32 points whose kernels differ): key `family` or `family/fp32`
+    gk = {}
+    for r in rows:
+        k = r['family'] + ('/fp32' if r['point'].split('/')[2].startswith('fp32') else '')
+        gk.setdefault(k, []).append(r)
+    ver = {}
+    for k, rs in gk.items():
+        e = [abs(r['ratio'] - 1) for r in rs]
+        g = C.geo([r['ratio'] for r in rs])
+        ver[k] = bool(statistics.median(e) <= 0.20 and 0.8 <= g <= 1.25 and sum(x <= 0.2 for x in e) >= 0.6 * len(e))
+    (C.ROOT / 'evidence/r42/dse/validation_families.json').write_text(json.dumps(ver, indent=1, sort_keys=True))
+    print('per family and element type:', {k: v for k, v in sorted(ver.items()) if '/' in k or not v})
 
 
 if __name__ == '__main__':

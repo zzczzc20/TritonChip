@@ -1,0 +1,112 @@
+{
+ "binary": "/home/zhongchun/r42/dse_out/tnca-chip-v5",
+ "points": {
+  "op.matmul/tiny/fp16-m16-k32-n16": {
+   "bound": 320.0,
+   "counters_total": {
+    "barrier_sleep_cycles": 2200,
+    "context_park_cycles": 16,
+    "dependency_wait_cycles": 2166,
+    "dma_admission_wait_cycles": 1344,
+    "dma_commands_issued": 8,
+    "instructions": 6958,
+    "issue_queue_cycles": 2163,
+    "lsu_wait_cycles": 353,
+    "matrix_engine_busy_cycles": 710,
+    "matrix_engine_commands": 6,
+    "memory_port_service_cycles": 814,
+    "mma_commands": 4,
+    "pipeline_freeze_cycles": 667
+   },
+   "demand": {
+    "fp_ops": 0.0,
+    "macs": 8192,
+    "read_bytes": 2048,
+    "sfu_ops": 0.0,
+    "write_bytes": 512
+   },
+   "device_cycles": 2928,
+   "fallbacks": [],
+   "first_call_device_cycles": 19373,
+   "launches": 1,
+   "max_rel_err": 0.00040886770849252635,
+   "model_knobs": {
+    "TNCA_TLM_BINARY": "/home/zhongchun/r42/dse_out/tnca-chip-v5",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r42/dse_out/cfg/dse_clk200p.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r42/dse_out/tlm/smoke_clk200p/runs/op.matmul__tiny__fp16-m16-k32-n16/model"
+   },
+   "model_retired": 6958,
+   "per_launch": [
+    {
+     "cycles": 2928,
+     "grid": [
+      1,
+      1,
+      1
+     ],
+     "kernel": "triton_tem_fused_mm_0",
+     "programs": 0
+    }
+   ],
+   "problems": [],
+   "process_wall_s": 3.23,
+   "status": "pass",
+   "timing": "serial-grid"
+  },
+  "op.silu/tiny/fp16-n256": {
+   "bound": 128.0,
+   "counters_total": {
+    "barrier_sleep_cycles": 0,
+    "context_park_cycles": 3336,
+    "dependency_wait_cycles": 8532,
+    "dma_admission_wait_cycles": 0,
+    "dma_commands_issued": 0,
+    "instructions": 7892,
+    "issue_queue_cycles": 6234,
+    "lsu_wait_cycles": 246,
+    "matrix_engine_busy_cycles": 0,
+    "matrix_engine_commands": 0,
+    "memory_port_service_cycles": 200,
+    "mma_commands": 0,
+    "pipeline_freeze_cycles": 872
+   },
+   "demand": {
+    "fp_ops": 512,
+    "macs": 0.0,
+    "read_bytes": 512,
+    "sfu_ops": 256,
+    "write_bytes": 512
+   },
+   "device_cycles": 886,
+   "fallbacks": [],
+   "first_call_device_cycles": 15353,
+   "launches": 1,
+   "max_rel_err": 0.0001596149365490904,
+   "model_knobs": {
+    "TNCA_TLM_BINARY": "/home/zhongchun/r42/dse_out/tnca-chip-v5",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r42/dse_out/cfg/dse_clk200p.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r42/dse_out/tlm/smoke_clk200p/runs/op.silu__tiny__fp16-n256/model"
+   },
+   "model_retired": 7892,
+   "per_launch": [
+    {
+     "cycles": 886,
+     "grid": [
+      8,
+      1,
+      1
+     ],
+     "kernel": "triton_poi_fused_silu_0",
+     "programs": 0
+    }
+   ],
+   "problems": [],
+   "process_wall_s": 3.28,
+   "status": "pass",
+   "timing": "serial-grid"
+  }
+ },
+ "source": "/home/zhongchun/r42/dse_out/tlm/smoke_clk200p"
+}

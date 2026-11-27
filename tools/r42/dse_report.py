@@ -41,38 +41,50 @@ def usable_families():
     return json.loads(p.read_text()) if p.exists() else {}
 
 
+GROUP = {'tiny': 'light', 'small': 'light', 'medium': 'light', 'large': 'heavy', 'hbm': 'heavy', 'xl': 'heavy'}
+
+
 def screen(levers=None):
+    """one-at-a-time effect of each configuration against the head-software base model, from every set that was run for it"""
     B = C.board()
-    base = tsm('head_dse_base')
+    bb = E.Bundle('head_dse_base')
+    names = levers or sorted({p.name[len('head_dse_'):].rsplit('_', 1)[0] for p in COL.glob('head_dse_*_tsm.json')})
     rows = {}
-    names = levers or sorted(n[len('head_dse_'):-len('_tsm.json')] for n in (p.name for p in COL.glob('head_dse_*_tsm.json')))
     for n in names:
         if n == 'base':
             continue
-        m = tsm(f'head_dse_{n}')
-        if not m or not base:
-            continue
+        bc = E.Bundle(f'head_dse_{n}', LEV.get(n, {}).get('cores', 3))
         f = mhz(n)
-        per = {p: m[p] / base[p] for p in m if p in base}
-        wall = {p: r * 100.0 / f for p, r in per.items()}
-        fam = {}
+        direct = {}
+        for pid in B:
+            c1, k1 = E.model_cycles(bc, pid, B)
+            c0, k0 = E.model_cycles(bb, pid, B)
+            if c1 and c0:
+                direct[pid] = (c1 / c0, k1)
+        by_fam_grp, by_fam = {}, {}
+        for pid, (r, k) in direct.items():
+            b = B[pid]
+            by_fam_grp.setdefault((b['family'], GROUP[b['tier']] if not b['xl'] else 'heavy'), []).append(r)
+            by_fam.setdefault(b['family'], []).append(r)
+        allr, kinds = {}, {}
+        for pid, b in B.items():
+            if pid in direct:
+                allr[pid] = direct[pid][0]; kinds[pid] = direct[pid][1]
+            else:
+                g = GROUP[b['tier']] if not b['xl'] else 'heavy'
+                x = by_fam_grp.get((b['family'], g)) or by_fam.get(b['family'])
+                allr[pid] = C.geo(x) if x else 1.0
+                kinds[pid] = 'family' if x else 'held'
+        wall = {p: r * 100.0 / f for p, r in allr.items()}
+        fam, tier = {}, {}
         for p, r in wall.items():
             fam.setdefault(B[p]['family'], []).append(r)
-        tier = {}
-        for p, r in wall.items():
             tier.setdefault(B[p]['tier'], []).append(r)
-        # 145-point effect with family inheritance for the points that were not run
-        famg = {k: C.geo(v) for k, v in fam.items()}
-        allw = []
-        for p, b in B.items():
-            if p in wall:
-                allw.append(wall[p])
-            else:
-                same = [r for q, r in wall.items() if B[q]['family'] == b['family']]
-                allw.append(C.geo(same) if same else 1.0)
-        rows[n] = dict(n=len(per), clock=f, cycles_geo=C.geo(list(per.values())), wall_geo=C.geo(list(wall.values())),
-                       eff145=1 / C.geo(allw), by_family={k: 1 / v for k, v in famg.items()},
-                       by_tier={k: 1 / C.geo(v) for k, v in tier.items()})
+        light = [wall[p] for p in wall if B[p]['tier'] in ('tiny', 'small', 'medium') and kinds[p] != 'family']
+        rows[n] = dict(n_direct=len(direct), kinds={k: sum(1 for v in kinds.values() if v == k) for k in set(kinds.values())}, clock=f,
+                       cycles_geo=C.geo(list(allr.values())), wall_geo=C.geo(list(wall.values())),
+                       eff145=1 / C.geo(list(wall.values())), eff_light_run=1 / C.geo(light) if light else None,
+                       by_family={k: 1 / C.geo(v) for k, v in fam.items()}, by_tier={k: 1 / C.geo(v) for k, v in tier.items()})
     return rows
 
 
@@ -88,7 +100,8 @@ def scenario(rows, kind, usable, with_sw=True):
     """145-point wall-time speed-up against the R41 baseline for one sensitivity scenario (kind low|central|high)"""
     out = []
     for r in rows.values():
-        fam_ok = usable.get(r['family'], True)
+        key = r['family'] + ('/fp32' if r['point'].split('/')[2].startswith('fp32') else '')
+        fam_ok = usable.get(key, usable.get(r['family'], True))
         sw = r['sw_ratio'] if with_sw else 1.0
         hw = r['hw_ratio']
         if kind == 'low':
@@ -130,10 +143,11 @@ def full(tags):
 def main():
     if sys.argv[1] == 'screen':
         rows = screen()
-        print('| lever | clock MHz | cycles effect (tsm77, >1 faster) | wall effect (tsm77) | 145-point wall effect (inherit) |')
-        print('|---|--:|--:|--:|--:|')
+        print('| lever | clock MHz | cycles effect (145, >1 faster) | wall effect (145) | wall effect, tiny/small/medium run points only | points run / inherited |')
+        print('|---|--:|--:|--:|--:|--:|')
         for n, r in sorted(rows.items(), key=lambda kv: -kv[1]['eff145']):
-            print(f'| {n} | {r["clock"]:.0f} | {1 / r["cycles_geo"]:.3f} | {1 / r["wall_geo"]:.3f} | {r["eff145"]:.3f} |')
+            k = r['kinds']
+            print(f'| {n} | {r["clock"]:.0f} | {1 / r["cycles_geo"]:.3f} | {r["eff145"]:.3f} | {r["eff_light_run"]:.3f} | {r["n_direct"]} / {k.get("family", 0) + k.get("held", 0)} |')
         Path(C.ROOT / 'evidence/r42/dse/screen.json').write_text(json.dumps(rows, indent=1))
     elif sys.argv[1] == 'full':
         full(sys.argv[2:])

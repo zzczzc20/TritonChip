@@ -1,0 +1,37 @@
+family                n dir/px/wave  geo m/b  med|e|  max|e|  in20  verdict
+add                   6       6/0/0    0.836   0.172   0.284     5  usable
+argmax                5       5/0/0    1.025   0.052   0.154     5  usable
+attention_decode      7       7/0/0    0.809   0.185   0.267     4  NOT USABLE
+attention_prefill     6       3/3/0    1.350   0.418   0.444     1  NOT USABLE
+bmm                   4       4/0/0    1.196   0.212   0.252     2  NOT USABLE
+conv2d                4       3/1/0    0.983   0.030   0.040     4  usable
+copy                  1       1/0/0    0.579   0.421   0.421     0  NOT USABLE
+cumsum                3       3/0/0    1.485   0.482   0.505     0  NOT USABLE
+embedding             6       4/2/0    1.297   0.290   0.335     0  NOT USABLE
+fp8_act_quant         2       2/0/0    0.806   0.194   0.197     2  usable
+fp8_layer_decode      1       1/0/0    0.846   0.154   0.154     1  usable
+fp8_linear           13       5/0/8    1.162   0.239   0.353     6  NOT USABLE
+gelu_tanh             4       4/0/0    0.991   0.019   0.072     4  usable
+gemv                  6       5/1/0    0.878   0.149   0.193     6  usable
+gpt2_block            4       3/1/0    1.057   0.086   0.116     4  usable
+layernorm             4       4/0/0    0.917   0.026   0.264     3  usable
+linear                6       3/3/0    1.029   0.076   0.158     6  usable
+llama_decode          5       4/1/0    0.859   0.175   0.213     4  usable
+llama_prefill         5       3/2/0    0.963   0.193   0.298     3  usable
+matmul                9       6/3/0    1.185   0.186   0.467     5  NOT USABLE
+mlp                   4       3/1/0    1.034   0.027   0.077     4  usable
+resnet_block          4       3/1/0    1.002   0.010   0.015     4  usable
+rmsnorm               5       5/0/0    0.888   0.121   0.185     5  usable
+rmsnorm_residual      1       1/0/0    1.069   0.069   0.069     1  usable
+rope                  5       5/0/0    0.560   0.484   0.524     0  NOT USABLE
+silu                  5       5/0/0    0.726   0.305   0.306     1  NOT USABLE
+softmax               6       6/0/0    0.994   0.042   0.138     6  usable
+swiglu                5       5/0/0    0.748   0.265   0.272     1  NOT USABLE
+transpose             5       4/1/0    0.514   0.455   0.594     0  NOT USABLE
+ALL modelled n=141 of 145  geo 0.956  median|err| 0.158  within20 87
+  tier tiny    n= 27 geo 0.995 median|err| 0.138
+  tier small   n= 25 geo 0.988 median|err| 0.114
+  tier medium  n= 25 geo 0.967 median|err| 0.096
+  tier large   n= 24 geo 0.903 median|err| 0.153
+  tier hbm     n= 12 geo 0.786 median|err| 0.202
+  tier xl      n= 28 geo 1.010 median|err| 0.240

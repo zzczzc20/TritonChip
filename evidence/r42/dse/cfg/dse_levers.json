@@ -199,6 +199,25 @@
   "cores": 3,
   "desc": "two core memory ports (LSU and tensor engine each get a port; tnca_mem_mux.v has one)"
  },
+ "memideal": {
+  "keys": {
+   "mshrs": "128",
+   "targets": "256",
+   "outlets": "32",
+   "active_outlets": "32",
+   "outstanding": "64",
+   "noc_stages": "1",
+   "hbm_latency_cycles": "1",
+   "tl_noc_eject_cycles": "1",
+   "tl_slice_hit_latency": "1",
+   "tl_slice_to_outlet_cycles": "1",
+   "tl_outlet_to_slice_cycles": "1",
+   "tl_hbm_write_latency_cycles": "1",
+   "tl_memory_lanes": "8"
+  },
+  "cores": 3,
+  "desc": "ceiling of all memory-side levers: zero-latency NoC, home, outlet and HBM (1 cycle each), 32 outlets, 8 lanes, 128 MSHR"
+ },
  "lsuf16": {
   "keys": {
    "lsu_fast_slots": "16"
@@ -381,6 +400,20 @@
   "cores": 3,
   "desc": "zero-cost taken branch and context switch"
  },
+ "pf4": {
+  "keys": {
+   "tl_prefetch_lines": "4"
+  },
+  "cores": 3,
+  "desc": "home-slice next-line prefetch: a read miss also fetches the next 3 lines (existing model key tl_prefetch_lines=4)"
+ },
+ "pf16": {
+  "keys": {
+   "tl_prefetch_lines": "16"
+  },
+  "cores": 3,
+  "desc": "home-slice next-line prefetch, degree 16"
+ },
  "sets64": {
   "keys": {
    "sets": "64"
@@ -401,5 +434,35 @@
   },
   "cores": 3,
   "desc": "NUCA slice 512 sets x 8 ways x 64 B = 256 KiB per slice (was 16 KiB)"
+ },
+ "k1": {
+  "keys": {
+   "nx": "3",
+   "ny": "2",
+   "outlets": "6",
+   "active_outlets": "6",
+   "clock_hz": "200000000",
+   "hbm_latency_cycles": "46",
+   "tl_hbm_write_latency_cycles": "46",
+   "tl_outlet_to_slice_cycles": "21"
+  },
+  "cores": 6,
+  "desc": "6 cores, 3x2 mesh, 1 home slice and 1 outlet per core | 200 MHz; HBM round trip and the 8 fitted outlet cycles fixed in ns; RTL pipeline depths fixed in cycles (timing closes)"
+ },
+ "k2": {
+  "keys": {
+   "nx": "3",
+   "ny": "2",
+   "outlets": "6",
+   "active_outlets": "6",
+   "clock_hz": "200000000",
+   "hbm_latency_cycles": "46",
+   "tl_hbm_write_latency_cycles": "46",
+   "tl_outlet_to_slice_cycles": "21",
+   "issue_vector_cycles": "1",
+   "issue_shuffle_cycles": "1"
+  },
+  "cores": 6,
+  "desc": "6 cores, 3x2 mesh, 1 home slice and 1 outlet per core | 200 MHz; HBM round trip and the 8 fitted outlet cycles fixed in ns; RTL pipeline depths fixed in cycles (timing closes) | single-cycle issue of vector-datapath instructions (the base model uses 2; mechanism in the RTL not identified: operand fetch width is the candidate)"
  }
 }

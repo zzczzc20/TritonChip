@@ -94,6 +94,12 @@ def levers(b):
     add('lane2', dict(tl_memory_lanes=2), 3, 'two NoC/home lanes (home engine and links duplicated)')
     add('port2', dict(core_mem_ports=2), 3, 'two core memory ports (LSU and tensor engine each get a port; tnca_mem_mux.v has one)')
     # --- core load/store ---
+    # ceiling of every memory-side lever together: the R41 `ideal` memory (tools/r41/g4_model_suite.py): 32 outlets, 8 lanes, every
+    # NoC/home/outlet/HBM latency at its minimum of 1 cycle, 128 MSHR, 64 outstanding lines
+    ideal, _ = K.base_variants()['ideal']
+    cal_, _ = K.base_variants()['cal']
+    add('memideal', {k: v for k, v in ideal.items() if cal_.get(k) != v and k not in ('lsu_slots', 'tl_slice_mreq_occupancy', 'tl_slice_wake_occupancy', 'tl_slice_writeback_occupancy')}, 3,
+        'ceiling of all memory-side levers: zero-latency NoC, home, outlet and HBM (1 cycle each), 32 outlets, 8 lanes, 128 MSHR')
     add('lsuf16', dict(lsu_fast_slots=16), 3, 'hybrid LSU: line-path landing slots 8->16')
     add('lsus4', dict(lsu_slow_units=4), 3, 'hybrid LSU: word-path units 2->4 (gather/scatter/scalar)')
     add('lsuf4', dict(lsu_fast_slots=4), 3, 'hybrid LSU: line-path landing slots 8->4 (cheaper LSU)')
@@ -122,7 +128,9 @@ def levers(b):
     add('hl', dict(issue_free_mode=5), 3, 'hardware loop: scalar/branch of EVERY innermost loop free and taken branch free (upper bound)')
     add('dual', dict(issue_free_mode=4), 3, '2-wide issue, upper bound: scalar/branch/special/predicate instructions never take the issue slot')
     add('br0', dict(branch_taken_cycles=0, park_refetch_cycles=1), 3, 'zero-cost taken branch and context switch')
-    # --- NUCA capacity ---
+    # --- NUCA capacity and prefetch ---
+    add('pf4', dict(tl_prefetch_lines=4), 3, 'home-slice next-line prefetch: a read miss also fetches the next 3 lines (existing model key tl_prefetch_lines=4)')
+    add('pf16', dict(tl_prefetch_lines=16), 3, 'home-slice next-line prefetch, degree 16')
     for sets in (64, 128, 512):
         add(f'sets{sets}', dict(sets=sets), 3, f'NUCA slice {sets} sets x 8 ways x 64 B = {sets * 8 * 64 // 1024} KiB per slice (was 16 KiB)')
     return L

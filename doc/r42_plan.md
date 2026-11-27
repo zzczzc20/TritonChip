@@ -443,3 +443,13 @@ the device is running`: between 11:35:29 and 11:38:08 UTC another user loaded im
 (check before every run, image identity in the run) refused to drive that image, as designed; no number from that run exists. The card now holds
 `31132a91...` and is idle. Records of the stopped attempt: `evidence/r42/board/xl-cand3/stop1_{records,logs}.tgz`. Next step per RECIPE.md: `board_ab.sh resume xl-cand3`
 (15 idle minutes, the author-approved run-3 image `791b8af2` is reloaded with `program.sh --check/--go`, completed runs reused, the failed one repeated).
+
+**2026-11-27. `R42-area` milestone M1 (worker report, branch `R42-area` 706538c0; OOC and synthesis numbers, domain: OOC xcu280 routed with registered I/O and ideal clock, not board).**
+fp32 FMA rebuilt (`rtl/core/tnca_fmax_fma`), bit-identical to the generated FMA: 13 M-vector stage miters, cycle-level miters at LAT 2 and 3 (9 classes x 1 M),
+MAC-lane miters, exact Fraction oracle (516,240 vectors), int<->float converter exhaustive (4.3e10 words), non-equivalent mutants all caught; default parameters keep the
+generated RTL. DSP48E2 adders (3 sum adders inferred on DSP): 1,396 LUT / 5 DSP against 1,351 LUT / 2 DSP for the existing XLS LAT-3 FMA, i.e. they save 50-90 LUT
+per FMA against the old LAT-2 FMA but are no smaller than the existing LAT-3 instance; the gain is the restructure (-6 % routed, -9 % in kernel-synthesis accounting).
+Tile 0 at the run-3 image parameters (synthesis): 253,898 -> 248,890 LUT (-2.0 %), converter lane 504 -> 418 LUT (-1.4k LUT per core). Arithmetic mapping is worth
+about 2-2.5 % of a core and does **not** change the cores per SLR (two per SLR needs a core of about 138k LUT, derived). Run-3 routed census: kernel-clock endpoints with slack
+< 1 ns: 18,548, < 2 ns: 89,603. Consequence for the plan: DSP mapping of the arithmetic is not the lever for 4x (neither area nor clock); the worker continues with tile/LSU
+OOC at 6.67 and 5 ns, the core-run2 regression with the area back end, and the report.

@@ -1,0 +1,6 @@
+ t41_mmadp (MAC_DP=1, cuts 0) PASS cycles=10664 issued=2030 hazard=1026 lsu=3509 wb=0 squash=206
+ t41_mmadp (MAC_DP=1, cuts 18) PASS cycles=10698 issued=2030 hazard=1026 lsu=3509 wb=0 squash=206
+ t41_mmadp (MAC_DP=1, cuts 29) PASS cycles=10732 issued=2030 hazard=1026 lsu=3509 wb=0 squash=206
+ t41_mmadp (MAC_DP=1, cuts 31) PASS cycles=10749 issued=2030 hazard=1026 lsu=3509 wb=0 squash=206
+ t41_mmadp (no MATRIX_DP: ILLEGAL_INSTRUCTION) PASS cycles=143 issued=20 hazard=5 lsu=95 wb=0 squash=1
+EXIT=0

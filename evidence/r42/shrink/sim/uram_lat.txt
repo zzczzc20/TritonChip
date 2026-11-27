@@ -1,0 +1,9 @@
+after edge 1 : dout = a5 00 00 00
+after edge 2 : dout = a5 a5 a5 00
+after edge 3 : dout = a5 a5 a5 a5
+after edge 4 : dout = a5 a5 a5 a5
+after edge 5 : dout = a5 a5 a5 a5
+after edge 6 : dout = a5 a5 a5 a5
+after edge 7 : dout = a5 a5 a5 a5
+after edge 8 : dout = a5 a5 a5 a5
+tb_uram_lat.v:39: $finish called at 490000 (1ps)

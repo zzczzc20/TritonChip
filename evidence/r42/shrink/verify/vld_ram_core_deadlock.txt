@@ -1,0 +1,20 @@
+[325000] rctx=0 pc=0000000000000060 maj=20 fn=10 dst=2/1
+[445000] rctx=0 pc=0000000000000068 maj=20 fn=10 dst=2/2
+[695000] rctx=0 pc=0000000000000070 maj=20 fn=10 dst=2/3
+cycles=3500 issued=15 hazard=3449 lsu=22 wb=0 squash=0
+FAIL: timeout after 3500 cycles
+
+  t00_scalar (run2)      PASS   cycles=586 issued=290 hazard=127 lsu=0 wb=0 squash=42
+  t00_scalar (run2, ooo mem) PASS   cycles=586 issued=290 hazard=127 lsu=0 wb=0 squash=42
+  t01_vector (run2)      PASS   cycles=1085 issued=492 hazard=239 lsu=0 wb=0 squash=62
+  t01_vector (run2, ooo mem) PASS   cycles=1085 issued=492 hazard=239 lsu=0 wb=0 squash=62
+  t02_mem (run2)         PASS   cycles=945 issued=353 hazard=362 lsu=56 wb=3 squash=40
+  t02_mem (run2, ooo mem) PASS   cycles=1296 issued=353 hazard=668 lsu=101 wb=0 squash=40
+
+FAILURE (kept): tnca_rf_bank VLD_RAM=1 (valid bits in the bank RAM, 64-cycle sweep after reset that refuses reads and writes) passes its unit miter
+(tb_vrf_miter, VLDB=1) but deadlocks the core: `make core-run2 R42_VRF_VLD_RAM=1` passes t00_scalar and t02_mem, t01_vector takes +56 cycles (1085 vs 1029),
+t03_fp (run2) stops after 15 issued instructions (hazard stall 3449 cycles, `FAIL: timeout after 3500 cycles`; default: 1431 issued, PASS, 3101 cycles).
+Cause: tnca_core requires the writeback (writer 0) of the banked VRF never to be refused (tnca_core.v:1143-1150: "Structurally never set now (the
+writeback is never refused)": FP and MUL results landing in a frozen cycle are dropped and their scoreboard bit never clears). A sweep that refuses writes
+violates that contract. A working variant needs the sweep to run while rst_n is low with the core's internal reset stretched until it is done (and the
+launch held), a system-level change not made here.

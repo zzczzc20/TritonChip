@@ -89,6 +89,8 @@ module tnca_core #(
     //   MTX_VRF_REG (R41 K8) register the banked VRF's matrix response.
     //               The matrix's valid handshake absorbs the extra cycle.
     parameter MTX_VRF_REG    = 0,
+    parameter VRF_XBAR       = 0,   // R42 shrink: tnca_vrf_banked XBAR / VLD_RAM (0 = the shipped RTL)
+    parameter VRF_VLD_RAM    = 0,
     //   LSU_INFLIGHT (R39-08) 2: two load/store units behind the one port
     //               (tnca_lsu_pair), so an access starts while the one ahead
     //               waits for memory; atomics and fences see one access at
@@ -1164,7 +1166,7 @@ module tnca_core #(
             .RCTX_W(RCTX_W), .PHYS_W(PHYS_W),
             .NUM_BANKS(4), .BANK_W(2), .READ_LATENCY(1),
             .NUM_PORTS(5), .ZERO_INVALID(1), .NUM_WRITERS(2),
-            .PHYS_IN(5'b00111)
+            .PHYS_IN(5'b00111), .XBAR(VRF_XBAR), .VLD_RAM(VRF_VLD_RAM)
         ) u_vrf (
             .clk(clk), .rst_n(rst_n), .clear(launch_valid), .vbase(vbase_q),
             .req_valid(rq_v), .req_rctx(rq_rctx), .req_idx(rq_idx),

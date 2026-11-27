@@ -69,7 +69,15 @@ module tnca_rf_bank #(
     parameter READ_LATENCY  = 1,   // 1 or 2
     parameter RDW_BYPASS    = 1,   // 1 = write-first, 0 = read-first
     parameter ZERO_INVALID  = 0,   // 1 = an unwritten lane reads zero
-    parameter DST_W         = 8    // width of the destination tag
+    parameter DST_W         = 8,   // width of the destination tag
+    // R42 shrink: 1 = also register the destination as a one-hot (rsel, bit p = the response is for port p, zero when there is none),
+    // so the response crossbar of tnca_vrf_banked selects on flops instead of decoding rdst per bit. 0 (default): rsel is 0 and unused.
+    parameter ONEHOT_SEL    = 0,
+    // R42 shrink: 1 = the valid bit of every (row, lane) lives in the bank RAM next to the lane's data (ELEN+1 bits per lane) instead
+    // of in LANES*DEPTH flip-flops with a write decoder and a read mux. A RAM cannot be reset, so after rst_n a sweep clears the
+    // valid bits of one row per cycle (DEPTH cycles); during it the bank accepts no read (rd_accept 0) and no write (wr_ok 0).
+    // 0 (default): the flip-flop valid array, wr_ok 1.
+    parameter VLD_RAM       = 0
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -98,14 +106,20 @@ module tnca_rf_bank #(
     // offered this cycle would be taken.
     input  wire                     rsp_ready,
     output wire                     rd_accept,
+    output wire                     wr_ok,
     output wire                     rvalid,
     output wire [DST_W-1:0]         rdst,
+    output wire [7:0]               rsel,
     output wire [LANES*ELEN-1:0]    rdata
 );
 
     localparam WIDTH = LANES * ELEN;
 
     reg [WIDTH-1:0] mem [0:DEPTH-1];
+    reg [LANES*(ELEN+1)-1:0] memv [0:DEPTH-1];       // VLD_RAM 1: {valid, data} per lane
+    reg                      sweeping;
+    reg [ADDR_W-1:0]         sw_cnt;
+    wire [LANES-1:0]         sw_mask = {LANES{1'b1}};
 
     // One valid bit per lane per row. Reset clears these and not the array.
     reg [LANES-1:0] vld [0:DEPTH-1];
@@ -130,6 +144,29 @@ module tnca_rf_bank #(
         end
     end
 
+    // VLD_RAM 1: write port (a sweep write clears the valid bit of every lane of one row; its data bits are don't-care)
+    wire              v_we = sweeping ? 1'b1 : we;
+    wire [ADDR_W-1:0] v_wa = sweeping ? sw_cnt : waddr;
+    wire [LANES-1:0]  v_wm = sweeping ? sw_mask : wmask;
+    always @(posedge clk) begin
+        if (VLD_RAM != 0 && v_we) begin
+            for (li = 0; li < LANES; li = li + 1)
+                if (v_wm[li])
+                    memv[v_wa][li*(ELEN+1) +: ELEN+1] <= {!sweeping, wdata[li*ELEN +: ELEN]};
+        end
+    end
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            sweeping <= 1'b1;
+            sw_cnt   <= {ADDR_W{1'b0}};
+        end else if (sweeping) begin
+            if (sw_cnt == DEPTH - 1) sweeping <= 1'b0;
+            sw_cnt <= sw_cnt + 1'b1;
+        end
+    end
+    wire swp = (VLD_RAM != 0) && sweeping;
+    assign wr_ok = !swp;
+
     // ---- the array read ---------------------------------------------------
     //
     // What is registered is the RAW array read and nothing else. The
@@ -143,12 +180,14 @@ module tnca_rf_bank #(
     // what R3V2-SYN-02 refuses. Registering `mem[raddr]` directly lets
     // memory_dff make it a clocked read port, which is what an SRAM has.
     wire rdw_hit = RDW_BYPASS && re && we && (raddr == waddr);
+    reg [LANES*(ELEN+1)-1:0] s1_word;
 
     reg [WIDTH-1:0] s1_raw;
     reg [LANES-1:0] s1_vld;
     reg [LANES-1:0] s1_byp_mask;
     reg [WIDTH-1:0] s1_byp_data;
     reg [DST_W-1:0] s1_dst;
+    reg [7:0]       s1_sel;
     reg             s1_valid;
 
     wire s1_free = !s1_valid || rsp_ready;
@@ -156,29 +195,42 @@ module tnca_rf_bank #(
     always @(posedge clk) begin
         if (!rst_n) begin
             s1_valid <= 1'b0;
+            s1_sel   <= 8'd0;
         end else if (s1_free) begin
             s1_valid    <= re;
-            s1_raw      <= mem[raddr];
-            s1_vld      <= vld[raddr];
+            if (VLD_RAM == 0) begin
+                s1_raw      <= mem[raddr];
+                s1_vld      <= vld[raddr];
+            end else begin
+                s1_word     <= memv[raddr];
+            end
             // A lane the write names is valid from this cycle whether or
             // not its valid bit has been written back yet: the bypass
             // carries the data, so it has to carry the validity too.
             s1_byp_mask <= rdw_hit ? wmask : {LANES{1'b0}};
             s1_byp_data <= wdata;
             s1_dst      <= dst;
+            s1_sel      <= (ONEHOT_SEL != 0 && re) ? (8'd1 << dst[2:0]) : 8'd0;
         end
     end
 
     // ---- the merge, on the output side -----------------------------------
+    wire [WIDTH-1:0] s1_rawx;
+    wire [LANES-1:0] s1_vldx;
+    genvar gx;
+    generate for (gx = 0; gx < LANES; gx = gx + 1) begin : g_vsplit
+        assign s1_rawx[gx*ELEN +: ELEN] = (VLD_RAM == 0) ? s1_raw[gx*ELEN +: ELEN] : s1_word[gx*(ELEN+1) +: ELEN];
+        assign s1_vldx[gx]              = (VLD_RAM == 0) ? s1_vld[gx]              : s1_word[gx*(ELEN+1) + ELEN];
+    end endgenerate
     wire [WIDTH-1:0] s1_data;
     genvar g;
     generate
         for (g = 0; g < LANES; g = g + 1) begin : g_merge
             wire        byp  = s1_byp_mask[g];
-            wire        live = s1_vld[g] || byp;
+            wire        live = s1_vldx[g] || byp;
             wire [ELEN-1:0] from_mem =
                 (ZERO_INVALID && !live) ? {ELEN{1'b0}}
-                                        : s1_raw[g*ELEN +: ELEN];
+                                        : s1_rawx[g*ELEN +: ELEN];
             assign s1_data[g*ELEN +: ELEN] =
                 byp ? s1_byp_data[g*ELEN +: ELEN] : from_mem;
         end
@@ -187,22 +239,26 @@ module tnca_rf_bank #(
     // ---- stage 2, when the configuration asks for it ---------------------
     reg [WIDTH-1:0] s2_data;
     reg [DST_W-1:0] s2_dst;
+    reg [7:0]       s2_sel;
     reg             s2_valid;
     wire s2_free = !s2_valid || rsp_ready;
     always @(posedge clk) begin
         if (!rst_n) begin
             s2_valid <= 1'b0;
+            s2_sel   <= 8'd0;
         end else if (s2_free) begin
             s2_valid <= s1_valid;
             s2_data  <= s1_data;
             s2_dst   <= s1_dst;
+            s2_sel   <= s1_sel;
         end
     end
 
     assign rvalid    = (READ_LATENCY == 2) ? s2_valid : s1_valid;
     assign rdata     = (READ_LATENCY == 2) ? s2_data  : s1_data;
     assign rdst      = (READ_LATENCY == 2) ? s2_dst   : s1_dst;
-    assign rd_accept = (READ_LATENCY == 2) ? (s1_free && s2_free) : s1_free;
+    assign rsel      = (READ_LATENCY == 2) ? s2_sel   : s1_sel;
+    assign rd_accept = ((READ_LATENCY == 2) ? (s1_free && s2_free) : s1_free) && !swp;
 
 `ifndef SYNTHESIS
     initial begin

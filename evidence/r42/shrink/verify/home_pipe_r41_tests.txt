@@ -1,0 +1,6 @@
+R41 home-pipe benches (tb/nuca/tb_home_pipe.v byte-shadow test, tb_home_pipe_special.v) on tnca_home_pipe with the R42-shrink parameters, GB10, iverilog (sim):
+compile: iverilog -g2012 -I rtl/common -s tb_home_pipe tb/nuca/tb_home_pipe.v tb/common/tnca_dram_model.v rtl/nuca/tnca_home_pipe.v -P tb_home_pipe.FULL_LINE_TAG=1 -P ...LINE_WRITE_NOFILL=1 -P ...FILL_CHAIN=1 -P ...MAINTENANCE=1 -P ...DATA_RAM=<d> -P ...AUX_RAM=<a>
+tb_home_pipe (default service mode):            DATA_RAM=0 AUX_RAM=0 PASS, finish 1776696000 ps; DATA_RAM=1 AUX_RAM=1 PASS, same finish time; DATA_RAM=2 AUX_RAM=2 PASS, same finish time (evict=17180 in all three)
+tb_home_pipe_special (nofill=1, chain=1):       all three PASS (atomic_cases=288 transactions=1456 MMIO_words=8), same finish time 177900
+tb_home_pipe SERVICE_MODE=3:                    DATA_RAM=0/AUX_RAM=0 and 2/2: PASS, same finish time 401596000
+tb_home_pipe SERVICE_MODE=1 and 2:              FAIL in the default build too ("only 0 dirty writebacks, wanted 1": these modes need other bench parameters than the image set used here), same finish times (204086000, 2353236000) with DATA_RAM=2 AUX_RAM=2

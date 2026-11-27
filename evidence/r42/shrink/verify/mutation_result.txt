@@ -1,0 +1,20 @@
+hp_no_bypass                 KILLED MISMATCH at cycle 64055 (SEED 1 DR 1 AR 0)
+hp_read_ignores_hold         KILLED MISMATCH at cycle 85 (SEED 1 DR 1 AR 0)
+hp_read_always_victim        KILLED MISMATCH at cycle 30 (SEED 1 DR 1 AR 0)
+hp_maint_read_index          KILLED MISMATCH at cycle 1339 (SEED 1 DR 1 AR 0)
+hp_maint_enable              SURVIVED
+hp_aux_tgw_no_advance        KILLED MISMATCH at cycle 36 (SEED 1 DR 0 AR 1)
+hp_aux_msl_no_chain          KILLED MISMATCH at cycle 25 (SEED 1 DR 0 AR 1)
+hp_aux_tgw_addr_chain        KILLED MISMATCH at cycle 36 (SEED 1 DR 0 AR 1)
+hp_aux_tgw_addr_head         KILLED MISMATCH at cycle 79075 (SEED 1 DR 0 AR 1)
+hp_aux_msl_addr              KILLED MISMATCH at cycle 25 (SEED 1 DR 0 AR 1)
+hp_aux_write_second          KILLED MISMATCH at cycle 36 (SEED 1 DR 0 AR 1)
+vrf_xbar_bank_swap           KILLED MISMATCH cycle 10: acc 00011/00011 wa 00/00 rv 10011/10011
+vrf_xbar_mux_idx             KILLED MISMATCH cycle 10: acc 00011/00011 wa 00/00 rv 10011/10011
+vrf_sel_not_cleared          KILLED MISMATCH cycle 1: acc 00000/00000 wa 00/00 rv 00000/00001
+vrf_sweep_short              KILLED MISMATCH cycle 19: acc 11000/11000 wa 01/01 rv 00101/00101
+vrf_vld_set_always           SURVIVED
+vrf_write_during_sweep       SURVIVED
+vrf_read_during_sweep        SURVIVED
+# 17 mutants: 14 killed, 3 survivors listed here. hp_maint_enable is an equivalent mutant (dr_en without the (m_state == M_WAIT) term is still 1 in M_WAIT because m_state != M_SCAN and S3 is idle).
+# vrf_vld_set_always / vrf_write_during_sweep / vrf_read_during_sweep survive because tb_vrf_miter drives no traffic and zero write data during the post-reset sweep (VLD_RAM is not integrated, see vld_ram_core_deadlock.txt); a weakness of the bench, not hidden.

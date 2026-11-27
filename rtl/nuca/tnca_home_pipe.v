@@ -72,6 +72,13 @@ module tnca_home_pipe #(
     // finishes one (HOME_LINE_PIPE 2), instead of idling a cycle between
     // them, so single-target read misses fill at one line a cycle.
     parameter FILL_CHAIN = 0,
+    // R42 shrink: where the line data array lives. 0 (default): distributed RAM with an asynchronous read, as before.
+    // 1: block RAM; 2: UltraRAM. Both read synchronously: S2 presents the index of the line S3 will use and the data is
+    // the output register one cycle later, exactly when the asynchronous read would have delivered it, so no cycle is added.
+    parameter DATA_RAM = 0,
+    // The MSHR line buffers (ms_line) and the target write data (tg_wdata) likewise: 0 distributed RAM, 1 block RAM, 2 UltraRAM.
+    // The fill unit reads them synchronously: the address is the value being loaded into fu_ms / fu_t (known a cycle early).
+    parameter AUX_RAM = 0,
     parameter [63:0] TMU_BASE = 64'h0000_0000_7FFF_0000
 ) (
     input  wire                     clk,
@@ -201,7 +208,10 @@ module tnca_home_pipe #(
     //==========================================================================
     // Arrays: data (one read, one write port), tags per way (registered read)
     //==========================================================================
-    (* ram_style = "distributed" *) reg [LINE_BITS-1:0] data_mem [0:LINES-1];
+    (* ram_style = "distributed" *) reg [LINE_BITS-1:0] data_mem [0:LINES-1];   // DATA_RAM 0
+    (* ram_style = "block" *)       reg [LINE_BITS-1:0] data_mem_blk [0:LINES-1];  // DATA_RAM 1 (never touched when 0)
+    (* ram_style = "ultra" *)       reg [LINE_BITS-1:0] data_mem_uram [0:LINES-1]; // DATA_RAM 2 (never touched when 0)
+    wire [LINE_BITS-1:0] dline_q;                                                // synchronous read result (DATA_RAM != 0)
     reg [LINES-1:0]  v_bits, d_bits, cl_bits;   // valid, dirty, claimed by an MSHR
     reg [WAY_W-1:0]  victim_ptr [0:SETS-1];
 
@@ -262,7 +272,9 @@ module tnca_home_pipe #(
     reg [WAY_W-1:0]    ms_way   [0:MSHR_N-1];
     reg [TARGET_W-1:0] ms_head  [0:MSHR_N-1];
     reg [TARGET_W-1:0] ms_tail  [0:MSHR_N-1];
-    (* ram_style = "distributed" *) reg [LINE_BITS-1:0] ms_line [0:MSHR_N-1];
+    (* ram_style = "distributed" *) reg [LINE_BITS-1:0] ms_line [0:MSHR_N-1];            // AUX_RAM 0
+    (* ram_style = "block" *)       reg [LINE_BITS-1:0] ms_line_blk [0:MSHR_N-1];         // AUX_RAM 1
+    (* ram_style = "ultra" *)       reg [LINE_BITS-1:0] ms_line_uram [0:MSHR_N-1];        // AUX_RAM 2
 
     reg [TARGET_N-1:0]   tg_v;
     reg [TARGET_W-1:0]   tg_next  [0:TARGET_N-1];
@@ -273,7 +285,10 @@ module tnca_home_pipe #(
     reg [3:0]            tg_aop   [0:TARGET_N-1];
     reg [63:0]           tg_cmp   [0:TARGET_N-1];
     reg [WORD_BYTES-1:0] tg_be    [0:TARGET_N-1];
-    (* ram_style = "distributed" *) reg [WORD_BITS-1:0] tg_wdata [0:TARGET_N-1];
+    (* ram_style = "distributed" *) reg [WORD_BITS-1:0] tg_wdata [0:TARGET_N-1];          // AUX_RAM 0
+    (* ram_style = "block" *)       reg [WORD_BITS-1:0] tg_wdata_blk [0:TARGET_N-1];       // AUX_RAM 1
+    (* ram_style = "ultra" *)       reg [WORD_BITS-1:0] tg_wdata_uram [0:TARGET_N-1];      // AUX_RAM 2
+    reg [LINE_BITS-1:0] msl_q, tgw_q;                                                      // synchronous read results (AUX_RAM != 0)
 
     reg [MSHR_W-1:0] ms_free_idx; reg ms_has_free;
     reg [TARGET_W-1:0] tg_free_idx; reg tg_has_free;
@@ -415,7 +430,12 @@ module tnca_home_pipe #(
     reg                  s3_wb;          // the victim is dirty: queue its writeback
     reg [ADDR_W-1:0]     s3_wb_addr;
     reg [11:0]           s3_off;         // TMU register offset
-    wire [LINE_BITS-1:0] s3_line = data_mem[s3_index];
+    wire [LINE_BITS-1:0] s3_line;
+    generate if (DATA_RAM == 0) begin : g_s3_line_lut
+        assign s3_line = data_mem[s3_index];
+    end else begin : g_s3_line_ram
+        assign s3_line = dline_q;
+    end endgenerate
     wire [WORD_BITS-1:0] s3_amo_res = cache_amo_new(s3_aop, s3_be, s3_line, s3_wdata, {448'd0, s3_cmp});
     wire s3_push = s3_v && (s3_kind != K_ALLOC);
     wire s3_dw   = s3_v && (s3_kind == K_HIT_WR || s3_kind == K_INSTALL ||
@@ -423,6 +443,35 @@ module tnca_home_pipe #(
     wire s3_hold = s3_v && ((s3_push && rsq_full) || (s3_wb && wbq_full) ||
                             (s3_kind == K_MMIO_WR && !tmu_wr_ready));
     wire s3_go   = s3_v && !s3_hold;
+
+    //==========================================================================
+    // DATA_RAM 1/2: the synchronous read of the data array. The index S3 will use is known in S2 (the hit way, or the victim
+    // way for a writeback), so the read is issued there and the line is in the output register when S3 starts; it is held
+    // while S3 holds (no enable). The maintenance scan reads in M_WAIT and uses the line in M_SCAN, with the tag. Ordering
+    // (a request is live until S2 acts; the arbiter starts none behind an older request of the same line; a fill writes only
+    // a claimed, invalid line) means no write to the line read can fall in the cycle of its read: tb_home_pipe_miter checks it.
+    //==========================================================================
+    wire [LINE_W-1:0] dr_index = (m_state == M_WAIT) ? m_index : (s2_hit ? s2_hit_index : s2_vic_index);
+    wire              dr_en    = (m_state == M_WAIT) || (m_state != M_SCAN && !s3_hold);
+    // The RAM read is a plain registered read (so that the tool can place the array in block RAM / UltraRAM). The write of the cycle
+    // is bypassed AFTER the RAM output: a victim line S2 reads in the very cycle S3 merges a store into it (another request of the
+    // same set, so the arbiter's same-line rule does not apply) has to return the merged line, as the asynchronous read in S3 would
+    // one cycle later. dbyp_v / dbyp_line register that case (512 flip-flops and a 2:1 mux per bit).
+    reg  [LINE_BITS-1:0] dbyp_line;
+    reg                  dbyp_v;
+    wire [LINE_BITS-1:0] dline_ram_q;
+    generate if (DATA_RAM == 1) begin : g_dr_blk
+        reg [LINE_BITS-1:0] q;
+        always @(posedge clk) if (dr_en) q <= data_mem_blk[dr_index];
+        assign dline_ram_q = q;
+    end else if (DATA_RAM == 2) begin : g_dr_uram
+        reg [LINE_BITS-1:0] q;
+        always @(posedge clk) if (dr_en) q <= data_mem_uram[dr_index];
+        assign dline_ram_q = q;
+    end else begin : g_dr_none
+        assign dline_ram_q = {LINE_BITS{1'b0}};
+    end endgenerate
+    assign dline_q = dbyp_v ? dbyp_line : dline_ram_q;
 
     //==========================================================================
     // Fill unit: one target of one filled MSHR per cycle
@@ -449,20 +498,42 @@ module tnca_home_pipe #(
             end
     end
     // the line the current target sees: the returned line, or the running merge
-    wire [LINE_BITS-1:0] fu_cur  = fu_first ? ms_line[fu_ms] : fu_line;
+    wire [LINE_BITS-1:0] fu_msl  = (AUX_RAM == 0) ? ms_line[fu_ms] : msl_q;
+    wire [WORD_BITS-1:0] fu_tgw  = (AUX_RAM == 0) ? tg_wdata[fu_tc] : tgw_q;
+    wire [LINE_BITS-1:0] fu_cur  = fu_first ? fu_msl : fu_line;
     wire [TARGET_W-1:0]  fu_tc   = fu_t;
     wire fu_last = (fu_tc == ms_tail[fu_ms]);
     wire [WORD_BITS-1:0] fu_amo_res = cache_amo_new(tg_aop[fu_tc], tg_be[fu_tc], fu_cur,
-                                                    tg_wdata[fu_tc], {448'd0, tg_cmp[fu_tc]});
+                                                    fu_tgw, {448'd0, tg_cmp[fu_tc]});
     wire [LINE_BITS-1:0] fu_next =
         tg_amo[fu_tc] ? ((tg_aop[fu_tc] != `TNCA_AOP_LD) ? merge(fu_cur, fu_amo_res, tg_be[fu_tc]) : fu_cur) :
-        tg_we[fu_tc]  ? merge(fu_cur, tg_wdata[fu_tc], tg_be[fu_tc]) : fu_cur;
+        tg_we[fu_tc]  ? merge(fu_cur, fu_tgw, tg_be[fu_tc]) : fu_cur;
     wire fu_writes = (tg_amo[fu_tc] && tg_aop[fu_tc] != `TNCA_AOP_LD) || (tg_we[fu_tc] && !tg_amo[fu_tc]);
     // A step pushes one response; the last also writes the data array. S3
     // has both first.
     // Nor may it overwrite a way whose victim S3 has still to write back.
     wire fu_step = fu_v && !rsq_full && !s3_push && !(fu_last && s3_dw) &&
                    !(fu_last && s3_v && s3_wb && s3_index == ms_set[fu_ms]*WAYS + ms_way[fu_ms]);
+
+    // AUX_RAM 1/2: the fill unit's synchronous reads. The line buffer and the target data of the entry the fill unit is about to
+    // work on are read at the edge that loads fu_ms / fu_t (the address is the value being loaded: the next filled MSHR, the next
+    // target of the list, or the list head), so the data is in the output register in the first cycle of that entry, as the
+    // asynchronous read would give it; the registers hold while the unit stalls (no enable).
+    wire [MSHR_W-1:0]   msl_addr = fu_v ? fill_next_pick : fill_pick;
+    wire                msl_en   = !fu_v || (fu_step && fu_last);
+    wire [TARGET_W-1:0] tgw_addr = !fu_v ? ms_head[fill_pick] : fu_last ? ms_head[fill_next_pick] : tg_next[fu_tc];
+    wire                tgw_en   = !fu_v || fu_step;
+    generate if (AUX_RAM == 1) begin : g_aux_blk
+        always @(posedge clk) begin
+            if (msl_en) msl_q <= ms_line_blk[msl_addr];
+            if (tgw_en) tgw_q <= tg_wdata_blk[tgw_addr];
+        end
+    end else if (AUX_RAM == 2) begin : g_aux_uram
+        always @(posedge clk) begin
+            if (msl_en) msl_q <= ms_line_uram[msl_addr];
+            if (tgw_en) tgw_q <= tg_wdata_uram[tgw_addr];
+        end
+    end endgenerate
 
     //==========================================================================
     // Memory requests: queued writebacks first, then MSHR reads that no queued
@@ -571,17 +642,22 @@ module tnca_home_pipe #(
     //==========================================================================
     reg push; reg [SRC_W-1:0] push_src; reg [TAG_W-1:0] push_tag; reg [WORD_BITS-1:0] push_data;
     reg dw_en; reg [LINE_W-1:0] dw_index; reg [LINE_BITS-1:0] dw_line;
+    reg tgw_we;
     reg wbq_push; reg [ADDR_W-1:0] wbq_push_addr; reg [LINE_BITS-1:0] wbq_push_data;
     reg free_resources;
 
     always @(posedge clk)
-        if (mem_rsp_valid) ms_line[mem_rsp_tag] <= mem_rsp_rdata;
+        if (mem_rsp_valid) begin
+            if (AUX_RAM == 0)      ms_line[mem_rsp_tag]      <= mem_rsp_rdata;
+            else if (AUX_RAM == 1) ms_line_blk[mem_rsp_tag]  <= mem_rsp_rdata;
+            else                   ms_line_uram[mem_rsp_tag] <= mem_rsp_rdata;
+        end
 
     always @(posedge clk) begin
         if (!rst_n) begin
             rq_v <= 0; rq_blocked <= 0; rq_busy <= 0;
             for (i = 0; i < RQ_N; i = i + 1) older[i] <= 0;
-            v_bits <= 0; d_bits <= 0; cl_bits <= 0;
+            v_bits <= 0; d_bits <= 0; cl_bits <= 0; dbyp_v <= 1'b0;
             for (i = 0; i < SETS; i = i + 1) victim_ptr[i] <= 0;
             for (i = 0; i < MSHR_N; i = i + 1) ms_state[i] <= MS_FREE;
             tg_v <= 0; wbq_v <= 0; wbq_rd <= 0; wbq_wr <= 0; wbq_cnt <= 0;
@@ -594,6 +670,7 @@ module tnca_home_pipe #(
         end else begin
             push = 0; push_src = 0; push_tag = 0; push_data = 0;
             dw_en = 0; dw_index = 0; dw_line = 0;
+            tgw_we = 0;
             wbq_push = 0; wbq_push_addr = 0; wbq_push_data = 0;
             free_resources = 0;
             maint_done <= 1'b0;
@@ -668,7 +745,7 @@ module tnca_home_pipe #(
                     tg_v[tg_free_idx] <= 1'b1; tg_src[tg_free_idx] <= s2_src; tg_tag[tg_free_idx] <= s2_tag;
                     tg_we[tg_free_idx] <= s2_we; tg_amo[tg_free_idx] <= s2_amo; tg_aop[tg_free_idx] <= s2_aop;
                     tg_cmp[tg_free_idx] <= s2_cmp[63:0]; tg_be[tg_free_idx] <= s2_be;
-                    tg_wdata[tg_free_idx] <= s2_wdata;
+                    if (AUX_RAM == 0) tg_wdata[tg_free_idx] <= s2_wdata; else tgw_we = 1;
                     tg_next[ms_tail[s2_ms_id]] <= tg_free_idx;
                     ms_tail[s2_ms_id] <= tg_free_idx;
                 end else if (s2_kind_hit) begin
@@ -696,7 +773,7 @@ module tnca_home_pipe #(
                         tg_v[tg_free_idx] <= 1'b1; tg_src[tg_free_idx] <= s2_src; tg_tag[tg_free_idx] <= s2_tag;
                         tg_we[tg_free_idx] <= s2_we; tg_amo[tg_free_idx] <= s2_amo; tg_aop[tg_free_idx] <= s2_aop;
                         tg_cmp[tg_free_idx] <= s2_cmp[63:0]; tg_be[tg_free_idx] <= s2_be;
-                        tg_wdata[tg_free_idx] <= s2_wdata;
+                        if (AUX_RAM == 0) tg_wdata[tg_free_idx] <= s2_wdata; else tgw_we = 1;
                     end
                 end
             end
@@ -754,7 +831,7 @@ module tnca_home_pipe #(
                 end else begin
                     if (v_bits[m_index] && m_overlap) begin
                         if (d_bits[m_index]) begin
-                            wbq_push = 1; wbq_push_addr = m_address; wbq_push_data = data_mem[m_index];
+                            wbq_push = 1; wbq_push_addr = m_address; wbq_push_data = (DATA_RAM == 0) ? data_mem[m_index] : dline_q;
                         end
                         v_bits[m_index] <= 1'b0; d_bits[m_index] <= 1'b0;
                     end
@@ -780,7 +857,21 @@ module tnca_home_pipe #(
             endcase
 
             // ---- data array write port (S3 or the fill unit, never both) ----
-            if (dw_en) data_mem[dw_index] <= dw_line;
+            if (dw_en) begin
+                if (DATA_RAM == 0)      data_mem[dw_index]      <= dw_line;
+                else if (DATA_RAM == 1) data_mem_blk[dw_index]  <= dw_line;
+                else                    data_mem_uram[dw_index] <= dw_line;
+            end
+            // ---- AUX_RAM 1/2: the target write data array has one write port (a merge and an allocation never coincide) ----
+            if (tgw_we) begin
+                if (AUX_RAM == 1) tg_wdata_blk[tg_free_idx]  <= s2_wdata;
+                else              tg_wdata_uram[tg_free_idx] <= s2_wdata;
+            end
+            // ---- DATA_RAM 1/2: the write of this cycle, kept for the line the RAM read returns at the same edge ----
+            if (DATA_RAM != 0 && dr_en) begin
+                dbyp_v    <= dw_en && (dw_index == dr_index);
+                dbyp_line <= dw_line;
+            end
 
             // ---- response queue ----
             if (push) begin

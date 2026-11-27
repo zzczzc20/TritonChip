@@ -414,3 +414,14 @@ about it is stated with each result.
   single-core roofline of the spec at the same time (today 4 of 134 points are at or above 1, 24 at or above 0.5, 22 below 0.1). Share of the
   remaining sum of ln(1/eta): fp8_linear 9.6 %, attention_decode 9.2 %, attention_prefill 8.1 %, conv2d 6.5 %, resnet_block 6.3 %, softmax 6.1 %,
   rope 5.6 %, argmax 4.1 %, matmul 4.1 %, llama_decode 3.9 %.
+
+**2026-11-27. Iterative hardware design toward the 4x expectation (author, chat: "当然，你要达到4x目标需要迭代设计。剩余3次是完整链接预算，但你可以进行无数次ooc综合，我看不到有什么不够的").**
+Budget as stated by the author: 3 full links remain (5 in total for Stage 2, 2 used); out-of-context (OOC) synthesis is not limited. A card load of a new
+image still waits for the author's approval of that image (SERVERS.md rule), asked for when a link has passed its gates. Plan, model first:
+1. `R42-img` (running): LINE_HALF + MAC_F32 + MTX_PIPE as the first image candidate (link 1 at the earliest after its gates).
+2. Design-space exploration on the calibrated TLM (`R42-dse`): which physical levers (core count, clock with memory latency scaled in cycles,
+   LSU/SFU/VRF width, outstanding requests, line path) move the 145-point wall-time geometric mean, checked against all board records first.
+3. Area and timing iterations by OOC (`R42-area`): DSP-mapped fp32 FMA and matrix lanes (bit-exact to the XLS reference), what bounds the clock in
+   the routed run-3 reports, per-core LUT/DSP, and the number of cores each SLR then holds.
+4. Images 2 and 3 are built from what steps 2 and 3 support; each is judged by the same board yardstick (113 + xl, cycles and wall time reported
+   separately).

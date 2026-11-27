@@ -1,0 +1,13 @@
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+   -P tb_tnca_core.HAS_TENSOR_XPOSE=1 \
+   -o sim/build/tb_core_xpose.vvp tb/core/tb_tnca_core.v
+iverilog -g2005 -I rtl/common -y rtl/core -y rtl/common -y rtl/gen -y tb/common \
+   -P tb_tnca_core.HAS_TENSOR_XPOSE=2 \
+   -o sim/build/tb_core_xpose8.vvp tb/core/tb_tnca_core.v
+  t30_xpose (x8)         PASS   cycles=3757 issued=1641 hazard=693 lsu=0 wb=0 squash=228
+  t32_xpose_badsize (x8) PASS   cycles=115 issued=18 hazard=7 lsu=0 wb=0 squash=1
+  t33_xpose8             PASS   cycles=4213 issued=1699 hazard=714 lsu=0 wb=0 squash=231
+  t33_xpose8 (no xpose)  PASS   cycles=136 issued=23 hazard=7 lsu=0 wb=0 squash=1
+  t34_xpose8_old         PASS   cycles=115 issued=18 hazard=7 lsu=0 wb=0 squash=1
+  t35_xpose8_badrows     PASS   cycles=115 issued=18 hazard=7 lsu=0 wb=0 squash=1
+  t36_xpose8_badcol      PASS   cycles=115 issued=18 hazard=7 lsu=0 wb=0 squash=1

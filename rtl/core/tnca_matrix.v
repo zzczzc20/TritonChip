@@ -79,6 +79,9 @@ module tnca_matrix #(
     // for a vector-file read of the register holding its one A element:
     // measured, 551 cycles for an FP16 K16 command, of which the 256 MACs
     // are under half.
+    // R42 lineelig: 2 = a buffer of sixteen registers, which also takes the FP16/BF16
+    // K32 fragment (16 registers) and the FP8 K64 fragment: every format and K but
+    // FP16/BF16 K64. 1 is as it was.
     parameter ABUF     = 0
 ) (
     input  wire                     clk,
@@ -176,7 +179,9 @@ module tnca_matrix #(
                          (r_k == `TNCA_MMA_K32) ? 7'd32 : 7'd64;
 
     // ABUF: the A fragment, 16 x k_limit elements, in at most 8 registers.
-    reg  [VLEN*ELEN-1:0] abuf [0:7];
+    localparam ABUF_N = (ABUF == 2) ? 16 : 8;      // registers in the buffer
+    localparam ABUF_IW = (ABUF == 2) ? 4 : 3;      // its index bits
+    reg  [VLEN*ELEN-1:0] abuf [0:ABUF_N-1];
     reg  [3:0]           la;          // the A register being read
     reg                  use_abuf;    // this command sweeps out of abuf
 
@@ -263,7 +268,7 @@ module tnca_matrix #(
     endgenerate
 
     // A element for this cycle, right-aligned in 32 bits.
-    wire [2:0]           a_bi   = elem8 ? a_flat[8:6] : a_flat[7:5];
+    wire [ABUF_IW-1:0]   a_bi   = elem8 ? a_flat[6 +: ABUF_IW] : a_flat[5 +: ABUF_IW];
     wire [VLEN*ELEN-1:0] a_word = use_abuf ? abuf[a_bi] : vrf_data;
     // m.mma.dp: the G consecutive elements A[m][k..k+G-1] as one lane word --
     // 16-bit elements are one aligned 32-bit word; four E4M3 bytes likewise;
@@ -497,7 +502,8 @@ module tnca_matrix #(
                     endcase
                     // r_k and r_dt are not latched yet: decide from the command.
                     if (cmd_op == 2'd1 && ABUF != 0 &&
-                        (cmd_dt[1] ? (cmd_k != `TNCA_MMA_K64) : (cmd_k == `TNCA_MMA_K16))) begin
+                        (cmd_dt[1] ? ((cmd_k != `TNCA_MMA_K64) || (ABUF == 2))
+                                   : ((cmd_k == `TNCA_MMA_K16) || (ABUF == 2 && cmd_k == `TNCA_MMA_K32)))) begin
                         use_abuf <= 1'b1;
                         st       <= S_LOADA;
                     end
@@ -520,7 +526,7 @@ module tnca_matrix #(
             //---------------------------------------------------------------
             // ABUF: the A fragment's registers, one read each, before any MAC.
             S_LOADA: if (!vrf_wait) begin
-                abuf[la[2:0]] <= vrf_data;
+                abuf[la[ABUF_IW-1:0]] <= vrf_data;
                 if ({3'd0, la} == a_regs - 7'd1) st <= S_LOADB;
                 else                             la <= la + 1'b1;
             end

@@ -1,0 +1,9 @@
+PASS t12_tensor         line=0 half=0: 3258 cycles  line=1 half=0: 1758 cycles  line=1 half=1: 1347 cycles
+PASS t30_xpose          line=0 half=0: 5160 cycles  line=1 half=0: 3679 cycles  line=1 half=1: 3679 cycles
+PASS t33_xpose8         line=0 half=0: 6946 cycles  line=1 half=0: 3977 cycles  line=1 half=1: 3977 cycles
+PASS t33_tdesc_load     line=0 half=0: 19112 cycles  line=1 half=0: 11391 cycles  line=1 half=1: 11340 cycles
+PASS t34_tdesc_store    line=0 half=0: 18030 cycles  line=1 half=0: 13619 cycles  line=1 half=1: 13557 cycles
+PASS t17_descfault      line=0 half=0: 522 cycles  line=1 half=0: 57 cycles  line=1 half=1: 57 cycles
+PASS t35_tdesc_fpad2    line=0 half=0: 541 cycles  line=1 half=0: 76 cycles  line=1 half=1: 76 cycles
+PASS t39_freeze_drop    line=0 half=0: 4356 cycles  line=1 half=0: 3312 cycles  line=1 half=1: 3312 cycles
+CORE 24 of 24 runs pass

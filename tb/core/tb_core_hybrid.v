@@ -40,6 +40,9 @@ module tb_core_hybrid;
     parameter RPAIR          = 0;
     parameter MTX_ABUF       = 0;
     parameter HAS_TENSOR_XPOSE = 0;
+    // R41 G4 / R42: the line-wide transfer engine (needs LSU_TAG_W 7: a port tag with a path bit, a word-tag space and 32 line slots), and its half-line rows
+    parameter TENSOR_LINE      = 0;
+    parameter TENSOR_LINE_HALF = 0;
 
     parameter NUM_RCTX       = 2;
     parameter RCTX_W         = 1;
@@ -97,7 +100,7 @@ module tb_core_hybrid;
                 perf_x_rsv, perf_x_wb, perf_x_vrf, perf_x_vrfwb, perf_x_frontend;
 
     tnca_core #(
-        .HYBRID_LSU(1),.MEM_DW(512),.MEM_BYTES(64),.MEM_SHIFT(6),.LSU_BEATS(4),.SFU_LANES(4),
+        .HYBRID_LSU(1),.MEM_DW(512),.MEM_BYTES(64),.MEM_SHIFT(6),.LSU_BEATS(4),.SFU_LANES(4),.LSU_TAG_W(LSU_TAG_W),
         .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(4),
         .VREGS_PER_RCTX(VREGS_PER_RCTX), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
         .CORE_ID(0), .NUM_CORES(1), .HAS_SFU(1),
@@ -106,7 +109,8 @@ module tb_core_hybrid;
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
         .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF),
-        .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
+        .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
+        .TENSOR_LINE(TENSOR_LINE), .TENSOR_LINE_HALF(TENSOR_LINE_HALF)
     ) dut (
         .clk(clk), .rst_n(rst_n),
         .launch_valid(launch_valid), .launch_pc(launch_pc),

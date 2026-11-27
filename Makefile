@@ -816,6 +816,56 @@ core-run2: $(patsubst %,$(BUILD)/%.hex,$(RUN2_PROGS)) $(BUILD)/t41_mmadp.hex \
 	     || exit 1; \
 	 done
 
+# R42 lineelig: half-line rows in the line-wide transfer engine (tnca_tensor LINE_HALF, image parameter
+# TENSOR_LINE_HALF, profile core-r42-line32): the miter against the word engine, the directed boxes with the
+# pieces each must move, and the core's tensor programs; -lock compares every output of every cycle with the
+# engine of the base commit (git is needed for it).
+LINE32_BASE ?= 44070eb0
+.PHONY: tensor-line32 tensor-line32-lock
+tensor-line32: | dirs
+	$(PYTHON) tools/r42/lineelig_tests.py miter
+	$(PYTHON) tools/r42/lineelig_tests.py directed
+	$(PYTHON) tools/r42/lineelig_tests.py core
+	$(PYTHON) tools/r41/tensor_line_tests.py
+tensor-line32-lock: | dirs
+	git show $(LINE32_BASE):rtl/core/tnca_tensor.v | sed 's/^module tnca_tensor #(/module tnca_tensor_ref #(/' > $(BUILD)/tnca_tensor_ref.v
+	$(PYTHON) tools/r42/lineelig_tests.py lock --ref $(BUILD)/tnca_tensor_ref.v
+
+# R42 lineelig: core-run2's machine with the sixteen-register A buffer (MTX_ABUF 2: FP16/BF16 K32 and FP8 K64
+# fragments are buffered too), same program list and arguments as core-run2.
+$(BUILD)/tb_core_abuf16.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                             $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R41_RUN2) -P tb_tnca_core.MTX_ABUF=2 -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_abuf16_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                                 $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R41_RUN2) -P tb_tnca_core.MTX_ABUF=2 -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+.PHONY: core-abuf16
+core-abuf16: export ARGS_t04_roles := +roles=2
+core-abuf16: export ARGS_t05_fault := +roles=2 +expectfault=01
+core-abuf16: export ARGS_t13_share := +roles=2 +aliasvrf
+core-abuf16: export ARGS_t15_target_vrf_v5_x8_g2c4_dp := +allroles
+core-abuf16: export ARGS_t41_boundary := +roles=1
+core-abuf16: export ARGS_t18_squash := +roles=2
+core-abuf16: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-abuf16: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-abuf16: export ARGS_t39_slice := +allroles +slice
+core-abuf16: export ARGS_t39_pair := +roles=2 +pair
+core-abuf16: export ARGS_t32_xpose_badsize := +expectfault=04
+core-abuf16: $(patsubst %,$(BUILD)/%.hex,$(RUN2_PROGS)) $(BUILD)/t41_mmadp.hex \
+             $(BUILD)/tb_core_abuf16.vvp $(BUILD)/tb_core_abuf16_ooo.vvp | dirs
+	@for p in $(RUN2_PROGS) t41_mmadp; do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (abuf16)" \
+	     "$(VVP) $(BUILD)/tb_core_abuf16.vvp +hex=$(BUILD)/$$p.hex +maxcycles=3000000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (abuf16, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_abuf16_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=4000000 $$extra" \
+	     || exit 1; \
+	 done
+
 .PHONY: core-mtx-vrf-reg
 core-mtx-vrf-reg:
 	$(PYTHON) tools/r41/mtx_vrf_reg_tests.py

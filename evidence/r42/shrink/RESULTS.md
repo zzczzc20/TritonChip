@@ -11,7 +11,7 @@ Nothing here is a routed image or a board number.
 1. **Memory is a small part of the tile.** Array LUTRAM is 17,020 of 253,898 tile LUT (6.7 %); memory-like logic in total is about 26-30 %; about 70 % of the tile is arithmetic and datapath multiplexing (`CENSUS.md`). URAM/BRAM capacity is not the constraint (a 512-bit
    array is 8 blocks whatever its depth); width is.
 2. **Built and measured (OOC), zero cycle cost, bit/cycle-exact to the shipped RTL in simulation:** the NUCA slice arrays in URAM (-9.2k LUT per slice at unit level, -8.4k in the tile), the banked VRF response crossbar (-7.4k per core). With the area worker's FMA/MAC/converter back end
-   (`FMA_IMPL` 465) the **one-tile OOC synthesis goes 249,921 -> 230,979 LUT (-18,942, -7.6 %)**, 24 URAM and +7.5 RAMB36 per tile; the area worker's kernel-synthesis tile was 253,898 (the same netlist in OOC is 1.6 % smaller), so the kernel-flow equivalent is about 234.7k.
+   (`FMA_IMPL` 465) the **one-tile OOC synthesis goes 249,921 -> 230,979 LUT (-18,942, -7.6 %)**, 24 URAM per tile (RAMB unchanged: 32 RAMB36 + 15 RAMB18); the area worker's kernel-synthesis tile was 253,898 (the same netlist in OOC is 1.6 % smaller), so the kernel-flow equivalent is about 234.7k.
 3. **Not enough for more cores.** Two tiles per SLR need a tile of at most 143.2k (4 cores), 140.3k (5), 126.7k (6) synthesis LUT (derived, same floorplan arithmetic as the area report with a +1.5k outlet per extra core in SLR0). 231k is 88k above the 4-core limit. Everything identified, built or estimated, adds up to
    about 195-200k. The blocking units are the matrix lane array (51k), the 16 FMA (24.7k), the converters (15.6k), the vector ALU (21-24k), the home slice (29k after the shrink), LSU (19k), transfer engine (19k), VRF (14k after).
 4. **No speed from the shrink itself.** Every built change keeps the cycle behaviour, so the TLM effect of the shrink alone is 1.000. What the freed area (about -19k per tile, 6 % lower SLR0 packing: 95.6 % -> 89.9 %) buys is the area-priced levers of the dse screen: a 4x larger slice (`sets128`, URAM) +4.7 % (full bundle,
@@ -21,12 +21,12 @@ Nothing here is a routed image or a board number.
 
 ## 2. Tile LUT after each step (OOC tile synthesis `tnca_tile`, run-3 parameters, tile 0, 10 ns, flatten none)
 
-| Step | `FMA_IMPL` / `SHRINK` | Tile LUT | LUTRAM | FF | RAMB36 / URAM / DSP | Delta | Note |
+| Step | `FMA_IMPL` / `SHRINK` | Tile LUT | LUTRAM | FF | RAMB tiles / URAM / DSP | Delta | Note |
 |---|---|--:|--:|--:|---|--:|---|
-| 0 default | 1 / 0 | **249,921** | 17,024 | 69,184 | 32 / 0 / 269 | | reproduces the shipped RTL; kernel synthesis tile 0 of the area worker: 253,898 |
+| 0 default | 1 / 0 | **249,921** | 17,024 | 69,184 | 39.5 RAMB tiles / 0 / 269 | | reproduces the shipped RTL; kernel synthesis tile 0 of the area worker: 253,898 |
 | 1 + area FMA/MAC back end and `tnca_cvt_int` (area worker, bit-identical) | 465 / 0 | not run alone | | | | about -5.0k (area worker, kernel flow, BE 13) to -6.4k (with converter) | its parameter is merged; not re-synthesised alone here (memory pressure on the host) |
 | 2 + home slice arrays in URAM | 465 / 10 | not run alone | | | | -8,385 (unit table below) | |
-| 3 + VRF response crossbar `XBAR` 2 | 465 / 42 | **230,979** | 8,812 | 69,348 | 39.5 / 24 / 269 | **-18,942 (-7.6 %) against step 0** | unit deltas in the tile: home -8,385, VRF -7,432, vector FPU -4,047, matrix -2,489, vector ALU +2,847 (synthesis variation between runs of the same RTL, section 7), others ~0 |
+| 3 + VRF response crossbar `XBAR` 2 | 465 / 42 | **230,979** | 8,812 | 69,348 | 39.5 RAMB tiles / 24 / 269 | **-18,942 (-7.6 %) against step 0** | unit deltas in the tile: home -8,385, VRF -7,432, vector FPU -4,047, matrix -2,489, vector ALU +2,847 (synthesis variation between runs of the same RTL, section 7), others ~0 |
 Steps 1-3 together; the intermediate tile runs were not made. The per-unit deltas of the two tile runs are in `ooc/tile_s0_s3_units.txt`.
 
 ## 3. M1: the candidates, measured (OOC unit level, run-3 tile parameters, 10 ns, hierarchy kept)
@@ -101,4 +101,38 @@ TLM for the core counts (what the model gives if the tile did fit; base clock): 
 **Which units block, and by how much:** 4 cores need -88k from the built tile (231k), -53k from the all-in estimate; the largest blocks that stay are the matrix lane array 49-51k, FMA 24.7k, converters 15.6k, vector ALU 21-24k, home slice 29k, LSU 19.4k, transfer engine 19.4k, VRF 13.9k, core own 9.9k.
 Halving the lane counts would remove about 25k (MAC) + 12k (FMA) and still leave about 160k.
 
-__PENDING__
+
+__M3__
+
+## 7. What failed, what was not done (kept, not hidden)
+
+1. **`VLD_RAM` (valid bits in the bank RAM + reset sweep) deadlocks the core** although its unit miter passes: `tnca_core` requires the VRF writeback never to be refused (`tnca_core.v:1143-1150`), the sweep refuses writes; `make core-run2 R42_VRF_VLD_RAM=1`: t01_vector +56 cycles, t03_fp stops after 15 instructions
+   (`verify/vld_ram_core_deadlock.txt`). It stays in the RTL, default off, and is not in the cumulative tile. A working form needs a system-level reset stretch.
+2. **First home-slice RTL was wrong twice.** (i) The bypass in front of the RAM output made the tool refuse block RAM (`Infeasible attribute ram_style = block`; LUTRAM again): `hp_dr1_syn` first run, LUT 33,769, 0 RAMB. (ii) Even before that, the miter caught the read-during-write hazard (a victim read in the cycle S3 merges into it). Both are fixed; the miter matrix and the mutation check were run on the final RTL only.
+3. **Mutation check:** 14 of 17 single-point mutants killed. Survivors: `hp_maint_enable` (equivalent mutant: the removed term is redundant), and three `VLD_RAM` mutants (`vrf_vld_set_always`, `vrf_write_during_sweep`, `vrf_read_during_sweep`): `tb_vrf_miter` drives no traffic and zero data during the sweep, so it cannot see them (bench weakness; `VLD_RAM` is not integrated anyway).
+4. **Not built:** accumulator-file / scalar-RF / LSU / transfer-engine arrays in RAM (analysis only, section 3b), the multi-format K-fused DSP lane (design and estimate only), DSP comparators, any of the nine clock fixes (the RTL for them was not changed), the registered reset tree. No tile run for the intermediate steps 1-2 alone.
+5. **Model limits:** `c5` is a 3x2 mesh with 5 active cores and 6 home slices (more slice capacity than a 5-tile machine); the TLM does not price the 4x longer cache-maintenance scan of `sets128`; combinations that were not run as combinations are products only where stated; runs of 77 light points with family inheritance for the other 68 are corrected by the same inheritance of the base run (a column in the table: `shr_eval.py`).
+6. **Own process mistakes on the shared x86 host** (no other worker's process was signalled): a kernel-scale memory peak (up to 10 helper processes of about 2 GB per synthesis) overlapped with another worker's tile screen and kernel synthesis several times; to keep their jobs alive I stopped five of my own jobs (`hp_dr1_syn`, two launches of `hp_dr2_syn`, `vrf_x2v0_p10`, `tile_s1_syn`), each by explicit PID after checking its command line, and rebuilt the queue with a memory gate (`MINAVAIL_MB`) and per-queue PID directories. Once a kill loop was fed by a `ps` listing of my own two `shr_job.sh tile_s1_syn` wrapper processes (the rule says never; only those two were affected).
+   Earlier queue bugs cost reruns: three queue processes started three jobs at once; the first tile jobs failed on a missing include directory (`rtl/noc`); the first home-slice wrapper did not yet pass `AUX_RAM` (`hp_d1a1_syn`, `hp_d2a2_syn` are therefore data-array-only variants).
+   Foreign jobs seen on the host (listing only): the R42-img worker's tile screens (`screen_r41_tile.tcl`, pids 1245053, 1254099, 1277886) and kernel syntheses (`synth_r40_multicore.tcl`). None of the previous worker's leftovers held slots when this work started.
+7. **Synthesis variation:** the same RTL gives different unit sizes in different flows or with different parameters elsewhere: the vector ALU is 23,173 LUT (kernel synthesis), 21,489 (OOC tile default), 24,336 (OOC tile step 3, where nothing in it changed). Tile totals are therefore good to about +-3k; unit deltas of built changes (-8.4k, -7.4k) are well outside that.
+
+## 8. Verification summary (sim)
+
+| Check | Size | Result |
+|---|---|---|
+| `tb_home_pipe_miter`, shipped against `DATA_RAM`/`AUX_RAM` 1/1 and 2/2, 18 structural and traffic configurations (image size and small, `SETS` 128, 4 ways, `NOFILL`/`CHAIN` 0, heavy back-pressure, same-line hot sets, atomics, maintenance) | 36 runs, 9.0M cycles, 3.17M requests (1.96M hits, 0.98M misses, 0.72M evictions, 0.60M write-backs, 8.0k maintenance operations); every output compared in every cycle | 0 mismatches (`verify/miter_home_final.txt`) |
+| `tb_vrf_miter`, shipped against `XBAR` 1, `XBAR` 2, `VLD_RAM` | 7 runs, 400k cycles each, 5 requesters, 2 writers, random `rsp_ready` | 0 mismatches (`verify/miter_vrf.txt`) |
+| Mutation check | 17 mutants | 14 killed, 1 equivalent, 3 survivors in the unintegrated `VLD_RAM` (section 7) |
+| `make core-run2`, default | 90 program runs | 90 PASS; 88 cycle counts identical to the area worker's base run (`verify/core_run2_default.log`) |
+| `make core-run2 R42_VRF_XBAR=2` | 90 program runs | 90 PASS; cycle counts identical to the default (`verify/core_run2_xbar2.log`) |
+| `make core-run2 R42_VRF_XBAR=1` | 90 program runs | 90 PASS; cycle counts identical to the default (`verify/core_run2_xbar1.log`) |
+| R41 home benches `tb_home_pipe`, `tb_home_pipe_special` with `DATA_RAM`/`AUX_RAM` 1 and 2 | | PASS, finish times identical to the default |
+| URAM288 unisim model read latency | 4 settings | 1, 2, 2, 3 cycles (`sim/uram_lat.txt`) |
+
+## 9. Reproduction and records
+
+OOC: x86 `~/r42_shrink` (tree), `~/r42_shrink_out` (results); `tools/r42/shrink/` (`gen_ooc_top.py` wrappers in `ooc/`, `shr_queue.sh`/`shr_job.sh`/`shr_tilejob.sh`, queue files `queue_*.txt`, `collect.sh`); reports in `ooc/ooc_reports.tgz`, table in `ooc/ooc_summary_all.txt`.
+TLM: GB10 `~/r42/shrink_out` (configs `cfg/`, collected `col/`); `tools/r42/shrink/tlm/` (`mkcfg.py`, `shr_run.sh`, `shr_sets.sh`, `shr_eval.py`; the dse worker's tree, binary, id lists and caches were only read); collected files in `tlm/col/`, configurations in `tlm/cfg*/`.
+Floorplan: `python3 tools/r42/shrink/floorplan.py`. Mutation: `tools/r42/shrink/sim/mutation_check.py`. Miters: `tools/r42/shrink/sim/run_home_miter.sh`, `run_vrf_miter.sh`.
+

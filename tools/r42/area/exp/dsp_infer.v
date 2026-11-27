@@ -30,3 +30,29 @@ module dsp_t4 (input clk, input [79:0] a, b, input sub, output reg [80:0] p);
     reg [79:0] ra, rb; reg rs;
     always @(posedge clk) begin ra <= a; rb <= b; rs <= sub; p <= rs ? ({1'b0, ra} - {1'b0, rb}) : ({1'b0, ra} + {1'b0, rb}); end
 endmodule
+// t5: registered a - b - cin, 49-bit result, attribute on the output register (R1/H adders of the area norm stage)
+module dsp_t5 (input clk, input [47:0] a, b, input cin, output reg [48:0] p);
+    reg [47:0] ra, rb; reg rc;
+    (* use_dsp = "yes" *) reg [48:0] s;
+    always @(posedge clk) begin ra <= a; rb <= b; rc <= cin; s <= {1'b0, ra} - {1'b0, rb} - rc; p <= s; end
+endmodule
+// t6: three static registered adders sharing the operands: sum, a-b, b-a (49-bit results)
+module dsp_t6 (input clk, input [47:0] a, b, output reg [48:0] p0, p1, p2);
+    reg [47:0] ra, rb;
+    (* use_dsp = "yes" *) reg [48:0] s0, s1, s2;
+    always @(posedge clk) begin
+        ra <= a; rb <= b;
+        s0 <= {1'b0, ra} + {1'b0, rb}; s1 <= {1'b0, ra} - {1'b0, rb}; s2 <= {1'b0, rb} - {1'b0, ra};
+        p0 <= s0; p1 <= s1; p2 <= s2;
+    end
+endmodule
+// t7: the same without the output register after s (the P register is the last register): s feeds a comb mux
+module dsp_t7 (input clk, input [47:0] a, b, input sel, output reg [48:0] p);
+    reg [47:0] ra, rb; reg rsel;
+    (* use_dsp = "yes" *) reg [48:0] s0, s1;
+    always @(posedge clk) begin
+        ra <= a; rb <= b; rsel <= sel;
+        s0 <= {1'b0, ra} + {1'b0, rb}; s1 <= {1'b0, ra} - {1'b0, rb};
+        p <= rsel ? s0 : s1;
+    end
+endmodule

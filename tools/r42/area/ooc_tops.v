@@ -73,7 +73,7 @@ module area_st_round (
 endmodule
 
 module area_mac #(
-    parameter [4:0] CUTS = 5'b11101,
+    parameter [5:0] CUTS = 6'b011101,
     parameter integer BE = 0
 ) (
     input  wire        clk,
@@ -158,5 +158,30 @@ module area_cvt (
     always @(posedge clk) begin w_x <= x; w_s <= src; w_d <= dst; end
     wire [31:0] y;
     tnca_cvt_comb_xls u (.src(w_s), .dst(w_d), .x(w_x), .out(y));
+    always @(posedge clk) y_q <= y;
+endmodule
+
+// the R42 area FMA with selectable cuts (tnca_fmax_fma), registered I/O like area_fma
+module area_fma2 #(
+    parameter [3:0] CUTS = 4'b1010,
+    parameter integer SHIFT = 1,
+    parameter integer XLS_ALIGN = 0
+) (
+    input  wire        clk,
+    input  wire        rst_n,
+    input  wire [31:0] a,
+    input  wire [31:0] b,
+    input  wire [31:0] c,
+    input  wire        sub_c,
+    input  wire        mul_only,
+    input  wire        ftz,
+    output reg  [31:0] y_q
+);
+    reg [31:0] w_a, w_b, w_c;
+    reg        w_s, w_m, w_f;
+    always @(posedge clk) begin w_a <= a; w_b <= b; w_c <= c; w_s <= sub_c; w_m <= mul_only; w_f <= ftz; end
+    wire [31:0] y;
+    tnca_fmax_fma #(.CUTS(CUTS), .SHIFT(SHIFT), .XLS_ALIGN(XLS_ALIGN)) u_fma (
+        .clk(clk), .rst_n(rst_n), .a(w_a), .b(w_b), .c(w_c), .sub_c(w_s), .mul_only(w_m), .ftz(w_f), .y(y));
     always @(posedge clk) y_q <= y;
 endmodule

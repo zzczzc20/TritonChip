@@ -1,0 +1,36 @@
+d   instance                                 module                          LUT    logic  LUTRAM   SRL      FF RAMB36 RAMB18  URAM   DSP
+0   g_tile[0].u_tile                         tnca_tile                    248890   231245   17020   625   68929     32     15     0   269
+1   g_home_pipe.u_home_pipe                  tnca_home_pipe                39488    29586    9902     0    6175      0      0     0     0
+1   g_host_mux.u_host                        tnca_idle_host_mux              982      982       0     0      12      0      0     0     0
+1   u_cni                                    tnca_core_ni                     20       20       0     0     521      0      0     0     0
+1   u_core                                   tnca_core                    208344   200601    7118   625   62220     32     15     0   269
+2   g_lsu_hybrid.u_lsu                       tnca_lsu_hybrid               19338    18664     674     0    8203      0      0     0     0
+2   g_vrf_banked.u_vrf                       tnca_vrf_banked               21270    21270       0     0    6291     32      0     0     0
+2   u_bar                                    tnca_barrier                   1577     1577       0     0     929      0      0     0     0
+2   u_dec                                    tnca_decoder                    653      653       0     0       0      0      0     0     0
+2   u_mmux                                   tnca_mem_mux                    646      646       0     0       0      0      0     0     0
+2   u_mtx                                    tnca_matrix                   58864    55456    2856   552   15643      0      0     0   128
+2   u_mul                                    tnca_mul64                      445      445       0     0     648      0      0     0    16
+2   u_pfdec                                  tnca_decoder                    310      310       0     0       0      0      0     0     0
+2   u_prf                                    tnca_pred_rf                    998      998       0     0    1008      0      0     0     0
+2   u_salu                                   tnca_scalar_alu                1468     1468       0     0       0      0      0     0     0
+2   u_srf                                    tnca_scalar_rf                 3756     1684    2072     0     256      0      0     0     0
+2   u_txf                                    tnca_tensor                   19503    17987    1516     0    9497      0      0     0    15
+2   u_valu                                   tnca_vector_alu               23173    23173       0     0    1970      0      0     0    64
+2   u_vfpu                                   tnca_vector_fpu               47587    47521       0    66    8506      0     15     0    46
+1   u_fold_maint                             tnca_addr_fold                   47       47       0     0       0      0      0     0     0
+1   u_fold_req                               tnca_addr_fold                    6        6       0     0       0      0      0     0     0
+1   u_sni                                    tnca_slice_ni                     2        2       0     0       0      0      0     0     0
+
+children of depth 3, by parent and module type (count, total LUT, logic, LUTRAM, SRL, FF, RAMB36, RAMB18, URAM, DSP)
+g_lsu_hybrid.u_lsu                 tnca_word_line_adapter         n=1        421      417       4     0       0      0      0     0     0
+g_lsu_hybrid.u_lsu                 tnca_lsu_line                  n=1       5647     5013     634     0     783      0      0     0     0
+g_lsu_hybrid.u_lsu                 tnca_lsu_pair                  n=1      12600    12564      36     0    6820      0      0     0     0
+g_vrf_banked.u_vrf                 tnca_rf_bank                   n=4       7504     7504       0     0    6288     32      0     0     0
+u_mtx                              tnca_mac_lane                  n=16     48560    48032       0   528    9760      0      0     0   128
+u_mtx                              tnca_acc_rf                    n=1       6293     3733    2560     0    4096      0      0     0     0
+u_valu                             tnca_lzc__parameterized0       n=16      1008     1008       0     0       0      0      0     0     0
+u_valu                             tnca_popc__parameterized0      n=16       560      560       0     0       0      0      0     0     0
+u_vfpu                             tnca_cvt_comb_xls              n=16      7520     7520       0     0       0      0      0     0     0
+u_vfpu                             tnca_fp32_fma                  n=16     22400    22400       0     0    4288      0      0     0    32
+u_vfpu                             tnca_sfu                       n=1       2330     2264       0    66    2073      0     15     0    14

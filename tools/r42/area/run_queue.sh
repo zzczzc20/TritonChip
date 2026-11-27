@@ -10,8 +10,8 @@ while IFS='|' read -r NAME ENVS TOP GEN; do
     (
         flock 9
         while [ "$(count)" -ge 2 ]; do sleep 10; done
-        case $NAME in tile_*) R=run_tile.sh;; dcp_*) R=run_dcp.sh;; *) R=run_ooc.sh;; esac
-        ( env $ENVS setsid nohup bash tools/r42/area/$R $NAME $TOP $GEN > /dev/null 2>&1 < /dev/null & )
+        case $NAME in tile_*) R=run_tile.sh;; dcp_*) R=run_dcp.sh;; kern_*) R=run_kernel.sh;; *) R=run_ooc.sh;; esac
+        ( env $ENVS setsid nohup bash tools/r42/area/$R $NAME $TOP $GEN > /dev/null 2>&1 < /dev/null 9>&- & )
         sleep 15
-    ) 9>/tmp/r42_area_launch.lock
+    ) 9>/tmp/r42_area_launch2.lock
 done < $1

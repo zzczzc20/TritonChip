@@ -5,7 +5,7 @@
 `timescale 1ns/1ps
 module tb_area_mac;
     parameter BE = 1;
-    parameter [4:0] CUTS = 5'b11101;
+    parameter [5:0] CUTS = 6'b011101;
     reg clk, rst_n;
     reg [1:0] mode, fa, fb;
     reg [2:0] fmt;
@@ -113,7 +113,7 @@ module tb_area_mac;
         if ($value$plusargs("seed=%d", seed)) ;
         i = $urandom(seed);
         lat = 1;
-        for (i = 0; i < 5; i = i + 1) lat = lat + CUTS[i];
+        for (i = 0; i < 6; i = i + 1) lat = lat + CUTS[i];
         clk = 0; rst_n = 0; mode = 0; fa = 0; fb = 0; fmt = 0; a = 0; b = 0; c = 0; sub_c = 0; mul_only = 0; ftz = 0;
         #5 clk = 1; #5 clk = 0; #5 clk = 1; #5 clk = 0; rst_n = 1;
         fails = 0; cyc = 0;

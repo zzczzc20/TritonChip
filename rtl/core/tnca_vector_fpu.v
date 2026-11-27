@@ -378,10 +378,26 @@ module tnca_vector_fpu #(
         end
     endfunction
 
+    // R42 area: FMA_IMPL / 256 odd selects tnca_cvt_int (the same function, guard and sticky bit instead of 64-bit fraction
+    // compares; compared with cvt_int_f over every input word, function and rounding mode: tb/area/fast/cvt_int_miter)
+    localparam CVT_AREA = (FMA_IMPL / 256) % 2;
+    wire [ELEN-1:0] cvt_n [0:VLEN-1];
+    generate
+        if (CVT_AREA != 0) begin : g_cvt_area
+            for (g = 0; g < VLEN; g = g + 1) begin : g_c
+                tnca_cvt_int u_cvt_int (.x(cvt_x[g]), .fn(cvt_fn), .rm(cvt_mod[2:0]), .y(cvt_n[g]));
+            end
+        end else begin : g_cvt_gen
+            for (g = 0; g < VLEN; g = g + 1) begin : g_c
+                assign cvt_n[g] = {ELEN{1'b0}};
+            end
+        end
+    endgenerate
+
     integer cl;
     always @(*)
         for (cl = 0; cl < VLEN; cl = cl + 1)
-            cvt_l[cl] = cvt_int_f(cvt_x[cl], cvt_fn, cvt_mod[2:0]);
+            cvt_l[cl] = (CVT_AREA != 0) ? cvt_n[cl] : cvt_int_f(cvt_x[cl], cvt_fn, cvt_mod[2:0]);
 
     reg [ELEN-1:0] cvt [0:VLEN-1];
     wire [ELEN-1:0] fcvt[0:VLEN-1];

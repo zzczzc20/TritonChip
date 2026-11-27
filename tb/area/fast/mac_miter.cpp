@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
     m.clk = 0; m.rst_n = 0; m.mode = 0; m.fmt = 0; m.fa = m.fb = 0; m.a = m.b = m.c = 0; m.sub_c = m.mul_only = m.ftz = 0;
     for (int i = 0; i < 4; ++i) { m.clk = 1; m.eval(); m.clk = 0; m.eval(); }
     m.rst_n = 1;
-    const int LAT = 5;
+    const int LAT = argc > 3 ? atoi(argv[3]) : 5;
     long fails = 0, nprint = 0;
     uint32_t ha[8], hb[8], hc[8], hk[8];
     long cyc = 0;

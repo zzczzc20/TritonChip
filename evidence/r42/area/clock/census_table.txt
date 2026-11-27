@@ -1,0 +1,17 @@
+unit (3 tiles summed)       <0.5ns  <1.0ns   <2.0ns    worst  worst path: levels, datapath ns, net share
+g_home_pipe.u_home_pipe        276    6599    34699    0.206  1 lvl, 9.28 ns, net 98%
+kernel:device                   47    2970    20928    0.111  14 lvl, 9.28 ns, net 87%
+core/g_lsu_hybrid.u_lsu        372    6580     8503    0.126  25 lvl, 9.85 ns, net 76%
+core control/pipeline regs      32     768     6416    0.248  10 lvl, 9.74 ns, net 89%
+core/g_vrf_banked.u_vrf         46     328     5836    0.284  16 lvl, 9.55 ns, net 82%
+core/u_txf                       0      55     4668    0.662  5 lvl, 9.32 ns, net 93%
+core/u_mtx                      57     679     4423    0.216  15 lvl, 9.71 ns, net 86%
+core/u_vfpu                     70     468     2925    0.168  1 lvl, 9.46 ns, net 98%
+core/u_bar                       0      53      666    0.544  18 lvl, 9.34 ns, net 81%
+platform                         0      43      344    0.701  1 lvl, 1.13 ns, net 84%
+core/u_valu                      0       2      161    0.905  4 lvl, 8.60 ns, net 95%
+kernel:registers                 0       3       24    0.506  5 lvl, 9.07 ns, net 95%
+g_host_mux.u_host                0       0        8    1.484  7 lvl, 7.83 ns, net 89%
+u_cni                            0       0        1    1.490  7 lvl, 8.16 ns, net 89%
+core/u_mul                       0       0        1    1.988  7 lvl, 8.13 ns, net 78%
+total                          900   18548    89603

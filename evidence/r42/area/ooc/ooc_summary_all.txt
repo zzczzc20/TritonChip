@@ -1,0 +1,91 @@
+dir                        stage    LUT  logic    mem     FF   DSP CARRY8 BRAM URAM  CLB      WNS      WHS  worst endpoint
+base_fma_i0_p10            synth   2366   2366      0    402     2    145  0.0    0 None    5.033    0.073  w_b_reg[24]/C -> u_fma/g_l2
+base_fma_i0_p10            route   2269   2269      0    402     2    145  0.0    0  368      3.6    0.045  u_fma/g_l2.s0_q_reg[72]/C -
+base_fma_i1_p10            synth   1512   1512      0    399     2     50  0.0    0 None    5.033    0.073  w_b_reg[24]/C -> u_fma/g_l2
+base_fma_i1_p10            route   1497   1497      0    399     2     50  0.0    0  256    4.151    0.062  w_b_reg[24]/C -> u_fma/g_l2
+base_fma_i1_p5             synth   1609   1609      0    399     2     50  0.0    0 None    0.349    0.073  w_b_reg[24]/C -> u_fma/g_l2
+base_fma_i1_p5             route   1594   1594      0    399     2     50  0.0    0  265    0.309    0.066  w_b_reg[25]/C -> u_fma/g_l2
+base_fma_i1_p667           synth   1515   1515      0    399     2     50  0.0    0 None    1.703    0.073  w_b_reg[24]/C -> u_fma/g_l2
+base_fma_i1_p667           route   1499   1499      0    399     2     50  0.0    0  260    0.941    0.056  w_b_reg[24]/C -> u_fma/g_l2
+base_l3_p10                synth   1400   1400      0    487     2     48  0.0    0 None    6.426    0.073  u_fma/g_l3d.u_xls/p1_mag_sq
+base_l3_p10                route   1351   1351      0    487     2     48  0.0    0  225     4.72    0.045  u_fma/g_l3d.u_xls/p0_shamt_
+base_l3_p5                 synth   1405   1405      0    487     2     48  0.0    0 None    1.459    0.073  u_fma/g_l3d.u_xls/p1_mag_sq
+base_l3_p5                 route   1379   1379      0    486     2     48  0.0    0  232    0.441     0.05  u_fma/g_l3d.u_xls/p1_mag_sq
+base_l3_p667               synth   1400   1400      0    487     2     48  0.0    0 None    3.096    0.073  u_fma/g_l3d.u_xls/p1_mag_sq
+base_l3_p667               route   1352   1352      0    487     2     48  0.0    0  232    1.219    0.061  u_fma/g_l3d.u_xls/p1_mag_sq
+base_mac_p10               synth   3204   3204      0    711     8    112  0.0    0 None    3.858     0.07  w_fmt_reg[0]/C -> u_lane/g_
+base_mac_p10               route   3146   3146      0    711     8    112  0.0    0  547    2.527    0.044  w_a_reg[2]/C -> u_lane/g_c0
+base_mac_p5                synth   3373   3373      0    711     8    112  0.0    0 None   -0.764     0.07  w_fmt_reg[0]/C -> u_lane/g_
+base_mac_p5                route   3369   3369      0    730     8    112  0.0    0  577   -0.664    0.051  w_a_reg[6]_replica/C -> u_l
+base_mac_p667              synth   3239   3239      0    711     8    112  0.0    0 None    0.874     0.07  w_fmt_reg[0]/C -> u_lane/g_
+base_mac_p667              route   3170   3170      0    711     8    112  0.0    0  556    0.333    0.051  w_fmt_reg[1]/C -> u_lane/g_
+base_stnorm1_p10           synth    535    535      0    272     0     38  0.0    0 None    6.757     0.07  w_s_reg[72]/C -> o_q_reg[10
+base_stnorm1_p10           route    532    532      0    272     0     38  0.0    0   89    5.281    0.054  w_s_reg[23]/C -> o_q_reg[14
+base_stround_p10           synth    472    472      0    154     0      9  0.0    0 None    7.036    0.073  w_s_reg[39]/C -> y_q_reg[26
+base_stround_p10           route    465    465      0    154     0      9  0.0    0   81    4.982    0.071  w_s_reg[39]/C -> y_q_reg[24
+cvt_int_p10                synth    507    507      0     75     0     27  0.0    0 None    6.392    0.212  wx_reg[1]/C -> y_q_reg[27]/
+cvt_int_p10                route    504    504      0     75     0     27  0.0    0   79     5.08     0.19  wx_reg[0]/C -> y_q_reg[27]/
+cvt_new_none               synth    422    422      0     75     0     16  0.0    0 None     6.43    0.191  wf_reg[6]/C -> y_q_reg[26]/
+cvt_new_p10                synth    422    422      0     75     0     16  0.0    0 None     6.43    0.191  wf_reg[6]/C -> y_q_reg[26]/
+cvt_new_p10                route    418    418      0     75     0     16  0.0    0   73     5.44    0.147  wx_reg[0]/C -> y_q_reg[29]/
+cvt_ref_none               synth    507    507      0     75     0     27  0.0    0 None    6.392    0.212  wx_reg[1]/C -> y_q_reg[27]/
+exp_t1                     synth      0      0      0     48     1      0  0.0    0 None    9.186    0.114  s_reg/DSP_C_DATA_INST/CLK -
+exp_t2                     synth     49     49      0    147     0     14  0.0    0 None    8.815    0.104  rs_reg/C -> p_reg[47]/D
+exp_t3                     synth    145    145      0    146     0     21  0.0    0 None    8.602    0.157  rb_reg[1]/C -> q_reg[47]/D
+exp_t4                     synth     40     40      0    177     2      0  0.0    0 None    8.274     0.28  rs_reg/C -> p_reg[46]/D
+exp_t5                     synth     96     96      0    241     2     14  0.0    0 None    8.172    0.082  rb_reg[1]/C -> wideAddDsp_s
+exp_t6                     synth     96     96      0    433     5      0  0.0    0 None     8.56    0.082  s1_reg_AB[25]/C -> p1_reg[4
+exp_t7                     synth     25     25      0    243     3      0  0.0    0 None    8.362    0.073  ra_reg[25]/C -> wideAddDsp_
+flat_fma_be13              synth   1397   1397      0    399     2     40  0.0    0 None    5.455    0.073  w_b_reg[30]/C -> u_fma/g_l2
+flat_fma_be5n              synth   1412   1412      0    399     2     37  0.0    0 None    5.087    0.073  w_b_reg[24]/C -> u_fma/g_l2
+flat_fma_i1                synth   1565   1565      0    399     2     50  0.0    0 None    5.087    0.073  w_b_reg[24]/C -> u_fma/g_l2
+flat_mac_base              synth   3201   3201      0    711     8    112  0.0    0 None    3.769    0.073  w_a_reg[2]/C -> u_lane/g_c0
+flat_mac_be13              synth   3009   3009      0    711     8    101  0.0    0 None    3.769    0.073  w_a_reg[2]/C -> u_lane/g_c0
+flat_mac_be13c             synth   3009   3009      0    942    11    101  0.0    0 None    3.769    0.073  w_a_reg[2]/C -> u_lane/g_c0
+fma_be1_p10                synth   1528   1528      0    398     2     49  0.0    0 None    5.119    0.081  w_b_reg[24]/C -> u_fma/g_l2
+fma_be1_p10                route   1509   1509      0    398     2     49  0.0    0  261    3.978     0.05  u_fma/g_l2.s0_q_reg[21]/C -
+fma_be2_p10                synth   1509   1509      0    398     2     56  0.0    0 None    5.119    0.081  w_b_reg[24]/C -> u_fma/g_l2
+fma_be2_p10                route   1492   1492      0    398     2     56  0.0    0  276     4.37     0.05  u_fma/g_l2.s0_q_reg[35]/C -
+fma_be5_p10                synth   1464   1464      0    398     2     34  0.0    0 None    5.119    0.081  w_b_reg[24]/C -> u_fma/g_l2
+fma_be5_p10                route   1446   1446      0    398     2     34  0.0    0  251    4.384    0.049  u_fma/g_l2.s0_q_reg[21]/C -
+g_l2_p10                   synth   1431   1431      0    398     2     40  0.0    0 None    4.929    0.081  w_b_reg[24]/C -> u_fma/g_c1
+g_l2_p10                   route   1411   1411      0    398     2     40  0.0    0  253    3.864    0.047  w_b_reg[23]/C -> u_fma/g_c1
+g_l2_p5                    synth   1488   1488      0    398     2     40  0.0    0 None    0.334    0.081  w_b_reg[24]/C -> u_fma/g_c1
+g_l2_p5                    route   1469   1469      0    398     2     40  0.0    0  230    0.329    0.051  w_b_reg[24]/C -> u_fma/g_c1
+g_l2xa_p10                 synth   1430   1430      0    398     2     37  0.0    0 None    5.119    0.081  w_b_reg[24]/C -> u_fma/g_c1
+g_l2xa_p10                 route   1409   1409      0    398     2     37  0.0    0  243    4.371    0.068  w_b_reg[23]/C -> u_fma/g_c1
+g_l2xa_p5                  synth   1524   1524      0    398     2     37  0.0    0 None    0.422    0.081  w_b_reg[24]/C -> u_fma/g_c1
+g_l2xa_p5                  route   1512   1512      0    398     2     37  0.0    0  250    0.138    0.057  w_b_reg[24]/C -> u_fma/g_c1
+g_l3_p5                    synth   1470   1470      0    628     5     40  0.0    0 None    0.334    0.081  w_b_reg[24]/C -> u_fma/g_c1
+g_l3_p5                    route   1457   1457      0    628     5     40  0.0    0  256    0.246    0.057  w_b_reg[24]/C -> u_fma/g_c1
+g_l3_p667                  synth   1418   1418      0    628     5     40  0.0    0 None     1.94    0.081  w_b_reg[24]/C -> u_fma/g_c1
+g_l3_p667                  route   1397   1397      0    628     5     40  0.0    0  247    1.181    0.045  w_b_reg[26]/C -> u_fma/g_c1
+g_l3xa_p10                 synth   1414   1414      0    628     5     37  0.0    0 None    5.119    0.081  w_b_reg[24]/C -> u_fma/g_c1
+g_l3xa_p10                 route   1396   1396      0    628     5     37  0.0    0  248    4.115    0.051  w_b_reg[23]/C -> u_fma/g_c1
+g_l3xa_p5                  synth   1508   1508      0    628     5     37  0.0    0 None    0.422    0.081  w_b_reg[24]/C -> u_fma/g_c1
+g_l3xa_p5                  route   1485   1485      0    628     5     37  0.0    0  266    0.439    0.051  w_b_reg[24]/C -> u_fma/g_c1
+g_l3xa_p667                synth   1419   1419      0    628     5     37  0.0    0 None    1.789    0.081  w_b_reg[24]/C -> u_fma/g_c1
+g_l3xa_p667                route   1401   1401      0    628     5     37  0.0    0  262    1.315    0.051  w_b_reg[24]/C -> u_fma/g_c1
+mac_be13_p10               synth   3019   3019      0    710     8    101  0.0    0 None    3.858    0.072  w_fmt_reg[0]/C -> u_lane/g_
+mac_be13_p10               route   2966   2966      0    710     8    101  0.0    0  528    2.156     0.05  w_fmt_reg[1]/C -> u_lane/g_
+mac_be13_p667              synth   3054   3054      0    710     8    101  0.0    0 None    0.874    0.072  w_fmt_reg[0]/C -> u_lane/g_
+mac_be13_p667              route   3002   3002      0    710     8    101  0.0    0  524    0.466    0.043  w_b_reg[5]/C -> u_lane/g_c0
+mac_be13c_p10              synth   3015   3012      3    935    11    101  0.0    0 None    3.859    0.071  w_fmt_reg[0]/C -> u_lane/g_
+mac_be13c_p10              route   2964   2961      3    935    11    101  0.0    0  536     2.26    0.048  w_fmt_reg[0]/C -> u_lane/g_
+mac_be13c_p5               synth   3184   3181      3    935    11    101  0.0    0 None   -0.763    0.071  w_fmt_reg[0]/C -> u_lane/g_
+mac_be13c_p5               route   3194   3191      3    958    11    101  0.0    0  549   -0.647    0.048  w_b_reg[3]/C -> u_lane/g_c0
+mac_be13c_p667             synth   3050   3047      3    935    11    101  0.0    0 None    0.875    0.071  w_fmt_reg[0]/C -> u_lane/g_
+mac_be13c_p667             route   2983   2980      3    935    11    101  0.0    0  520    0.354    0.048  w_fmt_reg[1]/C -> u_lane/g_
+n_round2_s0                synth    472    472      0    154     0     20  0.0    0 None     6.63    0.084  w_s_reg[39]/C -> y_q_reg[24
+n_round2_s1                synth    463    463      0    154     0      5  0.0    0 None    7.374    0.078  w_s_reg[24]/C -> y_q_reg[24
+n_round_gen                synth    473    473      0    154     0      9  0.0    0 None    7.036    0.073  w_s_reg[39]/C -> y_q_reg[24
+x1_norm2_add0_p10          synth    452    452      0    271     0     26  0.0    0 None    6.312     0.07  w_s_reg[19]/C -> o_q_reg[10
+x1_norm2_add0_p10          route    444    444      0    271     0     26  0.0    0   84    4.127    0.072  w_s_reg[19]/C -> o_q_reg[14
+x1_norm2_add1_p10          synth    447    447      0    271     0     33  0.0    0 None    6.353     0.07  w_s_reg[101]/C -> o_q_reg[1
+x1_norm2_add1_p10          route    443    443      0    271     0     33  0.0    0   93    4.217    0.048  w_s_reg[31]/C -> o_q_reg[7]
+x1_round2_p10              synth    458    458      0    154     0     20  0.0    0 None    6.402    0.073  w_s_reg[39]/C -> y_q_reg[0]
+x1_round2_p10              route    426    426      0    154     0     20  0.0    0   76    5.441    0.097  w_s_reg[23]/C -> y_q_reg[10
+x1_round2_s1_p10           synth    380    380      0    154     0      5  0.0    0 None    6.889    0.073  w_s_reg[39]/C -> y_q_reg[0]
+x1_round2_s1_p10           route    351    351      0    154     0      5  0.0    0   65    5.368    0.077  w_s_reg[36]/C -> y_q_reg[0]
+x2_sfu_p10                 synth   2323   2276     47   2992    14    150  7.5    0 None    6.592    0.061  u/g_slice[0].u_serial/u_log
+x2_sfu_p10                 route   2300   2253     47   2992    14    150  7.5    0  561    4.335    0.044  u/g_slice[0].u_serial/cnt_r

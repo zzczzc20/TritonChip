@@ -1,0 +1,2 @@
+kern_base_rb|FLATTEN=rebuilt|image_base.tcl|
+kern_be13_rb|FLATTEN=rebuilt|image_be13.tcl|

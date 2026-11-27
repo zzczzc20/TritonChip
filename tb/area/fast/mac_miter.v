@@ -1,6 +1,8 @@
 // mac_miter -- the shared MAC lane with the R42 area stages (BE) against the generated stages (BE = 0), all modes.
-// Same CUTS and IN_REG, same inputs; the C++ driver (mac_miter.cpp) compares y every cycle.
-module mac_miter #(parameter BE = 1, parameter [4:0] CUTS = 5'b11101) (
+// Same CUTS and IN_REG, same inputs; the C++ driver (mac_miter.cpp) compares y every cycle. With CUTS[5] (the register behind
+// the adders, BE != 0 only) the new lane is one cycle longer than the reference: the reference's y and normalise struct are
+// delayed by one register stage to line up.
+module mac_miter #(parameter BE = 1, parameter [5:0] CUTS = 6'b011101) (
     input  wire        clk, rst_n,
     input  wire [1:0]  mode, fa, fb,
     input  wire [2:0]  fmt,
@@ -10,10 +12,17 @@ module mac_miter #(parameter BE = 1, parameter [4:0] CUTS = 5'b11101) (
     output wire [149:0] al_ref, al_new,   // B0 output (FmaAligned) of the two lanes, before the cut register
     output wire [121:0] nm_ref, nm_new    // normalise output (FmaNormalised)
 );
-    tnca_mac_lane #(.CUTS(CUTS), .IN_REG(1), .BE(0))  u_ref (.clk(clk), .rst_n(rst_n), .mode(mode), .fmt(fmt), .fa(fa), .fb(fb),
-        .a(a), .b(b), .c(c), .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz), .y(y_ref));
+    wire [31:0]  y_r;
+    wire [121:0] nm_r;
+    tnca_mac_lane #(.CUTS(CUTS & 6'b011111), .IN_REG(1), .BE(0))  u_ref (.clk(clk), .rst_n(rst_n), .mode(mode), .fmt(fmt), .fa(fa), .fb(fb),
+        .a(a), .b(b), .c(c), .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz), .y(y_r));
     tnca_mac_lane #(.CUTS(CUTS), .IN_REG(1), .BE(BE)) u_new (.clk(clk), .rst_n(rst_n), .mode(mode), .fmt(fmt), .fa(fa), .fb(fb),
         .a(a), .b(b), .c(c), .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz), .y(y_new));
+    reg [31:0]  y_d;
+    reg [121:0] nm_d;
+    always @(posedge clk) begin y_d <= y_r; nm_d <= u_ref.nm_d; end
+    assign y_ref = CUTS[5] ? y_d : y_r;
+    assign nm_ref = CUTS[5] ? nm_d : u_ref.nm_d;
     assign al_ref = u_ref.al_d; assign al_new = u_new.al_d;
-    assign nm_ref = u_ref.nm_d; assign nm_new = u_new.nm_d;
+    assign nm_new = u_new.nm_d;
 endmodule

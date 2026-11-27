@@ -1,0 +1,108 @@
+== kernel:device (31268 endpoints below the file limit)
+  0.111 ns  14 levels   9.28 ns (net 87%)  device/system/shell/u_system/t2:u_core/g_lsu_hybrid.u_lsu/fast/valid_reg[24]/C -> device/control/rsp_status_reg[0]/D
+  0.213 ns  15 levels   8.98 ns (net 88%)  device/system/shell/u_system/t2:u_core/g_lsu_hybrid.u_lsu/fast/valid_reg[24]/C -> device/control/cache_maint_base_reg[54]/CE
+  0.283 ns  15 levels   8.90 ns (net 87%)  device/system/shell/u_system/t2:u_core/g_lsu_hybrid.u_lsu/fast/valid_reg[24]/C -> device/control/cache_maint_size_reg[41]/CE
+== t1 u_core/g_lsu_hybrid.u_lsu (4214 endpoints below the file limit)
+  0.126 ns  25 levels   9.85 ns (net 76%)  device/system/shell/u_system/t1:u_core/g_lsu_hybrid.u_lsu/fast/rr_reg[1]/C -> device/system/shell/u_system/t1:u_core/g_lsu_hybrid.u_lsu/out_vector_reg[337]/D
+  0.128 ns  25 levels   9.86 ns (net 75%)  device/system/shell/u_system/t1:u_core/g_lsu_hybrid.u_lsu/fast/rr_reg[1]/C -> device/system/shell/u_system/t1:u_core/g_lsu_hybrid.u_lsu/out_vector_reg[345]/D
+  0.185 ns  24 levels   9.80 ns (net 78%)  device/system/shell/u_system/t1:u_core/g_lsu_hybrid.u_lsu/fast/rr_reg[1]/C -> device/system/shell/u_system/t1:u_core/g_lsu_hybrid.u_lsu/out_scalar_reg[8]/D
+== t2 u_core/u_vfpu (1931 endpoints below the file limit)
+  0.168 ns   1 levels   9.46 ns (net 98%)  reset_sync_reg[1]/C -> device/system/shell/u_system/t2:u_core/u_vfpu/acc_reg[15][18]/CE
+  0.174 ns   1 levels   9.39 ns (net 98%)  reset_sync_reg[1]/C -> device/system/shell/u_system/t2:u_core/u_vfpu/acc_reg[12][14]/CE
+  0.175 ns   1 levels   9.39 ns (net 98%)  reset_sync_reg[1]/C -> device/system/shell/u_system/t2:u_core/u_vfpu/acc_reg[12][17]/CE
+== t2 u_core/g_lsu_hybrid.u_lsu (7569 endpoints below the file limit)
+  0.197 ns  25 levels   9.66 ns (net 74%)  device/system/shell/u_system/t2:u_core/g_lsu_hybrid.u_lsu/fast/done_reg[17]/C -> device/system/shell/u_system/t2:u_core/g_lsu_hybrid.u_lsu/out_vector_reg[160]/D
+  0.222 ns  25 levels   9.64 ns (net 74%)  device/system/shell/u_system/t2:u_core/g_lsu_hybrid.u_lsu/fast/done_reg[17]/C -> device/system/shell/u_system/t2:u_core/g_lsu_hybrid.u_lsu/out_vector_reg[353]/D
+  0.225 ns  24 levels   9.62 ns (net 74%)  device/system/shell/u_system/t2:u_core/g_lsu_hybrid.u_lsu/fast/done_reg[17]/C -> device/system/shell/u_system/t2:u_core/g_lsu_hybrid.u_lsu/out_vector_reg[136]/D
+== t0 g_home_pipe.u_home_pipe (14578 endpoints below the file limit)
+  0.206 ns   1 levels   9.28 ns (net 98%)  reset_sync_reg[1]/C -> device/system/shell/u_system/t0:g_home_pipe.u_home_pipe/data_mem_reg_r2_192_255_63_69/RAMA/WE
+  0.206 ns   1 levels   9.28 ns (net 98%)  reset_sync_reg[1]/C -> device/system/shell/u_system/t0:g_home_pipe.u_home_pipe/data_mem_reg_r2_192_255_63_69/RAMB/WE
+  0.206 ns   1 levels   9.28 ns (net 98%)  reset_sync_reg[1]/C -> device/system/shell/u_system/t0:g_home_pipe.u_home_pipe/data_mem_reg_r2_192_255_63_69/RAMC/WE
+== t2 u_core/u_mtx (1517 endpoints below the file limit)
+  0.216 ns  15 levels   9.71 ns (net 86%)  device/system/shell/u_system/t2:u_core/w_sdata_reg[1]/C -> device/system/shell/u_system/t2:u_core/u_mtx/g_mac[8].g_lane.u_mac/u_s1/umul48b_24b_x_24b0_retu
+  0.340 ns   1 levels   9.22 ns (net 98%)  reset_sync_reg[1]/C -> device/system/shell/u_system/t2:u_core/u_mtx/u_acc/valid_reg[149][1]/R
+  0.340 ns   1 levels   9.22 ns (net 98%)  reset_sync_reg[1]/C -> device/system/shell/u_system/t2:u_core/u_mtx/u_acc/valid_reg[149][2]/R
+== t0 u_core/g_vrf_banked.u_vrf (4975 endpoints below the file limit)
+  0.284 ns  16 levels   9.55 ns (net 82%)  device/system/shell/u_system/t0:u_core/g_vrf_banked.of_acc_q_reg[1]/C -> device/system/shell/u_system/t0:u_core/g_vrf_banked.u_vrf/g_bank[3].u_bank/s1_byp_mask_reg[8]/R
+  0.328 ns  18 levels   9.59 ns (net 79%)  device/system/shell/u_system/t0:u_core/g_vrf_banked.of_acc_q_reg[1]/C -> device/system/shell/u_system/t0:u_core/g_vrf_banked.u_vrf/g_bank[1].u_bank/s1_vld_reg[2]/D
+  0.331 ns  16 levels   9.60 ns (net 82%)  device/system/shell/u_system/t0:u_core/g_vrf_banked.of_acc_q_reg[1]/C -> device/system/shell/u_system/t0:u_core/g_vrf_banked.u_vrf/g_bank[0].u_bank/s1_vld_reg[15]/D
+== t1 g_home_pipe.u_home_pipe (16231 endpoints below the file limit)
+  0.296 ns  10 levels   9.39 ns (net 88%)  device/system/shell/u_system/t1:g_home_pipe.u_home_pipe/m_index_reg[0]/C -> device/system/shell/u_system/t1:g_home_pipe.u_home_pipe/wbq_data_reg_0_3_378_391/RAME_D1/I
+  0.374 ns   6 levels   9.29 ns (net 94%)  device/system/shell/u_system/t1:g_home_pipe.u_home_pipe/ms_state_reg[33][0]/C -> device/system/shell/u_system/t1:g_home_pipe.u_home_pipe/data_mem_reg_r2_0_63_357_363/RAMA/WADR4
+  0.374 ns   6 levels   9.29 ns (net 94%)  device/system/shell/u_system/t1:g_home_pipe.u_home_pipe/ms_state_reg[33][0]/C -> device/system/shell/u_system/t1:g_home_pipe.u_home_pipe/data_mem_reg_r2_0_63_357_363/RAMB/WADR4
+== t1 u_core/u_mtx (1649 endpoints below the file limit)
+  0.312 ns  15 levels   9.56 ns (net 84%)  device/system/shell/u_system/t1:u_core/w_sdata_reg[0]/C -> device/system/shell/u_system/t1:u_core/u_mtx/g_mac[14].g_lane.u_mac/u_s1/umul48b_24b_x_24b0_ret
+  0.356 ns  13 levels   9.58 ns (net 89%)  device/system/shell/u_system/t1:u_core/w_sdata_reg[3]/C -> device/system/shell/u_system/t1:u_core/u_mtx/g_mac[13].g_lane.u_mac/u_s1/umul48b_24b_x_24b0_ret
+  0.417 ns  14 levels   9.46 ns (net 86%)  device/system/shell/u_system/t1:u_core/w_sdata_reg[0]/C -> device/system/shell/u_system/t1:u_core/u_mtx/g_mac[14].g_lane.u_mac/u_s1/umul48b_24b_x_24b0_ret
+== t1 u_core/g_vrf_banked.u_vrf (1632 endpoints below the file limit)
+  0.323 ns  19 levels   9.30 ns (net 79%)  device/system/shell/u_system/t1:u_core/u_txf/t_i2_reg[7]/C -> device/system/shell/u_system/t1:u_core/g_vrf_banked.u_vrf/g_bank[0].u_bank/s1_vld_reg[14]/D
+  0.338 ns  17 levels   9.32 ns (net 80%)  device/system/shell/u_system/t1:u_core/u_txf/t_i2_reg[7]/C -> device/system/shell/u_system/t1:u_core/g_vrf_banked.u_vrf/g_bank[1].u_bank/s1_vld_reg[3]/D
+  0.373 ns  19 levels   9.24 ns (net 80%)  device/system/shell/u_system/t1:u_core/u_txf/t_i2_reg[7]/C -> device/system/shell/u_system/t1:u_core/g_vrf_banked.u_vrf/g_bank[0].u_bank/s1_vld_reg[6]/D
+== t2 g_home_pipe.u_home_pipe (16496 endpoints below the file limit)
+  0.329 ns  18 levels   9.21 ns (net 82%)  device/system/shell/u_system/t2:g_home_pipe.u_home_pipe/s1_addr_reg[27]/C -> device/system/shell/u_system/t2:g_home_pipe.u_home_pipe/s3_index_reg[3]_rep__1/CE
+  0.329 ns  18 levels   9.21 ns (net 82%)  device/system/shell/u_system/t2:g_home_pipe.u_home_pipe/s1_addr_reg[27]/C -> device/system/shell/u_system/t2:g_home_pipe.u_home_pipe/s3_index_reg[5]_rep__2/CE
+  0.329 ns  18 levels   9.21 ns (net 82%)  device/system/shell/u_system/t2:g_home_pipe.u_home_pipe/s1_addr_reg[27]/C -> device/system/shell/u_system/t2:g_home_pipe.u_home_pipe/s3_index_reg[6]_rep__2/CE
+== t0 u_core/g_lsu_hybrid.u_lsu (3218 endpoints below the file limit)
+  0.334 ns  25 levels   9.58 ns (net 76%)  device/system/shell/u_system/t0:u_core/g_lsu_hybrid.u_lsu/fast/rr_reg[1]/C -> device/system/shell/u_system/t0:u_core/g_lsu_hybrid.u_lsu/out_vector_reg[278]/D
+  0.393 ns  25 levels   9.41 ns (net 76%)  device/system/shell/u_system/t0:u_core/g_lsu_hybrid.u_lsu/fast/rr_reg[1]/C -> device/system/shell/u_system/t0:u_core/g_lsu_hybrid.u_lsu/out_vector_reg[206]/D
+  0.413 ns  23 levels   9.38 ns (net 75%)  device/system/shell/u_system/t0:u_core/g_lsu_hybrid.u_lsu/fast/rr_reg[1]/C -> device/system/shell/u_system/t0:u_core/g_lsu_hybrid.u_lsu/out_vector_reg[183]/D
+== t0 u_core/u_mtx (6310 endpoints below the file limit)
+  0.337 ns  13 levels   9.34 ns (net 84%)  device/system/shell/u_system/t0:u_core/u_mtx/mm_reg[1]__0/C -> device/system/shell/u_system/t0:u_core/u_mtx/g_mac[14].g_lane.u_mac/u_s1/umul48b_24b_x_24b0_ret
+  0.392 ns  15 levels   9.46 ns (net 84%)  device/system/shell/u_system/t0:u_core/x_sb_fw_reg_rep/C -> device/system/shell/u_system/t0:u_core/u_mtx/g_mac[2].g_lane.u_mac/u_s1/umul48b_24b_x_24b0_retu
+  0.414 ns  15 levels   9.47 ns (net 83%)  device/system/shell/u_system/t0:u_core/u_mtx/mm_reg[1]__0/C -> device/system/shell/u_system/t0:u_core/u_mtx/g_mac[14].g_lane.u_mac/g_in_reg.a_q_reg[31]/D
+== t1 u_core/u_vfpu (1791 endpoints below the file limit)
+  0.493 ns  11 levels   9.14 ns (net 87%)  device/system/shell/u_system/t1:u_core/u_vfpu/g_sfu.u_sfu/g_slice[0].u_serial/cnt_reg[2]/C -> device/system/shell/u_system/t1:u_core/u_vfpu/g_sfu.u_sfu/g_slice[0].u_serial/u_exp2/p0_bit_sli
+  0.500 ns  11 levels   9.15 ns (net 87%)  device/system/shell/u_system/t1:u_core/u_vfpu/g_sfu.u_sfu/g_slice[0].u_serial/cnt_reg[2]/C -> device/system/shell/u_system/t1:u_core/u_vfpu/g_sfu.u_sfu/g_slice[0].u_serial/u_exp2/p0_bit_sli
+  0.558 ns   9 levels   9.09 ns (net 89%)  device/system/shell/u_system/t1:u_core/u_vfpu/g_sfu.u_sfu/g_slice[0].u_serial/cnt_reg[2]/C -> device/system/shell/u_system/t1:u_core/u_vfpu/g_sfu.u_sfu/g_slice[0].u_serial/u_exp2/smul53b_30
+== kernel:registers (31 endpoints below the file limit)
+  0.506 ns   5 levels   9.07 ns (net 95%)  registers/reg_we_q_reg/C -> registers/rd_data_s_reg[16]/D
+  0.672 ns   4 levels   8.97 ns (net 97%)  registers/reg_we_q_reg/C -> registers/rd_data_s_reg[15]/D
+  0.996 ns   4 levels   8.59 ns (net 96%)  registers/reg_we_q_reg/C -> registers/rd_data_s_reg[10]/D
+== t1 u_core/u_bar (1331 endpoints below the file limit)
+  0.544 ns  18 levels   9.34 ns (net 81%)  device/system/shell/u_system/t1:u_core/u_srf/valid_reg[79]/C -> device/system/shell/u_system/t1:u_core/u_bar/done_epoch_reg[1][20]/CE
+  0.544 ns  18 levels   9.34 ns (net 81%)  device/system/shell/u_system/t1:u_core/u_srf/valid_reg[79]/C -> device/system/shell/u_system/t1:u_core/u_bar/done_epoch_reg[1][4]/CE
+  0.544 ns  18 levels   9.34 ns (net 81%)  device/system/shell/u_system/t1:u_core/u_srf/valid_reg[79]/C -> device/system/shell/u_system/t1:u_core/u_bar/done_epoch_reg[1][8]/CE
+== t2 u_core/g_vrf_banked.u_vrf (4053 endpoints below the file limit)
+  0.554 ns   4 levels   8.94 ns (net 94%)  device/system/shell/u_system/t2:u_core/w_class_reg[1]/C -> device/system/shell/u_system/t2:u_core/g_vrf_banked.u_vrf/g_bank[3].u_bank/mem_reg_1/ENBWREN
+  0.732 ns   6 levels   9.30 ns (net 92%)  device/system/shell/u_system/t2:u_core/w_class_reg[1]/C -> device/system/shell/u_system/t2:u_core/g_vrf_banked.u_vrf/g_bank[3].u_bank/vld_reg[54][5]/D
+  0.756 ns   6 levels   9.28 ns (net 91%)  device/system/shell/u_system/t2:u_core/w_class_reg[1]/C -> device/system/shell/u_system/t2:u_core/g_vrf_banked.u_vrf/g_bank[3].u_bank/vld_reg[54][0]/D
+== t0 u_core/u_vfpu (1205 endpoints below the file limit)
+  0.571 ns   1 levels   8.96 ns (net 97%)  reset_sync_reg[1]/C -> device/system/shell/u_system/t0:u_core/u_vfpu/acc_reg[13][4]/R
+  0.704 ns   1 levels   8.83 ns (net 97%)  reset_sync_reg[1]/C -> device/system/shell/u_system/t0:u_core/u_vfpu/acc_reg[13][1]/R
+  0.719 ns   8 levels   9.65 ns (net 89%)  device/system/shell/u_system/t0:u_core/u_vfpu/g_sfu.u_sfu/g_slice[0].u_serial/busy_reg/C -> device/system/shell/u_system/t0:u_core/u_vfpu/g_sfu.u_sfu/g_slice[0].u_serial/u_exp2/p0_bit_sli
+== t0 u_core/u_txf (3367 endpoints below the file limit)
+  0.662 ns   5 levels   9.32 ns (net 93%)  device/system/shell/u_system/t0:u_core/g_vrf_banked.u_vrf/g_bank[1].u_bank/s1_dst_reg[1]_rep__2 -> device/system/shell/u_system/t0:u_core/u_txf/sr_data_reg[480]/D
+  0.804 ns   5 levels   9.20 ns (net 92%)  device/system/shell/u_system/t0:u_core/g_vrf_banked.u_vrf/g_bank[1].u_bank/s1_dst_reg[1]_rep__2 -> device/system/shell/u_system/t0:u_core/u_txf/sr_data_reg[507]/D
+  0.814 ns   4 levels   9.17 ns (net 95%)  device/system/shell/u_system/t0:u_core/g_vrf_banked.u_vrf/g_bank[1].u_bank/s1_dst_reg[1]_rep__2 -> device/system/shell/u_system/t0:u_core/u_txf/sr_next_reg[480]/D
+== platform (522 endpoints below the file limit)
+  0.701 ns   1 levels   1.13 ns (net 84%)  level0_i/ulp/ulp_ucs/inst/aclk_kernel_01_hierarchy/clock_throttling_aclk_kernel_01/U0/Rst_Int_r -> level0_i/ulp/ulp_ucs/inst/aclk_kernel_01_hierarchy/clock_throttling_aclk_kernel_01/U0/Gate_Div_
+  0.792 ns   0 levels   0.33 ns (net 75%)  level0_i/ulp/ulp_ucs/inst/aclk_kernel_01_hierarchy/clock_throttling_aclk_kernel_01/U0/Gate_Fast -> level0_i/ulp/ulp_ucs/inst/aclk_kernel_01_hierarchy/clock_throttling_aclk_kernel_01/U0/GC.FCLK/C
+  0.792 ns   1 levels   1.07 ns (net 81%)  level0_i/ulp/ulp_ucs/inst/frequency_counters/frequency_counter_aclk_kernel_01/inst/CLKS[0].cdc_ -> level0_i/ulp/ulp_ucs/inst/frequency_counters/frequency_counter_aclk_kernel_01/inst/CLKS[0].test
+== t2 u_core/u_txf (4435 endpoints below the file limit)
+  0.717 ns  18 levels   9.07 ns (net 81%)  device/system/shell/u_system/t2:u_core/u_txf/t_ps_reg[2]/C -> device/system/shell/u_system/t2:u_core/u_txf/cm_cnt_reg[7][9]/D
+  0.724 ns  18 levels   9.05 ns (net 82%)  device/system/shell/u_system/t2:u_core/u_txf/t_ps_reg[2]/C -> device/system/shell/u_system/t2:u_core/u_txf/cm_cnt_reg[1][9]/D
+  0.737 ns  18 levels   9.05 ns (net 81%)  device/system/shell/u_system/t2:u_core/u_txf/t_ps_reg[2]/C -> device/system/shell/u_system/t2:u_core/u_txf/cm_cnt_reg[7][8]/D
+== t0 u_core/u_valu (132 endpoints below the file limit)
+  0.905 ns   4 levels   8.60 ns (net 95%)  device/system/shell/u_system/t0:u_core/g_vrf_banked.u_vrf/g_bank[1].u_bank/s1_dst_reg[0]_rep__2 -> device/system/shell/u_system/t0:u_core/u_valu/q_pu_reg[1]0/DSP_A_B_DATA_INST/B[6]
+  0.924 ns   4 levels   8.57 ns (net 95%)  device/system/shell/u_system/t0:u_core/g_vrf_banked.u_vrf/g_bank[1].u_bank/s1_dst_reg[0]_rep__2 -> device/system/shell/u_system/t0:u_core/u_valu/q_pu_reg[1]/DSP_A_B_DATA_INST/A[6]
+  1.311 ns   4 levels   8.13 ns (net 94%)  device/system/shell/u_system/t0:u_core/g_vrf_banked.u_vrf/g_bank[1].u_bank/s1_dst_reg[0]_rep__2 -> device/system/shell/u_system/t0:u_core/u_valu/q_pu_reg[2]/DSP_A_B_DATA_INST/A[10]
+== t1 u_core/u_txf (4606 endpoints below the file limit)
+  1.111 ns  10 levels   8.74 ns (net 88%)  device/system/shell/u_system/t1:u_core/g_lsu_hybrid.u_lsu/fast/valid_reg[28]/C -> device/system/shell/u_system/t1:u_core/u_txf/t_c2_reg[36]/CE
+  1.111 ns  10 levels   8.74 ns (net 88%)  device/system/shell/u_system/t1:u_core/g_lsu_hybrid.u_lsu/fast/valid_reg[28]/C -> device/system/shell/u_system/t1:u_core/u_txf/t_c3_reg[57]/CE
+  1.111 ns  10 levels   8.74 ns (net 88%)  device/system/shell/u_system/t1:u_core/g_lsu_hybrid.u_lsu/fast/valid_reg[28]/C -> device/system/shell/u_system/t1:u_core/u_txf/t_c4_reg[57]/CE
+== t2 u_core/u_valu (128 endpoints below the file limit)
+  1.220 ns   7 levels   8.54 ns (net 80%)  device/system/shell/u_system/t2:u_core/x_valu_imm_reg_rep__16/C -> device/system/shell/u_system/t2:u_core/u_valu/q_pu_reg[10][6]__0/D
+  1.372 ns   8 levels   8.38 ns (net 73%)  device/system/shell/u_system/t2:u_core/x_valu_imm_reg_rep__16/C -> device/system/shell/u_system/t2:u_core/u_valu/q_pu_reg[10]/DSP_OUTPUT_INST/ALU_OUT[0]
+  1.372 ns   8 levels   8.38 ns (net 73%)  device/system/shell/u_system/t2:u_core/x_valu_imm_reg_rep__16/C -> device/system/shell/u_system/t2:u_core/u_valu/q_pu_reg[10]/DSP_OUTPUT_INST/ALU_OUT[10]
+== t0 u_core/u_bar (1348 endpoints below the file limit)
+  1.646 ns  16 levels   7.98 ns (net 78%)  device/system/shell/u_system/t0:u_core/w_idx_reg[1]__0_rep/C -> device/system/shell/u_system/t0:u_core/u_bar/done_epoch_reg[2][30]/CE
+  1.669 ns  14 levels   7.93 ns (net 80%)  device/system/shell/u_system/t0:u_core/w_idx_reg[1]__0_rep/C -> device/system/shell/u_system/t0:u_core/u_bar/done_epoch_reg[6][35]/CE
+  1.671 ns  14 levels   7.93 ns (net 80%)  device/system/shell/u_system/t0:u_core/w_idx_reg[1]__0_rep/C -> device/system/shell/u_system/t0:u_core/u_bar/done_epoch_reg[6][34]/CE
+== t2 u_core/u_bar (802 endpoints below the file limit)
+  1.985 ns   2 levels   7.44 ns (net 98%)  reset_sync_reg[1]/C -> device/system/shell/u_system/t2:u_core/u_bar/n_ops_reg[3][0]/R
+  1.987 ns   2 levels   7.44 ns (net 98%)  reset_sync_reg[1]/C -> device/system/shell/u_system/t2:u_core/u_bar/n_ops_reg[3][1]/R
+  1.997 ns   2 levels   7.42 ns (net 98%)  reset_sync_reg[1]/C -> device/system/shell/u_system/t2:u_core/u_bar/n_ops_reg[3][2]/R
+== t1 u_core/u_mul (59 endpoints below the file limit)
+  1.988 ns   7 levels   8.13 ns (net 78%)  device/system/shell/u_system/t1:u_core/x_sa_fw_reg_rep__1/C -> device/system/shell/u_system/t1:u_core/u_mul/p0_hl_reg[15]/D
+  2.119 ns   7 levels   8.00 ns (net 78%)  device/system/shell/u_system/t1:u_core/x_sa_fw_reg_rep__1/C -> device/system/shell/u_system/t1:u_core/u_mul/p0_hl_reg[10]/D
+  2.131 ns   7 levels   7.99 ns (net 78%)  device/system/shell/u_system/t1:u_core/x_sa_fw_reg_rep__1/C -> device/system/shell/u_system/t1:u_core/u_mul/p0_hl_reg[11]/D

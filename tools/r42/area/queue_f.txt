@@ -1,0 +1,3 @@
+exp_t5|SYNTH_ONLY=1 FILES=/home/vivado/r42_area/tools/r42/area/exp/dsp_infer.v|dsp_t5|
+exp_t6|SYNTH_ONLY=1 FILES=/home/vivado/r42_area/tools/r42/area/exp/dsp_infer.v|dsp_t6|
+exp_t7|SYNTH_ONLY=1 FILES=/home/vivado/r42_area/tools/r42/area/exp/dsp_infer.v|dsp_t7|

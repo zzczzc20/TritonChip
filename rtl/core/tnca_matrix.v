@@ -68,7 +68,7 @@ module tnca_matrix #(
     // latency becomes OPND_REG + popcount(MAC_CUTS) and every user of it here
     // (the tag pipeline, the drain) follows from PIPE.
     parameter MAC_DP   = 0,
-    parameter [4:0] MAC_CUTS = 5'b11101,
+    parameter [5:0] MAC_CUTS = 6'b011101,
     // Register the MAC operands before the FMA (tnca_fpu_multi IN_REG): one
     // more cycle of latency per command, and the A operand's block-RAM read
     // and element select no longer share a cycle with the multiply.
@@ -321,7 +321,7 @@ module tnca_matrix #(
                            : acc_rd[g];
 
             if (MAC_DP != 0) begin : g_lane
-                tnca_mac_lane #(.CUTS(MAC_CUTS), .IN_REG(OPND_REG), .BE(FMA_IMPL / 16)) u_mac (
+                tnca_mac_lane #(.CUTS(MAC_CUTS), .IN_REG(OPND_REG), .BE((FMA_IMPL / 16) % 16)) u_mac (
                     .clk(clk), .rst_n(rst_n),
                     .mode((row_any || !r_dp) ? 2'd0 : g4 ? 2'd2 : 2'd1),
                     .fmt(mac_fmt), .fa(r_dt), .fb(r_bdt),
@@ -350,7 +350,7 @@ module tnca_matrix #(
     // Vivado evaluates an untyped sum of bit-selects at one-bit width, while
     // simulators may widen it. The explicit integer context is essential:
     // CUTS=11101 must give 4, not 0, for the result-tag pipeline and drain.
-    localparam integer MAC_LAT = MAC_CUTS[0] + MAC_CUTS[1] + MAC_CUTS[2] + MAC_CUTS[3] + MAC_CUTS[4];
+    localparam integer MAC_LAT = MAC_CUTS[0] + MAC_CUTS[1] + MAC_CUTS[2] + MAC_CUTS[3] + MAC_CUTS[4] + MAC_CUTS[5];
     localparam PIPE = (MAC_DP != 0) ? (OPND_REG + MAC_LAT) : (FMA_LAT + OPND_REG);
     reg              tg_v   [0:PIPE-1];
     reg [ACC_W-1:0]  tg_slot[0:PIPE-1];

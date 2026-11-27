@@ -1,0 +1,5 @@
+0fddd1fa0b9ee588029201871534bdc98cd4c61aaa923413db06ead715f4f00b  /home/vivado/r42_area_out/kern_base/synth.dcp
+b6fd25d6d4f1f905a2755dbb7b173484ffc3ebf9a46489912f2ee2f164e04b4f  /home/vivado/r42_area_out/kern_base_rb/synth.dcp
+3e131151ab81a79a52cd40c2f156388cef321ecb95c6fc830c3f37d431a1757c  /home/vivado/r42_area_out/kern_be13/synth.dcp
+65b20c574bddd4bf894d67429bd47f1955af9619194f83cdb80b88fcc77dbcc5  /home/vivado/r42_area_out/kern_be13_rb/synth.dcp
+-rw-rw-r-- 1 vivado vivado 242173 Nov 27 18:40 /home/vivado/r42_area_out/kern_base/utilization.rpt

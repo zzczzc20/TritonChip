@@ -18,8 +18,9 @@ R=$ROOT/rtl
 DEFAULT_FILES="$ROOT/tools/r42/area/ooc_tops.v $R/core/tnca_fp32_fma.v $R/core/tnca_mac_lane.v $R/core/tnca_fpu_multi.v \
  $R/gen/tnca_fma_align_xls.v $R/gen/tnca_fma_norm_xls.v $R/gen/tnca_fma_round_xls.v $R/gen/tnca_fmad_norm_xls.v \
  $R/gen/tnca_fma_l3_xls.v $R/gen/tnca_fmad_l3_xls.v $R/gen/tnca_mac_b0_xls.v $R/gen/tnca_widen_xls.v $R/gen/tnca_mac_s1_xls.v \
- $R/gen/tnca_mac_s2_xls.v $R/gen/tnca_mac_f2_xls.v $R/gen/tnca_mac_f1_xls.v $R/gen/tnca_fma_alignp_xls.v $R/core/tnca_lzc81.v $R/core/tnca_fmax_norm.v $R/core/tnca_fmax_round.v $R/core/tnca_fmax_mul.v $R/core/tnca_fmax_alignp.v $R/core/tnca_fmax_align.v $R/core/tnca_sfu.v $R/gen/tnca_sfu_exp2_xls.v $R/gen/tnca_sfu_log2_xls.v $R/gen/tnca_sfu_rcp_xls.v $R/gen/tnca_sfu_rsqrt_xls.v $R/gen/tnca_cvt_comb_xls.v"
+ $R/gen/tnca_mac_s2_xls.v $R/gen/tnca_mac_f2_xls.v $R/gen/tnca_mac_f1_xls.v $R/gen/tnca_fma_alignp_xls.v $R/core/tnca_lzc81.v $R/core/tnca_fmax_fma.v $R/core/tnca_fmax_norm.v $R/core/tnca_fmax_add.v $R/core/tnca_fmax_sel.v $R/core/tnca_fmax_round.v $R/core/tnca_fmax_mul.v $R/core/tnca_fmax_alignp.v $R/core/tnca_fmax_align.v $R/core/tnca_sfu.v $R/gen/tnca_sfu_exp2_xls.v $R/gen/tnca_sfu_log2_xls.v $R/gen/tnca_sfu_rcp_xls.v $R/gen/tnca_sfu_rsqrt_xls.v $R/gen/tnca_cvt_comb_xls.v"
 FILES=${FILES:-$DEFAULT_FILES}
+FILES=${FILES//,/ }          # a list given through the queue env is comma-separated
 echo "$(date -u +%FT%TZ) start $NAME top=$TOP generics=$* period=$PERIOD synth_only=${SYNTH_ONLY:-0}" >> $OUTROOT/run.log
 ( cd $OUT && OOC_GENERICS="$*" INCDIRS=$ROOT/rtl/common SYNTH_ONLY=${SYNTH_ONLY:-0} FLATTEN=${FLATTEN:-} nice -n 5 vivado -mode batch -nojournal -nolog \
     -source $ROOT/tools/r42/area/ooc.tcl -tclargs $TOP $PERIOD xcu280-fsvh2892-2L-e $OUT 6 $FILES > $OUT/vivado.log 2>&1 )

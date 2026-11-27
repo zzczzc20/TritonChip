@@ -41,6 +41,7 @@ module tnca_shell_tb;
     parameter RPAIR          = 0;
     parameter MTX_ABUF       = 0;
     parameter MTX_PIPE       = 0;
+    parameter VRF_FWD       = 0;   // R42 issue: writeback-to-R operand forwarding (tnca_core VRF_FWD)
     parameter WORDS          = 4096;
     parameter NUM_RCTX       = 2;
     parameter RCTX_W         = 1;
@@ -95,7 +96,7 @@ module tnca_shell_tb;
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
-        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE)
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE), .VRF_FWD(VRF_FWD)
     ) dut (
         .clk(clk), .rst_n(rst_n),
         .cmd_valid(cmd_valid), .cmd_ready(cmd_ready), .cmd_op(cmd_op),

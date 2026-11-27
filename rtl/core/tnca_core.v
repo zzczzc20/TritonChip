@@ -96,6 +96,11 @@ module tnca_core #(
     parameter MTX_VRF_REG    = 0,
     parameter VRF_XBAR       = 0,   // R42 shrink: tnca_vrf_banked XBAR / VLD_RAM (0 = the shipped RTL)
     parameter VRF_VLD_RAM    = 0,
+    //   VRF_FWD (R42 issue) a vector source whose producer is in the writeback stage this very cycle, with all
+    //               sixteen lanes written, is taken from the writeback register (w_vdata) instead of from a
+    //               bank read: the consumer leaves R one cycle earlier (the read it would have issued in that cycle
+    //               answers one cycle later with the same data). 0 = the shipped core, cycle for cycle.
+    parameter VRF_FWD        = 0,
     //   LSU_INFLIGHT (R39-08) 2: two load/store units behind the one port
     //               (tnca_lsu_pair), so an access starts while the one ahead
     //               waits for memory; atomics and fences see one access at
@@ -671,8 +676,10 @@ module tnca_core #(
     wire                 stall_front;
     wire                 kill_d;          // forward: the D-stage squash (below)
     wire                 pf_haz_w;        // forward: VRF_PREFETCH's hazard (below)
+    wire [2:0]           pf_hz_v;         // the same, per source of D (VRF_FWD prefetches the other sources meanwhile)
     wire                 stall_other;     // everything but the VRF
     wire                 r_vsrc_haz;      // a vector source's producer is in flight
+    wire [2:0]           r_vhz;           // the same, per source (a, b, c); VRF_FWD reads the other sources meanwhile
     wire                 r_of_idle;       // R has no vector read asked for, arriving or held
     // R41 coverage (bench only): R stalled holding collected operands, and a
     // D prefetch response dropped because D did not move up.
@@ -687,6 +694,10 @@ module tnca_core #(
     // R41 T2: W's vector write and its bank, registered with w_* (below).
     reg                  w_vec_q;
     reg  [1:0]           w_bank_q;
+    // R42 issue (VRF_FWD): W's write covers all sixteen lanes (registered with w_lane_en), and which of R's vector
+    // sources W writes this cycle with all lanes (registered, with r_whit).
+    reg                  w_full;
+    reg  [2:0]           r_fwd;
     wire                 mtx_vrf_valid_w;
     wire [4:0]           vrf_req_accept;
     wire [4:0]           vrf_rsp_valid;
@@ -862,8 +873,12 @@ module tnca_core #(
         // waits for them (timing-010): it overlaps them, and the whole
         // stall decision is no longer in front of the bank arbiters.
         wire of_enable = r_valid && !r_vsrc_haz;
-        wire [2:0] of_need =
-            {r_vc_en, r_vb_en, r_va_en} & {3{of_enable}};
+        // VRF_FWD: a source with no producer in flight is read even while another source of the same instruction
+        // waits for its producer (the instruction cannot leave R then, so the value is held in of_d* until it can):
+        // when that producer reaches W the waiting source is forwarded and nothing is left to read.
+        wire [2:0] of_need = (VRF_FWD != 0)
+            ? ({r_vc_en, r_vb_en, r_va_en} & ~r_vhz & {3{r_valid}})
+            : ({r_vc_en, r_vb_en, r_va_en} & {3{of_enable}});
         reg  [2:0] of_got;
         reg  [VW-1:0] of_d0, of_d1, of_d2;
 
@@ -887,7 +902,11 @@ module tnca_core #(
                 $display("FAIL tnca_core assert @%0t: registered accept %b differs from the VRF response valids %b",
                          $time, of_acc_q, vrf_rsp_valid[2:0]);
 `endif
-        wire [2:0] of_arrive = of_acc_q & ~(pf_tag & {3{~adv_q}});
+        // VRF_FWD: r_fwd[k] says the writeback stage writes R's source k this cycle, all lanes (registered, computed
+        // with r_whit below). It counts as an arrival (no request, the source is in hand this cycle); its data is w_vdata.
+        wire [2:0] of_arrive_rsp = of_acc_q & ~(pf_tag & {3{~adv_q}});
+        wire [2:0] of_fwd    = (VRF_FWD != 0) ? r_fwd : 3'b000;
+        wire [2:0] of_arrive = of_arrive_rsp | of_fwd;
         wire [2:0] of_have   = of_got | of_arrive;
         wire of_ready = ((of_need & ~of_have) == 3'b000);
 
@@ -897,9 +916,12 @@ module tnca_core #(
         // the duplicate came back after the instruction had gone.
         wire [2:0] of_want = of_need & ~of_have;
 
-        wire [VW-1:0] of_v0 = of_arrive[0] ? vrf_rsp_data[0*VW +: VW] : of_d0;
-        wire [VW-1:0] of_v1 = of_arrive[1] ? vrf_rsp_data[1*VW +: VW] : of_d1;
-        wire [VW-1:0] of_v2 = of_arrive[2] ? vrf_rsp_data[2*VW +: VW] : of_d2;
+        wire [VW-1:0] of_r0 = of_fwd[0] ? w_vdata : vrf_rsp_data[0*VW +: VW];
+        wire [VW-1:0] of_r1 = of_fwd[1] ? w_vdata : vrf_rsp_data[1*VW +: VW];
+        wire [VW-1:0] of_r2 = of_fwd[2] ? w_vdata : vrf_rsp_data[2*VW +: VW];
+        wire [VW-1:0] of_v0 = of_arrive[0] ? of_r0 : of_d0;
+        wire [VW-1:0] of_v1 = of_arrive[1] ? of_r1 : of_d1;
+        wire [VW-1:0] of_v2 = of_arrive[2] ? of_r2 : of_d2;
 
         always @(posedge clk) begin
             if (!rst_n) begin
@@ -919,9 +941,9 @@ module tnca_core #(
         // as well is harmless: the next occupant of R starts with of_got
         // clear and reads of_d* only after its own response lands.
         always @(posedge clk) begin
-            if (of_arrive[0]) of_d0 <= vrf_rsp_data[0*VW +: VW];
-            if (of_arrive[1]) of_d1 <= vrf_rsp_data[1*VW +: VW];
-            if (of_arrive[2]) of_d2 <= vrf_rsp_data[2*VW +: VW];
+            if (of_arrive[0]) of_d0 <= of_r0;
+            if (of_arrive[1]) of_d1 <= of_r1;
+            if (of_arrive[2]) of_d2 <= of_r2;
         end
 
         // The operands travel into X with their instruction.
@@ -991,7 +1013,7 @@ module tnca_core #(
         // has gone would be taken as an operand of whatever replaced it.
         assign cov_ev_hold_ops = stall_front && r_valid && (of_got != 3'b000);
         assign cov_ev_pf_drop  = |(vrf_rsp_valid[2:0] & pf_tag & {3{~adv_q}});
-        assign r_of_idle = (of_got == 3'b000) && (of_arrive == 3'b000)
+        assign r_of_idle = ((VRF_FWD != 0) || (of_got == 3'b000)) && (of_arrive_rsp == 3'b000)
                         && (of_want == 3'b000);
 
 `ifndef SYNTHESIS
@@ -1117,8 +1139,11 @@ module tnca_core #(
         wire [2:0] r_left = {r_vc_en, r_vb_en, r_va_en} & ~of_have;
         wire pf_sel = (VRF_PREFETCH != 0) && d_valid && (|pf_need)
                     && (!r_valid || (r_left == 3'b000));
-        wire pf_go = pf_sel && !(r_valid && r_vsrc_haz) && !pf_haz_w;
-        wire [2:0] rq_src = pf_go ? pf_need : of_want;
+        // VRF_FWD: a source of D whose producer is in flight does not hold back the other sources of D: they are read
+        // now (pf_issue), the instruction picks the late one up by forwarding when its producer reaches W.
+        wire [2:0] pf_issue = (VRF_FWD != 0) ? (pf_need & ~pf_hz_v) : pf_need;
+        wire pf_go = pf_sel && !(r_valid && r_vsrc_haz) && ((VRF_FWD != 0) || !pf_haz_w);
+        wire [2:0] rq_src = pf_go ? pf_issue : of_want;
         wire [4:0] rq_v = {txf_vr_req && !txf_vr_valid,
                            mtx_vrf_req && !mtx_vrf_rsp_valid && !mtx_vrf_valid_w, rq_src};
         wire [RCTX_W-1:0] rq_src_rctx = pf_sel ? d_rctx : r_rctx;
@@ -1137,7 +1162,7 @@ module tnca_core #(
                 pf_tag <= 3'b000;
                 adv_q  <= 1'b0;
             end else begin
-                pf_tag <= pf_go ? (vrf_req_accept[2:0] & pf_need) : 3'b000;
+                pf_tag <= pf_go ? (vrf_req_accept[2:0] & pf_issue) : 3'b000;
                 adv_q  <= !stall_front && d_valid && !kill_d;
             end
         end
@@ -1334,9 +1359,10 @@ module tnca_core #(
                           !(VRF_BYPASS != 0 && (whit))) || \
                          (r_valid && r_dstc == `TNCA_DST_V && r_rctx == d_rctx && \
                           r_dsti == (idx)))
-    assign pf_haz_w = (d_pf_va_en && `PF_HAZ(dsb_v[0], d_whit[0], d_pf_va_idx))
-                    | (d_pf_vb_en && `PF_HAZ(dsb_v[1], d_whit[1], d_pf_vb_idx))
-                    | (d_pf_vc_en && `PF_HAZ(dsb_v[2], d_whit[2], d_pf_vc_idx));
+    assign pf_hz_v  = {d_pf_vc_en && `PF_HAZ(dsb_v[2], d_whit[2], d_pf_vc_idx),
+                       d_pf_vb_en && `PF_HAZ(dsb_v[1], d_whit[1], d_pf_vb_idx),
+                       d_pf_va_en && `PF_HAZ(dsb_v[0], d_whit[0], d_pf_va_idx)};
+    assign pf_haz_w = |pf_hz_v;
 
     wire hz_sa = r_sa_en && `SB_S_BUSY(r_rctx, r_sa_idx) && !`AVAIL_S(r_rctx, r_sa_idx);
     wire hz_sb = r_sb_en && `SB_S_BUSY(r_rctx, r_sb_idx) && !`AVAIL_S(r_rctx, r_sb_idx);
@@ -1444,6 +1470,7 @@ module tnca_core #(
                 | (r_acc_src && !acc_free_s);
 
     assign r_vsrc_haz = hz_va | hz_vb | hz_vc;
+    assign r_vhz      = {hz_vc, hz_vb, hz_va};
 
     wire hazard = r_valid && (hz_sa|hz_sb|hz_sc|hz_va|hz_vb|hz_vc|hz_pa|hz_pb|hz_pm|hz_d)
                 | hz_acc | hz_sb2 | hz_sbx;
@@ -2868,6 +2895,16 @@ module tnca_core #(
         end
     end
 
+    // VRF_FWD: the sources of R that W writes this cycle with every lane enabled (a partial write needs the bank's
+    // merge with the old value, so it is read as before). Same next-state as r_whit.
+    wire wn_full = vrf_wb_freeze ? w_full : (&nw_lane_en);
+    always @(posedge clk) begin
+        if (!rst_n || launch_valid) r_fwd <= 3'b000;
+        else if (VRF_FWD != 0)
+            r_fwd <= (stall_front ? whit_rh : whit_ra) & {3{wn_full}};
+        else r_fwd <= 3'b000;
+    end
+
     //==========================================================================
     // Sequential
     //==========================================================================
@@ -3004,6 +3041,7 @@ module tnca_core #(
             w_vdata   <= nw_vdata;
             w_pdata   <= nw_pdata;
             w_lane_en <= nw_lane_en;
+            w_full    <= &nw_lane_en;
             end
 
             if (|running) perf_cycles <= perf_cycles + 64'd1;

@@ -99,6 +99,7 @@ module tnca_shell #(
     parameter RPAIR          = `TNCA_UARCH_RPAIR,
     parameter MTX_ABUF       = `TNCA_UARCH_MTX_ABUF,
     parameter MTX_PIPE       = `TNCA_UARCH_MTX_PIPE,
+    parameter VRF_FWD       = `TNCA_UARCH_VRF_FWD,   // R42 issue: writeback-to-R operand forwarding (tnca_core VRF_FWD)
     parameter FPU_OVERLAP    = `TNCA_UARCH_FPU_OVERLAP,
     parameter HAS_TENSOR_XPOSE = `TNCA_UARCH_HAS_TENSOR_XPOSE,
     parameter CORE_ID        = 0,
@@ -310,7 +311,7 @@ module tnca_shell #(
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
-        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE), .VRF_FWD(VRF_FWD),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) u_core (
         .clk(clk), .rst_n(rst_n),

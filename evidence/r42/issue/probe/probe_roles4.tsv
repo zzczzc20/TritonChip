@@ -1,0 +1,37 @@
+prog	variant	N	seen	mean_cyc_per_instr	median	hist	total_cycles	x_hazard	x_vrf	x_fpu	x_rsv	x_wb	x_vrfwb	x_frontend	pass
+dist1_int	run2	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+dist1_int	nopf	160	160	8	8.000	{8: 134}	1394	0	640	0	0	0	0	?	True
+dist1_int	nobyp	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+dist1_int	behav	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+f3_chain1	run2	160	160	5	5.000	{5: 134}	913	0	159	0	0	0	0	?	True
+f3_chain1	nopf	160	160	8	8.000	{8: 134}	1394	0	640	0	0	0	0	?	True
+f3_chain1	nobyp	160	160	9	9.000	{9: 134}	1549	636	159	0	0	0	0	?	True
+f3_chain1	behav	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+f3_chain2	run2	160	160	6	6.000	{5: 67, 7: 67}	1074	0	320	0	0	0	0	?	True
+f3_chain2	nopf	160	160	10	10.000	{9: 67, 11: 67}	1714	0	960	0	0	0	0	?	True
+f3_chain2	nobyp	160	160	6	6.000	{5: 67, 7: 67}	1074	0	320	0	0	0	0	?	True
+f3_chain2	behav	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+f3_fma	run2	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+f3_fma	nopf	160	160	8	8.000	{8: 134}	1394	0	640	0	0	0	0	?	True
+f3_fma	nobyp	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+f3_fma	behav	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+mix_v3_v0	run2	160	160	5	5.000	{4: 67, 6: 67}	914	0	0	0	160	0	0	?	True
+mix_v3_v0	nopf	160	160	6.500	6.500	{6: 67, 7: 67}	1154	0	320	0	80	0	0	?	True
+mix_v3_v0	nobyp	160	160	5	5.000	{4: 67, 6: 67}	914	0	0	0	160	0	0	?	True
+mix_v3_v0	behav	160	160	5	5.000	{4: 67, 6: 67}	914	0	0	0	160	0	0	?	True
+v1_chain1	run2	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+v1_chain1	nopf	160	160	8	8.000	{8: 134}	1394	0	640	0	0	0	0	?	True
+v1_chain1	nobyp	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+v1_chain1	behav	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+v2_add	run2	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+v2_add	nopf	160	160	8	8.000	{8: 134}	1394	0	640	0	0	0	0	?	True
+v2_add	nobyp	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+v2_add	behav	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+v2_chain1	run2	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+v2_chain1	nopf	160	160	8	8.000	{8: 134}	1394	0	640	0	0	0	0	?	True
+v2_chain1	nobyp	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+v2_chain1	behav	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+v2_chain2	run2	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+v2_chain2	nopf	160	160	8	8.000	{8: 134}	1394	0	640	0	0	0	0	?	True
+v2_chain2	nobyp	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True
+v2_chain2	behav	160	160	4	4.000	{4: 134}	754	0	0	0	0	0	0	?	True

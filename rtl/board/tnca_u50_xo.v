@@ -145,6 +145,7 @@ module tnca_u50_xo #(
     parameter RPAIR            = 0,
     parameter MTX_ABUF         = 0,
     parameter MTX_PIPE         = 0,
+    parameter VRF_FWD         = 0,   // R42 issue: writeback-to-R operand forwarding (tnca_core VRF_FWD)
     parameter HAS_TENSOR_XPOSE = 0,
     // ap_clk / DEV_DIV is the device clock: 1 -> 100 MHz with the 100 MHz
     // kernel clock, measured on the U280 on 2026-10-09 (see above). The /2
@@ -238,7 +239,7 @@ module tnca_u50_xo #(
         .FPU_OVERLAP(FPU_OVERLAP),
         .RSLICE(RSLICE),
         .RPAIR(RPAIR),
-        .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE),
+        .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE), .VRF_FWD(VRF_FWD),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .VREGS_PER_RCTX(VREGS_PER_RCTX)
     ) u_top (

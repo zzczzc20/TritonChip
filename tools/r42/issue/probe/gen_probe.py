@@ -77,6 +77,10 @@ for d in (1, 2, 3, 4, 6):
     mk(f"f2_chain{d}", lambda i, d=d: f"    vf.add v{chain_dst(i, d)}, v{chain_dst(i, d)}, v2")
     mk(f"f3_chain{d}", lambda i, d=d: f"    vf.fma v{chain_dst(i, d)}, v1, v2, v{chain_dst(i, d)}")
     mk(f"v1_chain{d}", lambda i, d=d: f"    v.addi v{chain_dst(i, d)}, v{chain_dst(i, d)}, #1")
+# bank conflicts: the banked VRF has four banks (physical register mod 4), one read port each: sources in one bank are read one after the other
+mk("v2_add_bank_conflict", lambda i: f"    v.add v{dst(i)}, v1, v5")
+mk("f3_fma_bank_conflict2", lambda i: f"    vf.fma v{dst(i)}, v1, v5, v3")
+mk("f3_fma_bank_conflict3", lambda i: f"    vf.fma v{dst(i)}, v1, v5, v9")
 # mixes: vector instruction alternating with a scalar one, with two vector ones
 mk("mix_v2_s", lambda i: (f"    v.add v{dst(i)}, v1, v2" if i % 2 == 0 else f"    s.add s{24 + i % 16}, s1, s2"))
 mk("mix_v2_v0", lambda i: (f"    v.add v{dst(i)}, v1, v2" if i % 2 == 0 else f"    v.movi v{dst(i)}, #7"))

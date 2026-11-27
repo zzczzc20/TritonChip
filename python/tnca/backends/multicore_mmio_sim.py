@@ -59,8 +59,8 @@ class MulticoreMMIOLink(SimLink):
             raise ArgumentError('invalid hybrid LSU/SFU geometry')
         # None keeps the register bench's own default geometry (SETS=4), as
         # before the uncommitted 32-set default was checkpointed (AUDIT.md F14).
-        if cache_sets is not None and cache_sets not in (4, 16, 32, 64):
-            raise ArgumentError('cache_sets must be None, 4, 16, 32 or 64')
+        if cache_sets is not None and cache_sets not in (4, 16, 32, 64, 128, 256):
+            raise ArgumentError('cache_sets must be None, 4, 16, 32, 64, 128 or 256')
         self.cache_sets = cache_sets
         # Extra top-level bench parameters (for example an image's cache
         # geometry, tools/r40/image_geometry_tests.py); names are checked by

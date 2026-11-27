@@ -8,6 +8,7 @@ Base: the R41 run-3 image (tools/r42/img_images.py). Each arm changes image para
   SETS 128 SET_W 7 SHRINK 10 NUCA slice with 128 sets x 8 ways = 64 KiB in URAM (shrink DATA_RAM 2, AUX_RAM 2)
   SETS 128 SET_W 7 SHRINK 42 the same plus the VRF response crossbar XBAR 2 (area only, no cycle effect)
   TENSOR_TAG_W 5             32 word-walk tags in the line engine (16 transfer slots; the port tag allows at most 5 with 64 line slots)
+  TENSOR_TAG_W 6, LINE_SLOTS 128   64 tags (32 transfer slots, the model's te32): the port tag must then be 9 bits, i.e. 128 LSU line slots
   TENSOR_LINE_HALF 1, MAC_F32 1   the R42-img items L and F
 Nothing here is linked or loaded.
 """
@@ -25,11 +26,12 @@ ARMS = {
     's128': {'SETS': 128, 'SET_W': 7, 'SHRINK': 10},
     's128x': {'SETS': 128, 'SET_W': 7, 'SHRINK': 42},
     'te5': {'TENSOR_TAG_W': 5},
+    'te6': {'TENSOR_TAG_W': 6, 'LINE_SLOTS': 128},
     'lf': {'TENSOR_LINE_HALF': 1, 'MAC_F32': 1},
     'lf_fwd': {'TENSOR_LINE_HALF': 1, 'MAC_F32': 1, 'VRF_FWD': 1},
-    'lf_fwd_s128': {'TENSOR_LINE_HALF': 1, 'MAC_F32': 1, 'VRF_FWD': 1, 'SETS': 128, 'SET_W': 7, 'SHRINK': 10},
-    'lf_fwd_s128_te5': {'TENSOR_LINE_HALF': 1, 'MAC_F32': 1, 'VRF_FWD': 1, 'SETS': 128, 'SET_W': 7, 'SHRINK': 10, 'TENSOR_TAG_W': 5},
-    'lf_s128': {'TENSOR_LINE_HALF': 1, 'MAC_F32': 1, 'SETS': 128, 'SET_W': 7, 'SHRINK': 10},
+    'lf_fwd_s128': {'TENSOR_LINE_HALF': 1, 'MAC_F32': 1, 'VRF_FWD': 1, 'SETS': 128, 'SET_W': 7, 'SHRINK': 42},
+    'lf_fwd_s128_te5': {'TENSOR_LINE_HALF': 1, 'MAC_F32': 1, 'VRF_FWD': 1, 'SETS': 128, 'SET_W': 7, 'SHRINK': 42, 'TENSOR_TAG_W': 5},
+    'lf_s128': {'TENSOR_LINE_HALF': 1, 'MAC_F32': 1, 'SETS': 128, 'SET_W': 7, 'SHRINK': 42},
 }
 
 

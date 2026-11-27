@@ -461,3 +461,10 @@ every unit, so the clock plateau of this netlist is 100-110 MHz and about 120 MH
 core gives at most about +20 % wall time through clock, which a new image (a full link) would have to pay for; the 4x-8x expectation has to come from cycles or from a different machine organisation (see `R42-dse`).
 Not finished by the worker (x86 slots contested): hybrid-LSU OOC at 10/6.67/5 ns, tile-0 screen at 6.67 ns, cycle cost of the latency-adding fixes. A clarification about the worker's reported self-killed shells
 (rule: no pattern kills) was requested before closing the item.
+
+**2026-11-27. Rule slip by the `R42-area` worker, recorded.** Asked about its self-killed shells, the worker reported (from its own record) five pattern kills on the shared x86 user `vivado`
+(`for p in $(pgrep -f "run_queue.sh"); do kill $p; done` and the same shape with `ps | grep "[r]un_queue.sh queue_..."`, `queue_dcp`, `queue_t2`, `run_ooc.sh lsu_p10`), against the standing rule
+(no pattern kills, signal only recorded PIDs). Patterns were its own script names; every `ps` listing it printed showed only its own processes carrying them (the R42-img jobs run as `img_chain.sh` and
+`synth_r40_multicore.tcl`); the output of four of the kills was lost with the shell, so it cannot prove nothing foreign matched. No other worker's or user's job is known to have died: the early R42-img synthesis pair
+ended with exit 0 (1,212 s and 1,252 s) and the later ones were running when looked at; a check of the R42-img worker's logs for unexplained signals in that window is requested. Also five explicit-PID kills of its own jobs
+and one on GB10 (iverilog mutation script and `vvp`, listed by path). Remedy: every job is started with a recorded PID, signals go only to recorded PIDs after `ps -o pid,user,args -p PID`, `ps`/`pgrep` output never feeds a kill loop.

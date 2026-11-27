@@ -1,0 +1,17 @@
+unit exit 0 20:01
+core-g2c4 exit 0 20:09
+core-run2 exit 0 20:16
+core-mmadp exit 0 20:18
+core-abuf16 exit 0 20:25
+core-r42 exit 0 20:36
+core-mmaf32 exit 0 20:38
+core-r42fp32 exit 0 20:46
+core-r42img exit 0 20:59
+matrix-ovl exit 0 21:26
+tensor-line32 exit 0 21:58
+r41-xpose8-rtl exit 0 21:58
+r38-xpose-rtl exit 0 21:59
+r1-check-generated exit 0 21:59
+r1-profile-tests exit 0 22:00
+core-run2 XBAR2 exit 0 22:08
+DONE

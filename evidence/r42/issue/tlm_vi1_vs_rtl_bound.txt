@@ -1,0 +1,32 @@
+Per-point effect of removing the vector-operand stall: TLM what-if `vi1` (dse worker, 3-core calibrated model, domain TLM; evidence/r42/dse col files head_dse_{base,vi1}_tsm.json)
+against the single-core RTL bound `cycles/(cycles-x_vrf)` (domain rtl-1c: every cycle of the second R cycle of a non-prefetched read removed; ~/r42/out issue_tiny_cnt.jsonl, run-3 core, VRF_PREFETCH 1).
+The bound is loose (cycles saved may be waited out elsewhere); the TLM number is an effect, so TLM > RTL bound means the model attributes more than the RTL can give.
+point                                             TLM vi1 RTL bound
+model.gpt2_block/tiny/fp16-d64-h4-b1-s16            1.080    1.093
+model.llama_decode/tiny/fp16-b1-p16                 1.065    1.042
+model.llama_prefill/tiny/fp16-b1-s16                1.181    1.062
+model.mlp/tiny/fp16-t16-d64                         1.017    1.100
+model.resnet_block/tiny/fp32-n1-c8-hw8              1.247    1.113
+op.add/tiny/fp16-n1000                              1.410    1.029
+op.add/tiny/fp32-n256                               1.256    1.001
+op.argmax/tiny/fp16-r2-v256                         1.212    1.119
+op.attention_decode/tiny/fp16-b1-h2-l16-d16         1.222    1.084
+op.attention_prefill/tiny/fp16-b1-h2-s16-d16        1.236    1.124
+op.bmm/tiny/fp16-b2-m16-k16-n16                     1.034    1.025
+op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8             1.266    1.119
+op.cumsum/tiny/fp32-r4-c64                          1.226    1.043
+op.embedding/tiny/fp16-v256-d64-t16                 1.371    1.023
+op.gelu_tanh/tiny/fp16-n256                         1.229    1.091
+op.gemv/tiny/fp16-k64-n64                           1.017    1.007
+op.layernorm/tiny/fp16-r4-d64                       1.027    1.060
+op.linear/tiny/fp16-m16-k64-n64                     1.036    1.004
+op.matmul/tiny/fp16-m16-k32-n16                     1.011    1.000
+op.matmul/tiny/fp32-m16-k32-n16                     1.145    1.173
+op.rmsnorm/tiny/fp16-r4-d64                         1.068    1.050
+op.rope/tiny/fp16-b1-h2-s16-d16                     1.404    1.049
+op.silu/tiny/fp16-n256                              1.102    1.093
+op.softmax/tiny/fp16-r4-c64                         1.136    1.099
+op.softmax/tiny/fp32-r3-c37                         1.119    1.101
+op.swiglu/tiny/fp16-n256                            1.211    1.086
+op.transpose/tiny/fp32-r32-c32                      1.271    1.055
+geometric mean                                      1.165    1.067   (n=27)

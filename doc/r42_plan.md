@@ -397,3 +397,20 @@ latency, the copy worker isolated the code in `_transposed_rows_load`), `model.m
 K-loop gains, rtl-3c shows linear/small -18 %). The board decides; any point slower than 2 % on the board is listed with its cause.
 Hardware screen finished meanwhile (`R42-lineelig`, not in this candidate): half-line rows on the tensor engine, +597 LUT/core,
 three-core stand-in 0.74-0.81x cycles on GEMM-shaped tiny/small points; model prediction +4 % (2-7 %) on the 113 geometric mean.
+
+**2026-11-27. Yardstick change (author, chat: "你既然已经加入xl了就不要报113点了，应该是113+xl点数，R41镜像板测一次，最新板测一次，算几何平均，我期待的性能提升至少是4x-8x").**
+From now on the reported result is the geometric mean over the 145 points = the 113 original points plus the 32 xl points, board, both
+sides measured once each: baseline = R41 software on the run-3 image (`b41-run3-base`, reproduces the R41 records at 0.9995, and `xl-base`),
+candidate = the latest round (`ab-intN` + `xl-candN`), same image, same harness. Tool: `tools/r42/board_compare_all.py` (combines the two
+comparison files, per-tier and per-family, failures listed). The 113-only number stays in the per-round entries as a breakdown, not as the
+headline. A clock-frequency gain stays a separate, routed-timing claim and is reported next to the cycle number, not mixed into it.
+The author's expectation is 4x-8x. Registered here before the next result: it is an expectation, not a promise; what the evidence says
+about it is stated with each result.
+- State after round 2 (`ab-int2` + `xl-cand2`, board): **1.556x** over 145 points (113 original 1.638x, xl 1.301x; by tier tiny 1.291,
+  small 1.711, medium 1.862, large 1.722, hbm 1.764, xl 1.301); 1 point slower than 2 % (`op.linear/xl/fp16-m2048-k2048-n6144-bias0`, 1.037).
+  `evidence/r42/board/combined_round2.json`.
+- What 4x-8x means in efficiency terms (board, strict single-core bound of ArchBench): the geometric mean of eta over the 134 points that have a
+  recorded bound is 0.141 for the baseline and 0.225 now; 4x needs about 0.9 and 8x about 1.8, i.e. essentially every point at or above the
+  single-core roofline of the spec at the same time (today 4 of 134 points are at or above 1, 24 at or above 0.5, 22 below 0.1). Share of the
+  remaining sum of ln(1/eta): fp8_linear 9.6 %, attention_decode 9.2 %, attention_prefill 8.1 %, conv2d 6.5 %, resnet_block 6.3 %, softmax 6.1 %,
+  rope 5.6 %, argmax 4.1 %, matmul 4.1 %, llama_decode 3.9 %.

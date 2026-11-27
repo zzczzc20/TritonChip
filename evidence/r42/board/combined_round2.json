@@ -1,0 +1,173 @@
+{
+ "schema": "r42-board-combined-comparison/1",
+ "domain": "board (U280), device-cycles-serial-grid",
+ "inputs": {
+  "orig": "evidence/r42/board/ab-int2/comparison.json",
+  "xl": "evidence/r42/board/xl-cand2/comparison.json"
+ },
+ "points": 145,
+ "speedup_geomean": 1.556498470397682,
+ "speedup_geomean_113": 1.6376952916194716,
+ "speedup_geomean_xl": 1.300658109141303,
+ "speedup_min": 0.9645433039033143,
+ "speedup_max": 8.535621906951746,
+ "slower_than_2pct": [
+  "op.linear/xl/fp16-m2048-k2048-n6144-bias0"
+ ],
+ "by_family": {
+  "add": {
+   "points": 6,
+   "speedup_geomean": 2.944175735989026
+  },
+  "argmax": {
+   "points": 5,
+   "speedup_geomean": 1.6257839149551077
+  },
+  "attention_decode": {
+   "points": 7,
+   "speedup_geomean": 1.5340038651729435
+  },
+  "attention_prefill": {
+   "points": 6,
+   "speedup_geomean": 2.9953815525871033
+  },
+  "bmm": {
+   "points": 4,
+   "speedup_geomean": 4.692926071195606
+  },
+  "conv2d": {
+   "points": 4,
+   "speedup_geomean": 1.2451770778591351
+  },
+  "copy": {
+   "points": 1,
+   "speedup_geomean": 5.588821355150663
+  },
+  "cumsum": {
+   "points": 3,
+   "speedup_geomean": 1.168921794885902
+  },
+  "embedding": {
+   "points": 6,
+   "speedup_geomean": 0.9999353863896281
+  },
+  "fp8_act_quant": {
+   "points": 2,
+   "speedup_geomean": 1.0000294707289032
+  },
+  "fp8_decoder_decode": {
+   "points": 1,
+   "speedup_geomean": 1.4394877765275673
+  },
+  "fp8_decoder_prefill": {
+   "points": 2,
+   "speedup_geomean": 1.5328545884646998
+  },
+  "fp8_layer_decode": {
+   "points": 1,
+   "speedup_geomean": 1.5282945344289405
+  },
+  "fp8_layer_prefill": {
+   "points": 1,
+   "speedup_geomean": 1.2848257825638028
+  },
+  "fp8_linear": {
+   "points": 13,
+   "speedup_geomean": 1.0008274293565294
+  },
+  "gelu_tanh": {
+   "points": 4,
+   "speedup_geomean": 1.8853100423408629
+  },
+  "gemv": {
+   "points": 6,
+   "speedup_geomean": 1.1760286111943685
+  },
+  "gpt2_block": {
+   "points": 4,
+   "speedup_geomean": 1.653898587822506
+  },
+  "layernorm": {
+   "points": 4,
+   "speedup_geomean": 2.2327653677668486
+  },
+  "linear": {
+   "points": 6,
+   "speedup_geomean": 1.008508061748258
+  },
+  "llama_decode": {
+   "points": 5,
+   "speedup_geomean": 1.9058930484826753
+  },
+  "llama_prefill": {
+   "points": 5,
+   "speedup_geomean": 1.5180230746915524
+  },
+  "matmul": {
+   "points": 9,
+   "speedup_geomean": 1.243940492099553
+  },
+  "mlp": {
+   "points": 4,
+   "speedup_geomean": 1.027213928225369
+  },
+  "resnet_block": {
+   "points": 4,
+   "speedup_geomean": 1.257169848271483
+  },
+  "rmsnorm": {
+   "points": 5,
+   "speedup_geomean": 3.1016913665342325
+  },
+  "rmsnorm_residual": {
+   "points": 1,
+   "speedup_geomean": 1.9786390608257687
+  },
+  "rope": {
+   "points": 5,
+   "speedup_geomean": 1.5232940174294574
+  },
+  "silu": {
+   "points": 5,
+   "speedup_geomean": 1.7847148744417296
+  },
+  "softmax": {
+   "points": 6,
+   "speedup_geomean": 1.722006124836308
+  },
+  "swiglu": {
+   "points": 5,
+   "speedup_geomean": 1.7632248921464417
+  },
+  "transpose": {
+   "points": 5,
+   "speedup_geomean": 0.9977509507757913
+  }
+ },
+ "by_tier": {
+  "hbm": {
+   "points": 12,
+   "speedup_geomean": 1.7641024431912624
+  },
+  "large": {
+   "points": 24,
+   "speedup_geomean": 1.7224185130022387
+  },
+  "medium": {
+   "points": 25,
+   "speedup_geomean": 1.862436853573609
+  },
+  "small": {
+   "points": 25,
+   "speedup_geomean": 1.711093892952692
+  },
+  "tiny": {
+   "points": 27,
+   "speedup_geomean": 1.291422051855699
+  },
+  "xl": {
+   "points": 32,
+   "speedup_geomean": 1.300658109141303
+  }
+ }
+}

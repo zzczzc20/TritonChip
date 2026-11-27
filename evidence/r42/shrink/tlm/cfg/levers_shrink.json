@@ -1,0 +1,68 @@
+{
+ "base": {
+  "keys": {},
+  "cores": 3,
+  "desc": "base"
+ },
+ "c4": {
+  "keys": {
+   "nx": "2",
+   "ny": "2",
+   "outlets": "4",
+   "active_outlets": "4"
+  },
+  "cores": 4,
+  "desc": "4 cores, 2x2 mesh, 1 home slice and 1 outlet per core (assumed scaling of the 3-core shell)"
+ },
+ "c5": {
+  "keys": {
+   "nx": "3",
+   "ny": "2",
+   "outlets": "5",
+   "active_outlets": "5"
+  },
+  "cores": 5,
+  "desc": "5 cores on a 3x2 mesh (6 slices), 5 outlets (run with CORES=5)"
+ },
+ "sets128": {
+  "keys": {
+   "sets": "128"
+  },
+  "cores": 3,
+  "desc": "NUCA slice 128 sets x 8 ways x 64 B = 64 KiB per slice (was 16 KiB)"
+ },
+ "clk150": {
+  "keys": {
+   "clock_hz": "150000000",
+   "hbm_latency_cycles": "34",
+   "tl_hbm_write_latency_cycles": "34",
+   "tl_outlet_to_slice_cycles": "17"
+  },
+  "cores": 3,
+  "desc": "150 MHz; HBM round trip and the 8 fitted outlet cycles fixed in ns; RTL pipeline depths fixed in cycles (timing closes)"
+ },
+ "clk150p": {
+  "keys": {
+   "clock_hz": "150000000",
+   "hbm_latency_cycles": "34",
+   "tl_hbm_write_latency_cycles": "34",
+   "tl_outlet_to_slice_cycles": "17",
+   "noc_stages": "4",
+   "tl_noc_inject_cycles": "2",
+   "tl_noc_eject_cycles": "3",
+   "tl_slice_hit_latency": "5",
+   "tl_slice_to_outlet_cycles": "5",
+   "branch_taken_cycles": "5",
+   "park_refetch_cycles": "7",
+   "vector_int_latency": "4",
+   "vector_fp_latency": "7",
+   "convert_latency": "7",
+   "scalar_latency": "2",
+   "sfu_latency": "29",
+   "lsu_complete_cycles": "4",
+   "load_latency": "7"
+  },
+  "cores": 3,
+  "desc": "150 MHz as above, plus assumed extra pipeline registers on on-chip paths (x1+(r-1)/2)"
+ }
+}

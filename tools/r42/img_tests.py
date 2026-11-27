@@ -36,19 +36,16 @@ def matlock(a):
         if a.quick:
             grid = [g for g in grid if g[1] == 1 and (g[0], g[3]) in ((1, 0), (1, 1), (0, 1))]
         for dp, vm, abuf, f32 in grid:
-            if True:
-                if True:
-                    if True:
-                        vvp = build(t, 'tb_matrix_lock', 'tb/core/tb_matrix_lock.v',
-                                    dict(MAC_DP=dp, VRF_MODE=vm, ABUF=abuf, MAC_F32=f32), [a.ref])
-                        for seed in range(1, a.seeds + 1):
-                            out = run(vvp, [f'+seed={seed}', f'+cmds={a.cmds}'])
-                            ok = 'MATRIX LOCK PASS' in out and 'FAIL' not in out and 'FATAL' not in out
-                            n += 1; bad += not ok
-                            line = next((l for l in out.splitlines() if 'MATRIX LOCK' in l), out.strip().splitlines()[-1] if out.strip() else 'no output')
-                            print(f"{'PASS' if ok else 'FAIL'} {line}", flush=True)
-                            if not ok:
-                                print(out[-1500:], flush=True)
+            vvp = build(t, 'tb_matrix_lock', 'tb/core/tb_matrix_lock.v',
+                        dict(MAC_DP=dp, VRF_MODE=vm, ABUF=abuf, MAC_F32=f32), [a.ref])
+            for seed in range(1, a.seeds + 1):
+                out = run(vvp, [f'+seed={seed}', f'+cmds={a.cmds}'])
+                ok = 'MATRIX LOCK PASS' in out and 'FAIL' not in out and 'FATAL' not in out
+                n += 1; bad += not ok
+                line = next((l for l in out.splitlines() if 'MATRIX LOCK' in l), out.strip().splitlines()[-1] if out.strip() else 'no output')
+                print(f"{'PASS' if ok else 'FAIL'} {line}", flush=True)
+                if not ok:
+                    print(out[-1500:], flush=True)
     print(f'MATLOCK {n - bad} of {n} configurations cycle-identical', flush=True)
     return 1 if bad else 0
 

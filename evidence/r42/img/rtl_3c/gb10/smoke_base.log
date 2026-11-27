@@ -1,0 +1,4 @@
+op.matmul/tiny/fp32-m16-k32-n16 exit 0 wall 333 s
+op.matmul/tiny/fp16-m16-k32-n16 exit 0 wall 255 s
+MCDONE
+EXIT=0

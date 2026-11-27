@@ -1,0 +1,4 @@
+{"point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16", "output_sha256": "1338b223d9a32d26c5bb1358b9f4875acd98457d7f182ee862b72fb2c456d3ae", "tensors": [["torch.float16", [1, 2, 16, 16]]]}
+{"point": "op.attention_prefill/tiny/fp16-b1-h2-s16-d16", "output_sha256": "1338b223d9a32d26c5bb1358b9f4875acd98457d7f182ee862b72fb2c456d3ae", "tensors": [["torch.float16", [1, 2, 16, 16]]]}
+{"point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16", "output_sha256": "96e73961d1a1ed58ded10f5f8e3c681fa1bd0e85a1261579e34bdc532578c74b", "tensors": [["torch.float16", [1, 2, 1, 16]]]}
+{"point": "op.attention_decode/tiny/fp16-b1-h2-l16-d16", "output_sha256": "96e73961d1a1ed58ded10f5f8e3c681fa1bd0e85a1261579e34bdc532578c74b", "tensors": [["torch.float16", [1, 2, 1, 16]]]}

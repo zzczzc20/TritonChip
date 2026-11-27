@@ -1,0 +1,8 @@
+{"point": "op.add/tiny/fp32-n256", "output_sha256": "8e7243aa7dfd52c8b75b85f8f9fc0ba3a3020decdbaa2cbbcc689d08698f4fff", "tensors": [["torch.float32", [256]]]}
+{"point": "op.add/tiny/fp32-n256", "output_sha256": "8e7243aa7dfd52c8b75b85f8f9fc0ba3a3020decdbaa2cbbcc689d08698f4fff", "tensors": [["torch.float32", [256]]]}
+{"point": "op.silu/tiny/fp16-n256", "output_sha256": "f4df927111ea511c3d82d616a0af7f60e4904218901b8b93c8ef55b3bac031a5", "tensors": [["torch.float16", [256]]]}
+{"point": "op.silu/tiny/fp16-n256", "output_sha256": "f4df927111ea511c3d82d616a0af7f60e4904218901b8b93c8ef55b3bac031a5", "tensors": [["torch.float16", [256]]]}
+{"point": "op.softmax/tiny/fp16-r4-c64", "output_sha256": "f370cd1e12c4334fa2092893fd308688867c8d1027969e227a580e3e57572d81", "tensors": [["torch.float16", [4, 64]]]}
+{"point": "op.softmax/tiny/fp16-r4-c64", "output_sha256": "f370cd1e12c4334fa2092893fd308688867c8d1027969e227a580e3e57572d81", "tensors": [["torch.float16", [4, 64]]]}
+{"point": "op.rmsnorm/tiny/fp16-r4-d64", "output_sha256": "0d8802cde0bed6382a34805fdd9d794deb14cb818f64d6ade2118776fd13904f", "tensors": [["torch.float16", [4, 64]]]}
+{"point": "op.rmsnorm/tiny/fp16-r4-d64", "output_sha256": "0d8802cde0bed6382a34805fdd9d794deb14cb818f64d6ade2118776fd13904f", "tensors": [["torch.float16", [4, 64]]]}

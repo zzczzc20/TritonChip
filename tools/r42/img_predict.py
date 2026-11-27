@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """R42-img: what the RTL items may do to the 113-point geometric mean on the board (MODEL, from rtl-3c ratios; not a board number).
 
-    img_predict.py COMPARISON.json BASE_DIR ARM=DIR [ARM=DIR ...] [--table OUT.json]
+    img_predict.py COMPARISON.json BASE_DIR ARM=DIR [ARM=DIR ...] [--proxy POINT=FAMILY ...] [--table OUT.json]
 
 COMPARISON.json: a board comparison (tools/r42/board_compare.py; rows carry point, family, tier, new_cycles). BASE_DIR: link_budget_rtl.py
 records of the unchanged run-3 geometry (arm A). ARM=DIR: records of an arm (L, M, F, LM, LF, LMF ...). A point measured on both gives the
@@ -12,6 +12,7 @@ are the scenarios below, printed with the result:
   family/2   as family, with the logarithm of the ratio halved for the tiers medium, large and hbm (their cycles hold a larger share that
              no item changes: the tiny and small points are where the transfer and the sequencer bubbles are largest)
   models     family/2 plus gpt2_block, llama_decode, llama_prefill (fp16) at the ratio of the `mlp` group
+--proxy POINT=FAMILY: a measured point that is not a row of the table (a reduced-shape proxy) stands for the rows of FAMILY.
 Points of a group without a measured ratio keep 1. The factor is exp(-mean(log ratio)) over the 113 board points (>1: fewer cycles).
 The `base` of the printed product is the board geometric mean new/old of COMPARISON.json (the software it carries is the software being
 extended: ab-int2 here, not the current head).
@@ -45,11 +46,16 @@ def main():
     table = None
     if '--table' in argv:
         i = argv.index('--table'); table = argv[i + 1]; del argv[i:i + 2]
+    proxy = {}
+    while '--proxy' in argv:
+        i = argv.index('--proxy'); k, v = argv[i + 1].split('=', 1); proxy[k] = v; del argv[i:i + 2]
     comp = json.load(open(argv[0]))
     base = records(argv[1])
     arms = dict(a.split('=', 1) for a in argv[2:])
     rows = comp['rows']
     meta = {r['point']: (r['family'], r['tier']) for r in rows}
+    for p, fam in proxy.items():
+        meta.setdefault(p, (fam, 'proxy'))
     out = dict(base_geomean=comp.get('speedup_geomean_old_over_new'), arms={})
     for arm, d in arms.items():
         recs = records(d)

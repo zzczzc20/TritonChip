@@ -1,0 +1,2 @@
+tscr_s3_p56|PERIOD=5.6|/home/vivado/r42_clk_out/base/tile_s3_syn.dcp|0|
+tscr_s0_p56|PERIOD=5.6|/home/vivado/r42_clk_out/base/tile_s0_syn.dcp|0|

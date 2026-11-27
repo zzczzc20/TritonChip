@@ -434,4 +434,4 @@ idle on the same image afterwards. `board_compare.py`: 113/113 points pass on bo
 the xl point is measured in `xl-cand3`). By tier (speedup): tiny 1.529, small 2.179, medium 2.413, large 2.259, hbm 2.854. Largest family gains:
 embedding 12.6x, copy 5.7x, transpose 5.1x, bmm 4.8x, rmsnorm 3.1x, attention_prefill 3.0x, add 3.0x, cumsum 2.7x; smallest: mlp 1.15x, linear 1.21x,
 resnet_block 1.34x, conv2d 1.34x, matmul 1.35x, gemv 1.36x. Sample spread inside a formal record: median 0.47 %, max 15.8 %. Evidence:
-`evidence/r42/board/ab-int3/{records.tgz,logs.tgz,comparison.json}`. The 145-point headline needs `xl-cand3` (launched 10:50 UTC on the already loaded image, same guarded recipe).
+`evidence/r42/board/ab-int3/{records.tgz,logs.tgz,comparison.json}`. The 145-point headline needs `xl-cand3` (launched 10:46 UTC on the already loaded image, same guarded recipe).

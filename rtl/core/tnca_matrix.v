@@ -268,15 +268,6 @@ module tnca_matrix #(
 
     assign busy = (st != S_IDLE);
 
-`ifndef SYNTHESIS
-    // OVL (R42 mtx) and MAC_F32 (R42 fp32) are separate options of this module; the overlapped
-    // sequencer does not yet know the binary32 fragment (R42-img integration).
-    initial if (OVL != 0 && MAC_F32 != 0) begin
-        $display("FATAL tnca_matrix: OVL and MAC_F32 together are not integrated");
-        $finish;
-    end
-`endif
-
     //==========================================================================
     // R42 OVL state (unused, and removed by synthesis, with OVL = 0)
     //==========================================================================
@@ -287,6 +278,7 @@ module tnca_matrix #(
     reg [7:0]        p_va, p_vb;
     reg [1:0]        p_k, p_dt, p_bdt;
     reg              p_dp;
+    reg              p_f32;       // MAC_F32: the pending command is m.mma.f32.async
     reg              p_bar_en, p_sf_en;
     reg [BAR_W-1:0]  p_bar, p_sf_bar;
     reg [TAG_W-1:0]  p_tag;
@@ -308,6 +300,7 @@ module tnca_matrix #(
     reg              f_pd;        // A or B: the pending command's
     reg [1:0]        f_part;      // B: how to cut the register (b_part, formats)
     reg              f_e8, f_dp, f_bdt1, f_g4;
+    reg              f_f32;       // MAC_F32: the B row in flight is a binary32 register
 
     //==========================================================================
     // Fragment addressing
@@ -364,6 +357,7 @@ module tnca_matrix #(
     wire       s_bdt1 = (OVL != 0) ? f_bdt1 : r_bdt[1];
     wire       s_g4   = (OVL != 0) ? f_g4   : g4;
     wire       s_dp   = (OVL != 0) ? f_dp   : ((MAC_DP != 0) && r_dp);
+    wire       s_f32  = (OVL != 0) ? f_f32  : f32v;
 
     // B row latch. One 16-bit slot per element whatever the format: an 8-bit
     // element sits right-aligned in its slot, which is where the converter
@@ -572,7 +566,7 @@ module tnca_matrix #(
     localparam [ROW_W:0] PA_MX = 13 - 2*VRF_LAT;      // last row a pending A read may start at
 
     wire [6:0] kk_nx    = kk + {4'd0, kstep};
-    wire [7:0] bnx_vreg = r_vb + (elemB8 ? {3'd0, kk_nx[6:2]} : {2'd0, kk_nx[6:1]});
+    wire [7:0] bnx_vreg = r_vb + (f32v ? {1'b0, kk_nx} : elemB8 ? {3'd0, kk_nx[6:2]} : {2'd0, kk_nx[6:1]});
     wire [1:0] bnx_part = elemB8 ? kk_nx[1:0] : {kk_nx[0], 1'b0};
     wire       lastk    = (kk == k_limit - {4'd0, kstep});
 
@@ -580,7 +574,9 @@ module tnca_matrix #(
     wire       p_dpv   = (MAC_DP != 0) && p_dp;
     wire [6:0] p_klim  = (p_k == `TNCA_MMA_K16) ? 7'd16 :
                          (p_k == `TNCA_MMA_K32) ? 7'd32 : 7'd64;
-    wire [6:0] p_aregs = p_dt[1] ? {2'd0, p_klim[6:2]} : {1'b0, p_klim[6:1]};
+    wire       p_f32v  = (MAC_F32 != 0) && p_f32;
+    wire [6:0] p_aregs = p_f32v ? 7'd16
+                       : p_dt[1] ? {2'd0, p_klim[6:2]} : {1'b0, p_klim[6:1]};
     wire       p_g4    = p_dpv && (p_dt == `TNCA_MMA_E4M3) && (p_bdt == `TNCA_MMA_E4M3);
 
     // A row issues when its B row is latched and its A register has arrived.
@@ -637,6 +633,7 @@ module tnca_matrix #(
             r_k      <= p_k;
             r_dt     <= p_dt;
             r_dp     <= p_dpv;
+            r_f32    <= p_f32v;
             r_bdt    <= p_bdt;
             r_bar_en <= p_bar_en;
             r_bar    <= p_bar;
@@ -913,7 +910,7 @@ module tnca_matrix #(
             end
             if (f_b_take) begin
                 for (i = 0; i < VLEN; i = i + 1)
-                    b_row[i*BW +: BW] <= s_dp ? b_dp[i][BW-1:0] : b_nd[i];
+                    b_row[i*BW +: BW] <= s_f32 ? b_f32[i][BW-1:0] : s_dp ? b_dp[i][BW-1:0] : b_nd[i];
                 b_ok <= 1'b1;
             end
             if (f_take) f_req <= 1'b0;
@@ -933,6 +930,7 @@ module tnca_matrix #(
                 f_dp   <= pk_pb ? p_dpv    : dpv;
                 f_bdt1 <= pk_pb ? p_bdt[1] : r_bdt[1];
                 f_g4   <= pk_pb ? p_g4     : g4;
+                f_f32  <= pk_pb ? p_f32v   : f32v;
             end
 
             // An m.mma is done when its last row's result has been written.
@@ -956,6 +954,7 @@ module tnca_matrix #(
                 p_k      <= cmd_k;
                 p_dt     <= cmd_dt;
                 p_dp     <= cmd_dp;
+                p_f32    <= (MAC_F32 != 0) && cmd_f32;
                 p_bdt    <= cmd_bdt;
                 p_bar_en <= cmd_bar_en;
                 p_bar    <= cmd_bar;
@@ -1014,6 +1013,7 @@ module tnca_matrix #(
                         f_bdt1   <= cmd_bdt[1];
                         f_g4     <= (MAC_DP != 0) && cmd_dp && (cmd_dt == `TNCA_MMA_E4M3)
                                                             && (cmd_bdt == `TNCA_MMA_E4M3);
+                        f_f32    <= (MAC_F32 != 0) && cmd_f32;
                     end
                     default: begin
                         st        <= S_ROW;

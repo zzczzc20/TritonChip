@@ -146,7 +146,7 @@ module tb_matrix_lock;
     //--------------------------------------------------------------------------
     // The driver
     //--------------------------------------------------------------------------
-    integer seed, ncmd, ci, gap, j, b8;
+    integer seed, seed0, ncmd, ci, gap, j, b8;
     reg [31:0] rnd;
     function [31:0] f32r(input integer dummy);
         reg [31:0] x;
@@ -187,6 +187,7 @@ module tb_matrix_lock;
     integer k0, dt0, fl_at;
     initial begin
         if (!$value$plusargs("seed=%d", seed)) seed = 1;
+        seed0 = seed;
         if (!$value$plusargs("cmds=%d", ncmd)) ncmd = 400;
         vseed = 32'h4321 + seed;
         flush = 0; cmd_valid = 0; ard_slot = 0; ard_row = 0; rsp_valid = 0; acc_p = 0; waitc = 0;
@@ -225,7 +226,7 @@ module tb_matrix_lock;
         repeat (4) @(negedge clk);
         if (ndone < ncmd / 2 || nmma < ncmd / 4) begin $display("FAIL: too few events (%0d done, %0d m.mma)", ndone, nmma); fails = fails + 1; end
         if (fails == 0) $display("MATRIX LOCK PASS MAC_DP=%0d VRF_MODE=%0d ABUF=%0d MAC_F32=%0d seed=%0d: %0d cycles identical, %0d commands (%0d m.mma), %0d done events, %0d vector reads",
-                                 MAC_DP, VRF_MODE, ABUF, MAC_F32, seed, ncyc, ncmd, nmma, ndone, nreq);
+                                 MAC_DP, VRF_MODE, ABUF, MAC_F32, seed0, ncyc, ncmd, nmma, ndone, nreq);
         else            $display("MATRIX LOCK FAIL: %0d cycles differ", fails);
         $finish;
     end

@@ -22,7 +22,7 @@
 `include "tnca_defs.vh"
 
 module tb_mtx_side #(
-    parameter OVL = 0, parameter MAC_DP = 1, parameter VRF_MODE = 1, parameter SIDE = 0
+    parameter OVL = 0, parameter MAC_DP = 1, parameter VRF_MODE = 1, parameter SIDE = 0, parameter MAC_F32 = 0
 ) ();
     localparam VW = 512;
     wire clk   = tb_matrix_ovl.clk;
@@ -33,7 +33,7 @@ module tb_mtx_side #(
     reg  [1:0]   cmd_op, cmd_k, cmd_dt, cmd_bdt, cmd_rowop, cmd_tag;
     reg  [3:0]   cmd_slot, cmd_row;
     reg  [7:0]   cmd_va, cmd_vb;
-    reg          cmd_dp, cmd_bar_en, cmd_sf_en;
+    reg          cmd_dp, cmd_bar_en, cmd_sf_en, cmd_f32;
     reg  [4:0]   cmd_bar, cmd_sf_bar;
     reg  [VW-1:0] cmd_vdata;
     reg  [31:0]  cmd_scale;
@@ -52,12 +52,12 @@ module tb_mtx_side #(
 
     tnca_matrix #(
         .FMA_LAT(2), .FMA_IMPL(1), .MAC_DP(MAC_DP), .MAC_CUTS(5'd29), .ABUF(1),
-        .OVL(OVL), .VRF_LAT(VRF_MODE), .TAG_W(2)
+        .OVL(OVL), .VRF_LAT(VRF_MODE), .TAG_W(2), .MAC_F32(MAC_F32)
     ) u (
         .clk(clk), .rst_n(rst_n), .flush(flush),
         .cmd_valid(cmd_valid), .cmd_op(cmd_op), .cmd_slot(cmd_slot),
         .cmd_va(cmd_va), .cmd_vb(cmd_vb), .cmd_k(cmd_k), .cmd_dt(cmd_dt),
-        .cmd_dp(cmd_dp), .cmd_bdt(cmd_bdt),
+        .cmd_dp(cmd_dp), .cmd_bdt(cmd_bdt), .cmd_f32(cmd_f32),
         .cmd_bar_en(cmd_bar_en), .cmd_bar(cmd_bar),
         .cmd_sf_en(cmd_sf_en), .cmd_sf_bar(cmd_sf_bar),
         .cmd_rowop(cmd_rowop), .cmd_row(cmd_row), .cmd_vdata(cmd_vdata),
@@ -141,6 +141,7 @@ module tb_mtx_side #(
                 cmd_k      <= tb_matrix_ovl.c_k[ci];
                 cmd_dt     <= tb_matrix_ovl.c_dt[ci];
                 cmd_dp     <= tb_matrix_ovl.c_dp[ci];
+                cmd_f32    <= (MAC_F32 != 0) && tb_matrix_ovl.c_f32[ci] && (tb_matrix_ovl.c_op[ci] == 2'd1);
                 cmd_bdt    <= tb_matrix_ovl.c_bdt[ci];
                 cmd_bar_en <= (tb_matrix_ovl.c_op[ci] == 2'd1);
                 cmd_bar    <= tb_matrix_ovl.c_bar[ci];
@@ -210,6 +211,7 @@ endmodule
 module tb_matrix_ovl;
     parameter MAC_DP   = 1;
     parameter VRF_MODE = 1;
+    parameter MAC_F32  = 0;
     localparam VW = 512;
     localparam NC = 8192;
 
@@ -222,15 +224,15 @@ module tb_matrix_ovl;
     reg [1:0]    c_op [0:NC], c_k [0:NC], c_dt [0:NC], c_bdt [0:NC], c_rowop [0:NC], c_tag [0:NC];
     reg [3:0]    c_slot [0:NC], c_row [0:NC];
     reg [7:0]    c_va [0:NC], c_vb [0:NC];
-    reg          c_dp [0:NC], c_sf [0:NC];
+    reg          c_dp [0:NC], c_sf [0:NC], c_f32 [0:NC];
     reg [4:0]    c_bar [0:NC], c_sfbar [0:NC];
     reg [VW-1:0] c_vdata [0:NC];
     reg [31:0]   c_scale [0:NC];
     reg [15:0]   c_mask [0:NC];
     integer      c_gap [0:NC];
 
-    tb_mtx_side #(.OVL(0), .MAC_DP(MAC_DP), .VRF_MODE(VRF_MODE), .SIDE(0)) s0 ();
-    tb_mtx_side #(.OVL(1), .MAC_DP(MAC_DP), .VRF_MODE(VRF_MODE), .SIDE(1)) s1 ();
+    tb_mtx_side #(.OVL(0), .MAC_DP(MAC_DP), .VRF_MODE(VRF_MODE), .SIDE(0), .MAC_F32(MAC_F32)) s0 ();
+    tb_mtx_side #(.OVL(1), .MAC_DP(MAC_DP), .VRF_MODE(VRF_MODE), .SIDE(1), .MAC_F32(MAC_F32)) s1 ();
 
     integer seed, nseg, nc, sg, n, j, b, w, r, sl, a0, a1, tot0, tot1, mmas;
     reg [31:0] rnd;
@@ -246,7 +248,7 @@ module tb_matrix_ovl;
         integer q;
         begin
             c_op[nc] = op; c_slot[nc] = slot; c_k[nc] = k; c_dt[nc] = dt;
-            c_dp[nc] = (MAC_DP != 0) && dp; c_bdt[nc] = bdt;
+            c_dp[nc] = (MAC_DP != 0) && dp; c_bdt[nc] = bdt; c_f32[nc] = 1'b0;
             rnd = $random(seed); c_va[nc] = rnd[7:0] % 8'd220;
             rnd = $random(seed); c_vb[nc] = rnd[7:0] % 8'd220;
             rnd = $random(seed);
@@ -257,6 +259,14 @@ module tb_matrix_ovl;
             for (q = 0; q < 16; q = q + 1) c_vdata[nc][q*32 +: 32] = f32r(0);
             c_gap[nc] = gap;
             nc = nc + 1;
+        end
+    endtask
+
+    // m.mma.f32.async (ISA sec 9C.5): one K16 step over binary32 fragments, mod[3:2], mod[6:5] zero
+    task add_f32(input [3:0] slot, input integer gap);
+        begin
+            add_cmd(2'd1, slot, `TNCA_MMA_K16, `TNCA_MMA_F16, 1'b0, 2'd0, gap);
+            c_f32[nc-1] = 1'b1;
         end
     endtask
 
@@ -362,6 +372,24 @@ module tb_matrix_ovl;
         $display("eight m.mma.async k16 f16 back to back, two slots:");
         first = nc; for (j = 0; j < 8; j = j + 1) add_cmd(2'd1, j[0] ? 4'd1 : 4'd3, `TNCA_MMA_K16, `TNCA_MMA_F16, 1'b0, 2'd0, 0);
         run_seg(first, nc, -1, 0, 1, 1);
+        if (MAC_F32 != 0) begin
+            $display("one m.mma.f32.async:");
+            first = nc; add_f32(4'd0, 0);
+            run_seg(first, nc, -1, 0, 1, 1);
+            $display("eight m.mma.f32.async back to back, one slot:");
+            first = nc; for (j = 0; j < 8; j = j + 1) add_f32(4'd2, 0);
+            run_seg(first, nc, -1, 0, 1, 1);
+            $display("f32, f16, f32, dp, f32 on two slots (every change of format between neighbours):");
+            first = nc;
+            add_f32(4'd1, 0);
+            add_cmd(2'd1, 4'd3, `TNCA_MMA_K16, `TNCA_MMA_F16, 1'b0, 2'd0, 0);
+            add_f32(4'd1, 0);
+            if (MAC_DP != 0) add_cmd(2'd1, 4'd3, `TNCA_MMA_K32, `TNCA_MMA_F16, 1'b1, `TNCA_MMA_F16, 0);
+            add_f32(4'd3, 0);
+            add_cmd(2'd1, 4'd1, `TNCA_MMA_K64, `TNCA_MMA_E4M3, 1'b0, 2'd0, 0);
+            add_f32(4'd1, 0);
+            run_seg(first, nc, -1, 0, 1, 1);
+        end
         tot0 = 0; tot1 = 0;
 
         // ---- random segments ----
@@ -377,6 +405,10 @@ module tb_matrix_ovl;
                 if (rnd[9:6] < 11) begin
                     add_cmd(2'd1, rnd[11:10], k0, dt0, rnd[12], rnd[14:13],
                             rnd[15] ? rnd[24:16] % 330 : 0);
+                    if (MAC_F32 != 0 && rnd[27:25] < 2) begin
+                        // m.mma.f32.async: K16, format and B format fields zero
+                        c_k[nc-1] = `TNCA_MMA_K16; c_dt[nc-1] = `TNCA_MMA_F16; c_dp[nc-1] = 1'b0; c_bdt[nc-1] = 2'd0; c_f32[nc-1] = 1'b1;
+                    end
                     mmas = mmas + 1;
                 end else if (rnd[9:6] < 13)
                     add_cmd(2'd0, rnd[11:10], 0, 0, 0, 0, (rnd[17:15] == 0) ? rnd[20:18] : 0);

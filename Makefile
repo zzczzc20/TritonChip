@@ -1001,6 +1001,63 @@ core-r42fp32: $(patsubst %,$(BUILD)/%.hex,$(R42FP32_PROGS)) $(BUILD)/t41_mmadp.h
 	     || exit 1; \
 	 done
 
+# R42-img: core-r42-img's bench -- the run-2 parameter set with MAC_F32=1 and MTX_PIPE=1 (m.mma.f32.async on the
+# overlapped sequencer), in-order and slow reordered memory, and with the banked file's matrix response unregistered.
+R42_IMG := $(R41_RUN2) -P tb_tnca_core.MAC_F32=1 -P tb_tnca_core.MTX_PIPE=1
+$(BUILD)/tb_core_r42img.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                             $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R42_IMG) -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_r42img_ooo.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                                 $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R42_IMG) -P tb_tnca_core.MEM_LATENCY=6 -P tb_tnca_core.RANDOM_STALL=1 \
+	   -P tb_tnca_core.MEM_REORDER=1 -o $@ $(TB)/core/tb_tnca_core.v
+$(BUILD)/tb_core_r42img_v0.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
+                                $(TB)/common/tnca_mem_model.v | dirs
+	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \
+	   $(R42_IMG) -P tb_tnca_core.MTX_VRF_REG=0 -o $@ $(TB)/core/tb_tnca_core.v
+$(TB)/core/progs/t15_target_r42_img.s: $(TB)/core/progs/gen_t15_target.py \
+                                       compiler/targets/tnca-sim-r42-img.json
+	$(PYTHON) $< tnca-sim-r42-img
+.PHONY: core-r42img
+core-r42img: export ARGS_t04_roles := +roles=2
+core-r42img: export ARGS_t05_fault := +roles=2 +expectfault=01
+core-r42img: export ARGS_t13_share := +roles=2 +aliasvrf
+core-r42img: export ARGS_t15_target_r42_img := +allroles
+core-r42img: export ARGS_t41_boundary := +roles=1
+core-r42img: export ARGS_t18_squash := +roles=2
+core-r42img: export ARGS_t17_descfault := $(ARGS_t17_descfault)
+core-r42img: export ARGS_t23_amofault := $(ARGS_t23_amofault)
+core-r42img: export ARGS_t39_slice := +allroles +slice
+core-r42img: export ARGS_t39_pair := +roles=2 +pair
+core-r42img: export ARGS_t32_xpose_badsize := +expectfault=04
+R42IMG_PROGS := $(patsubst t14_caps_dp,t14_caps_f32,$(patsubst t15_target_vrf_v5_x8_g2c4_dp,t15_target_r42_img,$(RUN2_PROGS)))
+core-r42img: $(patsubst %,$(BUILD)/%.hex,$(R42IMG_PROGS)) $(BUILD)/t41_mmadp.hex $(BUILD)/t42_mmaf32.hex $(BUILD)/t42_mmaovl.hex \
+             $(BUILD)/tb_core_r42img.vvp $(BUILD)/tb_core_r42img_ooo.vvp $(BUILD)/tb_core_r42img_v0.vvp | dirs
+	@for p in $(R42IMG_PROGS) t41_mmadp t42_mmaf32 t42_mmaovl; do \
+	   extra=$$(eval echo \$${ARGS_$$p}); \
+	   $(TOOLS)/run_test.sh "$$p (r42img)" \
+	     "$(VVP) $(BUILD)/tb_core_r42img.vvp +hex=$(BUILD)/$$p.hex +maxcycles=3000000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r42img, ooo mem)" \
+	     "$(VVP) $(BUILD)/tb_core_r42img_ooo.vvp +hex=$(BUILD)/$$p.hex +maxcycles=4000000 $$extra" \
+	     || exit 1; \
+	   $(TOOLS)/run_test.sh "$$p (r42img, MTX_VRF_REG 0)" \
+	     "$(VVP) $(BUILD)/tb_core_r42img_v0.vvp +hex=$(BUILD)/$$p.hex +maxcycles=3000000 $$extra" \
+	     || exit 1; \
+	 done
+
+# R42-img: the integrated matrix engine. Lockstep: the engine at default parameters against the delivered one (the
+# base commit's engine, MATRIX_REF, with the module renamed tnca_matrix_ref); ovl: the overlapped sequencer against the one
+# it replaces with the binary32 format in the command list.
+MATRIX_REF ?= $(BUILD)/tnca_matrix_ref.v
+.PHONY: matrix-lock matrix-ovl-f32
+matrix-lock: | dirs
+	$(PYTHON) tools/r42/img_tests.py matlock --ref $(MATRIX_REF)
+matrix-ovl-f32: | dirs
+	$(PYTHON) tools/r42/img_tests.py matovl
+
 .PHONY: core-mtx-vrf-reg
 core-mtx-vrf-reg:
 	$(PYTHON) tools/r41/mtx_vrf_reg_tests.py

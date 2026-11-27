@@ -1434,7 +1434,8 @@ module tnca_core #(
     wire acc_free_d = !sb_acc[r_acc_d] || (mtx_done_rel && (mtx_done_slot == r_acc_d));
     wire acc_free_s = !sb_acc[r_acc_s] || (mtx_done_rel && (mtx_done_slot == r_acc_s));
     wire r_is_mma = (r_major == `TNCA_MAJ_MATRIX)
-                    && ((r_func == `TNCA_M_MMA) || (r_func == `TNCA_M_MMADP));
+                    && ((r_func == `TNCA_M_MMA) || (r_func == `TNCA_M_MMADP)
+                        || (MAC_F32 != 0 && r_func == `TNCA_M_MMAF32));
     wire r_mma_pend = (MTX_PIPE != 0) && r_is_mma && mtxp_pend_ok;
 
     wire hz_acc = (r_valid && r_acc_dst && !acc_free_d && !r_mma_pend)

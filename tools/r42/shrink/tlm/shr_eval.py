@@ -28,8 +28,33 @@ if extra.exists():
 R.LEV = lev
 B = C.board()
 usable = R.usable_families()
-print('| configuration | clock | S145 low | S145 central | S145 high | central, software at round 2 | missing sets |')
-print('|---|--:|--:|--:|--:|--:|---|')
+print('| configuration | clock | S145 low | S145 central | S145 high | central, software at round 2 | missing sets | central, corrected for the missing sets |')
+print('|---|--:|--:|--:|--:|--:|---|--:|')
+import shutil
+
+
+def s145(name):
+    cores = lev.get(name, {}).get('cores', 3)
+    rows = E.evaluate(f'head_dse_{name}', 'val_dse_base', 'head_dse_base', B, cores, R.mhz(name))
+    for r in rows.values():
+        r['clock'] = R.mhz(name)
+    return rows
+
+
+def corrected(name, present):
+    """central S145 of `name` times (S145 of the full base / S145 of the base run with only the same sets): the points of the missing sets inherit family ratios,
+    which for a tsm-only run carry the head-software effect of the light points; the reference run inherits the same way, so the ratio cancels it."""
+    if len(present) == len(E.SETS):
+        return None
+    ref = 'ref_' + '_'.join(present)
+    for st in present:
+        shutil.copy(R.COL / f'head_dse_base_{st}.json', R.COL / f'head_dse_{ref}_{st}.json')
+    lev[ref] = dict(keys={}, cores=3, desc='reference')
+    rows = s145(name)
+    rr = s145(ref)
+    full = s145('base')
+    return R.scenario(rows, 'central', usable) * R.scenario(full, 'central', usable) / R.scenario(rr, 'central', usable)
+
 for tag in sys.argv[2:]:
     name = tag
     miss = [s for s in E.SETS if not (R.COL / f'head_dse_{name}_{s}.json').exists()]
@@ -39,4 +64,6 @@ for tag in sys.argv[2:]:
         r['clock'] = R.mhz(name)
     s = {k: R.scenario(rows, k, usable) for k in ('low', 'central', 'high')}
     s_hw = R.scenario(rows, 'central', usable, with_sw=False)
-    print(f'| {name} | {R.mhz(name):.0f} | {s["low"]:.3f} | {s["central"]:.3f} | {s["high"]:.3f} | {s_hw:.3f} | {",".join(miss) or "-"} |')
+    present = [x for x in E.SETS if x not in miss]
+    corr = corrected(name, present) if present and name != 'base' else None
+    print(f'| {name} | {R.mhz(name):.0f} | {s["low"]:.3f} | {s["central"]:.3f} | {s["high"]:.3f} | {s_hw:.3f} | {",".join(miss) or "-"} | {("%.3f" % corr) if corr else "-"} |')

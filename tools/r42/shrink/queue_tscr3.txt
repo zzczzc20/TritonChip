@@ -1,0 +1,1 @@
+tscr_s3_p667|PERIOD=6.67|tile_s3_syn/synth.dcp|0|

@@ -1,3 +1,4 @@
+-rw-rw-r-- 1 vivado vivado 337687 Nov 28 03:56 /home/vivado/r42_shrink_out/ooc_reports.tgz
 dir                        stage    LUT  logic    mem     FF   DSP CARRY8 BRAM URAM  CLB      WNS      WHS  worst endpoint
 hp_d0a0_p667               synth  38455  28561   9894   8960     0   1466  0.0    0 None    2.084    0.065  dut/victim_ptr_reg[5][1]/C -> dut/d_bits_reg[10]/D
 hp_d0a0_p667               route  38510  28616   9894   9000     0   1466  0.0    0 6403    0.081    0.007  dut/rq_addr_reg[6][25]/C -> dut/g_tag[1].read_tag_reg[11]/D
@@ -14,6 +15,8 @@ hp_s128_d2a2_syn           synth  42903  40623   2280  11849     0   1466  0.0  
 lsu_p667                   synth  20311  19645    666  11974     0    578  0.0    0 None    0.833    0.008  dut/fast/done_reg[3]/C -> dut/out_vector_reg[496]/D
 lsu_p667                   route  19893  19227    666  11986     0    578  0.0    0 3909    0.095    0.039  dut/fast/rr_reg[0]/C -> dut/out_vector_reg[480]/D
 tile_s0_syn                synth 249921 232272  17649  69184   269   7184 39.5    0 None    3.952    0.047  u_core/g_lsu_hybrid.u_lsu/fast/done_reg[3]/C -> u_core/g_lsu_hybrid.u_lsu/out_scalar_reg[3
+tile_s1_syn                synth 242807 225174  17633  69178   269   6675 39.5    0 None    3.952    0.047  u_core/g_lsu_hybrid.u_lsu/fast/done_reg[3]/C -> u_core/g_lsu_hybrid.u_lsu/out_scalar_reg[3
+tile_s2_syn                synth 236905 227462   9443  69374   269   6676 39.5   24 None    3.952    0.047  u_core/g_lsu_hybrid.u_lsu/fast/done_reg[3]/C -> u_core/g_lsu_hybrid.u_lsu/out_scalar_reg[3
 tile_s3_syn                synth 230979 221542   9437  69348   269   6676 39.5   24 None    3.952    0.047  u_core/g_lsu_hybrid.u_lsu/fast/done_reg[3]/C -> u_core/g_lsu_hybrid.u_lsu/out_scalar_reg[3
 vrf_x0v0_p10               synth  21289  21289      0  10029     0      0 32.0    0 None    5.885    0.089  dut/g_bank[2].u_bank/s1_dst_reg[1]/C -> dut/g_bank[0].u_bank/s1_byp_mask_reg[0]/R
 vrf_x0v0_p10               route  21271  21271      0  10030     0      0 32.0    0 3745    2.375    0.042  dut/g_bank[3].u_bank/s1_dst_reg[1]/C -> o_rsp_data_reg[1930]/D

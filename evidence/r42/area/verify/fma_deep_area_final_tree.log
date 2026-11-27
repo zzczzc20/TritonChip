@@ -1,0 +1,8 @@
+iverilog -g2005 -I rtl/common -P tb_fp32_fma.FMA_IMPL=1 -P tb_fp32_fma.FMA_BE=13 -o sim/build/tb_fp32_fmax.vvp tb/core/tb_fp32_fma.v rtl/core/tnca_fp32_fma.v rtl/gen/tnca_fma_align_xls.v rtl/gen/tnca_fma_norm_xls.v rtl/gen/tnca_fma_round_xls.v rtl/gen/tnca_fma_l3_xls.v rtl/gen/tnca_fmad_norm_xls.v rtl/gen/tnca_fmad_l3_xls.v rtl/core/tnca_lzc81.v rtl/core/tnca_fmax_norm.v rtl/core/tnca_fmax_add.v rtl/core/tnca_fmax_sel.v rtl/core/tnca_fmax_round.v rtl/core/tnca_fmax_mul.v rtl/core/tnca_fmax_alignp.v rtl/core/tnca_fmax_align.v rtl/core/tnca_fmax_fma.v rtl/common/tnca_elastic_link.v rtl/common/tnca_fifo.v rtl/common/tnca_line_link.v rtl/common/tnca_lzc.v rtl/common/tnca_popc.v
+iverilog -g2005 -I rtl/common -P tb_fp32_fma.FMA_IMPL=1 -P tb_fp32_fma.FMA_BE=14 -o sim/build/tb_fp32_fmax14.vvp tb/core/tb_fp32_fma.v rtl/core/tnca_fp32_fma.v rtl/gen/tnca_fma_align_xls.v rtl/gen/tnca_fma_norm_xls.v rtl/gen/tnca_fma_round_xls.v rtl/gen/tnca_fma_l3_xls.v rtl/gen/tnca_fmad_norm_xls.v rtl/gen/tnca_fmad_l3_xls.v rtl/core/tnca_lzc81.v rtl/core/tnca_fmax_norm.v rtl/core/tnca_fmax_add.v rtl/core/tnca_fmax_sel.v rtl/core/tnca_fmax_round.v rtl/core/tnca_fmax_mul.v rtl/core/tnca_fmax_alignp.v rtl/core/tnca_fmax_align.v rtl/core/tnca_fmax_fma.v rtl/common/tnca_elastic_link.v rtl/common/tnca_fifo.v rtl/common/tnca_line_link.v rtl/common/tnca_lzc.v rtl/common/tnca_popc.v
+python3 tools/model/gen_fma_vectors.py -o sim/build/fma_deep.txt \
+   -n 400000 --seed 424242
+516240 vectors -> sim/build/fma_deep.txt
+  fp32_fma BE=13 (deep)  PASS   tb_fp32_fma: 516240 vectors, 0 failures
+  fp32_fma BE=14 (deep)  PASS   tb_fp32_fma: 516240 vectors, 0 failures
+EXIT=0

@@ -35,3 +35,4 @@ ALL modelled n=141 of 145  geo 0.956  median|err| 0.158  within20 87
   tier large   n= 24 geo 0.903 median|err| 0.153
   tier hbm     n= 12 geo 0.786 median|err| 0.202
   tier xl      n= 28 geo 1.010 median|err| 0.240
+per family and element type: {'add/fp32': False, 'attention_decode': False, 'attention_prefill': False, 'bmm': False, 'conv2d/fp32': True, 'copy': False, 'cumsum/fp32': False, 'embedding': False, 'fp8_linear': False, 'matmul/fp32': False, 'resnet_block/fp32': True, 'rope': False, 'silu': False, 'softmax/fp32': True, 'swiglu': False, 'transpose/fp32': False}

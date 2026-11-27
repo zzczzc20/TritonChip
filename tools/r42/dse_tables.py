@@ -82,8 +82,35 @@ def table_all():
         print(f'| {f} | {v["n"]} | {"/".join(map(str, v["kinds"]))} | {v["geo"]:.3f} | {v["median_abs_err"]:.3f} | {v["max_abs_err"]:.3f} | {v["within20"]} | {"usable" if v["usable"] else "NOT USABLE"} |')
 
 
+def table_lever_validation():
+    """LINE_HALF: model le2/le0 against the three-core RTL stand-in new/old cycles of R42-lineelig (the only recorded RTL measurement of a lever in this study)"""
+    meas = {}
+    for l in (C.ROOT / 'evidence/r42/dse/ref/lineelig_rtl3c_measured.txt').read_text().splitlines():
+        m = re.match(r'\s+(\S+)\s+([\d.]+)$', l)
+        if m:
+            meas[m.group(1)] = float(m.group(2))
+    import math
+    l0 = C.load_collected(COL / 'head_dse_le0_tsm.json')
+    l2 = C.load_collected(COL / 'head_dse_le2_tsm.json')
+    print('| point | RTL-3c new/old cycles | model le2/le0 |')
+    print('|---|--:|--:|')
+    xs, ys = [], []
+    for p, r in meas.items():
+        a = l2[p]['device_cycles'] / l0[p]['device_cycles']
+        print(f'| {p} | {r:.3f} | {a:.3f} |')
+        xs.append(math.log(r))
+        ys.append(math.log(a))
+    print(f'\ngeometric mean RTL {math.exp(sum(xs) / len(xs)):.3f}, model {math.exp(sum(ys) / len(ys)):.3f}; log-gain ratio RTL/model {sum(xs) / sum(ys):.2f}')
+
+
 if __name__ == '__main__':
-    which = sys.argv[1:] or ['1c', 'tsm', 'all', 'screen', 'full']
+    args = sys.argv[1:]
+    full_tags = []
+    if '--full' in args:
+        k = args.index('--full')
+        full_tags, args = args[k + 1:], args[:k]
+    which = args or ['1c', 'tsm', 'all', 'lever', 'screen', 'full']
+    rp = str(Path(__file__).with_name('dse_report.py'))
     for w in which:
         print(f'\n### {w}\n')
         if w == '1c':
@@ -92,5 +119,9 @@ if __name__ == '__main__':
             table_family_tsm()
         elif w == 'all':
             table_all()
+        elif w == 'lever':
+            table_lever_validation()
         elif w == 'screen':
-            print(subprocess.run([sys.executable, str(Path(__file__).with_name('dse_report.py')), 'screen'], capture_output=True, text=True).stdout)
+            print(subprocess.run([sys.executable, rp, 'screen'], capture_output=True, text=True).stdout)
+        elif w == 'full':
+            print(subprocess.run([sys.executable, rp, 'full'] + full_tags, capture_output=True, text=True).stdout)

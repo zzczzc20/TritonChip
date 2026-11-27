@@ -1,0 +1,15 @@
+| configuration | clock | S145 low | S145 central | S145 high | central, software at round 2 | by tier (central) |
+|---|--:|--:|--:|--:|--:|---|
+| base | 100 | 1.853 | 2.072 | 2.072 | 1.556 | hbm 2.84 large 2.30 medium 2.45 small 2.23 tiny 1.55 xl 1.80 |
+| c6 | 100 | 2.125 | 3.567 | 3.994 | 2.679 | hbm 5.46 large 4.47 medium 4.45 small 4.00 tiny 1.59 xl 3.89 |
+| clk200 | 200 | 3.425 | 3.690 | 3.910 | 2.772 | hbm 4.69 large 3.85 medium 4.35 small 4.02 tiny 3.08 xl 3.13 |
+| vi1 | 100 | 1.907 | 2.347 | 2.407 | 1.763 | hbm 3.18 large 2.58 medium 2.81 small 2.57 tiny 1.80 xl 1.98 |
+| k1 | 200 | 4.136 | 6.454 | 7.085 | 4.848 | hbm 9.15 large 7.63 medium 8.00 small 7.56 tiny 3.17 xl 6.81 |
+| k2 | 200 | 4.250 | 7.191 | 8.046 | 5.402 | hbm 10.06 large 8.34 medium 8.92 small 8.75 tiny 3.64 xl 7.30 |
+| k3 | 150 | 2.599 | 3.202 | 3.455 | 2.405 | hbm 3.66 large 3.25 medium 4.22 small 3.90 tiny 2.27 xl 2.78 |
+| k4 | 150 | 2.535 | 2.832 | 3.027 | 2.127 | hbm 3.87 large 3.11 medium 3.40 small 3.13 tiny 2.17 xl 2.36 |
+| k5 | 200 | 3.878 | 5.644 | 6.166 | 4.240 | hbm 8.52 large 6.87 medium 7.13 small 6.81 tiny 2.58 xl 5.81 |
+| k6 | 200 | 3.375 | 3.847 | 4.212 | 2.890 | hbm 5.07 large 4.03 medium 4.67 small 4.36 tiny 3.31 xl 2.96 |
+| k7 | 150 | 2.716 | 3.292 | 3.498 | 2.473 | hbm 4.42 large 3.50 medium 4.00 small 3.70 tiny 2.76 xl 2.56 |
+| k8 | 200 | 4.203 | 7.253 | 8.208 | 5.449 | hbm 10.08 large 8.51 medium 11.01 small 9.27 tiny 3.28 xl 6.61 |
+| k9 | 250 | 5.491 | 10.843 | 12.832 | 8.145 | hbm 16.05 large 14.03 medium 17.51 small 15.18 tiny 3.72 xl 10.07 |

@@ -1,0 +1,6 @@
+  t42_mmaf32 (r42fp32)   PASS   cycles=15731 issued=5823 hazard=2683 lsu=1670 wb=6 squash=744
+  t42_mmaf32 (r42fp32, ooo mem) PASS   cycles=16998 issued=5823 hazard=2683 lsu=2937 wb=0 squash=744
+  t42_mmaf32 (MAC_F32=1 alone, MTX_ABUF=0) PASS   cycles=15717 issued=5823 hazard=2587 lsu=2215 wb=0 squash=744
+  t42_mmaf32 (MAC_F32=1 alone, MTX_ABUF=1) PASS   cycles=15821 issued=5823 hazard=2587 lsu=2215 wb=0 squash=744
+  t42_mmaf32 (no MATRIX_F32: ILLEGAL_INSTRUCTION) PASS   cycles=528 issued=45 hazard=5 lsu=443 wb=0 squash=1
+  t42_mmaf32 (run2, no MATRIX_F32: ILLEGAL_INSTRUCTION) PASS   cycles=404 issued=45 hazard=6 lsu=334 wb=1 squash=1

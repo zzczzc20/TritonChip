@@ -16,7 +16,8 @@ for u in unit/*; do [ -d $u/out ] || continue; n=$(basename $u); mkdir -p $O/$n
   for f in routed_util.rpt routed_timing.rpt routed_paths.rpt synth_util.rpt; do [ -f $u/out/$f ] && head -n 3000 $u/out/$f | gzip > $O/$n/$f.gz; done
   grep -h "R42_UNIT_SCREEN" $u/unit.log > $O/$n/wns.txt 2>/dev/null; done
 cp chain.log $O/chain.log
-{ echo "# tile 0 (out of context, 10 ns, SLR0 pblock): routed utilization and timing"; bash tile.sh base idef l-a099878e m-a099878e f-a099878e lf-a099878e lmf-a099878e;
+for d in pkg_src_88890078_lmf pkg_src_88890078_lf; do [ -f $d/package.log ] && gzip -c $d/package.log > $O/package_${d#pkg_src_88890078_}.log.gz; done
+{ echo "# tile 0 (out of context, 10 ns, SLR0 pblock): routed utilization and timing"; bash tile.sh base idef l-a099878e m-a099878e f-a099878e lf-a099878e lmf-a099878e; echo; echo "# worst routed slack per endpoint group of tile 0 (ns; count of endpoints among the most critical 2000)"; bash groups.sh base idef l-a099878e m-a099878e f-a099878e lf-a099878e lmf-a099878e;
   echo; echo "# kernel synthesis (three cores, hierarchical report) and per-core units"; bash units.sh base idef l-a099878e m-a099878e f-a099878e lf-a099878e lmf-a099878e;
   echo; echo "# unit screens (tnca_matrix)"; for u in unit/*; do n=$(basename $u); echo "$n $(grep -h R42_UNIT_SCREEN $u/unit.log 2>/dev/null) $(grep -h -m1 -E '^\| CLB LUTs' $u/out/routed_util.rpt 2>/dev/null | awk -F'|' '{print "LUT",$3}') $(grep -h -m1 -E '^\| CLB Registers' $u/out/routed_util.rpt 2>/dev/null | awk -F'|' '{print "FF",$3}')"; done; } > $O/ooc_summary.txt 2>&1
 tar czf $O.tgz -C $(dirname $O) $(basename $O)

@@ -1,0 +1,2 @@
+# puts "R42_UNIT_SCREEN $top wns=$wns whs=$whs"
+R42_UNIT_SCREEN tnca_matrix wns=1.219 whs=0.009

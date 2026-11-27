@@ -1,0 +1,66 @@
+# tile 0 (out of context, 10 ns, SLR0 pblock): routed utilization and timing
+base CLB=43077 LUTlogic=234275 LUTmem=17357 FF=68740 DSP=269 BRAM=39.5 WNS=0.816 WHS=0.019 failing_endpoints_lines=1
+idef CLB=42763 LUTlogic=235163 LUTmem=17357 FF=68752 DSP=269 BRAM=39.5 WNS=0.248 WHS=0.004 failing_endpoints_lines=1
+l-a099878e CLB=43235 LUTlogic=235067 LUTmem=17363 FF=68897 DSP=269 BRAM=39.5 WNS=0.625 WHS=0.020 failing_endpoints_lines=1
+m-a099878e CLB=42879 LUTlogic=233873 LUTmem=17379 FF=68997 DSP=269 BRAM=39.5 WNS=0.291 WHS=0.007 failing_endpoints_lines=1
+f-a099878e CLB=43258 LUTlogic=234674 LUTmem=17361 FF=68714 DSP=269 BRAM=39.5 WNS=0.607 WHS=0.007 failing_endpoints_lines=1
+lf-a099878e CLB=43242 LUTlogic=235331 LUTmem=17375 FF=68882 DSP=269 BRAM=39.5 WNS=0.909 WHS=0.007 failing_endpoints_lines=1
+lmf-a099878e CLB=42939 LUTlogic=235487 LUTmem=17361 FF=69019 DSP=269 BRAM=39.5 WNS=0.363 WHS=0.023 failing_endpoints_lines=1
+
+# worst routed slack per endpoint group of tile 0 (ns; count of endpoints among the most critical 2000)
+base         | home pipe 0.924 (130) | core x_valu_imm CE 0.830 (14) | core other 0.892 (1498) | lsu out_vector 0.816 (229) | matrix unit 0.896 (129)
+idef         | home pipe 0.986 (250) | core x_valu_imm CE 0.964 (1) | core other 0.525 (992) | tensor engine 1.386 (141) | lsu out_vector 0.248 (413) | matrix unit 1.021 (109) | vector fpu 1.174 (94)
+l-a099878e   | home pipe 1.139 (481) | core x_valu_imm CE 1.000 (1) | core other 0.625 (901) | tensor engine 1.352 (21) | lsu out_vector 0.662 (528) | matrix unit 0.950 (55) | vector fpu 1.401 (13)
+m-a099878e   | home pipe 1.171 (4) | core x_valu_imm CE 0.291 (18) | core other 0.679 (1977) | lsu out_vector 1.250 (1)
+f-a099878e   | home pipe 1.213 (367) | core x_valu_imm CE 1.896 (1) | core other 0.870 (696) | tensor engine 1.531 (162) | lsu out_vector 0.607 (462) | matrix unit 1.041 (214) | vector fpu 1.308 (98)
+lf-a099878e  | home pipe 0.988 (1152) | core other 0.963 (194) | tensor engine 1.414 (34) | lsu out_vector 0.909 (362) | matrix unit 1.329 (116) | vector fpu 1.168 (142)
+lmf-a099878e | home pipe 0.489 (47) | core x_valu_imm CE 0.363 (13) | core other 0.792 (1719) | lsu out_vector 0.629 (221)
+
+# kernel synthesis (three cores, hierarchical report) and per-core units
+== base
+u_core      213352       205609      7118    62220          269 
+u_mtx       61552        58144      2856    15643          128 
+u_txf       19503        17987      1516     9497           15 
+kernel      814086       742119     70092   238736          814 
+== idef
+u_core      214116       206373      7118    62266          269 
+u_mtx       61552        58144      2856    15643          128 
+u_txf       19503        17987      1516     9497           15 
+kernel      814408       742457     70076   238785          814 
+== l-a099878e
+u_core      214184       206435      7124    62425          269 
+u_mtx       61554        58146      2856    15643          128 
+u_txf       20290        18768      1522     9700           15 
+kernel      815671       743690     70106   239256          814 
+== m-a099878e
+u_core      213123       205358      7138    62280          269 
+u_mtx       61397        57987      2856    15711          128 
+u_txf       19128        17592      1536     9496           15 
+kernel      811938       739909     70148   238811          814 
+== f-a099878e
+u_core      213877       206130      7122    62225          269 
+u_mtx       62255        58847      2856    15636          128 
+u_txf       19676        18156      1520     9514           15 
+kernel      816616       744653     70088   238740          814 
+== lf-a099878e
+u_core      214437       206676      7136    62414          269 
+u_mtx       62255        58847      2856    15636          128 
+u_txf       20047        18513      1534     9704           15 
+kernel      815876       743863     70138   239244          814 
+== lmf-a099878e
+u_core      214529       206782      7120    62526          269 
+u_mtx       61359        57949      2856    15709          128 
+u_txf       20146        18628      1518     9701           15 
+kernel      815815       743820     70114   239499          814 
+
+# unit screens (tnca_matrix)
+u_base # puts "R42_UNIT_SCREEN $top wns=$wns whs=$whs"
+R42_UNIT_SCREEN tnca_matrix wns=1.219 whs=0.009 LUT  59740  FF  15628 
+u_def # puts "R42_UNIT_SCREEN $top wns=$wns whs=$whs"
+R42_UNIT_SCREEN tnca_matrix wns=1.547 whs=0.005 LUT  59749  FF  15628 
+u_f # puts "R42_UNIT_SCREEN $top wns=$wns whs=$whs"
+R42_UNIT_SCREEN tnca_matrix wns=1.835 whs=0.008 LUT  60552  FF  15609 
+u_m # puts "R42_UNIT_SCREEN $top wns=$wns whs=$whs"
+R42_UNIT_SCREEN tnca_matrix wns=1.793 whs=0.005 LUT  60483  FF  15696 
+u_mf # puts "R42_UNIT_SCREEN $top wns=$wns whs=$whs"
+R42_UNIT_SCREEN tnca_matrix wns=2.298 whs=0.009 LUT  60355  FF  15687 

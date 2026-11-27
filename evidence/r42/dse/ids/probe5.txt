@@ -1,0 +1,7 @@
+op.rope/tiny/fp16-b1-h2-s16-d16
+op.add/tiny/fp16-n1000
+op.add/tiny/fp32-n256
+op.cumsum/tiny/fp32-r4-c64
+op.transpose/tiny/fp32-r32-c32
+op.layernorm/tiny/fp16-r4-d64
+op.matmul/tiny/fp16-m16-k32-n16

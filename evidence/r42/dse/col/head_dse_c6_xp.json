@@ -1,0 +1,498 @@
+{
+ "binary": "/home/zhongchun/r42/dse_out/tnca-chip-v5",
+ "points": {
+  "op.attention_prefill/large/fp16-b1-h4-kv2-s512-d128": {
+   "bound": 4268160.0,
+   "counters_total": {
+    "barrier_sleep_cycles": 186382594,
+    "context_park_cycles": 22736095,
+    "dependency_wait_cycles": 36979298,
+    "dma_admission_wait_cycles": 50510039,
+    "dma_commands_issued": 262144,
+    "instructions": 143713124,
+    "issue_queue_cycles": 110559551,
+    "lsu_wait_cycles": 5753071,
+    "matrix_engine_busy_cycles": 4368384,
+    "matrix_engine_commands": 2107392,
+    "memory_port_service_cycles": 36457576,
+    "mma_commands": 0,
+    "pipeline_freeze_cycles": 18707901
+   },
+   "demand": {
+    "fp_ops": 1575936,
+    "macs": 134479872,
+    "read_bytes": 1048576,
+    "sfu_ops": 525312,
+    "write_bytes": 524288
+   },
+   "device_cycles": 26427189,
+   "fallbacks": [],
+   "first_call_device_cycles": 26440415,
+   "launches": 7,
+   "max_rel_err": 0.0003382661229866347,
+   "model_knobs": {
+    "TNCA_TLM_BINARY": "/home/zhongchun/r42/dse_out/tnca-chip-v5",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r42/dse_out/cfg/dse_c6.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r42/dse_out/tlm/head_dse_c6_xp/runs/op.attention_prefill__large__fp16-b1-h4-kv2-s512-d128/model"
+   },
+   "model_retired": 143713124,
+   "per_launch": [
+    {
+     "cycles": 38676,
+     "grid": [
+      256,
+      1,
+      1
+     ],
+     "kernel": "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_0",
+     "programs": 0
+    },
+    {
+     "cycles": 369309,
+     "grid": [
+      32,
+      32,
+      1
+     ],
+     "kernel": "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_1",
+     "programs": 0
+    },
+    {
+     "cycles": 9077235,
+     "grid": [
+      1024,
+      4,
+      1
+     ],
+     "kernel": "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_2",
+     "programs": 0
+    },
+    {
+     "cycles": 7837518,
+     "grid": [
+      2048,
+      1,
+      1
+     ],
+     "kernel": "triton_red_fused__scaled_dot_product_flash_attention_for_cpu_3",
+     "programs": 0
+    },
+    {
+     "cycles": 155729,
+     "grid": [
+      256,
+      1,
+      1
+     ],
+     "kernel": "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_4",
+     "programs": 0
+    },
+    {
+     "cycles": 8739960,
+     "grid": [
+      256,
+      4,
+      1
+     ],
+     "kernel": "triton_tem_fused__scaled_dot_product_flash_attention_for_cpu__unsafe_view_clone_expand_unsqueeze_5",
+     "programs": 0
+    },
+    {
+     "cycles": 208762,
+     "grid": [
+      256,
+      1,
+      1
+     ],
+     "kernel": "triton_poi_fused__scaled_dot_product_flash_attention_for_cpu_6",
+     "programs": 0
+    }
+   ],
+   "problems": [],
+   "process_wall_s": 60.2,
+   "status": "pass",
+   "timing": "serial-grid"
+  },
+  "op.embedding/large/fp16-v16384-d2048-t2048": {
+   "bound": 2099200.0,
+   "counters_total": {
+    "barrier_sleep_cycles": 0,
+    "context_park_cycles": 2311425,
+    "dependency_wait_cycles": 5836306,
+    "dma_admission_wait_cycles": 0,
+    "dma_commands_issued": 0,
+    "instructions": 16259428,
+    "issue_queue_cycles": 63542360,
+    "lsu_wait_cycles": 7491564,
+    "matrix_engine_busy_cycles": 0,
+    "matrix_engine_commands": 0,
+    "memory_port_service_cycles": 1769576,
+    "mma_commands": 0,
+    "pipeline_freeze_cycles": 7491754
+   },
+   "demand": {
+    "fp_ops": 0.0,
+    "macs": 0.0,
+    "read_bytes": 8404992,
+    "sfu_ops": 0.0,
+    "write_bytes": 8388608
+   },
+   "device_cycles": 2145379,
+   "fallbacks": [],
+   "first_call_device_cycles": 2159248,
+   "launches": 1,
+   "max_rel_err": 0.0,
+   "model_knobs": {
+    "TNCA_TLM_BINARY": "/home/zhongchun/r42/dse_out/tnca-chip-v5",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r42/dse_out/cfg/dse_c6.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r42/dse_out/tlm/head_dse_c6_xp/runs/op.embedding__large__fp16-v16384-d2048-t2048/model"
+   },
+   "model_retired": 16259428,
+   "per_launch": [
+    {
+     "cycles": 2145379,
+     "grid": [
+      32768,
+      1,
+      1
+     ],
+     "kernel": "triton_poi_fused_embedding_0",
+     "programs": 0
+    }
+   ],
+   "problems": [],
+   "process_wall_s": 10.78,
+   "status": "pass",
+   "timing": "serial-grid"
+  },
+  "op.fp8_linear/xl/fp8-m1-k1024-n1536": {
+   "bound": 197296.0,
+   "counters_total": {
+    "barrier_sleep_cycles": 1040802,
+    "context_park_cycles": 0,
+    "dependency_wait_cycles": 683417,
+    "dma_admission_wait_cycles": 374810,
+    "dma_commands_issued": 12288,
+    "instructions": 674876,
+    "issue_queue_cycles": 17960,
+    "lsu_wait_cycles": 60920,
+    "matrix_engine_busy_cycles": 1116864,
+    "matrix_engine_commands": 32448,
+    "memory_port_service_cycles": 444992,
+    "mma_commands": 6144,
+    "pipeline_freeze_cycles": 249312
+   },
+   "demand": {
+    "fp_ops": 14432,
+    "macs": 1572864,
+    "macs_fp8": 1572864,
+    "read_bytes": 1575296,
+    "sfu_ops": 8,
+    "write_bytes": 3072
+   },
+   "device_cycles": 309890,
+   "fallbacks": [],
+   "first_call_device_cycles": 323614,
+   "launches": 1,
+   "max_rel_err": 0.0,
+   "model_knobs": {
+    "TNCA_TLM_BINARY": "/home/zhongchun/r42/dse_out/tnca-chip-v5",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r42/dse_out/cfg/dse_c6.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r42/dse_out/tlm/head_dse_c6_xp/runs/op.fp8_linear__xl__fp8-m1-k1024-n1536/model"
+   },
+   "model_retired": 674876,
+   "per_launch": [
+    {
+     "cycles": 309890,
+     "grid": [
+      1,
+      12,
+      1
+     ],
+     "kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+     "programs": 0
+    }
+   ],
+   "problems": [],
+   "process_wall_s": 9.52,
+   "status": "pass",
+   "timing": "serial-grid"
+  },
+  "op.fp8_linear/xl/fp8-m1-k512-n1536": {
+   "bound": 98840.0,
+   "counters_total": {
+    "barrier_sleep_cycles": 520417,
+    "context_park_cycles": 0,
+    "dependency_wait_cycles": 350192,
+    "dma_admission_wait_cycles": 184896,
+    "dma_commands_issued": 6144,
+    "instructions": 437084,
+    "issue_queue_cycles": 10195,
+    "lsu_wait_cycles": 35553,
+    "matrix_engine_busy_cycles": 560064,
+    "matrix_engine_commands": 16320,
+    "memory_port_service_cycles": 222752,
+    "mma_commands": 3072,
+    "pipeline_freeze_cycles": 131138
+   },
+   "demand": {
+    "fp_ops": 7216,
+    "macs": 786432,
+    "macs_fp8": 786432,
+    "read_bytes": 787648,
+    "sfu_ops": 4,
+    "write_bytes": 3072
+   },
+   "device_cycles": 169866,
+   "fallbacks": [],
+   "first_call_device_cycles": 184045,
+   "launches": 1,
+   "max_rel_err": 1.1475470035252644e-06,
+   "model_knobs": {
+    "TNCA_TLM_BINARY": "/home/zhongchun/r42/dse_out/tnca-chip-v5",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r42/dse_out/cfg/dse_c6.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r42/dse_out/tlm/head_dse_c6_xp/runs/op.fp8_linear__xl__fp8-m1-k512-n1536/model"
+   },
+   "model_retired": 437084,
+   "per_launch": [
+    {
+     "cycles": 169866,
+     "grid": [
+      1,
+      12,
+      1
+     ],
+     "kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+     "programs": 0
+    }
+   ],
+   "problems": [],
+   "process_wall_s": 9.25,
+   "status": "pass",
+   "timing": "serial-grid"
+  },
+  "op.fp8_linear/xl/fp8-m48-k1024-n1536": {
+   "bound": 952382.4,
+   "counters_total": {
+    "barrier_sleep_cycles": 4163619,
+    "context_park_cycles": 0,
+    "dependency_wait_cycles": 7432048,
+    "dma_admission_wait_cycles": 1124461,
+    "dma_commands_issued": 49152,
+    "instructions": 5268812,
+    "issue_queue_cycles": 228157,
+    "lsu_wait_cycles": 165263,
+    "matrix_engine_busy_cycles": 4467456,
+    "matrix_engine_commands": 129792,
+    "memory_port_service_cycles": 2004848,
+    "mma_commands": 24576,
+    "pipeline_freeze_cycles": 434145
+   },
+   "demand": {
+    "fp_ops": 692736,
+    "macs": 75497472,
+    "macs_fp8": 75497472,
+    "read_bytes": 1671552,
+    "sfu_ops": 384,
+    "write_bytes": 147456
+   },
+   "device_cycles": 1974287,
+   "fallbacks": [],
+   "first_call_device_cycles": 1988788,
+   "launches": 1,
+   "max_rel_err": 0.00024015369836695484,
+   "model_knobs": {
+    "TNCA_TLM_BINARY": "/home/zhongchun/r42/dse_out/tnca-chip-v5",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r42/dse_out/cfg/dse_c6.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r42/dse_out/tlm/head_dse_c6_xp/runs/op.fp8_linear__xl__fp8-m48-k1024-n1536/model"
+   },
+   "model_retired": 5268812,
+   "per_launch": [
+    {
+     "cycles": 1974287,
+     "grid": [
+      1,
+      12,
+      1
+     ],
+     "kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+     "programs": 0
+    }
+   ],
+   "problems": [],
+   "process_wall_s": 13.94,
+   "status": "pass",
+   "timing": "serial-grid"
+  },
+  "op.fp8_linear/xl/fp8-m48-k512-n1536": {
+   "bound": 476191.2,
+   "counters_total": {
+    "barrier_sleep_cycles": 2082364,
+    "context_park_cycles": 0,
+    "dependency_wait_cycles": 3846086,
+    "dma_admission_wait_cycles": 564690,
+    "dma_commands_issued": 24576,
+    "instructions": 3056972,
+    "issue_queue_cycles": 114962,
+    "lsu_wait_cycles": 93502,
+    "matrix_engine_busy_cycles": 2240256,
+    "matrix_engine_commands": 65280,
+    "memory_port_service_cycles": 1007216,
+    "mma_commands": 12288,
+    "pipeline_freeze_cycles": 249836
+   },
+   "demand": {
+    "fp_ops": 346368,
+    "macs": 37748736,
+    "macs_fp8": 37748736,
+    "read_bytes": 835776,
+    "sfu_ops": 192,
+    "write_bytes": 147456
+   },
+   "device_cycles": 1061587,
+   "fallbacks": [],
+   "first_call_device_cycles": 1076077,
+   "launches": 1,
+   "max_rel_err": 2.52831715210356e-05,
+   "model_knobs": {
+    "TNCA_TLM_BINARY": "/home/zhongchun/r42/dse_out/tnca-chip-v5",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r42/dse_out/cfg/dse_c6.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r42/dse_out/tlm/head_dse_c6_xp/runs/op.fp8_linear__xl__fp8-m48-k512-n1536/model"
+   },
+   "model_retired": 3056972,
+   "per_launch": [
+    {
+     "cycles": 1061587,
+     "grid": [
+      1,
+      12,
+      1
+     ],
+     "kernel": "w8a8_block_dynamic_fp8_matmul_kernel",
+     "programs": 0
+    }
+   ],
+   "problems": [],
+   "process_wall_s": 12.03,
+   "status": "pass",
+   "timing": "serial-grid"
+  },
+  "op.gemv/large/fp16-k2048-n16384": {
+   "bound": 8393216.0,
+   "counters_total": {
+    "barrier_sleep_cycles": 28196528,
+    "context_park_cycles": 110340,
+    "dependency_wait_cycles": 356608,
+    "dma_admission_wait_cycles": 107248462,
+    "dma_commands_issued": 393216,
+    "instructions": 3529060,
+    "issue_queue_cycles": 1523846,
+    "lsu_wait_cycles": 256854,
+    "matrix_engine_busy_cycles": 44337152,
+    "matrix_engine_commands": 264192,
+    "memory_port_service_cycles": 25251944,
+    "mma_commands": 262144,
+    "pipeline_freeze_cycles": 332292
+   },
+   "demand": {
+    "fp_ops": 0.0,
+    "macs": 33554432,
+    "read_bytes": 67112960,
+    "sfu_ops": 0.0,
+    "write_bytes": 32768
+   },
+   "device_cycles": 6972697,
+   "fallbacks": [],
+   "first_call_device_cycles": 6986298,
+   "launches": 1,
+   "max_rel_err": 0.00025603067506838186,
+   "model_knobs": {
+    "TNCA_TLM_BINARY": "/home/zhongchun/r42/dse_out/tnca-chip-v5",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r42/dse_out/cfg/dse_c6.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r42/dse_out/tlm/head_dse_c6_xp/runs/op.gemv__large__fp16-k2048-n16384/model"
+   },
+   "model_retired": 3529060,
+   "per_launch": [
+    {
+     "cycles": 6972697,
+     "grid": [
+      512,
+      1,
+      1
+     ],
+     "kernel": "triton_tem_fused_mm_t_0",
+     "programs": 0
+    }
+   ],
+   "problems": [
+    "AUDIT: eta 1.2037 > 1 -- a measurement below its strict bound"
+   ],
+   "process_wall_s": 41.72,
+   "status": "pass",
+   "timing": "serial-grid"
+  },
+  "op.linear/large/fp16-m96-k2048-n6144-bias0": {
+   "bound": 37748736.0,
+   "counters_total": {
+    "barrier_sleep_cycles": 62162757,
+    "context_park_cycles": 246550,
+    "dependency_wait_cycles": 812554,
+    "dma_admission_wait_cycles": 353099635,
+    "dma_commands_issued": 884736,
+    "instructions": 8183396,
+    "issue_queue_cycles": 3738234,
+    "lsu_wait_cycles": 482698,
+    "matrix_engine_busy_cycles": 99758592,
+    "matrix_engine_commands": 594432,
+    "memory_port_service_cycles": 56888168,
+    "mma_commands": 589824,
+    "pipeline_freeze_cycles": 631594
+   },
+   "demand": {
+    "fp_ops": 0.0,
+    "macs": 1207959552,
+    "read_bytes": 25559040,
+    "sfu_ops": 0.0,
+    "write_bytes": 1179648
+   },
+   "device_cycles": 20247424,
+   "fallbacks": [],
+   "first_call_device_cycles": 20260897,
+   "launches": 1,
+   "max_rel_err": 0.0003180459357681551,
+   "model_knobs": {
+    "TNCA_TLM_BINARY": "/home/zhongchun/r42/dse_out/tnca-chip-v5",
+    "TNCA_TLM_CONFIG": "/home/zhongchun/r42/dse_out/cfg/dse_c6.cfg",
+    "TNCA_TLM_MONITOR": "aggregate",
+    "TNCA_TLM_OUT": "/home/zhongchun/r42/dse_out/tlm/head_dse_c6_xp/runs/op.linear__large__fp16-m96-k2048-n6144-bias0/model"
+   },
+   "model_retired": 8183396,
+   "per_launch": [
+    {
+     "cycles": 20247424,
+     "grid": [
+      1152,
+      1,
+      1
+     ],
+     "kernel": "triton_tem_fused_mm_t_0",
+     "programs": 0
+    }
+   ],
+   "problems": [
+    "AUDIT: eta 1.8644 > 1 -- a measurement below its strict bound"
+   ],
+   "process_wall_s": 91.67,
+   "status": "pass",
+   "timing": "serial-grid"
+  }
+ },
+ "source": "/home/zhongchun/r42/dse_out/tlm/head_dse_c6_xp"
+}

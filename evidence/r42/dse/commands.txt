@@ -1,0 +1,26 @@
+# R42 dse: commands in the order they were run (domain: SystemC/TLM model and single-core RTL numbers read from the xfer evidence; no board runs)
+# Hosts: GB10 (nice -n 19, <= 3 processes of this branch via dse_run.sh JOBS=3), local host for edits and seconds-long python only.
+# Trees on GB10: ~/r42/dse (mirror of branch R42-dse = origin/R42 76d43b1d + model patch), ~/r42/dse_val (git archive of 33b41987 = software of ab-int2 and xl-cand2), outputs ~/r42/dse_out.
+#
+# 0. model build (SystemC 3.0.2): cmake -S tools/performance_harness/systemc -B ~/r42/dse_out/tlm-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$HOME/tc_env/systemc-3.0.2/install && cmake --build ... --target tnca-chip
+#    binaries: tnca-chip (first build, unpatched = head 76d43b1d) was overwritten by tnca-chip-v2 (lsu_hybrid), -v3 (issue_vector_cycles), -v4 (issue_two_src_cycles, core_mem_ports, issue_free_mode 4/5); all new keys default off
+# 1. FIRST validation (kept): all tiny/small/medium of the 113 on the validation software tree, config cal (tools/r42/kfuse_speed_tlm_cfg.py), JOBS=3
+tools/r42/dse_gb10/dse_run.sh ~/r42/dse_val cfg/cal.cfg v1_tsm_cal tnca-chip ids/tsm77.txt        # -> col/v1_tsm_cal.json (bit-identical to kfuse-speed cal_tsm.json at 77 of 77 points)
+python3 tools/r42/dse_validate.py --model evidence/r42/dse/col/v1_tsm_cal.json                      # -> failed_first_validation/
+# 2. single-core calibration against RTL (rtl-1c tiny tier of evidence/r42/xfer/tables.txt 3b, software 44070eb0), TLM with ideal memory on ONE core
+CORES=1 dse_run.sh ~/r42/dse cfg/ideal.cfg v1_tiny_1c_ideal tnca-chip ids/tiny27.txt ; ... ideal_hy.cfg (lsu_hybrid) ; probe_p_* single-parameter probes on ids/probe5.txt ; t27_* on ids/tiny27.txt
+python3 tools/r42/dse_cmp1c.py col/v1_tiny_1c_ideal.json col/v2_tiny_1c_ideal_hy.json col/t27_*.json
+# 3. DSE base model: cal + lsu_hybrid + issue_vector_cycles=2 + issue_shuffle_cycles=1 (cfg/dse_base.cfg = cfg/cal_hy_c8.cfg). Calibrated on the single-core RTL numbers of step 2 only;
+#    holdout = the 77 board points (v3_tsm_cal_hy_c8.json = val_dse_base_tsm.json): all-point geo model/board 0.807 -> 0.983, median abs err 0.206 -> 0.132, within 20 %: 38 -> 52 of 77
+SEED=<same-tree run> JOBS=3 tools/r42/dse_gb10/dse_run.sh ~/r42/dse_val cfg/cal_hy_c8.cfg v3_tsm_cal_hy_c8 tnca-chip-v5 ids/tsm77.txt     # (and cal_iv2, cal_hy_iv2, cal_hy_c7 on the same ids)
+# 4. bundles: python3 tools/r42/dse_cfg.py evidence/r42/dse/cfg --base dse --combo k1=c6+clk200 ... (all configurations in cfg/, lever descriptions in cfg/dse_levers.json)
+tools/r42/dse_gb10/dse_sets.sh ~/r42/dse_val val dse_base hv px pxv xd xp      # validation software, base model  (tsm = v3_tsm_cal_hy_c8)
+tools/r42/dse_gb10/dse_sets.sh ~/r42/dse head dse_base tsm hv px xd xp         # head software, base model
+~/r42/dse_out/master.sh with queue.txt (lines `head dse_<lever> <sets>`; SEEDTAG=head_dse_base reuses the compile caches through run_graphs --cache-seed)
+#    one-at-a-time: head dse_<lever> tsm for 31 levers; hv for c6 clk200 vi1 memideal c6o3 sets128 sets512; px xd xp for c6 clk200 vi1; full bundles (tsm hv px xd xp) for k1..k9; k10 tsm hv
+# 5. analysis (local, seconds): python3 tools/r42/dse_validate_all.py val_dse_base --out evidence/r42/dse/validation_all_val_dse_base.json ;
+#    python3 tools/r42/dse_report.py screen ; python3 tools/r42/dse_report.py full head_dse_k1 ... ; python3 tools/r42/dse_tables.py > evidence/r42/dse/tables.txt
+# 6. default-off identity of the new TLM keys: config cal (no new key), tiny tier, val tree. The unpatched binary was rebuilt from origin/R42 sources (~/r42/dse_orig, orig-build)
+#    new binary against rebuilt original binary: 27 of 27 cycle-identical (col/ident_cal_v5.json, col/ident_cal_orig.json)
+#    the first run of the unpatched binary (col/v1_tsm_cal.json, fresh compile) differs from both on op.transpose/tiny/fp32-r32-c32 (1324 against 1298, 2 %): the TNCA compile cache
+#    (~/.cache/tnca/inductor/<identity>, shared by every run of a tree) makes a cached compile run differently from a fresh one on that point; both binaries show it

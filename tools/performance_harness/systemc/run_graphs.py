@@ -295,6 +295,12 @@ def parent(a):
         run_dir = out/'runs'/key.replace('/', '__').replace('@', '__')
         for d in ('triton_cache', 'triton_home', 'inductor_cache', 'tmp', 'dump', 'model'):
             (run_dir/d).mkdir(parents=True, exist_ok=True)
+        if a.cache_seed:   # R42 dse: reuse the compile caches of an earlier run of the SAME software tree (kernels do not depend on the model configuration)
+            import shutil
+            seed = Path(a.cache_seed)/'runs'/run_dir.name
+            for d in ('triton_cache', 'triton_home', 'inductor_cache'):
+                if (seed/d).is_dir():
+                    shutil.copytree(seed/d, run_dir/d, dirs_exist_ok=True)
         env = {k: v for k, v in os.environ.items() if not k.startswith(('TNCA_', 'TRITON_', 'TORCHINDUCTOR_'))
                or k in ('TNCA_CACHE', 'TNCA_DRAM_PATH', 'TNCA_RAMULATOR2_CONFIG')}  # RTL simulator cache; DRAM path
         env.update(HARNESS)
@@ -414,6 +420,7 @@ def main():
     ap.add_argument('--warmup', type=int, default=0)
     ap.add_argument('--timed', type=int, default=1)
     ap.add_argument('--graph-launches', type=int, help=argparse.SUPPRESS)
+    ap.add_argument('--cache-seed', help='R42 dse: output directory of an earlier run of the same software tree whose Inductor/Triton caches are reused')
     ap.add_argument('--points-module', help='Python file registering extra ArchBench points (outside the frozen suites)')
     a = ap.parse_args()
     if a.child:

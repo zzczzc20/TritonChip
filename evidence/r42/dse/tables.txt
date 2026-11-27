@@ -1,0 +1,98 @@
+
+### 1c
+
+| single-core TLM variant (zero-latency memory) | n | geo TLM/RTL | median abs err | gemm-shaped geo | other geo |
+|---|--:|--:|--:|--:|--:|
+| `ideal` (R41 G4 model, zero-latency memory, 1 core) | 24 | 0.839 | 0.171 | 0.982 | 0.763 |
+| + hybrid LSU (`lsu_hybrid`) | 24 | 0.864 | 0.172 | 1.008 | 0.788 |
+| + every vector-datapath instruction takes 2 issue cycles (`issue_vector_cycles=2`) | 24 | 1.043 | 0.099 | 1.122 | 0.998 |
+| vector integer only 2 (`issue_vint_cycles`) | 24 | 0.947 | 0.145 | 1.044 | 0.894 |
+| vint + vfp 2 | 24 | 0.980 | 0.109 | 1.073 | 0.928 |
+| vint + shuffle 2 | 24 | 0.963 | 0.109 | 1.066 | 0.906 |
+| **all vector 2, shuffle 1 = DSE base** | 24 | 1.028 | 0.085 | 1.102 | 0.986 |
+| all vector 2, vfp and shuffle 1 | 24 | 0.988 | 0.094 | 1.072 | 0.941 |
+| `issue_cycles=2` for every instruction | 24 | 1.198 | 0.188 | 1.234 | 1.178 |
+| all vector 2 and taken branch 6 | 24 | 1.045 | 0.104 | 1.124 | 1.000 |
+
+### tsm
+
+| family | n (tiny/small/medium) | first validation geo model/board (`cal`) | DSE base geo model/board |
+|---|--:|--:|--:|
+| add | 4 | 0.664 | 0.849 |
+| argmax | 3 | 0.813 | 1.079 |
+| attention_decode | 3 | 0.687 | 0.890 |
+| attention_prefill | 3 | 1.016 | 1.270 |
+| bmm | 3 | 1.150 | 1.225 |
+| conv2d | 3 | 0.754 | 0.990 |
+| cumsum | 3 | 0.794 | 1.485 |
+| embedding | 3 | 0.867 | 1.307 |
+| gelu_tanh | 3 | 0.765 | 0.984 |
+| gemv | 3 | 0.937 | 0.952 |
+| gpt2_block | 3 | 1.020 | 1.096 |
+| layernorm | 3 | 0.744 | 0.888 |
+| linear | 3 | 1.056 | 1.069 |
+| llama_decode | 3 | 0.763 | 0.904 |
+| llama_prefill | 3 | 0.982 | 1.140 |
+| matmul | 6 | 1.160 | 1.251 |
+| mlp | 3 | 1.029 | 1.031 |
+| resnet_block | 3 | 0.773 | 1.008 |
+| rmsnorm | 3 | 0.778 | 0.900 |
+| rope | 3 | 0.322 | 0.591 |
+| silu | 3 | 0.622 | 0.748 |
+| softmax | 4 | 0.855 | 0.972 |
+| swiglu | 3 | 0.634 | 0.761 |
+| transpose | 3 | 0.554 | 0.593 |
+
+first: n=77 geo 0.807 median abs err 0.206 within 20 %: 38
+
+base: n=77 geo 0.983 median abs err 0.132 within 20 %: 52
+
+### all
+
+| family | n | direct/proxy/wave | geo model/board | median abs err | max abs err | within 20 % | verdict |
+|---|--:|--:|--:|--:|--:|--:|---|
+| add | 6 | 6/0/0 | 0.836 | 0.172 | 0.284 | 5 | usable |
+| argmax | 5 | 5/0/0 | 1.025 | 0.052 | 0.154 | 5 | usable |
+| attention_decode | 7 | 7/0/0 | 0.809 | 0.185 | 0.267 | 4 | NOT USABLE |
+| attention_prefill | 6 | 3/3/0 | 1.350 | 0.418 | 0.444 | 1 | NOT USABLE |
+| bmm | 4 | 4/0/0 | 1.196 | 0.212 | 0.252 | 2 | NOT USABLE |
+| conv2d | 4 | 3/1/0 | 0.983 | 0.030 | 0.040 | 4 | usable |
+| copy | 1 | 1/0/0 | 0.579 | 0.421 | 0.421 | 0 | NOT USABLE |
+| cumsum | 3 | 3/0/0 | 1.485 | 0.482 | 0.505 | 0 | NOT USABLE |
+| embedding | 6 | 4/2/0 | 1.297 | 0.290 | 0.335 | 0 | NOT USABLE |
+| fp8_act_quant | 2 | 2/0/0 | 0.806 | 0.194 | 0.197 | 2 | usable |
+| fp8_layer_decode | 1 | 1/0/0 | 0.846 | 0.154 | 0.154 | 1 | usable |
+| fp8_linear | 13 | 5/0/8 | 1.162 | 0.239 | 0.353 | 6 | NOT USABLE |
+| gelu_tanh | 4 | 4/0/0 | 0.991 | 0.019 | 0.072 | 4 | usable |
+| gemv | 6 | 5/1/0 | 0.878 | 0.149 | 0.193 | 6 | usable |
+| gpt2_block | 4 | 3/1/0 | 1.057 | 0.086 | 0.116 | 4 | usable |
+| layernorm | 4 | 4/0/0 | 0.917 | 0.026 | 0.264 | 3 | usable |
+| linear | 6 | 3/3/0 | 1.029 | 0.076 | 0.158 | 6 | usable |
+| llama_decode | 5 | 4/1/0 | 0.859 | 0.175 | 0.213 | 4 | usable |
+| llama_prefill | 5 | 3/2/0 | 0.963 | 0.193 | 0.298 | 3 | usable |
+| matmul | 9 | 6/3/0 | 1.185 | 0.186 | 0.467 | 5 | NOT USABLE |
+| mlp | 4 | 3/1/0 | 1.034 | 0.027 | 0.077 | 4 | usable |
+| resnet_block | 4 | 3/1/0 | 1.002 | 0.010 | 0.015 | 4 | usable |
+| rmsnorm | 5 | 5/0/0 | 0.888 | 0.121 | 0.185 | 5 | usable |
+| rmsnorm_residual | 1 | 1/0/0 | 1.069 | 0.069 | 0.069 | 1 | usable |
+| rope | 5 | 5/0/0 | 0.560 | 0.484 | 0.524 | 0 | NOT USABLE |
+| silu | 5 | 5/0/0 | 0.726 | 0.305 | 0.306 | 1 | NOT USABLE |
+| softmax | 6 | 6/0/0 | 0.994 | 0.042 | 0.138 | 6 | usable |
+| swiglu | 5 | 5/0/0 | 0.748 | 0.265 | 0.272 | 1 | NOT USABLE |
+| transpose | 5 | 4/1/0 | 0.514 | 0.455 | 0.594 | 0 | NOT USABLE |
+
+### lever
+
+| point | RTL-3c new/old cycles | model le2/le0 |
+|---|--:|--:|
+| model.mlp/small/fp16-t64-d128 | 0.860 | 0.844 |
+| model.mlp/tiny/fp16-t16-d64 | 0.809 | 0.845 |
+| op.bmm/tiny/fp16-b2-m16-k16-n16 | 0.874 | 0.833 |
+| op.gemv/small/fp16-k256-n512 | 0.795 | 0.795 |
+| op.gemv/tiny/fp16-k64-n64 | 0.719 | 0.709 |
+| op.linear/small/fp16-m64-k256-n256 | 0.747 | 0.675 |
+| op.linear/tiny/fp16-m16-k64-n64 | 0.837 | 0.775 |
+| op.matmul/small/fp16-m64-k128-n128 | 0.590 | 0.519 |
+| op.matmul/tiny/fp16-m16-k32-n16 | 0.816 | 0.749 |
+
+geometric mean RTL 0.778, model 0.742; log-gain ratio RTL/model 0.84

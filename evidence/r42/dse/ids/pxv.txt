@@ -1,0 +1,2 @@
+op.silu/large/fp16-n4194304
+op.softmax/large/fp16-r256-c8192

@@ -1,0 +1,98 @@
+{
+ "model.gpt2_block/large/fp16-d1024-h16-b1-s512": {
+  "kind": "macs",
+  "proxy": "model.gpt2_block/large/fp16-d1024-h16-b1-s64"
+ },
+ "model.llama_decode/hbm/fp16-b1-p512": {
+  "kind": "macs",
+  "proxy": "model.llama_decode/large/fp16-b1-p496"
+ },
+ "model.llama_decode/large/fp16-b1-p512": {
+  "kind": "macs",
+  "proxy": "model.llama_decode/large/fp16-b1-p480"
+ },
+ "model.llama_prefill/hbm/fp16-b1-s512": {
+  "kind": "macs",
+  "proxy": "model.llama_prefill/large/fp16-b1-s48"
+ },
+ "model.llama_prefill/large/fp16-b1-s512": {
+  "kind": "macs",
+  "proxy": "model.llama_prefill/large/fp16-b1-s64"
+ },
+ "model.mlp/large/fp16-t512-d2048": {
+  "kind": "macs",
+  "proxy": "model.mlp/large/fp16-t48-d2048"
+ },
+ "model.resnet_block/large/fp32-n8-c64-hw56": {
+  "kind": "macs",
+  "proxy": "model.resnet_block/large/fp32-n1-c64-hw28"
+ },
+ "op.attention_prefill/large/fp16-b1-h32-s512-d64": {
+  "kind": "macs",
+  "proxy": "op.attention_prefill/large/fp16-b1-h4-s512-d64"
+ },
+ "op.attention_prefill/xl/fp16-b1-h16-kv8-s1024-d128": {
+  "kind": "macs",
+  "proxy": "op.attention_prefill/large/fp16-b1-h4-kv2-s512-d128"
+ },
+ "op.attention_prefill/xl/fp16-b1-h16-kv8-s2048-d128": {
+  "kind": "macs",
+  "proxy": "op.attention_prefill/large/fp16-b1-h4-kv2-s512-d128"
+ },
+ "op.conv2d/large/fp32-n8-cin64-h56-w56-cout64": {
+  "kind": "macs",
+  "proxy": "op.conv2d/large/fp32-n1-cin64-h28-w28-cout64"
+ },
+ "op.embedding/hbm/fp16-v65536-d2048-t8192": {
+  "kind": "bytes",
+  "proxy": "op.embedding/large/fp16-v8192-d2048-t512"
+ },
+ "op.embedding/xl/fp16-v151936-d2048-t2048": {
+  "kind": "bytes",
+  "proxy": "op.embedding/large/fp16-v16384-d2048-t2048"
+ },
+ "op.gemv/xl/fp16-k2048-n151936": {
+  "kind": "macs",
+  "proxy": "op.gemv/large/fp16-k2048-n16384"
+ },
+ "op.linear/hbm/fp16-m512-k4096-n11008": {
+  "kind": "macs",
+  "proxy": "op.linear/large/fp16-m48-k4096-n11008"
+ },
+ "op.linear/large/fp16-m512-k2048-n8192": {
+  "kind": "macs",
+  "proxy": "op.linear/large/fp16-m48-k2048-n8192"
+ },
+ "op.linear/xl/fp16-m2048-k2048-n6144-bias0": {
+  "kind": "macs",
+  "proxy": "op.linear/large/fp16-m96-k2048-n6144-bias0"
+ },
+ "op.matmul/hbm/fp16-m4096-k4096-n4096": {
+  "kind": "macs",
+  "proxy": "op.matmul/large/fp16-m48-k4096-n4096"
+ },
+ "op.matmul/large/fp16-m2048-k2048-n2048": {
+  "kind": "macs",
+  "proxy": "op.matmul/large/fp16-m48-k2048-n2048"
+ },
+ "op.matmul/large/fp32-m2048-k2048-n2048": {
+  "kind": "macs",
+  "proxy": "op.matmul/large/fp32-m48-k2048-n2048"
+ },
+ "op.silu/hbm/fp16-n67108864": {
+  "kind": "bytes",
+  "proxy": "op.silu/large/fp16-n4194304"
+ },
+ "op.softmax/hbm/fp16-r4096-c8192": {
+  "kind": "bytes",
+  "proxy": "op.softmax/large/fp16-r256-c8192"
+ },
+ "op.transpose/hbm/fp32-r8192-c8192": {
+  "kind": "bytes",
+  "proxy": "op.transpose/large/fp32-r1024-c4096"
+ },
+ "op.transpose/large/fp32-r4096-c4096": {
+  "kind": "bytes",
+  "proxy": "op.transpose/large/fp32-r1024-c4096"
+ }
+}

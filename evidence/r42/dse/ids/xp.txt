@@ -1,0 +1,8 @@
+op.fp8_linear/xl/fp8-m1-k512-n1536
+op.fp8_linear/xl/fp8-m1-k1024-n1536
+op.fp8_linear/xl/fp8-m48-k512-n1536
+op.fp8_linear/xl/fp8-m48-k1024-n1536
+op.gemv/large/fp16-k2048-n16384
+op.embedding/large/fp16-v16384-d2048-t2048
+op.linear/large/fp16-m96-k2048-n6144-bias0
+op.attention_prefill/large/fp16-b1-h4-kv2-s512-d128

@@ -1,0 +1,26 @@
+family                n  geo m/b  med|e|  max|e|  in20  verdict
+add                   4    0.664   0.275   0.558     2  NOT USABLE
+argmax                3    0.813   0.206   0.257     1  NOT USABLE
+attention_decode      3    0.687   0.293   0.366     0  NOT USABLE
+attention_prefill     3    1.016   0.098   0.115     3  usable
+bmm                   3    1.150   0.178   0.189     3  usable
+conv2d                3    0.754   0.238   0.266     0  NOT USABLE
+cumsum                3    0.794   0.209   0.213     1  NOT USABLE
+embedding             3    0.867   0.136   0.145     3  usable
+gelu_tanh             3    0.765   0.221   0.276     0  NOT USABLE
+gemv                  3    0.937   0.110   0.115     3  usable
+gpt2_block            3    1.020   0.017   0.025     3  usable
+layernorm             3    0.744   0.245   0.333     1  NOT USABLE
+linear                3    1.056   0.039   0.126     3  usable
+llama_decode          3    0.763   0.285   0.313     1  NOT USABLE
+llama_prefill         3    0.982   0.024   0.026     3  usable
+matmul                6    1.160   0.149   0.345     4  usable
+mlp                   3    1.029   0.010   0.070     3  usable
+resnet_block          3    0.773   0.227   0.239     0  NOT USABLE
+rmsnorm               3    0.778   0.215   0.271     1  NOT USABLE
+rope                  3    0.322   0.683   0.740     0  NOT USABLE
+silu                  3    0.622   0.424   0.432     0  NOT USABLE
+softmax               4    0.855   0.118   0.281     3  usable
+swiglu                3    0.634   0.393   0.398     0  NOT USABLE
+transpose             3    0.554   0.474   0.491     0  NOT USABLE
+ALL n=77 geo=0.807 median|err|=0.206 within20=38

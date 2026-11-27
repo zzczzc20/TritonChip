@@ -1,0 +1,14 @@
+measured ratios (new/old cycles, rtl-3c):
+  model.mlp/small/fp16-t64-d128                            0.860
+  model.mlp/tiny/fp16-t16-d64                              0.809
+  op.bmm/tiny/fp16-b2-m16-k16-n16                          0.874
+  op.gemv/small/fp16-k256-n512                             0.795
+  op.gemv/tiny/fp16-k64-n64                                0.719
+  op.linear/small/fp16-m64-k256-n256                       0.747
+  op.linear/tiny/fp16-m16-k64-n64                          0.837
+  op.matmul/small/fp16-m64-k128-n128                       0.590
+  op.matmul/tiny/fp16-m16-k32-n16                          0.816
+family ratios (geometric mean of the measured points of the family): {'mlp': 0.834, 'bmm': 0.874, 'gemv': 0.756, 'linear': 0.791, 'matmul': 0.694}
+
+predicted factor on the 113-point geometric mean of device cycles (>1: faster), MODEL:
+  measured  1.020x (+2.0 %) over 9 affected points of 113; 1.638 x 1.020 = 1.671 over the run-3 baseline

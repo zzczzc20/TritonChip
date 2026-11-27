@@ -1,6 +1,6 @@
 #!/bin/bash
 # run_home_miter.sh TREE OUT [JOBS]   (GB10) -- tb_home_pipe_miter over a matrix of structural and traffic parameters, DR 1 and 2.
-# One line of the matrix = "name|iverilog -P overrides". Every run is nice 19; at most JOBS (default 3) at once. Results: OUT/<name>_dr<N>.log
+# One line of the matrix = "name|iverilog -P overrides". Every run is nice 19; at most JOBS (default 3) at once. Results: OUT/<name>_d<DR>a<AR>.log; env COMBOS="1:0 2:0 0:1 0:2 1:1 2:2" (DATA_RAM:AUX_RAM of instance B)
 set -u
 TREE=$1; OUT=$2; JOBS=${3:-3}
 source ~/tc_env/env.sh
@@ -28,14 +28,15 @@ ways4_s18|tb.SEED=18 tb.CYCLES=600000 tb.WAYS=4 tb.WAY_W=2 tb.NLINES=300
 M
 run_one() {
     IFS='|' read -r name ov <<< "$1"
-    for dr in 1 2; do
-        vvp_bin=$OUT/${name}_dr${dr}.vvp
-        iverilog -g2012 -I rtl/common -o $vvp_bin -s tb tools/r42/shrink/sim/tb_home_pipe_miter.v rtl/nuca/tnca_home_pipe.v -P tb.DR=$dr $(for o in $ov; do echo -P $o; done) > $OUT/${name}_dr${dr}.compile 2>&1
-        nice -n 19 vvp $vvp_bin > $OUT/${name}_dr${dr}.log 2>&1
+    for combo in ${COMBOS:-1:0 2:0 0:1 0:2 1:1 2:2}; do
+        dr=${combo%:*}; ar=${combo#*:}
+        vvp_bin=$OUT/${name}_d${dr}a${ar}.vvp
+        iverilog -g2012 -I rtl/common -o $vvp_bin -s tb tools/r42/shrink/sim/tb_home_pipe_miter.v rtl/nuca/tnca_home_pipe.v -P tb.DR=$dr -P tb.AR=$ar $(for o in $ov; do echo -P $o; done) > $OUT/${name}_d${dr}a${ar}.compile 2>&1
+        nice -n 19 vvp $vvp_bin > $OUT/${name}_d${dr}a${ar}.log 2>&1
         rm -f $vvp_bin
     done
 }
-export -f run_one; export OUT
+export -f run_one; export OUT COMBOS
 cat $OUT/matrix.txt | xargs -P $JOBS -I{} bash -c 'run_one "{}"'
-grep -h "^MITER" $OUT/*_dr*.log | sort > $OUT/summary.txt
+grep -h "^MITER" $OUT/*_d?a?.log | sort > $OUT/summary.txt
 echo MITER_MATRIX_DONE >> $OUT/summary.txt

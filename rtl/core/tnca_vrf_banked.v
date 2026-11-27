@@ -54,7 +54,16 @@ module tnca_vrf_banked #(
     // of a context and an index to be added up here. The add and the base
     // select then leave the request path into the bank arbiters. 0 (the
     // default) builds exactly the module that existed before.
-    parameter PHYS_IN        = 0
+    parameter PHYS_IN        = 0,
+    // R42 shrink: the response crossbar. 0 (default): as before (a priority chain over the banks, destination decoded per bit).
+    // 1: AND-OR over registered one-hot selects (bit-identical outputs, zero data when no response, given that a port never gets
+    // two responses in one cycle: checked by tb_vrf_miter). 2: the same selects encoded to a bank number and a bank-wide 4:1 mux
+    // per bit; the data of a port with no response is then not zero (rsp_valid says so; every consumer in tnca_core uses data
+    // only under its valid).
+    parameter XBAR           = 0,
+    // R42 shrink: 1 = the banks keep their valid bits in the bank RAM (tnca_rf_bank VLD_RAM) and sweep them clear after reset:
+    // for DEPTH cycles after rst_n no read is accepted and no write lands (w_accept low; the writers hold and retry as for a bank conflict)
+    parameter VLD_RAM        = 0
 ) (
     input  wire                              clk,
     input  wire                              rst_n,
@@ -98,6 +107,7 @@ module tnca_vrf_banked #(
     localparam BANK_DEPTH = PHYS_VREGS / NUM_BANKS;
     localparam ROW_W      = (BANK_DEPTH <= 1) ? 1 : $clog2(BANK_DEPTH);
     localparam WIDTH      = VLEN * ELEN;
+    wire [NUM_BANKS-1:0] bank_wr_ok;
 
     // ---- physical address, the one place the base is applied -------------
     function [PHYS_W-1:0] phys_of;
@@ -149,7 +159,7 @@ module tnca_vrf_banked #(
             bank_wdata_c[wb] = {WIDTH{1'b0}};
         end
         for (wi2 = 0; wi2 < NUM_WRITERS; wi2 = wi2 + 1) begin
-            if (we[wi2] && !w_bank_busy[w_bank_of[wi2]]) begin
+            if (we[wi2] && !w_bank_busy[w_bank_of[wi2]] && bank_wr_ok[w_bank_of[wi2]]) begin
                 w_accept_c[wi2]                  = 1'b1;
                 w_bank_busy[w_bank_of[wi2]]      = 1'b1;
                 bank_we_c[w_bank_of[wi2]]        = 1'b1;
@@ -281,6 +291,7 @@ module tnca_vrf_banked #(
     wire [NUM_BANKS-1:0]       bank_accept;
     wire [NUM_BANKS*8-1:0]     bank_rdst;
     wire [NUM_BANKS*WIDTH-1:0] bank_rdata;
+    wire [NUM_BANKS*8-1:0]     bank_rsel;
 
     // A bank's ready comes from the requester its response is destined
     // for, which is the port recorded when the read was accepted. That is
@@ -310,7 +321,9 @@ module tnca_vrf_banked #(
                 .READ_LATENCY (READ_LATENCY),
                 .RDW_BYPASS   (1),
                 .ZERO_INVALID (ZERO_INVALID),
-                .DST_W        (8)
+                .DST_W        (8),
+                .ONEHOT_SEL   (XBAR != 0),
+                .VLD_RAM      (VLD_RAM)
             ) u_bank (
                 .clk    (clk),
                 .rst_n  (rst_n),
@@ -323,8 +336,10 @@ module tnca_vrf_banked #(
                 .dst       (bank_port_c[b*8 +: 8]),
                 .rsp_ready (bank_ready[b]),
                 .rd_accept (bank_accept[b]),
+                .wr_ok     (bank_wr_ok[b]),
                 .rvalid    (bank_rvalid[b]),
                 .rdst      (bank_rdst[b*8 +: 8]),
+                .rsel      (bank_rsel[b*8 +: 8]),
                 .rdata     (bank_rdata[b*WIDTH +: WIDTH])
             );
         end
@@ -359,8 +374,43 @@ module tnca_vrf_banked #(
         end
     end
 
-    assign rsp_valid = rsp_valid_c;
-    assign rsp_data  = rsp_data_c;
+    wire [NUM_PORTS-1:0]       rsp_valid_x;
+    wire [NUM_PORTS*WIDTH-1:0] rsp_data_x;
+    genvar xp, xb;
+    generate if (XBAR != 0) begin : g_xbar
+        for (xp = 0; xp < NUM_PORTS; xp = xp + 1) begin : g_p
+            wire [NUM_BANKS-1:0] hit;
+            for (xb = 0; xb < NUM_BANKS; xb = xb + 1) begin : g_h
+                assign hit[xb] = bank_rsel[xb*8 + xp];
+            end
+            assign rsp_valid_x[xp] = |hit;
+            if (XBAR == 1) begin : g_andor
+                reg [WIDTH-1:0] d;
+                integer xi;
+                always @* begin
+                    d = {WIDTH{1'b0}};
+                    for (xi = 0; xi < NUM_BANKS; xi = xi + 1)
+                        d = d | (bank_rdata[xi*WIDTH +: WIDTH] & {WIDTH{hit[xi]}});
+                end
+                assign rsp_data_x[xp*WIDTH +: WIDTH] = d;
+            end else begin : g_mux
+                reg [BANK_W-1:0] idx;
+                integer xi;
+                always @* begin
+                    idx = {BANK_W{1'b0}};
+                    for (xi = 0; xi < NUM_BANKS; xi = xi + 1)
+                        if (hit[xi]) idx = idx | xi[BANK_W-1:0];
+                end
+                assign rsp_data_x[xp*WIDTH +: WIDTH] = bank_rdata[idx*WIDTH +: WIDTH];
+            end
+        end
+    end else begin : g_xbar_off
+        assign rsp_valid_x = {NUM_PORTS{1'b0}};
+        assign rsp_data_x  = {NUM_PORTS*WIDTH{1'b0}};
+    end endgenerate
+
+    assign rsp_valid = (XBAR == 0) ? rsp_valid_c : rsp_valid_x;
+    assign rsp_data  = (XBAR == 0) ? rsp_data_c  : rsp_data_x;
 
 `ifndef SYNTHESIS
     initial begin

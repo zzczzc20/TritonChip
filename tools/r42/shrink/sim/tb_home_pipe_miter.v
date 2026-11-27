@@ -10,6 +10,7 @@
 `timescale 1ns/1ps
 module tb;
     parameter DR       = 1;            // DATA_RAM of instance B
+    parameter AR       = 0;            // AUX_RAM of instance B
     parameter SEED     = 1;
     parameter CYCLES   = 200000;
     parameter NLINES   = 384;          // distinct lines touched (32 sets x 8 ways = 256 lines resident)
@@ -83,7 +84,7 @@ module tb;
         .perf_mshr_full(P``_p6), .perf_target_full(P``_p7), .perf_wb(P``_p8), .perf_hit_past_block(P``_p9)
 
     tnca_home_pipe #(`HP_PARAMS, .DATA_RAM(0))  ua (`HP_PORTS(a));
-    tnca_home_pipe #(`HP_PARAMS, .DATA_RAM(DR)) ub (`HP_PORTS(b));
+    tnca_home_pipe #(`HP_PARAMS, .DATA_RAM(DR), .AUX_RAM(AR)) ub (`HP_PORTS(b));
 
     // ---- random numbers ----
     reg [63:0] rng;
@@ -218,7 +219,7 @@ module tb;
         if (!(a_eq_ctl && a_eq_dat)) begin
             mism = mism + 1;
             if (mism <= 3) begin
-                $display("MISMATCH at cycle %0d (SEED %0d DR %0d)", cyc, SEED, DR);
+                $display("MISMATCH at cycle %0d (SEED %0d DR %0d AR %0d)", cyc, SEED, DR, AR);
                 $display("  A: req_ready %b rsp_valid %b rsp_tag %h src %h mem_req_valid %b we %b addr %h tag %h maint r%b d%b b%b", a_req_ready, a_rsp_valid, a_rsp_tag, a_rsp_src, a_mem_req_valid, a_mem_req_we, a_mem_req_addr, a_mem_req_tag, a_maint_ready, a_maint_done, a_maint_busy);
                 $display("  B: req_ready %b rsp_valid %b rsp_tag %h src %h mem_req_valid %b we %b addr %h tag %h maint r%b d%b b%b", b_req_ready, b_rsp_valid, b_rsp_tag, b_rsp_src, b_mem_req_valid, b_mem_req_we, b_mem_req_addr, b_mem_req_tag, b_maint_ready, b_maint_done, b_maint_busy);
                 $display("  rsp_rdata A %h", a_rsp_rdata); $display("  rsp_rdata B %h", b_rsp_rdata);
@@ -246,8 +247,8 @@ module tb;
         end
         if (cyc >= CYCLES) begin
             $display("  state: maint_valid %b maint_pend %b ready %b | rq_v %h s1_v %b s3_v %b rsq_cnt %0d tg_v!=0 %b ms_all_free %b fu_v %b wbq_cnt %0d m_state %0d mem_req_valid %b", maint_valid, maint_pend, a_maint_ready, ua.rq_v, ua.s1_v, ua.s3_v, ua.rsq_cnt, ua.tg_v != 0, ua.ms_all_free, ua.fu_v, ua.wbq_cnt, ua.m_state, a_mem_req_valid);
-            $display("MITER %s: DR=%0d SEED=%0d cycles=%0d mismatches=%0d | requests=%0d responses=%0d memrsp=%0d maint=%0d(done %0d) mmio=%0d full=%0d amo=%0d | A: hit=%0d miss=%0d merge=%0d evict=%0d wb=%0d mshr_full=%0d target_full=%0d",
-                     mism == 0 ? "PASS" : "FAIL", DR, SEED, cyc, mism, n_reqs, n_rsp, n_mrsp, n_maint, n_mdone, n_mmio, n_full, n_amo, a_p3, a_p4, a_p5, a_p1, a_p8, a_p6, a_p7);
+            $display("MITER %s: DR=%0d AR=%0d SEED=%0d cycles=%0d mismatches=%0d | requests=%0d responses=%0d memrsp=%0d maint=%0d(done %0d) mmio=%0d full=%0d amo=%0d | A: hit=%0d miss=%0d merge=%0d evict=%0d wb=%0d mshr_full=%0d target_full=%0d",
+                     mism == 0 ? "PASS" : "FAIL", DR, AR, SEED, cyc, mism, n_reqs, n_rsp, n_mrsp, n_maint, n_mdone, n_mmio, n_full, n_amo, a_p3, a_p4, a_p5, a_p1, a_p8, a_p6, a_p7);
             $finish;
         end
     end

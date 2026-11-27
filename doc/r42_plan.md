@@ -435,3 +435,11 @@ the xl point is measured in `xl-cand3`). By tier (speedup): tiny 1.529, small 2.
 embedding 12.6x, copy 5.7x, transpose 5.1x, bmm 4.8x, rmsnorm 3.1x, attention_prefill 3.0x, add 3.0x, cumsum 2.7x; smallest: mlp 1.15x, linear 1.21x,
 resnet_block 1.34x, conv2d 1.34x, matmul 1.35x, gemv 1.36x. Sample spread inside a formal record: median 0.47 %, max 15.8 %. Evidence:
 `evidence/r42/board/ab-int3/{records.tgz,logs.tgz,comparison.json}`. The 145-point headline needs `xl-cand3` (launched 10:46 UTC on the already loaded image, same guarded recipe).
+
+**2026-11-27 11:38 UTC. `xl-cand3` stopped by a card change (kept as evidence, not retried silently).** The queue started 10:46 on the loaded run-3 image
+(identity 3/3 pass, then the xl step): `model.fp8_decoder_decode/xl/fp8-b1-p2048-layers28` pass, `model.fp8_decoder_prefill/xl/fp8-b1-s2048-layers4` pass
+(255.09 s of board wall time), then `model.fp8_decoder_prefill/xl/fp8-b1-s512-layers28` -> runtime-fault `DEPENDENCY_FAILED ... tnca_u280.xclbin is not the image
+the device is running`: between 11:35:29 and 11:38:08 UTC another user loaded image `31132a91...` (300 MHz) over ours while the queue was between runs. The registered guards
+(check before every run, image identity in the run) refused to drive that image, as designed; no number from that run exists. The card now holds
+`31132a91...` and is idle. Records of the stopped attempt: `evidence/r42/board/xl-cand3/stop1_{records,logs}.tgz`. Next step per RECIPE.md: `board_ab.sh resume xl-cand3`
+(15 idle minutes, the author-approved run-3 image `791b8af2` is reloaded with `program.sh --check/--go`, completed runs reused, the failed one repeated).

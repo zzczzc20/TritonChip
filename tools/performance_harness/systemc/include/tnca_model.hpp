@@ -116,14 +116,19 @@ struct Config {
         require(get_or("tl_lsu_shared_issue",1)<=1,"tl_lsu_shared_issue must be 0|1");
         {auto n=get_or("tl_pc_stripe_bytes",0);require(n==0 || (n>=64 && n%64==0),"PC stripe must be zero or whole lines");}
         require(get_or("tl_prefetch_lines",0)<=256,"prefetch degree must be 0..256");
-        require(get_or("mtx_dp_g_override",0)<=64 && get_or("mtx_dp_b_regs",0)<=1 && get_or("issue_free_mode",0)<=3,
-                "mtx_dp_g_override 0..64, mtx_dp_b_regs 0|1, issue_free_mode 0|1|2|3 (kfuse-speed what-ifs)");
+        require(get_or("mtx_dp_g_override",0)<=64 && get_or("mtx_dp_b_regs",0)<=1 && get_or("issue_free_mode",0)<=5,
+                "mtx_dp_g_override 0..64, mtx_dp_b_regs 0|1, issue_free_mode 0..3 (kfuse-speed what-ifs), 4 (2-wide issue bound), 5 (hardware loop bound)");
         require(get_or("tl_full_line_nofill",0)<=1 && get_or("dma_line_combine",0)<=1,"tl_full_line_nofill and dma_line_combine are 0|1");
         require(get_or("dma_line_engine",0)<=1,"dma_line_engine must be 0|1");
         require(get_or("dma_line_engine",0)==0 || (get("memory_model")==1 && get_or("tl_core_beat_bytes",8)==64),
                 "the line engine needs timeline memory and a 64-byte core beat");
         {auto n=get_or("dma_line_buffers",64);require(n>=1 && n<=256,"dma_line_buffers must be 1..256");}
         require(get_or("dma_line_elig",0)<=2 && get_or("dma_xpose_line_buffer",0)<=1 && get_or("mtx_abuf_k32",0)<=1,"dma_line_elig is 0|1|2, dma_xpose_line_buffer and mtx_abuf_k32 are 0|1");
+        require(get_or("lsu_hybrid",0)<=1 && get_or("lsu_fast_slots",8)>=1 && get_or("lsu_fast_slots",8)<=64 && get_or("lsu_slow_units",2)>=1 && get_or("lsu_slow_units",2)<=16,
+                "lsu_hybrid is 0|1, lsu_fast_slots 1..64, lsu_slow_units 1..16");
+        require(get_or("issue_vector_cycles",1)>=1 && get_or("issue_vector_cycles",1)<=8 && get_or("issue_two_src_cycles",1)>=1 && get_or("issue_two_src_cycles",1)<=8,"issue_vector_cycles and issue_two_src_cycles 1..8");
+        require(get_or("core_mem_ports",1)==1 || get_or("core_mem_ports",1)==2,"core_mem_ports is 1|2");
+        require(get_or("lsu_hybrid",0)==0 || (get("memory_model")==1 && get("core_pipeline")==1),"lsu_hybrid needs the timeline core pipeline");
         cache_hot();
         for(auto& k:keys)if(k!="memory_base" && k!="pc_first" && k!="trace_events" && k!="noc_stages" && k!="full_line_tag"
                             && k!="mtx_abuf" && k!="launch_cycles" && k!="dispatch_cycles" && k!="load_latency"
@@ -158,7 +163,9 @@ struct Config {
             // (HOME_LINE_WRITE_NOFILL); the line-wide multi-command tensor engine.
             "mtx_dp_g_override","mtx_dp_b_regs","issue_free_mode","tl_full_line_nofill","tl_slice_install_occupancy","dma_line_engine","dma_line_buffers","dma_line_rf_cycles","dma_line_combine",
             // R42 xfer what-ifs (default off): mirror of rtl/core/tnca_tensor.v at TENSOR_LINE 1
-            "dma_line_elig","dma_xpose_line_buffer","mtx_abuf_k32"};return k;}
+            "dma_line_elig","dma_xpose_line_buffer","mtx_abuf_k32",
+            // R42 dse what-ifs (default off), see chip.cpp
+            "lsu_hybrid","lsu_fast_slots","lsu_slow_units","core_mem_ports","issue_vector_cycles","issue_two_src_cycles"};return k;}
     u64 get_or(const std::string& k,u64 fallback)const{auto i=v.find(k);return i==v.end()?fallback:i->second;}
     // Hot-path copies of fixed geometry (set once by cache_hot()).
     u64 nx_=0,ny_=0,sets_=1,full_line_=1,base_=0,bytes_=0;unsigned cores_=1;

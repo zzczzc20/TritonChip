@@ -240,7 +240,7 @@ struct CodeCache {
     // kfuse-speed what-if (issue_free_mode > 0): mark the instructions of every INNERMOST loop (backward-branch span)
     // that contains a matrix command. A program is scanned once from its entry to its last exit.
     std::unordered_set<u64> analysed;
-    void analyse(u64 entry){
+    void analyse(u64 entry,bool any_loop=false){
         if(!analysed.insert(entry).second)return;
         std::vector<std::pair<u64,u64>> spans;u64 maxfwd=0;
         u64 pc=entry;
@@ -256,7 +256,8 @@ struct CodeCache {
         }
         auto has_mma=[&](u64 a,u64 b){for(u64 q=a;q<=b;q+=8)if(at(q).kind==K::Mma)return true;return false;};
         std::vector<std::pair<u64,u64>> mm;
-        for(auto& s:spans)if(has_mma(s.first,s.second))mm.push_back(s);
+        // R42 dse issue_free_mode 5: every innermost loop (hardware-loop what-if), with or without a matrix command
+        for(auto& s:spans)if(any_loop || has_mma(s.first,s.second))mm.push_back(s);
         for(auto& s:mm){
             bool innermost=true;
             for(auto& o:mm)if(&o!=&s && o.first>=s.first && o.second<=s.second && (o.first>s.first || o.second<s.second)){innermost=false;break;}
@@ -309,10 +310,11 @@ struct Core : sc_module {
     // Timeline path (memory_model=1): the core's single memory port (LSU and
     // transfer engine share it, tnca_mem_mux.v), LSU instructions in flight
     // (LSU_INFLIGHT) and each context's outstanding accesses.
-    TimelineMemory* tm=nullptr;Timeline port;std::vector<u64> lsu_inflight;std::array<u64,4> role_lsu_done{};
+    TimelineMemory* tm=nullptr;Timeline port,port2;std::vector<u64> lsu_inflight;std::array<u64,4> role_lsu_done{};
     // Program-scope fault and deadline state.
     bool aborting=false;Outcome fault;sc_time deadline=SC_ZERO_TIME;
     // Timing constants (configuration, uncalibrated).
+    u64 t_issue_vec=0,t_issue_2src=0;sc_time issue_vec_time,issue_2src_time;
     u64 t_issue,t_scalar,t_mul,t_vint,t_vfp,t_cvt,t_cmp,t_pred,t_shuf,t_red,t_fred,t_sfu_occ,t_sfu,t_load,t_bar,t_acc,
         t_rf,t_mac,t_mac_unbuf,t_pipe,t_done,t_zero,t_row,t_launch;bool abuf,abuf_k32=false;
     // What-if packed MMA (m.mma.dp, hypothetical; Config optional keys):
@@ -343,6 +345,11 @@ struct Core : sc_module {
     // last response is back (+lsu_complete_cycles); the second unit takes
     // an access only after the first has sent all of its beats.
     struct LsuUnit {u64 free=0,drained=0;};std::vector<LsuUnit> units;
+    // R42 dse (lsu_hybrid=1, default off): tnca_lsu_hybrid.v. A vector access that is contiguous inside one 64-byte line with
+    // 1/2/4-byte elements (tnca_lsu_line.v req_eligible) goes to the line path (lsu_fast_slots landing slots, 64-byte beat);
+    // every other access (scalar, gather/scatter, line-crossing) goes to the word path (lsu_slow_units units, 8-byte beats).
+    // A mode transition waits for the other path to drain (fast_mode/slow_mode of the module).
+    bool hybrid=false;std::vector<LsuUnit> fast_units,slow_units;
     std::vector<u64> steals; // LSU completions taking the one writeback port
     unsigned holds=0;sc_event unhold; // a fence/arrive held in R freezes every context
     // time_quantum > 0: conservative lookahead. A context whose next wait
@@ -374,6 +381,10 @@ struct Core : sc_module {
         if(dp_g16>1 || dp_g8>1 || dp_pf)c_dp=&x.counts[key("matrix_dp_whatif_commands")];
         issue_time=x.cycles(t_issue);lsu_key=key("lsu");t_lsu_slots=g("lsu_slots");t_beat_slots=g("lsu_beat_slots");
         units.resize(x.c.get_or("tl_lsu_units",2));
+        hybrid=x.c.get_or("lsu_hybrid",0)!=0;
+        t_issue_vec=x.c.get_or("issue_vector_cycles",t_issue);issue_vec_time=x.cycles(t_issue_vec);t_issue_2src=x.c.get_or("issue_two_src_cycles",t_issue);issue_2src_time=x.cycles(t_issue_2src);
+        if(x.c.get_or("core_mem_ports",1)==2){port.twin=&port2;port2.service=nullptr;}
+        if(hybrid){fast_units.resize(x.c.get_or("lsu_fast_slots",8));slow_units.resize(x.c.get_or("lsu_slow_units",2));}
         pipe=g("core_pipeline")!=0;t_branch=g("branch_taken_cycles");t_park=g("park_refetch_cycles");n_banks=g("vrf_banks");
         t_bank=g("vrf_bank_conflict_cycles");t_lsu_setup=g("lsu_setup_cycles");t_vload_extra=g("lsu_vector_load_extra");
         t_lsu_complete=g("lsu_complete_cycles");t_lsu_wb=g("lsu_writeback_cycles");t_fcmp=g("fp_compare_latency");
@@ -434,12 +445,17 @@ struct Core : sc_module {
         if(pipe){issue.available=std::max(issue.available,t);*c_freeze+=cycles_of(t-now);}
         go(f,t);
     }
-    void issue_slot(Frame& f){
+    void issue_slot(Frame& f,bool vector_op=false,unsigned nsrc=0){
         if(x.functional){if(++untimed_burst>=4096){untimed_burst=0;wait(SC_ZERO_TIME);}return;} // let spinning peers run
-        if(!quantum){issue.use(x,issue_time,t_issue);return;}
+        // R42 dse (issue_vector_cycles, default = issue_cycles): a vector-datapath instruction occupies the issue stage longer
+        // issue_two_src_cycles (default = issue_cycles): an instruction that reads two or more vector registers
+        u64 occ=t_issue;sc_time occ_t=issue_time;
+        if(vector_op && t_issue_vec>occ){occ=t_issue_vec;occ_t=issue_vec_time;}
+        if(nsrc>=2 && t_issue_2src>occ){occ=t_issue_2src;occ_t=issue_2src_time;}
+        if(!quantum){issue.use(x,occ_t,occ);return;}
         sc_time t=lt(f),begin=std::max(issue.available,t);
-        *issue.service+=t_issue;*issue.queue+=cycles_of(begin-t);
-        issue.available=begin+issue_time;go(f,issue.available);
+        *issue.service+=occ;*issue.queue+=cycles_of(begin-t);
+        issue.available=begin+occ_t;go(f,issue.available);
     }
     // A stall of unknown length that does not switch (fence, arrive): the
     // other contexts cannot issue until it ends.
@@ -450,7 +466,7 @@ struct Core : sc_module {
         if(--holds==0)unhold.notify(SC_ZERO_TIME);
         *c_freeze+=cycles_of(sc_time_stamp()-t);
     }
-    u64 lsu_idle()const{u64 m=0;for(auto v:lsu_inflight)m=std::max(m,v);for(auto& u:units)m=std::max(m,u.free);return m;}
+    u64 lsu_idle()const{u64 m=0;for(auto v:lsu_inflight)m=std::max(m,v);for(auto& u:units)m=std::max(m,u.free);for(auto& u:fast_units)m=std::max(m,u.free);for(auto& u:slow_units)m=std::max(m,u.free);return m;}
     // RSLICE (tnca_core.v): an index the instruction names gets the slice
     // number ORed into its top bits -- accumulators (ACC_W 4), barriers
     // (BAR_W 5), descriptors and windows (DESC_W 4).
@@ -572,10 +588,9 @@ struct Core : sc_module {
     //--------------------------------------------------------------------------
     // Vector sources read from the same VRF bank (bank = register mod
     // vrf_banks with 64-aligned context bases) are read one per cycle.
-    void bank_conflicts(Frame& f,const Inst& in){
-        // Vector sources per tnca_decoder.v (o_va/vb/vc_en); a masked write
-        // does not read its destination.
-        unsigned srcs[3];unsigned n=0;auto add=[&](unsigned r){if(n<3)srcs[n++]=r;};
+    // Vector sources per tnca_decoder.v (o_va/vb/vc_en); a masked write does not read its destination.
+    static unsigned vec_sources(const Inst& in,unsigned* srcs){
+        unsigned n=0;auto add=[&](unsigned r){if(n<3)srcs[n++]=r;};
         const unsigned fn=in.func;
         switch(in.kind){
             case K::Vint:if(!(fn>=32 && fn<=63) && fn!=0 && fn!=20 && fn!=21 && fn!=26 && fn!=27 && fn!=64){add(in.a);add(in.b);}break;
@@ -584,6 +599,12 @@ struct Core : sc_module {
             case K::Lsu:if(fn==40){add(in.b);add(in.d);}break;
             default:break;
         }
+        return n;
+    }
+    void bank_conflicts(Frame& f,const Inst& in){
+        // Vector sources per tnca_decoder.v (o_va/vb/vc_en); a masked write
+        // does not read its destination.
+        unsigned srcs[3];unsigned n=vec_sources(in,srcs);
         u64 now=lnow(f);bool slot=vrf_pf && (!r_reads || now>last_issue+1);
         r_reads=false;
         if(n<2)return;
@@ -597,7 +618,7 @@ struct Core : sc_module {
     }
     void execute(Frame& f){
         const std::string role_key=key("role_"+std::to_string(f.role));
-        if(free_mode)code.analyse(f.pc);
+        if(free_mode)code.analyse(f.pc,free_mode==5);
         for(;;){
             if(deadline!=SC_ZERO_TIME && lt(f)>deadline)throw DeadlineExpired{};
             const Inst& in=code.at(f.pc);
@@ -630,7 +651,10 @@ struct Core : sc_module {
                 in.kind==K::ARow || in.kind==K::Barrier || in.kind==K::Xfer || in.kind==K::Desc || in.kind==K::Fence ||
                 in.kind==K::Prefetch || in.kind==K::Exit || in.kind==K::Trap;
             const bool kfree=free_mode && in.kfree &&
-                (free_mode==2 || (free_mode==1 && (in.kind==K::Salu || in.kind==K::Branch)) || (free_mode==3 && in.kpre && !engine_kind));
+                (free_mode==2 || ((free_mode==1 || free_mode==5) && (in.kind==K::Salu || in.kind==K::Branch)) || (free_mode==3 && in.kpre && !engine_kind));
+            // R42 dse issue_free_mode 4: 2-wide issue, upper bound. Scalar, branch, special and predicate instructions (slot A of
+            // doc/r42_arch_headroom.md) never take the issue slot, anywhere; their latencies and a taken branch's refetch stay.
+            const bool slot_a=free_mode==4 && (in.kind==K::Salu || in.kind==K::Branch || in.kind==K::Special || in.kind==K::Pred);
             struct LatZero{
                 Core& c;u64 sv[16];bool on;
                 LatZero(Core& core,bool enable):c(core),on(enable){
@@ -648,7 +672,9 @@ struct Core : sc_module {
                     c.t_red_vec=sv[14];c.t_fred_vec=sv[15];
                 }
             } lat_zero(*this,kfree && free_mode==3);
-            if(!kfree)issue_slot(f);
+            unsigned issue_srcs[3],issue_nsrc=(t_issue_2src>t_issue)?vec_sources(in,issue_srcs):0;
+            if(!kfree && !slot_a)issue_slot(f,in.kind==K::Vint || in.kind==K::Vfp || in.kind==K::Cvt || in.kind==K::Shuffle || in.kind==K::Sfu ||
+                in.kind==K::Reduce || in.kind==K::Extract || in.kind==K::Insert || (in.kind==K::Lsu && in.func>=16),issue_nsrc);
             if(pipe)last_issue=lnow(f);
             ++class_counts[unsigned(in.kind)];
             switch(in.kind){
@@ -714,10 +740,22 @@ struct Core : sc_module {
                     // core-wide; beats leave the core port one per cycle with at
                     // most lsu_beat_slots words outstanding; a load's
                     // destination is scoreboarded until its last word returns.
-                    u64 now=lnow(f),gnow=x.now();unsigned unit_index=0;
+                    u64 now=lnow(f),gnow=x.now();unsigned unit_index=0;bool fast_class=false;
                     if(pipe){
                         // A busy unit holds the access in R: every context stalls.
                         u64 best=UINT64_MAX;
+                        if(hybrid){
+                            // tnca_lsu_line.v req_eligible: contiguous vector, 1/2/4-byte elements, the 16-element span inside one line
+                            const unsigned sz=mod&7;const u64 span=u64(16)<<sz;
+                            fast_class=vector && !gather && sz<=2 && ((base&63)+span<=64);
+                            auto& own=fast_class?fast_units:slow_units;auto& other=fast_class?slow_units:fast_units;
+                            u64 drain=0;for(auto& u:other)drain=std::max(drain,u.free);   // mode transition: the other path is empty
+                            for(unsigned i=0;i<own.size();++i){
+                                u64 at=std::max(std::max(now,own[i].free),drain);
+                                for(unsigned j=0;j<own.size();++j)if(j!=i)at=std::max(at,own[j].drained);
+                                if(at<best){best=at;unit_index=i;}
+                            }
+                        }else
                         for(unsigned i=0;i<units.size();++i){
                             u64 at=std::max(now,units[i].free);
                             // The default pair shares one issuing port. V3 can
@@ -752,7 +790,7 @@ struct Core : sc_module {
                     // Group only addresses sharing one aligned hypothetical core
                     // beat. Each group still consumes a finite LSU slot, core
                     // issue slot, NoC capacity, home engine and outlet service.
-                    const u64 width=x.c.get_or("tl_core_beat_bytes",8);
+                    const u64 width=(hybrid && pipe && !fast_class)?u64(8):x.c.get_or("tl_core_beat_bytes",8);
                     for(auto it=plan2.begin();it!=plan2.end();){
                         auto end=it;u64 region=it->first&~(width-1);
                         std::vector<TimelineMemory::WideWord> words;
@@ -768,7 +806,7 @@ struct Core : sc_module {
                             values[part.lane]|=((words[wi].result>>(part.offset*8))&part_mask)<<part.shift;
                         }
                     }
-                    if(pipe){units[unit_index].drained=t;units[unit_index].free=complete+t_lsu_complete;
+                    if(pipe){auto& U=hybrid?(fast_class?fast_units:slow_units):units;U[unit_index].drained=t;U[unit_index].free=complete+t_lsu_complete;
                         if(t_lsu_wb && !store)steals.push_back(complete+t_load-1);}
                     else lsu_inflight.push_back(complete);
                     role_lsu_done[f.role]=std::max(role_lsu_done[f.role],complete);

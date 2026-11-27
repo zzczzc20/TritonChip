@@ -25,8 +25,21 @@
 struct Timeline {
     std::map<u64,u64> busy; // start -> end (cycles), disjoint, sorted
     u64 *service=nullptr,*queue=nullptr;
-    // Earliest start >= t with [start, start+d) free; reserve it.
+    // R42 dse (core_mem_ports=2, default off): a second, identical port. A request takes the port that can start it earlier.
+    Timeline* twin=nullptr;
+    u64 earliest(u64 t,u64 d)const{
+        u64 start=t;
+        auto it=busy.upper_bound(start);
+        if(it!=busy.begin()){auto p=std::prev(it);if(p->second>start)start=p->second;}
+        while(it!=busy.end() && it->first<start+d){start=std::max(start,it->second);++it;}
+        return start;
+    }
     u64 reserve(u64 t,u64 d,u64 now){
+        if(twin && twin->earliest(t,d)<earliest(t,d))return twin->reserve_one(t,d,now);
+        return reserve_one(t,d,now);
+    }
+    // Earliest start >= t with [start, start+d) free; reserve it.
+    u64 reserve_one(u64 t,u64 d,u64 now){
         while(!busy.empty() && busy.begin()->second<=now)busy.erase(busy.begin());
         u64 start=t;
         auto it=busy.upper_bound(start);

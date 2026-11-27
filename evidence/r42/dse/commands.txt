@@ -1,0 +1,12 @@
+# R42 dse: commands in the order they were run (domain: SystemC/TLM model and single-core RTL numbers read from the xfer evidence; no board runs)
+# Hosts: GB10 (nice -n 19, <= 3 processes of this branch via dse_run.sh JOBS=3), local host for edits and seconds-long python only.
+# Trees on GB10: ~/r42/dse (mirror of branch R42-dse = origin/R42 76d43b1d + model patch), ~/r42/dse_val (git archive of 33b41987 = software of ab-int2 and xl-cand2), outputs ~/r42/dse_out.
+#
+# 0. model build (SystemC 3.0.2): cmake -S tools/performance_harness/systemc -B ~/r42/dse_out/tlm-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$HOME/tc_env/systemc-3.0.2/install && cmake --build ... --target tnca-chip
+#    binaries: tnca-chip (first build, unpatched = head 76d43b1d) was overwritten by tnca-chip-v2 (lsu_hybrid), -v3 (issue_vector_cycles), -v4 (issue_two_src_cycles, core_mem_ports, issue_free_mode 4/5); all new keys default off
+# 1. FIRST validation (kept): all tiny/small/medium of the 113 on the validation software tree, config cal (tools/r42/kfuse_speed_tlm_cfg.py), JOBS=3
+tools/r42/dse_gb10/dse_run.sh ~/r42/dse_val cfg/cal.cfg v1_tsm_cal tnca-chip ids/tsm77.txt        # -> col/v1_tsm_cal.json (bit-identical to kfuse-speed cal_tsm.json at 77 of 77 points)
+python3 tools/r42/dse_validate.py --model evidence/r42/dse/col/v1_tsm_cal.json                      # -> failed_first_validation/
+# 2. single-core calibration against RTL (rtl-1c tiny tier of evidence/r42/xfer/tables.txt 3b, software 44070eb0), TLM with ideal memory on ONE core
+CORES=1 dse_run.sh ~/r42/dse cfg/ideal.cfg v1_tiny_1c_ideal tnca-chip ids/tiny27.txt ; ... ideal_hy.cfg (lsu_hybrid) ; probe_p_* single-parameter probes on ids/probe5.txt ; t27_* on ids/tiny27.txt
+python3 tools/r42/dse_cmp1c.py col/v1_tiny_1c_ideal.json col/v2_tiny_1c_ideal_hy.json col/t27_*.json

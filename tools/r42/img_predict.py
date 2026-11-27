@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """R42-img: what the RTL items may do to the 113-point geometric mean on the board (MODEL, from rtl-3c ratios; not a board number).
 
-    img_predict.py COMPARISON.json BASE_DIR ARM=DIR [ARM=DIR ...] [--proxy POINT=FAMILY ...] [--table OUT.json]
+    img_predict.py COMPARISON.json BASE_DIR ARM=DIR [ARM=DIR ...] [--proxy POINT=FAMILY ...] [--pointwise] [--alias FAMILY=SOURCE_FAMILY ...] [--table OUT.json]
 
 COMPARISON.json: a board comparison (tools/r42/board_compare.py; rows carry point, family, tier, new_cycles). BASE_DIR: link_budget_rtl.py
 records of the unchanged run-3 geometry (arm A). ARM=DIR: records of an arm (L, M, F, LM, LF, LMF ...). A point measured on both gives the
@@ -12,6 +12,7 @@ are the scenarios below, printed with the result:
   family/2   as family, with the logarithm of the ratio halved for the tiers medium, large and hbm (their cycles hold a larger share that
              no item changes: the tiny and small points are where the transfer and the sequencer bubbles are largest)
   models     family/2 plus gpt2_block, llama_decode, llama_prefill (fp16) at the ratio of the `mlp` group
+--alias FAMILY=SOURCE: a family without a measured ratio takes the ratio of SOURCE's group (resnet_block=conv2d: the same convolution kernel).
 --proxy POINT=FAMILY: a measured point that is not a row of the table (a reduced-shape proxy) stands for the rows of FAMILY.
 Points of a group without a measured ratio keep 1. The factor is exp(-mean(log ratio)) over the 113 board points (>1: fewer cycles).
 The `base` of the printed product is the board geometric mean new/old of COMPARISON.json (the software it carries is the software being
@@ -20,6 +21,11 @@ extended: ab-int2 here, not the current head).
 import glob, json, math, os, sys
 
 GEMM16 = ('matmul', 'linear', 'gemv', 'bmm', 'mlp')
+# Families with no matrix or transfer-engine work in their kernels. The stand-in shows +2 to +9 % on tiny points of them for every arm that
+# carries a profile name other than the baseline's, and 0 for the same image under the baseline's name (evidence/r42/img/rtl_3c, attr_*): a
+# layout effect of the artifact, not hardware. They are left at ratio 1 unless --pointwise is given (the sensitivity run).
+POINTWISE = ('add', 'sub', 'mul', 'silu', 'gelu_tanh', 'swiglu', 'softmax', 'rmsnorm', 'rmsnorm_residual', 'layernorm', 'rope', 'argmax',
+             'cumsum', 'transpose', 'embedding', 'copy')
 MODELS = ('gpt2_block', 'llama_decode', 'llama_prefill')
 BIG = ('medium', 'large', 'hbm')
 
@@ -46,6 +52,12 @@ def main():
     table = None
     if '--table' in argv:
         i = argv.index('--table'); table = argv[i + 1]; del argv[i:i + 2]
+    pointwise = False
+    if '--pointwise' in argv:
+        pointwise = True; argv.remove('--pointwise')
+    alias = {}
+    while '--alias' in argv:
+        i = argv.index('--alias'); k, v = argv[i + 1].split('=', 1); alias[k] = v; del argv[i:i + 2]
     proxy = {}
     while '--proxy' in argv:
         i = argv.index('--proxy'); k, v = argv[i + 1].split('=', 1); proxy[k] = v; del argv[i:i + 2]
@@ -62,7 +74,7 @@ def main():
         meas = {p: recs[p] / base[p] for p in recs if p in base}
         groups = {}
         for p, ratio in meas.items():
-            if p in meta:
+            if p in meta and (pointwise or meta[p][0] not in POINTWISE):
                 groups.setdefault((meta[p][0], dtype_of(p)), []).append(math.log(ratio))
         gratio = {g: math.exp(sum(v) / len(v)) for g, v in groups.items()}
         print(f'\n=== arm {arm} ({d}): {len(meas)} points measured on both sides')
@@ -76,12 +88,14 @@ def main():
                 p, f, t = r['point'], r['family'], r['tier']
                 g = (f, dtype_of(p))
                 ratio = 1.0
-                if p in meas:
+                if p in meas and (pointwise or f not in POINTWISE):
                     ratio = meas[p]
                 elif name != 'measured':
                     src = g
                     if name == 'models' and f in MODELS and dtype_of(p) == 'fp16':
                         src = ('mlp', 'fp16')
+                    if src not in gratio and f in alias:
+                        src = (alias[f], dtype_of(p))
                     if src in gratio:
                         ratio = gratio[src]
                         if name in ('family/2', 'models') and t in BIG:

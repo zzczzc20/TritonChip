@@ -1,0 +1,2 @@
+{"point": "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8", "output_sha256": "489cf2c5cc9ccf18bddedd07cbb8a70dad5bdda79d762e4962951965d5463475", "tensors": [["torch.float32", [1, 8, 8, 8]]]}
+{"point": "op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8", "output_sha256": "489cf2c5cc9ccf18bddedd07cbb8a70dad5bdda79d762e4962951965d5463475", "tensors": [["torch.float32", [1, 8, 8, 8]]]}

@@ -10,3 +10,4 @@ NvRmMemInitNvmap failed: error Permission denied
 NvRmMemMgrInit failed: Memory Manager Not supported, line 333
 NvRmMemMgrInit failed: error type 196626
 libnvrm_gpu.so: NvRmGpuLibOpen failed, error=196625
+op.fp8_linear/xl/fp8-m16-k256-n128 pass [60743] [60748]

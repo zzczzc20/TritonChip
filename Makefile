@@ -814,8 +814,13 @@ core-g2c4: $(patsubst %,$(BUILD)/%.hex,$(G2C4_PROGS)) $(BUILD)/tb_core_g2c4.vvp 
 # (FMA_IMPL = 1 + 16 * 13 + 256: tnca_fmax_fma, staged round and area align in the vector FPU's FMAs and in the MAC lane, and the
 # area int <-> float converter); the default stays 1.
 R41_RUN2_FMA_IMPL ?= 1
+# R42 shrink: `R42_VRF_XBAR=2 R42_VRF_VLD_RAM=1` builds the banked VRF with the one-hot response crossbar and the valid bits in the bank RAM
+# (a 64-cycle sweep after reset); both default to 0, the shipped RTL.
+R42_VRF_XBAR ?= 0
+R42_VRF_VLD_RAM ?= 0
 R41_RUN2 := $(R41_G2C4) -P tb_tnca_core.MTX_VRF_REG=1 -P tb_tnca_core.FMA_IMPL=$(R41_RUN2_FMA_IMPL) \
-            -P tb_tnca_core.MAC_DP=1 -P tb_tnca_core.MAC_CUTS=29
+            -P tb_tnca_core.MAC_DP=1 -P tb_tnca_core.MAC_CUTS=29 \
+            -P tb_tnca_core.VRF_XBAR=$(R42_VRF_XBAR) -P tb_tnca_core.VRF_VLD_RAM=$(R42_VRF_VLD_RAM)
 $(BUILD)/tb_core_run2.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                            $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \

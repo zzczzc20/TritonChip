@@ -28,6 +28,7 @@ module ooc_home_pipe #(
     parameter WBQ_N = 4,
     parameter FILL_CHAIN = 0,
     parameter DATA_RAM = 0,
+    parameter AUX_RAM = 0,
     parameter [63:0] TMU_BASE = 64'h0000_0000_7FFF_0000
 ) (
     input wire clk,
@@ -191,6 +192,7 @@ module ooc_home_pipe #(
         .WBQ_N(WBQ_N),
         .FILL_CHAIN(FILL_CHAIN),
         .DATA_RAM(DATA_RAM),
+        .AUX_RAM(AUX_RAM),
         .TMU_BASE(TMU_BASE)
     ) dut (
         .clk(clk),

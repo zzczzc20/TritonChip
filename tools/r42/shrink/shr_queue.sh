@@ -17,7 +17,11 @@ while IFS='|' read -r NAME ENVS TOP FILES GEN; do
         [ "$(mine)" -lt "$MAX" ] && [ "$av" -ge "$MINAVAIL_MB" ] && break
         sleep 15
     done
-    setsid nohup bash $HOME/r42_shrink/tools/r42/shrink/shr_job.sh "$NAME" "$ENVS" "$TOP" "$FILES" "$GEN" > /dev/null 2>&1 < /dev/null &
+    case $NAME in
+        tscr_*) JOB=shr_tilejob.sh; set -- "$NAME" "$ENVS" "$TOP" "$FILES";;       # TOP = checkpoint relative to ~/r42_shrink_out, FILES = SLR
+        *)      JOB=shr_job.sh;     set -- "$NAME" "$ENVS" "$TOP" "$FILES" "$GEN";;
+    esac
+    setsid nohup bash $HOME/r42_shrink/tools/r42/shrink/$JOB "$@" > /dev/null 2>&1 < /dev/null &
     echo $! > $PIDS/$NAME.pid
     echo "$(date -u +%T) started $NAME pid $!"
     sleep 5

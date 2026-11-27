@@ -43,6 +43,8 @@ module tb_tnca_core;
     parameter RPAIR          = 0;
     parameter MTX_ABUF       = 0;
     parameter MTX_VRF_REG    = 0;
+    parameter VRF_XBAR       = 0;   // R42 shrink: banked VRF response crossbar (tnca_vrf_banked XBAR)
+    parameter VRF_VLD_RAM    = 0;   // R42 shrink: banked VRF valid bits in the bank RAM + reset sweep
     parameter FMA_IMPL       = 0;   // R41 G2 FMA rebuild
     parameter MAC_DP         = 0;   // R41 G2 shared MAC lane + m.mma.dp.async
     parameter MAC_CUTS       = 29;
@@ -112,7 +114,7 @@ module tb_tnca_core;
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
-        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_VRF_REG(MTX_VRF_REG),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_VRF_REG(MTX_VRF_REG), .VRF_XBAR(VRF_XBAR), .VRF_VLD_RAM(VRF_VLD_RAM),
         .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) dut (

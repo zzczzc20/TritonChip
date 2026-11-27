@@ -18,7 +18,7 @@ for S in "$@"; do
     *) echo "unknown set $S"; continue;;
   esac
   SD=""; [ -d $DOUT/tlm/${SEEDTAG}_$S ] && SD=$DOUT/tlm/${SEEDTAG}_$S
-  SEED=$SD JOBS=${JOBS:-3} $HOME/r42/shrink/tools/r42/shrink/tlm/shr_run.sh $TREE $HOME/r42/shrink_out/cfg/dse_$CFGN.cfg head_dse_${CFGN}_$S $BIN $DOUT/ids/$IDS $P
+  SEED=$SD JOBS=${JOBS:-3} $(dirname $0)/shr_run.sh $TREE $HOME/r42/shrink_out/cfg/dse_$CFGN.cfg head_dse_${CFGN}_$S $BIN $DOUT/ids/$IDS $P
   echo "SET $S of $CFGN done"
 done
 echo SETS_DONE $CFGN

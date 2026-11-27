@@ -1,0 +1,64 @@
+### stage miters N=1000000 x 9 FMA classes + 4 round classes
+built /home/zhongchun/r42/area_out/verify/stage_s0/obj_all/Vmiter_all
+round mode 2: 1000000 structs, 0 mismatches
+round mode 3: 1000000 structs, 0 mismatches
+fast_miter: 13000000 vectors, 0 mismatches
+PASS
+built /home/zhongchun/r42/area_out/verify/stage_s1/obj_all/Vmiter_all
+round mode 2: 1000000 structs, 0 mismatches
+round mode 3: 1000000 structs, 0 mismatches
+fast_miter: 13000000 vectors, 0 mismatches
+PASS
+### cycle-level FMA miters N=1000000 x 9 classes
+built /home/zhongchun/r42/area_out/verify/cyc_1010_1_0/obj_cyc/Vfma_cyc_miter
+CUTS=1010 SHIFT=1 XLS_ALIGN=0 LAT=2: fma_cyc_miter LAT 2: 0 mismatches PASS 
+built /home/zhongchun/r42/area_out/verify/cyc_1010_1_1/obj_cyc/Vfma_cyc_miter
+CUTS=1010 SHIFT=1 XLS_ALIGN=1 LAT=2: fma_cyc_miter LAT 2: 0 mismatches PASS 
+built /home/zhongchun/r42/area_out/verify/cyc_1010_0_1/obj_cyc/Vfma_cyc_miter
+CUTS=1010 SHIFT=0 XLS_ALIGN=1 LAT=2: fma_cyc_miter LAT 2: 0 mismatches PASS 
+built /home/zhongchun/r42/area_out/verify/cyc_1110_1_0/obj_cyc/Vfma_cyc_miter
+CUTS=1110 SHIFT=1 XLS_ALIGN=0 LAT=3: fma_cyc_miter LAT 3: 0 mismatches PASS 
+built /home/zhongchun/r42/area_out/verify/cyc_1110_1_1/obj_cyc/Vfma_cyc_miter
+CUTS=1110 SHIFT=1 XLS_ALIGN=1 LAT=3: fma_cyc_miter LAT 3: 0 mismatches PASS 
+built /home/zhongchun/r42/area_out/verify/cyc_1110_0_0/obj_cyc/Vfma_cyc_miter
+CUTS=1110 SHIFT=0 XLS_ALIGN=0 LAT=3: fma_cyc_miter LAT 3: 0 mismatches PASS 
+### MAC lane miters N=1000000 x 3 classes x 3 modes
+built /home/zhongchun/r42/area_out/verify/mac_5_011101/obj_mac/Vmac_miter
+BE=5 CUTS=011101: mac_miter: 0 mismatches PASS 
+built /home/zhongchun/r42/area_out/verify/mac_13_011101/obj_mac/Vmac_miter
+BE=13 CUTS=011101: mac_miter: 0 mismatches PASS 
+built /home/zhongchun/r42/area_out/verify/mac_13_111101/obj_mac/Vmac_miter
+BE=13 CUTS=111101: mac_miter: 0 mismatches PASS 
+built /home/zhongchun/r42/area_out/verify/mac_5_111101/obj_mac/Vmac_miter
+BE=5 CUTS=111101: mac_miter: 0 mismatches PASS 
+built /home/zhongchun/r42/area_out/verify/mac_13_111111/obj_mac/Vmac_miter
+BE=13 CUTS=111111: mac_miter: 0 mismatches PASS 
+### mutation sensitivity
+m_sticky_borrow: MISMATCH cls 0 a 2a2c9e1e b 421a029d c 45277369 k 5 ref c5277369 new c5277369 MISMATCH cls 0 a 8ffae240 b dd92f04d c f1b15401 k 0 ref f1b15401 new f1b15401 
+m_winner: MISMATCH cls 0 a 6578de6e b 3bde5067 c 618e68e5 k 5 ref 61136c50 new 62ed9276 MISMATCH cls 0 a 440960fc b 8c50a4ea c 90fadd14 k 1 ref 0f5773d9 new 11f94461 
+m_lz8: MISMATCH cls 0 a 13375118 b c386356e c eef878b3 k 4 ref eef878b3 new 80000000 MISMATCH cls 0 a efc482eb b 60eada25 c 608990f6 k 1 ref ff800000 new ff800000 
+m_sub_threshold: MISMATCH cls 0 a 14d251cb b 26e67793 c 00984d3d k 0 ref 0098abe9 new 0098abe9 MISMATCH cls 0 a 0cef5e67 b 2cf9f213 c 80ed9ca9 k 0 ref 80ed955b new 80ed955b 
+m_ressign: MISMATCH cls 0 a 6578de6e b 3bde5067 c 618e68e5 k 5 ref 61136c50 new e1136c50 MISMATCH cls 0 a 440960fc b 8c50a4ea c 90fadd14 k 1 ref 0f5773d9 new 8f5773d9 
+m_sticky_round: MISMATCH cls 1 a fe804000 b 81800100 c 001fffff k 0 ref 40804101 new 40804100 MISMATCH cls 1 a 7f167b1a b bf200000 c 01000007 k 1 ref febc19e1 new febc19e0 
+m_tie: MISMATCH cls 1 a 7f000000 b 0000000f c b8ffffff k 1 ref 3903c000 new 3903bfff MISMATCH cls 1 a fe600000 b 097fff80 c c87fffff k 0 ref c8efffc8 new c8efffc7 
+m_ones: MISMATCH cls 1 a b4800000 b 9f003fff c 57000000 k 1 ref d7000000 new 80000000 MISMATCH cls 1 a a5800100 b 01a97bb5 c 75000000 k 0 ref 75000000 new 00000000 
+m_overflow: MISMATCH cls 0 a ea1d7da6 b d5104489 c d32532a3 k 1 ref 7f800000 new 7fb181ae MISMATCH cls 0 a 6013d281 b 5f567aba c bc05f51d k 3 ref 7f800000 new 7ff7b1ab 
+m_ftz: MISMATCH cls 0 a 992a4de6 b 21548e3e c b244863a k 7 ref 80000000 new 800011ad MISMATCH cls 0 a 1789a696 b 21e10549 c b39c15d5 k 6 ref 00000000 new 000003c8 
+m_mask: fast_miter: 13000000 vectors, 0 mismatches 
+m_leftcut: fast_miter: 13000000 vectors, 0 mismatches 
+m_shiftlim: fast_miter: 13000000 vectors, 0 mismatches 
+m_eb0_ovf: MISMATCH cls 1 a 27ffffff b b2ffffff c ff000000 k 1 ref 7f000000 new 7f800000 MISMATCH cls 1 a 806da230 b 81d8c855 c 7f000000 k 1 ref ff000000 new ff800000 
+m_carry: MISMATCH cls 0 a 2a2c9e1e b 421a029d c 45277369 k 5 ref c5277369 new c5a77369 MISMATCH cls 0 a 8ffae240 b dd92f04d c f1b15401 k 0 ref f1b15401 new f2315401 
+m_resultzero: MISMATCH cls 0 a 8c4d19b4 b a7b6c12f c 9199c335 k 2 ref 00000001 new 00000000 MISMATCH cls 0 a 16b413c4 b 1db5f15c c 17755e3e k 2 ref 00000001 new 00000000 
+a_sticky64: MISMATCH cls 0 a 32c0688d b d021eda3 c 22653900 k 1 ref c37368b8 new c37368b8 MISMATCH cls 0 a cfa460b8 b 533ea4f7 c 42e77900 k 1 ref e374d36a new e374d36a 
+a_clamp: MISMATCH cls 0 a 8ffae240 b dd92f04d c f1b15401 k 0 ref f1b15401 new f1b15401 MISMATCH cls 0 a 2654e642 b a5464d60 c c738eb8b k 1 ref 4738eb8b new 4738eb8b 
+a_shiftc: MISMATCH cls 0 a c5e869ad b 9b4df5e2 c d896d816 k 2 ref 21bafbda new 00000000 MISMATCH cls 0 a 34aadeb9 b 18ee06da c b40ee1c1 k 6 ref 0e1edfa3 new 0e000000 
+a_subnormal_c: MISMATCH cls 0 a 4e2241ff b 10fe7a20 c 0076e1f5 k 1 ref 1fa14ae3 new 1fa14ae3 MISMATCH cls 0 a 266317c3 b 156cccb6 c 8029b337 k 0 ref 80294a2f new 80147094 
+a_pdbl: MISMATCH cls 0 a ad1b8082 b 0011ac63 c 65df56c5 k 2 ref 80000000 new 80000000 MISMATCH cls 0 a 69b0e39c b 80165d0c c 22800be8 k 1 ref a97741a7 new a8f745a7 
+a_infinf: MISMATCH cls 1 a 7f800000 b 7f6fffff c ff800000 k 1 ref 7f800000 new 7fc00000 MISMATCH cls 1 a ff800000 b 6effffff c 7f800000 k 4 ref 7fc00000 new ff800000 
+a_xp: MISMATCH cls 0 a efc482eb b 60eada25 c 608990f6 k 1 ref ff800000 new ff800000 MISMATCH cls 0 a 6c2cbeb7 b 68dfbb96 c 3d73f370 k 0 ref 7f800000 new 7f800000 
+a_ftz_c: MISMATCH cls 0 a 07a2cae8 b 5a199285 c 004cb189 k 4 ref 224350e2 new 224350e2 MISMATCH cls 0 a e6301f02 b 43153b11 c 807e956b k 5 ref e9cd555e new e9cd555e 
+a_ftz_mul: MISMATCH cls 0 a 00238cfb b 69c89c45 c a03be273 k 5 ref 203be273 new 29deded4 MISMATCH cls 0 a 8044be22 b 48b8fbbe c c8f35148 k 5 ref 48f35148 new 48f35148 
+a_infsign: MISMATCH cls 0 a 2a2c9e1e b 421a029d c 45277369 k 5 ref c5277369 new c5277369 MISMATCH cls 0 a 8ffae240 b dd92f04d c f1b15401 k 0 ref f1b15401 new f1b15401 
+a_sticky_l1: MISMATCH cls 0 a bb2333e6 b 6fdf50eb c fc30801f k 0 ref fc30801f new fc30801f MISMATCH cls 0 a d52843df b eab9b7be c 62a57234 k 1 ref 7f800000 new 7f800000 
+VERIFY_DONE

@@ -1,0 +1,13 @@
+fn 2 rm 0: cvt_int_miter: 4294967296 vectors, 0 mismatches PASS 
+fn 1 rm 1: cvt_int_miter: 4294967296 vectors, 0 mismatches PASS 
+fn 0 rm 1: cvt_int_miter: 4294967296 vectors, 0 mismatches PASS 
+fn 2 rm 1: cvt_int_miter: 4294967296 vectors, 0 mismatches PASS 
+fn 2 rm 2: cvt_int_miter: 4294967296 vectors, 0 mismatches PASS 
+fn 2 rm 3: cvt_int_miter: 4294967296 vectors, 0 mismatches PASS 
+fn 3 rm 0: cvt_int_miter: 4294967296 vectors, 0 mismatches PASS 
+fn 3 rm 1: cvt_int_miter: 4294967296 vectors, 0 mismatches PASS 
+fn 3 rm 2: cvt_int_miter: 4294967296 vectors, 0 mismatches PASS 
+fn 3 rm 3: cvt_int_miter: 4294967296 vectors, 0 mismatches PASS 
+random: cvt_int_miter: 2000000000 vectors, 0 mismatches PASS 
+EXH_DONE
+EXIT=0

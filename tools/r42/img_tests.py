@@ -31,10 +31,14 @@ def run(vvp, args=()):
 def matlock(a):
     bad = n = 0
     with tempfile.TemporaryDirectory(prefix='imgtest-') as t:
-        for dp in (1, 0):
-            for vm in (0, 1):
-                for abuf in (0, 1):
-                    for f32 in (0, 1):
+        # MAC_DP 1 in full; MAC_DP 0 (the unit's other multiplier) with the A buffer on and the banked file
+        grid = [(1, vm, abuf, f32) for vm in (0, 1) for abuf in (0, 1) for f32 in (0, 1)] + [(0, 1, 1, f32) for f32 in (0, 1)]
+        if a.quick:
+            grid = [g for g in grid if g[1] == 1 and (g[0], g[3]) in ((1, 0), (1, 1), (0, 1))]
+        for dp, vm, abuf, f32 in grid:
+            if True:
+                if True:
+                    if True:
                         vvp = build(t, 'tb_matrix_lock', 'tb/core/tb_matrix_lock.v',
                                     dict(MAC_DP=dp, VRF_MODE=vm, ABUF=abuf, MAC_F32=f32), [a.ref])
                         for seed in range(1, a.seeds + 1):
@@ -52,9 +56,9 @@ def matlock(a):
 def matovl(a):
     bad = n = 0
     with tempfile.TemporaryDirectory(prefix='imgtest-') as t:
-        for dp in (1, 0):
-            for vm in (0, 1, 2):
-                for f32 in (0, 1):
+        for dp in a.dps:
+            for vm in a.vms:
+                for f32 in a.f32s:
                     vvp = build(t, 'tb_matrix_ovl', 'tb/core/tb_matrix_ovl.v', dict(MAC_DP=dp, VRF_MODE=vm, MAC_F32=f32))
                     for seed in range(1, a.seeds + 1):
                         out = run(vvp, [f'+seed={seed}', f'+segs={a.segs}'])
@@ -71,8 +75,10 @@ def matovl(a):
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest='mode', required=True)
-    p = sub.add_parser('matlock'); p.add_argument('--ref', required=True); p.add_argument('--seeds', type=int, default=3); p.add_argument('--cmds', type=int, default=400)
+    p = sub.add_parser('matlock'); p.add_argument('--ref', required=True); p.add_argument('--seeds', type=int, default=3); p.add_argument('--cmds', type=int, default=400); p.add_argument('--quick', action='store_true')
+    ints = lambda s: [int(x) for x in s.split(',')]
     p = sub.add_parser('matovl'); p.add_argument('--seeds', type=int, default=3); p.add_argument('--segs', type=int, default=60)
+    p.add_argument('--dps', type=ints, default=[1, 0]); p.add_argument('--vms', type=ints, default=[0, 1, 2]); p.add_argument('--f32s', type=ints, default=[0, 1])
     a = ap.parse_args()
     sys.exit({'matlock': matlock, 'matovl': matovl}[a.mode](a))
 

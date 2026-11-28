@@ -3,7 +3,7 @@
 #   stage_<commit8>.tar.gz = git archive of COMMIT without evidence/, doc/, tutorial/, examples/, deliverables/, plus evidence/r42/issue/images/*.tcl from the same commit
 #   and evidence/r41/hbm_bw/g4/run2/image.tcl (the run-3 image, for reference).
 set -e
-C=$1; OUT=$2
+C=$(git rev-parse $1); OUT=$2
 mkdir -p $OUT
 T=$(mktemp -d)
 git archive $C | tar -x -C $T

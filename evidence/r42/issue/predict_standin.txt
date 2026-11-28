@@ -1,0 +1,16 @@
+=== sets128 (rtl-3c): 17 points measured, 12 (family, dtype) groups
+  measured  1.0074x (+0.74 %) over 14 affected of 145 board points
+  family    1.0231x (+2.31 %) over 59 affected of 145 board points
+  family/2  1.0156x (+1.56 %) over 59 affected of 145 board points
+=== VRF_FWD (rtl-3c): 12 points measured, 12 (family, dtype) groups
+  measured  1.0009x (+0.09 %) over 11 affected of 145 board points
+  family    1.0137x (+1.37 %) over 64 affected of 145 board points
+  family/2  1.0077x (+0.77 %) over 64 affected of 145 board points
+=== TENSOR_TAG_W 5 (rtl-3c): 12 points measured, 12 (family, dtype) groups
+  measured  1.0021x (+0.21 %) over 10 affected of 145 board points
+  family    1.0114x (+1.14 %) over 63 affected of 145 board points
+  family/2  1.0078x (+0.78 %) over 63 affected of 145 board points
+=== combination LF+VRF_FWD+sets128 (rtl-3c): 15 points measured, 10 (family, dtype) groups
+  measured  1.0210x (+2.10 %) over 15 affected of 145 board points
+  family    1.0637x (+6.37 %) over 47 affected of 145 board points
+  family/2  1.0437x (+4.37 %) over 47 affected of 145 board points

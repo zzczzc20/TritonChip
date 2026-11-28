@@ -10,13 +10,16 @@ module ooc_tnca_matrix #(
     parameter FMA_LAT = 2,
     parameter FMA_IMPL = 0,
     parameter MAC_DP = 0,
-    parameter [5:0] MAC_CUTS = 6'b011101,
+    parameter [6:0] MAC_CUTS = 7'b0011101,
     parameter OPND_REG = 1,
     parameter ABUF = 0,
     parameter OVL = 0,
     parameter VRF_LAT = 1,
     parameter TAG_W = 1,
-    parameter MAC_F32 = 0
+    parameter MAC_F32 = 0,
+    parameter OPREG = 0,
+    parameter WREG = 0,
+    parameter CAPFREE = 0
 ) (
     input wire clk,
     input wire  i_rst_n,
@@ -129,7 +132,10 @@ module ooc_tnca_matrix #(
         .OVL(OVL),
         .VRF_LAT(VRF_LAT),
         .TAG_W(TAG_W),
-        .MAC_F32(MAC_F32)
+        .MAC_F32(MAC_F32),
+        .OPREG(OPREG),
+        .WREG(WREG),
+        .CAPFREE(CAPFREE)
     ) dut (
         .clk(clk),
         .rst_n(r_rst_n),

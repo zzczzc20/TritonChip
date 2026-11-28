@@ -584,14 +584,22 @@ module tnca_matrix #(
     wire [ROW_W-1:0] acc_r_row  = busy ? ((st == S_ROW) ? r_row : mm[ROW_W-1:0])
                                        : ard_row;
 
+    // R42 clk2 WREG: the write port's next-cycle values, for the valid bits' pre-decoded enable (tnca_acc_rf WPRE): the tag
+    // pipeline's last-but-one stage, or a.vwrite's direct write one cycle before direct_w2, dropped by flush as the tags are
+    wire                 acc_wp_en   = (WREG != 0) && !flush && (tg_v[PIPE-2] || direct_w);
+    wire [ACC_W-1:0]     acc_wp_slot = direct_w ? direct_slot : tg_slot[PIPE-2];
+    wire [ROW_W-1:0]     acc_wp_row  = direct_w ? direct_row  : tg_row[PIPE-2];
+    wire [VLEN-1:0]      acc_wp_lane = direct_w ? direct_mask : tg_mask[PIPE-2];
+
     tnca_acc_rf #(
         .ACC_N(ACC_N), .ACC_W(ACC_W), .ROWS(ROWS), .ROW_W(ROW_W),
-        .VLEN(VLEN), .ELEN(ELEN)
+        .VLEN(VLEN), .ELEN(ELEN), .WPRE(WREG)
     ) u_acc (
         .clk(clk), .rst_n(rst_n),
         .r_slot(acc_r_slot), .r_row(acc_r_row), .r_data(acc_rd_bus),
         .w_en(acc_w_en), .w_slot(acc_w_slot), .w_row(acc_w_row),
         .w_lane_en(acc_w_lane), .w_data(acc_w_data),
+        .wp_en(acc_wp_en), .wp_slot(acc_wp_slot), .wp_row(acc_wp_row), .wp_lane(acc_wp_lane),
         .z_en(z_en), .z_slot(r_slot), .z_row(z_row)
     );
 

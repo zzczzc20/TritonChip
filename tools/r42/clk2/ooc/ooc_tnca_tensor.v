@@ -22,7 +22,8 @@ module ooc_tnca_tensor #(
     parameter CMD_W = 3,
     parameter PTAG_W = TAG_W,
     parameter PORT_DW = MEM_DW,
-    parameter PORT_BYTES= MEM_BYTES
+    parameter PORT_BYTES= MEM_BYTES,
+    parameter TCHK_REG = 0
 ) (
     input wire clk,
     input wire  i_rst_n,
@@ -167,7 +168,8 @@ module ooc_tnca_tensor #(
         .CMD_W(CMD_W),
         .PTAG_W(PTAG_W),
         .PORT_DW(PORT_DW),
-        .PORT_BYTES(PORT_BYTES)
+        .PORT_BYTES(PORT_BYTES),
+        .TCHK_REG(TCHK_REG)
     ) dut (
         .clk(clk),
         .rst_n(r_rst_n),

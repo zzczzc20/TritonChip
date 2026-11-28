@@ -25,7 +25,11 @@ module tnca_acc_rf #(
     parameter ROWS   = 16,
     parameter ROW_W  = 4,
     parameter VLEN   = 16,
-    parameter ELEN   = 32
+    parameter ELEN   = 32,
+    // R42 clk2 (tnca_matrix WREG): 1 = the valid-bit write is decoded one cycle early from wp_* (the write port's values one
+    // cycle before they reach w_*) into a one-hot register, so the 256 enables are registers, not the decode of the port; the
+    // data write is unchanged. wp_* must equal the next cycle's w_* (and be zero in a flush cycle). 0 = as it was.
+    parameter WPRE   = 0
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -39,6 +43,10 @@ module tnca_acc_rf #(
     input  wire [ROW_W-1:0]         w_row,
     input  wire [VLEN-1:0]          w_lane_en,
     input  wire [VLEN*ELEN-1:0]     w_data,
+    input  wire                     wp_en,
+    input  wire [ACC_W-1:0]         wp_slot,
+    input  wire [ROW_W-1:0]         wp_row,
+    input  wire [VLEN-1:0]          wp_lane,
 
     // whole-slot zero, one row per cycle driven by the caller
     input  wire                     z_en,
@@ -70,16 +78,47 @@ module tnca_acc_rf #(
 
     reg [VLEN-1:0] valid [0:DEPTH-1];
     integer i;
-    always @(posedge clk) begin
-        if (!rst_n) begin
-            for (i = 0; i < DEPTH; i = i + 1)
-                valid[i] <= {VLEN{1'b0}};
-        end else if (z_en) begin
-            valid[za] <= {VLEN{1'b0}};
-        end else if (w_en) begin
-            valid[wa] <= valid[wa] | w_lane_en;
+    generate
+        if (WPRE == 0) begin : g_vwr
+            always @(posedge clk) begin
+                if (!rst_n) begin
+                    for (i = 0; i < DEPTH; i = i + 1)
+                        valid[i] <= {VLEN{1'b0}};
+                end else if (z_en) begin
+                    valid[za] <= {VLEN{1'b0}};
+                end else if (w_en) begin
+                    valid[wa] <= valid[wa] | w_lane_en;
+                end
+            end
+        end else begin : g_vwr_pre
+            reg [DEPTH-1:0] woh_q;
+            reg [VLEN-1:0]  wl_q;
+            always @(posedge clk) begin
+                woh_q <= wp_en ? ({{(DEPTH-1){1'b0}}, 1'b1} << {wp_slot, wp_row}) : {DEPTH{1'b0}};
+                wl_q  <= wp_lane;
+            end
+            always @(posedge clk) begin
+                if (!rst_n) begin
+                    for (i = 0; i < DEPTH; i = i + 1)
+                        valid[i] <= {VLEN{1'b0}};
+                end else if (z_en) begin
+                    valid[za] <= {VLEN{1'b0}};
+                end else begin
+                    for (i = 0; i < DEPTH; i = i + 1)
+                        if (woh_q[i]) valid[i] <= valid[i] | wl_q;
+                end
+            end
+`ifndef SYNTHESIS
+            // the pre-decoded enable is the decode of the port
+            always @(posedge clk)
+                if (rst_n && (woh_q !== (w_en ? ({{(DEPTH-1){1'b0}}, 1'b1} << wa) : {DEPTH{1'b0}})) && !(^woh_q === 1'bx))
+                    $display("FAIL tnca_acc_rf assert @%0t: pre-decoded write enable %h, port decode %h", $time, woh_q, w_en ? ({{(DEPTH-1){1'b0}}, 1'b1} << wa) : {DEPTH{1'b0}});
+            always @(posedge clk)
+                if (rst_n && w_en && (wl_q !== w_lane_en))
+                    $display("FAIL tnca_acc_rf assert @%0t: pre-registered write lanes %h, port %h", $time, wl_q, w_lane_en);
+`endif
         end
-    end
+    endgenerate
 
     // Read-old, with no write-to-read bypass. The bypass this file used to
     // have put the FMA's normalise-and-round, the write port and the next

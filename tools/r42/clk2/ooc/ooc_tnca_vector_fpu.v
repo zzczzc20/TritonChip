@@ -7,7 +7,11 @@ module ooc_tnca_vector_fpu #(
     parameter FMA_IMPL = 0,
     parameter SFU_LANES = 1,
     parameter SFU_LAT = 6,
-    parameter HAS_SFU = 1
+    parameter HAS_SFU = 1,
+    parameter [3:0] FCUTS = 4'b0000,
+    parameter FOREG = 0,
+    parameter CVTP = 0,
+    parameter SFUX = 0
 ) (
     input wire clk,
     input wire  i_rst_n,
@@ -57,7 +61,11 @@ module ooc_tnca_vector_fpu #(
         .FMA_IMPL(FMA_IMPL),
         .SFU_LANES(SFU_LANES),
         .SFU_LAT(SFU_LAT),
-        .HAS_SFU(HAS_SFU)
+        .HAS_SFU(HAS_SFU),
+        .FCUTS(FCUTS),
+        .FOREG(FOREG),
+        .CVTP(CVTP),
+        .SFUX(SFUX)
     ) dut (
         .clk(clk),
         .rst_n(r_rst_n),

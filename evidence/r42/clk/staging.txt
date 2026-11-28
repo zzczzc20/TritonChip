@@ -1,0 +1,20 @@
+# R42-clk: candidate image parameter set and link recipe for an 8 ns (125 MHz) kernel clock (nothing here was linked, loaded or requested from the card)
+
+Branch      R42-clk (origin); the stable commit named in the final message (RTL identical to d7117816 for bits 0-8; bit 9 added after). origin/R42-union (clk2) is the lead's merge of this
+            branch with R42-clk2 and origin/R42; use its head for an image, not this branch alone.
+Images      evidence/r42/clk/images/clk_all9.tcl   = the R41 run-3 image parameter set (evidence/r41/hbm_bw/g4/run2/image.tcl) + CLKFIX 1023 (bits 0-9)
+            evidence/r42/clk/images/clk_c23.tcl    = + CLKFIX 23 (bits 0,1,2,4: the first tile screen)
+            tools/r42/clk/images/clk_*_sim.tcl     = the same arms in the stand-in form (tools/r42/img_images.py form), used by tools/r42/clk/clk_mc.sh
+            A parameter set for the union adds the clk2 parameter (CLKFIX2) and, per the lead's decision, LINE_HALF/MAC_F32 (tools/r42/img_images.py arms) and issue's VRF_FWD/sets128.
+How the parameters reach the cores: tnca_multicore_hbm_xo -> (tnca_multicore_fpga / tnca_multicore_axi / tnca_multicore_shell) -> tnca_top -> tnca_tile -> tnca_core and
+            tnca_home_pipe (CLKFIX); tnca_multicore_fpga also gives bit 7 to tnca_multicore_mmio. flow/fpga/package_xo.tcl passes every TNCA_IMAGE_PARAMS entry as a generic of the kernel.
+
+What would have to change for 8 ns (the link clock is set in the link flow, not in the RTL):
+  1. environment of the link: TNCA_KERNEL_MHZ=125 (flow/fpga/link.sh passes `--kernel_frequency 0:125` and checks the frequency in the xclbin metadata; flow/fpga/package_xo.tcl declares
+     FREQ_HZ = 125000000 for ap_clk from the same variable; the platform clock wizard's range is 10..650 MHz, flow/fpga/link.sh header).
+  2. flow/fpga/ooc.xdc line 45 `create_clock -period 10.000 -name ap_clk` and flow/fpga/synth_r40_multicore.tcl line 19 `create_clock -name ap_clk -period 10` are the screens' constraints: 8.000 for
+     a kernel-level OOC screen at the target (the v++ link derives the real constraint from the platform clock).
+  3. software/profile: no change; the CLKFIX bits are hardware parameters (the architectural results are unchanged; the cycle price is in RESULTS.md section 3).
+  4. expectation, derived: the tile screen must reach about 6.2 ns OOC (image/tile derate 1.2-1.4) for 8 ns; see RESULTS.md section 5 for the screens that exist.
+How a link would be started (the recipe of evidence/r42/img/staging.txt; approval and the card idle rule are not part of this file):
+  source ~/x86_link_env.sh; export XILINX_HLS=$HOME/Xilinx/Vitis_HLS/2023.2; TNCA_KERNEL_MHZ=125 setsid nohup nice -n 5 bash flow/fpga/run_r40_attempt01.sh $FRESH_BUILD_ROOT <image.tcl>

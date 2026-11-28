@@ -23,6 +23,7 @@ ARMS = {
     'c23': {'CLKFIX': 23},
     'idle': {'CLKFIX': 128},
     'all': {'CLKFIX': 511},
+    'all9': {'CLKFIX': 1023},
 }
 
 

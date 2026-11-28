@@ -23,7 +23,10 @@
 module tnca_fmax_fma #(
     parameter [3:0] CUTS      = 4'b1010,
     parameter       SHIFT     = 1,        // tnca_fmax_round SHIFT
-    parameter       XLS_ALIGN = 0
+    parameter       XLS_ALIGN = 0,
+    // R42 clk2 (tnca_vector_fpu UNITP; 0 = as it was): stage A forms its product from `a` and `b` as given, or, when sel_u, from the unit
+    // product of a_u (a_u * 1.0, tnca_fmax_unitp), so the caller does not select the multiplier's operands (needs XLS_ALIGN 0)
+    parameter       UNITP     = 0
 ) (
     input  wire        clk,
     input  wire        rst_n,
@@ -33,6 +36,8 @@ module tnca_fmax_fma #(
     input  wire        sub_c,
     input  wire        mul_only,
     input  wire        ftz,
+    input  wire [31:0] a_u,         // UNITP only: the operand whose product with 1.0 is taken when sel_u
+    input  wire        sel_u,
     output wire [31:0] y
 );
     // ---- A (and B in one piece when XLS_ALIGN)
@@ -44,10 +49,21 @@ module tnca_fmax_fma #(
     wire         sc_o, mo_o, fz_o;
     generate
         if (XLS_ALIGN != 0) begin : g_xa
+            if (UNITP != 0) begin : g_bad
+                tnca_fmax_unitp u_bad (.UNITP_needs_separate_multiply_and_align_stages(1'b1));
+            end
             tnca_fma_align_xls u_ab (.a(a), .b(b), .c(c), .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz), .out(al_d));
             assign p_d = 64'b0; assign p_o = 64'b0; assign c_o = 32'b0; assign sc_o = 1'b0; assign mo_o = 1'b0; assign fz_o = 1'b0;
         end else begin : g_na
-            tnca_fmax_mul u_a (.a(a), .b(b), .ftz(ftz), .p(p_d));
+            wire [63:0] p_m;
+            tnca_fmax_mul u_a (.a(a), .b(b), .ftz(ftz), .p(p_m));
+            if (UNITP != 0) begin : g_up
+                wire [63:0] p_u;
+                tnca_fmax_unitp u_u (.a(a_u), .ftz(ftz), .p(p_u));
+                assign p_d = sel_u ? p_u : p_m;
+            end else begin : g_nup
+                assign p_d = p_m;
+            end
             if (CUTS[0]) begin : g_c0
                 reg [63:0] pq; reg [31:0] cq; reg sq, mq, fq;
                 always @(posedge clk)

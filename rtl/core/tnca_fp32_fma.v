@@ -91,7 +91,7 @@ module tnca_fp32_fma #(
     generate
         if (LAT == 2 && BE_X != 0) begin : g_l2x
             tnca_fmax_fma #(.CUTS(4'b1010), .SHIFT((BE_X / 4) % 2), .XLS_ALIGN(((BE_X / 8) % 2) ? 0 : 1)) u_fma_x (
-                .clk(clk), .rst_n(rst_n), .a(a), .b(b), .c(c), .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz), .y(y));
+                .clk(clk), .rst_n(rst_n), .a(a), .b(b), .c(c), .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz), .a_u(32'd0), .sel_u(1'b0), .y(y));
         end else if (LAT == 2) begin : g_l2
             // xls/tnca_fma.x: FmaAligned and FmaNormalised, flattened by XLS
             localparam W_ALIGN = 150;
@@ -122,7 +122,7 @@ module tnca_fp32_fma #(
             tnca_fma_round_xls u_s2 (.s(s1_q), .out(y));
         end else if (LAT == 3 && BE_X != 0) begin : g_l3x
             tnca_fmax_fma #(.CUTS(4'b1110), .SHIFT((BE_X / 4) % 2), .XLS_ALIGN(((BE_X / 8) % 2) ? 0 : 1)) u_fma_x (
-                .clk(clk), .rst_n(rst_n), .a(a), .b(b), .c(c), .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz), .y(y));
+                .clk(clk), .rst_n(rst_n), .a(a), .b(b), .c(c), .sub_c(sub_c), .mul_only(mul_only), .ftz(ftz), .a_u(32'd0), .sel_u(1'b0), .y(y));
         end else if (LAT == 3 && IMPL_G == 1) begin : g_l3d
             tnca_fmad_l3_xls u_xls (
                 .clk(clk), .rst(!rst_n),

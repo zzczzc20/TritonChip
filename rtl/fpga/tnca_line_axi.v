@@ -30,7 +30,11 @@ module tnca_line_axi #(
  // Below 64, addresses that differ only above this width are treated as the
  // same line (a conservative wait, never a missed hazard); the homes of an
  // image with PHYS_ADDR_W send no higher bits at all.
- parameter HAZARD_ADDR_W=64
+ parameter HAZARD_ADDR_W=64,
+ // R42 clk (CLKFIX[12]): 1 puts a one-entry register between the request port and the admission logic. The outlet link's read pointer / RAM output sat
+ // in front of the address compare, the slot search and the enables of `address`/`bus_address` (10 levels, 8.5 ns of net in the run-3 image); the logic now
+ // starts at local registers. +1 cycle on every memory request; the request that cannot be admitted (illegal address, no slot, hazard) waits in the register.
+ parameter REQ_REG=0
 )(
  input wire clk,rst_n,
  input wire [7:0] admission_limit,
@@ -58,6 +62,21 @@ module tnca_line_axi #(
 );
  localparam BEATS=512/DATA_W;
  localparam BEAT_W=(BEATS>1?$clog2(BEATS):1);
+ // R42 clk REQ_REG: the request as the admission logic sees it (the port itself when REQ_REG is 0)
+ reg q_v;reg [63:0] q_addr;reg q_we;reg [511:0] q_wdata;reg [TAG_W-1:0] q_tag;reg [SRC_W-1:0] q_src;
+ wire in_valid=REQ_REG ? q_v : req_valid;
+ wire [63:0] in_addr=REQ_REG ? q_addr : req_addr;
+ wire in_we=REQ_REG ? q_we : req_we;
+ wire [511:0] in_wdata=REQ_REG ? q_wdata : req_wdata;
+ wire [TAG_W-1:0] in_tag=REQ_REG ? q_tag : req_tag;
+ wire [SRC_W-1:0] in_src=REQ_REG ? q_src : req_src;
+ wire req_ready_i;
+ assign req_ready=REQ_REG ? (rst_n && !fault && (!q_v || req_ready_i)) : req_ready_i;
+ always @(posedge clk)begin
+  if(!rst_n)q_v<=0;
+  else if(req_valid && req_ready)begin q_v<=1;q_addr<=req_addr;q_we<=req_we;q_wdata<=req_wdata;q_tag<=req_tag;q_src<=req_src;end
+  else if(q_v && req_ready_i)q_v<=0;
+ end
  reg [OUT_N-1:0] active,writing,sent;
  reg [HAZARD_ADDR_W-1:0] address[0:OUT_N-1];
  reg [63:0] bus_address[0:OUT_N-1];
@@ -98,16 +117,16 @@ module tnca_line_axi #(
   limit_ok_q<=admission_limit>=1 && admission_limit<=OUT_N;
  end
  wire admission_ok=!DYNAMIC_LIMIT || (limit_ok_q && active_count<limit_q);
- wire [63:0] offset=req_addr-MEM_BASE;
+ wire [63:0] offset=in_addr-MEM_BASE;
  // Page striping is a bijection of the full 8 GiB allocation. Logical
  // addresses remain the ownership/hazard key; only the AXI address changes.
  wire [63:0] bus_offset=HBM_STRIPED ? {31'd0,offset[16:12],offset[32:17],offset[11:0]} : offset;
- wire legal_address=req_addr>=MEM_BASE && req_addr[5:0]==0 && window_ok_q && offset<=bound_q;
+ wire legal_address=in_addr>=MEM_BASE && in_addr[5:0]==0 && window_ok_q && offset<=bound_q;
 `ifndef SYNTHESIS
  reg [63:0] size_shadow;
  always @(posedge clk)begin
   size_shadow<=axi_size;
-  if(rst_n && (req_valid || !idle) &&
+  if(rst_n && (in_valid || !idle) &&
      (base_q!==axi_base || size_shadow!==axi_size || (DYNAMIC_LIMIT && limit_q!==admission_limit)))
    $fatal(1,"tnca_line_axi: traffic while an aperture/limit copy differs from its control");
  end
@@ -116,13 +135,14 @@ module tnca_line_axi #(
   free_slot=-1;hazard=0;
   for(integer k=OUT_N-1;k>=0;k=k-1)begin
    if(!active[k])free_slot=k;
-   if(active[k] && address[k]==req_addr[HAZARD_ADDR_W-1:0] && (writing[k] || req_we))hazard=1;
+   if(active[k] && address[k]==in_addr[HAZARD_ADDR_W-1:0] && (writing[k] || in_we))hazard=1;
   end
  end
  // Invalid addresses are refused and latched as faults, never translated into
  // zero-valued successful memory responses.
- assign req_ready=rst_n && !fault && (PIPELINED_ISSUE ? !pending_valid : !issue_valid) && free_slot>=0 && !hazard && legal_address && admission_ok;
- assign idle=!(|active) && !issue_valid && !pending_valid;
+ assign req_ready_i=rst_n && !fault && (PIPELINED_ISSUE ? !pending_valid : !issue_valid) && free_slot>=0 && !hazard && legal_address && admission_ok;
+ // A request parked in the register behind a fault is not work in flight (the unregistered port leaves it at the link, which is what link_idle reports).
+ assign idle=!(|active) && !issue_valid && !pending_valid && !(REQ_REG && q_v && !fault);
  assign m_arvalid=issue_valid && !writing[issue_slot];
  assign m_araddr=bus_address[issue_slot];
  assign m_arid=issue_slot;assign m_arlen=BEATS-1;
@@ -158,7 +178,7 @@ module tnca_line_axi #(
  generate if(LINE_LUTRAM)begin:g_lutram_lines
   // No reset: a slot's data is read only after this tenure wrote it.
   (* ram_style="distributed" *) reg [511:0] wbuf[0:OUT_N-1];
-  always @(posedge clk) if(rst_n && req_valid && req_ready) wbuf[free_slot]<=req_wdata;
+  always @(posedge clk) if(rst_n && in_valid && req_ready_i) wbuf[free_slot]<=in_wdata;
   assign w_line=wbuf[issue_slot];
   for(genvar b=0;b<BEATS;b=b+1)begin:g_rbeat
    (* ram_style="distributed" *) reg [DATA_W-1:0] rbuf[0:OUT_N-1];
@@ -178,7 +198,7 @@ module tnca_line_axi #(
    for(i=0;i<OUT_N;i=i+1)begin address[i]<=0;bus_address[i]<=0;if(!LINE_LUTRAM)line[i]<=0;source[i]<=0;tag[i]<=0;rbeat[i]<=0;end
   end else begin
    rsp_valid<=0;
-   if(req_valid && !fault && !legal_address)fault<=1;
+   if(in_valid && !fault && !legal_address)fault<=1;
    if(m_arvalid && m_arready)begin
     issue_valid<=0;sent[issue_slot]<=1;read_lines<=read_lines+1;
    end
@@ -198,10 +218,10 @@ module tnca_line_axi #(
    end
    // New issue state must win over the prior issue's completion/AW/W flags.
    // A full pending queue refuses admission, even if it drains this cycle.
-   if(req_valid && req_ready)begin
-    active[free_slot]<=1;writing[free_slot]<=req_we;sent[free_slot]<=0;
-    address[free_slot]<=req_addr[HAZARD_ADDR_W-1:0];bus_address[free_slot]<=base_q+bus_offset;if(!LINE_LUTRAM)line[free_slot]<=req_wdata;
-    source[free_slot]<=req_src;tag[free_slot]<=req_tag;rbeat[free_slot]<=0;
+   if(in_valid && req_ready_i)begin
+    active[free_slot]<=1;writing[free_slot]<=in_we;sent[free_slot]<=0;
+    address[free_slot]<=in_addr[HAZARD_ADDR_W-1:0];bus_address[free_slot]<=base_q+bus_offset;if(!LINE_LUTRAM)line[free_slot]<=in_wdata;
+    source[free_slot]<=in_src;tag[free_slot]<=in_tag;rbeat[free_slot]<=0;
     if(!issue_valid || (PIPELINED_ISSUE && issue_done && !pending_valid))begin
      issue_slot<=free_slot;issue_valid<=1;aw_done<=0;w_done<=0;wbeat<=0;
     end else begin

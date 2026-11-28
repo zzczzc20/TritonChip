@@ -27,6 +27,12 @@ ARMS = {
     'c529': {'CLKFIX': 529},
     'c1553': {'CLKFIX': 1553},
     'c1025': {'CLKFIX': 1025},
+    # bits 11-13 (RSTTREE, AXI_REQREG, IDLE_SRC) on the bit 0/4/9/10 base and all together
+    'r11': {'CLKFIX': 2048},
+    'r12': {'CLKFIX': 4096},
+    'r13': {'CLKFIX': 8192},
+    'r1553': {'CLKFIX': 15889},
+    'f14': {'CLKFIX': 16383},
 }
 
 

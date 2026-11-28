@@ -3,7 +3,7 @@
 // The randomized shared testbench separately covers independent stalls,
 // interleaved replies, same-line ordering, faults and all data widths.
 module tb_line_axi_stream;
- parameter PIPELINED_ISSUE=1,WRITE=0,OUT_N=32;
+ parameter PIPELINED_ISSUE=1,WRITE=0,OUT_N=32,REQ_REG=0;
  localparam ID_W=$clog2(OUT_N),COUNT=256,DELAY=16;
  reg clk=0,rst_n=0;always #5 clk=~clk;
  integer accepted=0,completed=0,issued=0,cycle=0,first_issue=-1,last_issue=-1;
@@ -23,7 +23,7 @@ module tb_line_axi_stream;
  wire [63:0] bus_addr=WRITE ? awaddr : araddr;
  wire [ID_W-1:0] bus_id=WRITE ? awid : arid;
  tnca_line_axi #(.SRC_W(1),.TAG_W(8),.DATA_W(512),.OUT_N(OUT_N),
-   .WRITE_RESPONSES(1),.PIPELINED_ISSUE(PIPELINED_ISSUE)) dut(
+   .WRITE_RESPONSES(1),.PIPELINED_ISSUE(PIPELINED_ISSUE),.REQ_REG(REQ_REG)) dut(
   .clk(clk),.rst_n(rst_n),.admission_limit(8'd0),
   .req_valid(rst_n && accepted<COUNT),.req_ready(req_ready),
   .req_addr(64'h20000+accepted*64),.req_we(WRITE!=0),.req_wdata({16{payload}}),

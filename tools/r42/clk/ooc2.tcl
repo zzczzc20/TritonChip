@@ -21,7 +21,9 @@ if {[info exists ::env(OOC_GENERICS)]} {
     foreach g [split $::env(OOC_GENERICS) " "] { if {$g ne ""} { lappend gen -generic $g } }
 }
 set xdc [file join $out clk.xdc]
-set fh [open $xdc w]; puts $fh "create_clock -name clk -period $period \[get_ports clk\]"; close $fh
+set fh [open $xdc w]; puts $fh "create_clock -name clk -period $period \[get_ports clk\]"
+if {[info exists ::env(OOC_XDC_FILE)] && $::env(OOC_XDC_FILE) ne ""} { set xin [open $::env(OOC_XDC_FILE) r]; puts $fh [read $xin]; close $xin }   ;# extra constraints (absolute path), e.g. the root-reset input delay
+close $fh
 read_xdc -mode out_of_context $xdc
 
 set flat rebuilt

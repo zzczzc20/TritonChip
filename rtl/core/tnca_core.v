@@ -1744,6 +1744,15 @@ module tnca_core #(
     wire mtx_bar_en = (x_major == `TNCA_MAJ_MATRIX) && x_is_mma_any;
     wire [BAR_W-1:0] mtx_bar = sc_data[BAR_W-1:0] | x_bar_sl;
 
+    // R42 clk (CLKFIX[11] RSTTREE): a registered, dont_touch copy of the reset for the units below. The run-3 image drove 21k reset-started endpoints from one
+    // synchroniser flop (8.4-9.2 ns of net); every copy hangs off the incoming reset one register deep, so all copies assert and release in the same cycle
+    // (the incoming reset is the root in every module that makes copies). 0 cycles in operation; reset reaches these units one cycle later.
+    wire rst_mtx_n,rst_lsu_n;
+    generate if(((CLKFIX>>11)&1)!=0)begin:g_rst_loc
+     (* dont_touch="true" *) reg mtx_q;(* dont_touch="true" *) reg lsu_q;
+     always @(posedge clk)begin mtx_q<=rst_n;lsu_q<=rst_n;end
+     assign rst_mtx_n=mtx_q;assign rst_lsu_n=lsu_q;
+    end else begin:g_rst_loc0 assign rst_mtx_n=rst_n;assign rst_lsu_n=rst_n; end endgenerate
     tnca_matrix #(
         .VLEN(VLEN), .ELEN(ELEN), .ACC_N(ACC_N), .ACC_W(ACC_W),
         .ROWS(ACC_ROWS), .ROW_W(ACC_ROW_W), .BAR_W(BAR_W), .FMA_LAT(FP_LAT), .FMA_IMPL(FMA_IMPL),
@@ -1751,7 +1760,7 @@ module tnca_core #(
         .OVL(MTX_PIPE), .TAG_W(RCTX_W),
         .VRF_LAT((USE_BANKED_VRF != 0) ? ((MTX_VRF_REG != 0) ? 2 : 1) : 0)
     ) u_mtx (
-        .clk(clk), .rst_n(rst_n), .flush(launch_valid),
+        .clk(clk), .rst_n(rst_mtx_n), .flush(launch_valid),
         .cmd_valid(mtx_cmd_valid), .cmd_op(mtx_cmd_op),
         .cmd_slot(x_dsti[ACC_W-1:0]),
         .cmd_va(x_va_idx), .cmd_vb(x_vb_idx),
@@ -1925,7 +1934,7 @@ module tnca_core #(
         .PICK_REG(CLKFIX & 1), .FREE_LOAD((CLKFIX >> 6) & 1)
     ) u_lsu (
         .req_ready_load(hybrid_ready_load),
-        .clk(clk), .rst_n(rst_n),
+        .clk(clk), .rst_n(rst_lsu_n),
         .req_ready(hybrid_idle),
         .req_valid(consume),
         .req_store(q_store), .req_vector(q_vector),
@@ -1961,7 +1970,7 @@ module tnca_core #(
         .NUM_BEATS(LSU_BEATS), .BEAT_W(CTAG_W)
     ) u_lsu (
         .req_ready_load(lsu_ready_load),
-        .clk(clk), .rst_n(rst_n),
+        .clk(clk), .rst_n(rst_lsu_n),
         .req_ready(lsu_req_ready),
         .req_valid(x_mem_go),
         .req_store(x_mem_store), .req_vector(x_mem_vector),
@@ -1996,7 +2005,7 @@ module tnca_core #(
         .NUM_BEATS(LSU_BEATS), .BEAT_W(CTAG_W)
     ) u_lsu (
         .req_ready_load(lsu_ready_load),
-        .clk(clk), .rst_n(rst_n),
+        .clk(clk), .rst_n(rst_lsu_n),
         .req_ready(lsu_req_ready),
         .req_valid(x_mem_go),
         .req_store(x_mem_store), .req_vector(x_mem_vector),
@@ -2032,7 +2041,7 @@ module tnca_core #(
         .NUM_BEATS(LSU_BEATS), .BEAT_W(CTAG_W)
     ) u_lsu (
         .o_draining(), .o_amo(),
-        .clk(clk), .rst_n(rst_n),
+        .clk(clk), .rst_n(rst_lsu_n),
         .req_ready(lsu_req_ready),
         .req_valid(x_mem_go),
         .req_store(x_mem_store), .req_vector(x_mem_vector),

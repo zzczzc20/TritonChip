@@ -18,7 +18,8 @@ module tnca_mesh #(
     parameter NV        = 2,
     parameter DEPTH     = 4,
     parameter AW        = 2,
-    parameter LINK_STAGES = 0
+    parameter LINK_STAGES = 0,
+    parameter RST_LOC = 0   // R42 clk (CLKFIX[11]): a registered reset copy per router
 ) (
     input  wire                                  clk,
     input  wire                                  rst_n,
@@ -52,11 +53,20 @@ module tnca_mesh #(
             for (x = 0; x < NX; x = x + 1) begin : g_x
                 localparam integer NODE = y*NX + x;
 
+                // R42 clk (CLKFIX[11] RSTTREE, RST_LOC): one registered, dont_touch reset copy per router (its input FIFOs' reset reached them over 7 ns of net).
+                wire rst_r_n;
+                if (RST_LOC != 0) begin : g_rl
+                    (* dont_touch="true" *) reg q;
+                    always @(posedge clk) q <= rst_n;
+                    assign rst_r_n = q;
+                end else begin : g_rl0
+                    assign rst_r_n = rst_n;
+                end
                 tnca_router #(
                     .XW(XW), .YW(YW), .PAYLOAD_W(PAYLOAD_W), .NV(NV),
                     .DEPTH(DEPTH), .AW(AW), .X_HERE(x), .Y_HERE(y)
                 ) u_r (
-                    .clk(clk), .rst_n(rst_n),
+                    .clk(clk), .rst_n(rst_r_n),
                     .in_valid (r_in_valid [NODE*NC +: NC]),
                     .in_ready (r_in_ready [NODE*NC +: NC]),
                     .in_flit  (r_in_flit  [NODE*NC*FW +: NC*FW]),

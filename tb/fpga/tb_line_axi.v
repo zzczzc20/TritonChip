@@ -1,5 +1,6 @@
 `timescale 1ns/1ps
 module tb_line_axi;
+ parameter REQ_REG=0;   // R42 clk: tnca_line_axi REQ_REG (CLKFIX bit 12), on the DUT and its twin
  parameter DATA_W=256,OUT_N=8,MODE=0,STAGES=0,WRITE_ACK=1,RUNTIME_LIMIT=0,PIPELINED_ISSUE=0;
  // R41 G2: 1 = the DUT keeps its slot lines in distributed RAM, and a second
  // instance with registers (the delivered build) runs in lockstep on the same
@@ -30,7 +31,7 @@ module tb_line_axi;
  .s_rsp_valid(rsp_valid),.s_rsp_rdata(rsp_rdata),.s_rsp_src(rsp_src),.s_rsp_tag(rsp_tag),
  .m_req_valid(qv),.m_req_ready(qr),.m_req_addr(qa),.m_req_we(qwe),.m_req_wdata(qd),.m_req_src(qs),.m_req_tag(qt),
  .m_rsp_valid(rv),.m_rsp_rdata(rd),.m_rsp_src(rs),.m_rsp_tag(rt));
- tnca_line_axi #(.LINE_LUTRAM(LINE_LUTRAM),.PIPELINED_ISSUE(PIPELINED_ISSUE),.WRITE_RESPONSES(WRITE_ACK),.SRC_W(3),.TAG_W(5),.OUT_N(OUT_N),.DATA_W(DATA_W),.DYNAMIC_LIMIT(RUNTIME_LIMIT!=0)) dut(
+ tnca_line_axi #(.LINE_LUTRAM(LINE_LUTRAM),.PIPELINED_ISSUE(PIPELINED_ISSUE),.WRITE_RESPONSES(WRITE_ACK),.SRC_W(3),.TAG_W(5),.OUT_N(OUT_N),.DATA_W(DATA_W),.DYNAMIC_LIMIT(RUNTIME_LIMIT!=0),.REQ_REG(REQ_REG)) dut(
   .clk(clk),.rst_n(rst_n),.req_valid(qv),.req_ready(qr),
   .req_addr(qa),.req_we(qwe),.req_wdata(qd),.req_src(qs),.req_tag(qt),
   .rsp_valid(rv),.rsp_rdata(rd),.rsp_src(rs),.rsp_tag(rt),
@@ -50,7 +51,7 @@ module tb_line_axi;
   wire [63:0] r_awaddr,r_araddr;wire [ID_W-1:0] r_awid,r_arid;
   wire [7:0] r_awlen,r_arlen;wire [2:0] r_awsize,r_arsize;wire [1:0] r_awburst,r_arburst;
   wire [DATA_W-1:0] r_wdata;wire [DATA_W/8-1:0] r_wstrb;
-  tnca_line_axi #(.LINE_LUTRAM(0),.PIPELINED_ISSUE(PIPELINED_ISSUE),.WRITE_RESPONSES(WRITE_ACK),.SRC_W(3),.TAG_W(5),.OUT_N(OUT_N),.DATA_W(DATA_W),.DYNAMIC_LIMIT(RUNTIME_LIMIT!=0)) twin(
+  tnca_line_axi #(.LINE_LUTRAM(0),.PIPELINED_ISSUE(PIPELINED_ISSUE),.WRITE_RESPONSES(WRITE_ACK),.SRC_W(3),.TAG_W(5),.OUT_N(OUT_N),.DATA_W(DATA_W),.DYNAMIC_LIMIT(RUNTIME_LIMIT!=0),.REQ_REG(REQ_REG)) twin(
    .clk(clk),.rst_n(rst_n),.req_valid(qv),.req_ready(r_req_ready),
    .req_addr(qa),.req_we(qwe),.req_wdata(qd),.req_src(qs),.req_tag(qt),
    .rsp_valid(r_rsp_valid),.rsp_rdata(r_rsp_rdata),.rsp_src(r_rsp_src),.rsp_tag(r_rsp_tag),
@@ -205,7 +206,7 @@ module tb_line_axi;
     if(!fault || !idle || completed!=(WRITE_ACK ? 192 : 141))$fatal(1,"stray response was not dropped");
    end
    // Refuse an invalid/unmapped line without AXI side effects or completion.
-   req_valid=1;req_addr=64'h20400;@(posedge clk);@(negedge clk);
+   req_valid=1;req_addr=64'h20400;repeat(REQ_REG?2:1)begin @(posedge clk);@(negedge clk);end
    if(!fault || req_ready || !idle)$fatal(1,"invalid address not refused");req_valid=0;
    if(MODE==5)begin
     rst_n=0;repeat(3)@(negedge clk);

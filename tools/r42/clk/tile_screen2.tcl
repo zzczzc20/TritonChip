@@ -19,6 +19,7 @@ create_project -in_memory -part xcu280-fsvh2892-2L-e
 add_files $dcp
 link_design -mode out_of_context -part xcu280-fsvh2892-2L-e -top tnca_tile
 create_clock -name clk -period $period [get_ports clk]
+if {[info exists ::env(TS_XDC_FILE)] && $::env(TS_XDC_FILE) ne ""} { read_xdc $::env(TS_XDC_FILE) }   ;# extra constraints (absolute path), e.g. the root-reset input delay of the RSTTREE screens
 set pb [create_pblock tile_pb]
 resize_pblock $pb -add SLR$slr
 add_cells_to_pblock $pb -top

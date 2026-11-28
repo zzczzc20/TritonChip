@@ -1,1 +1,1 @@
-tscr_s3_c895_p56|PERIOD=5.6|/home/vivado/r42_clk_out/tile_s3_c895_syn/synth.dcp|0|
+tscr_s3_c4095_p56|PERIOD=5.6 TS_XDC_FILE=/home/vivado/r42_clk/tools/r42/clk/ooc/rst_root35.xdc|/home/vivado/r42_clk_out/tile_s3_c4095_syn/synth.dcp|0|

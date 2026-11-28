@@ -498,6 +498,15 @@ module tnca_tile #(
     // R41 G4: the pipelined home. The serial slice above stays the instance
     // serial slice (g_slice.u_slice) is built only when it is off.
     generate if (HOME_PIPE_ON) begin : g_home_pipe
+    // R42 clk (CLKFIX[11] RSTTREE): a registered, dont_touch copy of the reset for the units below. The run-3 image drove 21k reset-started endpoints from one
+    // synchroniser flop (8.4-9.2 ns of net); every copy hangs off the incoming reset one register deep, so all copies assert and release in the same cycle
+    // (the incoming reset is the root in every module that makes copies). 0 cycles in operation; reset reaches these units one cycle later.
+    wire rst_hp_n;
+    generate if(((CLKFIX>>11)&1)!=0)begin:g_rst_loc
+     (* dont_touch="true" *) reg hp_q;
+     always @(posedge clk)begin hp_q<=rst_n;end
+     assign rst_hp_n=hp_q;
+    end else begin:g_rst_loc0 assign rst_hp_n=rst_n; end endgenerate
     (* KEEP_HIERARCHY = "yes" *) tnca_home_pipe #(
         .MAINTENANCE(CACHE_MAINTENANCE), .FULL_LINE_TAG(!(NX==2 && NY==2)),
         .ADDR_W(SA_W), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
@@ -509,7 +518,7 @@ module tnca_tile #(
         .FILL_CHAIN(HOME_LINE_PIPE >= 2 ? 1 : 0),
         .DATA_RAM(SHRINK & 3), .AUX_RAM((SHRINK >> 2) & 3), .CLKFIX(CLKFIX)
     ) u_home_pipe (
-        .clk(clk), .rst_n(rst_n), .maint_valid(cache_maint_valid), .maint_base(sl_maint_base), .maint_size(sl_maint_size), .maint_busy(), .req_valid(s_req_valid), .req_addr(sl_req_addr), .req_we(s_req_we), .req_be(s_req_be), .req_wdata(s_req_wdata), .req_src(s_req_src), .req_tag(s_req_tag), .req_amo(s_req_amo), .req_aop(s_req_aop), .req_cmp({{(CORE_DW-64){1'b0}},s_req_cmp}), .rsp_ready(s_rsp_ready), .mem_req_ready(mem_req_ready), .mem_rsp_valid(mem_rsp_valid), .mem_rsp_tag(mem_rsp_tag), .mem_rsp_rdata(mem_rsp_rdata), .perf_target_full(), .dco_owner_epoch(dco_owner_epoch), .dco_cfg(dco_cfg), .dco_t_valid(dco_t_valid), .dco_t_base(dco_t_base), .dco_t_end(dco_t_end), .dco_t_size(dco_t_size), .dco_t_bypass(dco_t_bypass), .dco_t_lsb(dco_t_lsb), .dco_dead_valid(dco_dead_valid), .dco_dead_id(dco_dead_id), .dco_slow(dco_slow), .tmu_wr_ready(tmu_wr_ready), .tmu_rd_data(tmu_rd_data), .tmu_tl_ready(tmu_tl_ready),
+        .clk(clk), .rst_n(rst_hp_n), .maint_valid(cache_maint_valid), .maint_base(sl_maint_base), .maint_size(sl_maint_size), .maint_busy(), .req_valid(s_req_valid), .req_addr(sl_req_addr), .req_we(s_req_we), .req_be(s_req_be), .req_wdata(s_req_wdata), .req_src(s_req_src), .req_tag(s_req_tag), .req_amo(s_req_amo), .req_aop(s_req_aop), .req_cmp({{(CORE_DW-64){1'b0}},s_req_cmp}), .rsp_ready(s_rsp_ready), .mem_req_ready(mem_req_ready), .mem_rsp_valid(mem_rsp_valid), .mem_rsp_tag(mem_rsp_tag), .mem_rsp_rdata(mem_rsp_rdata), .perf_target_full(), .dco_owner_epoch(dco_owner_epoch), .dco_cfg(dco_cfg), .dco_t_valid(dco_t_valid), .dco_t_base(dco_t_base), .dco_t_end(dco_t_end), .dco_t_size(dco_t_size), .dco_t_bypass(dco_t_bypass), .dco_t_lsb(dco_t_lsb), .dco_dead_valid(dco_dead_valid), .dco_dead_id(dco_dead_id), .dco_slow(dco_slow), .tmu_wr_ready(tmu_wr_ready), .tmu_rd_data(tmu_rd_data), .tmu_tl_ready(tmu_tl_ready),
         .maint_ready(hp_maint_ready), .maint_done(hp_maint_done), .req_ready(hp_req_ready), .rsp_valid(hp_rsp_valid), .rsp_src(hp_rsp_src), .rsp_tag(hp_rsp_tag), .rsp_rdata(hp_rsp_rdata), .mem_req_valid(hp_mem_req_valid), .mem_req_addr(hp_mem_req_addr), .mem_req_we(hp_mem_req_we), .mem_req_wdata(hp_mem_req_wdata), .mem_req_tag(hp_mem_req_tag), .perf_hit(hp_perf_hit), .perf_miss(hp_perf_miss), .perf_merge(hp_perf_merge), .perf_mshr_full(hp_perf_mshr_full), .perf_wb(hp_perf_wb), .perf_hit_past_block(hp_perf_hit_past_block), .tmu_wr_valid(hp_tmu_wr_valid), .tmu_wr_off(hp_tmu_wr_off), .tmu_wr_data(hp_tmu_wr_data), .tmu_wr_src(hp_tmu_wr_src), .tmu_rd_off(hp_tmu_rd_off), .tmu_tl_valid(hp_tmu_tl_valid), .tmu_tl_addr(hp_tmu_tl_addr), .tmu_tl_drop(hp_tmu_tl_drop), .perf_bypass(hp_perf_bypass), .perf_evict(hp_perf_evict), .perf_dead_evict(hp_perf_dead_evict), .perf_gear(hp_perf_gear)
     );
     end endgenerate

@@ -224,8 +224,15 @@ module tnca_top #(
             assign m_rsp_valid[h]=outlet_rsp_valid[h];assign m_rsp_tag[h*MSHR_W+:MSHR_W]=outlet_rsp_tag[h*MSHR_W+:MSHR_W];
             assign m_rsp_rdata[h*LINE_BITS+:LINE_BITS]=outlet_rsp_rdata[h*LINE_BITS+:LINE_BITS];
         end else begin:g_pipeline
+            // R42 clk (CLKFIX[11] RSTTREE): registered, dont_touch copies of the reset (one register deep, like every other copy; see tnca_core).
+            wire rst_lk_n;
+            generate if(((CLKFIX>>11)&1)!=0)begin:g_rst_loc
+             (* dont_touch="true" *) reg lk_q;
+             always @(posedge clk)begin lk_q<=rst_n;end
+             assign rst_lk_n=lk_q;
+            end else begin:g_rst_loc0 assign rst_lk_n=rst_n; end endgenerate
             tnca_line_link #(.SRC_W(MEM_SRC_W),.TAG_W(MSHR_W),.STAGES(MEM_HOME_STAGES)) link(
-                .clk(clk),.rst_n(rst_n),.idle(home_link_idle[h]),
+                .clk(clk),.rst_n(rst_lk_n),.idle(home_link_idle[h]),
                 .s_req_valid(m_req_valid[h]),.s_req_ready(m_req_ready[h]),.s_req_addr(m_req_addr[h*64+:64]),
                 .s_req_we(m_req_we[h]),.s_req_wdata(m_req_wdata[h*LINE_BITS+:LINE_BITS]),.s_req_src(HOME_SRC),.s_req_tag(m_req_tag[h*MSHR_W+:MSHR_W]),
                 .s_rsp_valid(m_rsp_valid[h]),.s_rsp_rdata(m_rsp_rdata[h*LINE_BITS+:LINE_BITS]),.s_rsp_src(),.s_rsp_tag(m_rsp_tag[h*MSHR_W+:MSHR_W]),
@@ -417,6 +424,13 @@ module tnca_top #(
         assign dco_cfg[dco_copy*76+:76]={d_lb[dco_copy*16+:16],d_ub[dco_copy*16+:16],d_win[dco_copy*16+:16],
             d_ginit[dco_copy*4+:4],6'd0,d_lsb[dco_copy*6+:6],d_bbits[dco_copy*4+:4],d_policy[dco_copy*8+:8]};
     end endgenerate
+    // R42 clk (CLKFIX[11] RSTTREE): registered, dont_touch copies of the reset (one register deep, like every other copy; see tnca_core).
+    wire rst_tmu_n;
+    generate if(((CLKFIX>>11)&1)!=0)begin:g_rst_loc
+     (* dont_touch="true" *) reg tmu_q;
+     always @(posedge clk)begin tmu_q<=rst_n;end
+     assign rst_tmu_n=tmu_q;
+    end else begin:g_rst_loc0 assign rst_tmu_n=rst_n; end endgenerate
     generate if(DCO_LOCAL_REPLICAS)begin:g_local_tmu
     tnca_replicated_tmu #(
         .TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES), .REGISTER_WRITES(DCO_REGISTER_WRITES),
@@ -424,7 +438,7 @@ module tnca_top #(
         .TENSORS(DCO_T), .T_W(DCO_T_W), .DEAD(DCO_DEAD), .DEAD_W(4),
         .ID_W(DCO_ID_W)
     ) u_tmu (
-        .clk(clk), .rst_n(rst_n),
+        .clk(clk), .rst_n(rst_tmu_n),
         .mw_valid(tm_wv), .mw_ready(tm_wr), .mw_off(tm_woff), .mw_data(tm_wdata),
         .mw_src(tm_wsrc), .mr_off(tm_roff), .mr_data(tm_rdata),
         .tl_valid(tm_tv), .tl_ready(tm_tr), .tl_addr(tm_taddr), .tl_drop(tm_drop),
@@ -442,7 +456,7 @@ module tnca_top #(
         .TENSORS(DCO_T), .T_W(DCO_T_W), .DEAD(DCO_DEAD), .DEAD_W(4),
         .ID_W(DCO_ID_W)
     ) u_tmu (
-        .clk(clk), .rst_n(rst_n),
+        .clk(clk), .rst_n(rst_tmu_n),
         .mw_valid(tm_wv), .mw_ready(tm_wr), .mw_off(tm_woff), .mw_data(tm_wdata),
         .mw_src(tm_wsrc), .mr_off(tm_roff), .mr_data(tm_rdata),
         .tl_valid(tm_tv), .tl_ready(tm_tr), .tl_addr(tm_taddr), .tl_drop(tm_drop),
@@ -582,7 +596,7 @@ module tnca_top #(
     tnca_mesh #(
         .NX(NX), .NY(NY), .XW(XW), .YW(YW),
         .PAYLOAD_W(NOC_PAYLOAD_W), .NV(NV),
-        .DEPTH(NOC_DEPTH), .AW(NOC_AW),.LINK_STAGES(NOC_LINK_STAGES)
+        .DEPTH(NOC_DEPTH), .AW(NOC_AW),.LINK_STAGES(NOC_LINK_STAGES),.RST_LOC((CLKFIX>>11)&1)
     ) u_mesh (
         .clk(clk), .rst_n(rst_n),
         .l_in_valid(li_valid), .l_in_ready(li_ready), .l_in_flit(li_flit),

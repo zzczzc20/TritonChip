@@ -109,11 +109,22 @@ module tnca_multicore_axi #(
  wire shell_cmd_ready,shell_done_valid,shell_all_idle,shell_busy;
  wire [3:0] shell_done_status;
  wire memory_drained=(&axi_idle) && (&link_idle);
- assign cmd_ready=shell_cmd_ready && memory_drained;
- assign done_valid=shell_done_valid && memory_drained && shell_all_idle;
+ // R42 clk (CLKFIX[13] IDLE_SRC): the outlet adapters' `active` registers reached the dispatch counters' enables (launch/done handshake) through
+ // memory_drained in 8 levels / 7.3 ns of net in the run-3 image. The registered copies below cut that: md_q is memory_drained one cycle ago, idle_q is
+ // (shell all-idle AND memory drained) one cycle ago. done is only given on idle_q: when everything was empty in the cycle before, nothing can have been
+ // pushed toward memory in the cycle in between, so the one-cycle-old value never reports done with a request in flight. +1 cycle per launch and per done.
+ wire idle_src=((CLKFIX>>13)&1)!=0;
+ reg md_q,idle_q;
+ always @(posedge clk)begin
+  if(!rst_n)begin md_q<=0;idle_q<=0;end
+  else begin md_q<=memory_drained;idle_q<=memory_drained && shell_all_idle;end
+ end
+ wire md_eff=idle_src ? md_q : memory_drained;
+ assign cmd_ready=shell_cmd_ready && md_eff;
+ assign done_valid=idle_src ? (shell_done_valid && idle_q) : (shell_done_valid && memory_drained && shell_all_idle);
  assign done_status=(|axi_fault) ? 4'd1 : shell_done_status;
- assign all_idle=shell_all_idle && memory_drained;
- assign busy=shell_busy || !memory_drained;
+ assign all_idle=idle_src ? idle_q : (shell_all_idle && memory_drained);
+ assign busy=shell_busy || !md_eff;
  tnca_multicore_shell #(
   .CACHE_MAINTENANCE(CACHE_MAINTENANCE), .DCO_REGISTERED_RANGES(DCO_REGISTERED_RANGES), .NUCA_REGISTER_VICTIM_SELECT(NUCA_REGISTER_VICTIM_SELECT), .NUCA_CACHE_DATA_PIPELINE(NUCA_CACHE_DATA_PIPELINE), .NUCA_SHARED_DATA_READ(NUCA_SHARED_DATA_READ), .NUCA_REGISTER_VICTIM_RANK(NUCA_REGISTER_VICTIM_RANK), .DCO_TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES), .DCO_REGISTER_WRITES(DCO_REGISTER_WRITES), .DCO_LOCAL_REPLICAS(DCO_LOCAL_REPLICAS),
   .NX(NX),
@@ -158,7 +169,7 @@ module tnca_multicore_axi #(
   .cache_maint_valid(cache_maint_valid),.cache_maint_base(cache_maint_base),.cache_maint_size(cache_maint_size),
   .cache_maint_memory_drained(memory_drained),.cache_maint_ready(cache_maint_ready),.cache_maint_done(cache_maint_done),
   .platform_fault(platform_fault),
-  .cmd_valid(cmd_valid && memory_drained),
+  .cmd_valid(cmd_valid && md_eff),
   .cmd_ready(shell_cmd_ready),
   .cmd_id(cmd_id),
   .cmd_pc(cmd_pc),
@@ -174,7 +185,7 @@ module tnca_multicore_axi #(
   .cmd_slice(cmd_slice),
   .cmd_vbase(cmd_vbase),
   .done_valid(shell_done_valid),
-  .done_ready(done_ready && memory_drained && shell_all_idle),
+  .done_ready(done_ready && (idle_src ? idle_q : (memory_drained && shell_all_idle))),
   .done_status(shell_done_status),
   .done_id(done_id),
   .done_cycles(done_cycles),
@@ -279,6 +290,15 @@ module tnca_multicore_axi #(
  end endgenerate
  generate for(genvar p=0;p<MEM_PORTS;p=p+1)begin:g_outlet
   wire qv,qr,qwe,rv;wire [63:0] qa;wire [511:0] qd,rd;
+  // R42 clk (CLKFIX[11] RSTTREE): registered, dont_touch reset copy for this outlet's adapter (its slot arrays took the reset over 8.6 ns of net).
+  wire rst_ad_n;
+  if(((CLKFIX>>11)&1)!=0)begin:g_rst_loc
+   (* dont_touch="true" *) reg ad_q;
+   always @(posedge clk) ad_q<=rst_n;
+   assign rst_ad_n=ad_q;
+  end else begin:g_rst_loc0
+   assign rst_ad_n=rst_n;
+  end
   wire [SRC_W-1:0] qs,rs;wire [MEM_TAG_W-1:0] qt,rt;
   tnca_line_link #(.SRC_W(SRC_W),.TAG_W(MEM_TAG_W),.STAGES(LINK_STAGES)) link(
    .clk(clk),.rst_n(rst_n),.idle(link_idle[p]),
@@ -288,8 +308,8 @@ module tnca_multicore_axi #(
    .s_rsp_valid(mode_rsp_valid[p]),.s_rsp_rdata(mode_rsp_rdata[p*512+:512]),.s_rsp_src(mode_rsp_src[p*SRC_W+:SRC_W]),.s_rsp_tag(mode_rsp_tag[p*MEM_TAG_W+:MEM_TAG_W]),
    .m_req_valid(qv),.m_req_ready(qr),.m_req_addr(qa),.m_req_we(qwe),.m_req_wdata(qd),.m_req_src(qs),.m_req_tag(qt),
    .m_rsp_valid(rv),.m_rsp_rdata(rd),.m_rsp_src(rs),.m_rsp_tag(rt));
-  tnca_line_axi #(.HBM_STRIPED(HBM_STRIPED),.PIPELINED_ISSUE(AXI_PIPELINED_ISSUE),.LINE_LUTRAM(AXI_LINE_LUTRAM),.HAZARD_ADDR_W(PHYS_ADDR_W),.SRC_W(SRC_W),.TAG_W(MEM_TAG_W),.DATA_W(AXI_DATA_W),.OUT_N(AXI_OUT_N),.DYNAMIC_LIMIT(MEMORY_CONTROLS),.ID_W(AXI_ID_W),.MEM_BASE(MEM_BASE)) adapter(
-   .clk(clk),.rst_n(rst_n),.req_valid(qv),.req_ready(qr),.req_addr(qa),.req_we(qwe),.req_wdata(qd),.req_src(qs),.req_tag(qt),
+  tnca_line_axi #(.HBM_STRIPED(HBM_STRIPED),.PIPELINED_ISSUE(AXI_PIPELINED_ISSUE),.LINE_LUTRAM(AXI_LINE_LUTRAM),.HAZARD_ADDR_W(PHYS_ADDR_W),.SRC_W(SRC_W),.TAG_W(MEM_TAG_W),.DATA_W(AXI_DATA_W),.OUT_N(AXI_OUT_N),.DYNAMIC_LIMIT(MEMORY_CONTROLS),.ID_W(AXI_ID_W),.MEM_BASE(MEM_BASE),.REQ_REG((CLKFIX>>12)&1)) adapter(
+   .clk(clk),.rst_n(rst_ad_n),.req_valid(qv),.req_ready(qr),.req_addr(qa),.req_we(qwe),.req_wdata(qd),.req_src(qs),.req_tag(qt),
    .rsp_valid(rv),.rsp_rdata(rd),.rsp_src(rs),.rsp_tag(rt),
    .admission_limit(memory_outstanding),.axi_base(axi_base[p*64+:64]),.axi_size(axi_size[p*64+:64]),.fault(adapter_fault[p]),.idle(axi_idle[p]),
    .read_lines(axi_read_lines[p*64+:64]),.write_lines(axi_write_lines[p*64+:64]),.read_beats(axi_read_beats[p*64+:64]),.write_beats(axi_write_beats[p*64+:64]),

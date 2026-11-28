@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """NUCA line-to-AXI geometry, concurrency, ordering and fault matrix."""
 from pathlib import Path
+import os
 import subprocess
 import sys
 import tempfile
@@ -32,7 +33,7 @@ def main():
                 "iverilog", "-g2012", "-s", "tb_line_axi",
                 f"-Ptb_line_axi.DATA_W={width}",
                 f"-Ptb_line_axi.PIPELINED_ISSUE={pipeline}",
-                f"-Ptb_line_axi.RUNTIME_LIMIT={limit}",
+                f"-Ptb_line_axi.RUNTIME_LIMIT={limit}", f"-Ptb_line_axi.REQ_REG={os.environ.get('REQ_REG', '0')}",
                 f"-Ptb_line_axi.WRITE_ACK={write_ack}", f"-Ptb_line_axi.LINE_LUTRAM={lutram}", f"-Ptb_line_axi.STAGES={stages}", f"-Ptb_line_axi.OUT_N={slots}", f"-Ptb_line_axi.MODE={mode}",
                 "-o", output, "rtl/fpga/tnca_line_axi.v", "tb/fpga/tb_line_axi.v", "rtl/common/tnca_line_link.v", "rtl/common/tnca_fifo.v",
             ], cwd=ROOT, check=True, timeout=60)
@@ -44,7 +45,7 @@ def main():
                     subprocess.run([
                         "iverilog", "-g2012", "-s", "tb_line_axi_stream",
                         f"-Ptb_line_axi_stream.PIPELINED_ISSUE={pipeline}",
-                        f"-Ptb_line_axi_stream.WRITE={write}",
+                        f"-Ptb_line_axi_stream.WRITE={write}", f"-Ptb_line_axi_stream.REQ_REG={os.environ.get('REQ_REG', '0')}",
                         f"-Ptb_line_axi_stream.OUT_N={slots}", "-o", output,
                         "rtl/fpga/tnca_line_axi.v", "tb/fpga/tb_line_axi_stream.v",
                     ], cwd=ROOT, check=True, timeout=60)

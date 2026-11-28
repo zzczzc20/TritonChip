@@ -1,0 +1,1 @@
+tscr_s3_c383_p56|PERIOD=5.6|/home/vivado/r42_clk_out/tile_s3_c383_syn/synth.dcp|0|

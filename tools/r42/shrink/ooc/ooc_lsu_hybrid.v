@@ -11,7 +11,8 @@ module ooc_lsu_hybrid #(
     parameter BEAT_W = 4,
     parameter REQ_REG = 1,
     parameter SLOW_UNITS = 2,
-    parameter PICK_REG = 0
+    parameter PICK_REG = 0,
+    parameter FREE_LOAD = 0
 ) (
     input wire clk,
     input wire  i_rst_n,
@@ -134,7 +135,8 @@ module ooc_lsu_hybrid #(
         .BEAT_W(BEAT_W),
         .REQ_REG(REQ_REG),
         .SLOW_UNITS(SLOW_UNITS),
-        .PICK_REG(PICK_REG)
+        .PICK_REG(PICK_REG),
+        .FREE_LOAD(FREE_LOAD)
     ) dut (
         .clk(clk),
         .rst_n(r_rst_n),

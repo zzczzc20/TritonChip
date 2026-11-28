@@ -1,0 +1,97 @@
+== g_home_pipe.u_home_pipe: endpoints with routed path > 6.20 ns: 852 in 60 families
+    192  max 7.00  lv 18  net 75%  rq_addr_reg[][] -> g_tag[].read_tag_reg[]
+     71  max 6.85  lv 16  net 75%  wbq_addr_reg[][] -> ms_state_reg[][]
+     60  max 6.86  lv 15  net 78%  fu_t_reg_rep[] -> data_mem_uram_reg_uram_6
+     53  max 6.68  lv 15  net 79%  fu_t_reg_rep[] -> dbyp_line_reg[]
+     52  max 6.78  lv 11  net 80%  ms_state_reg[][] -> ms_state_reg[][]
+     44  max 6.94  lv 14  net 63%  data_mem_uram_reg_uram_2 -> data_mem_uram_reg_uram_2
+     39  max 6.83  lv 13  net 63%  data_mem_uram_reg_uram_1 -> data_mem_uram_reg_uram_1
+     32  max 6.78  lv 12  net 80%  fu_t_reg_rep[] -> data_mem_uram_reg_uram_4
+     25  max 6.78  lv 14  net 64%  data_mem_uram_reg_uram_2 -> data_mem_uram_reg_uram_3
+     23  max 7.01  lv 14  net 67%  data_mem_uram_reg_uram_5 -> data_mem_uram_reg_uram_5
+     23  max 6.57  lv 14  net 67%  data_mem_uram_reg_uram_5 -> dbyp_line_reg[]
+     22  max 6.97  lv 13  net 69%  data_mem_uram_reg_uram_3 -> data_mem_uram_reg_uram_3
+== u_core/(core own): endpoints with routed path > 6.20 ns: 953 in 42 families
+    248  max 6.67  lv 22  net 75%  x_sd_q_reg[] -> pc_reg[][]
+    196  max 6.97  lv 16  net 81%  x_imm_reg[] -> w_vdata_reg[]
+    112  max 6.43  lv 17  net 78%  x_sd_q_reg[] -> f_pc_reg[][]
+    109  max 6.94  lv 14  net 78%  g_c3.q_reg[] -> w_vdata_reg[]
+     58  max 6.93  lv 13  net 84%  x_sa_q_reg[] -> w_vdata_reg[]
+     50  max 6.41  lv 17  net 78%  x_sd_q_reg[] -> f_detail_reg[][]
+     32  max 6.47  lv 22  net 74%  x_sd_q_reg[] -> sb_v_reg[]
+     21  max 6.58  lv 18  net 77%  x_sd_q_reg[] -> fault_detail_reg[]
+     16  max 6.29  lv 17  net 77%  x_sd_q_reg[] -> fault_pc_reg[]
+     14  max 6.80  lv 13  net 82%  x_sa_fw_reg -> w_vdata_reg[]
+     11  max 6.77  lv  8  net 86%  q_gt_reg[] -> w_sdata_reg[]
+      9  max 6.66  lv 19  net 77%  t_i1_reg[] -> g_vrf_banked.pf_tag_reg[]
+== u_core/g_lsu_hybrid.u_lsu: endpoints with routed path > 6.20 ns: 1128 in 7 families
+    590  max 6.46  lv 16  net 77%  g_lsu_hybrid.command_reg[] -> lane_addr_reg[][]
+    488  max 6.55  lv 16  net 77%  g_lsu_hybrid.command_reg[] -> lane_wdata_reg[][]
+     32  max 6.40  lv 18  net 74%  g_lsu_hybrid.command_reg[] -> lane_rdata_reg[][]
+      9  max 6.38  lv 14  net 75%  g_pick_reg.pk_i_reg[] -> g_pick_reg.pk_i_reg[]
+      5  max 6.31  lv 16  net 77%  g_lsu_hybrid.command_reg[] -> r_cmp_reg[]
+      3  max 6.29  lv 16  net 77%  g_lsu_hybrid.command_reg[] -> nbytes_reg[]
+      1  max 6.29  lv 16  net 77%  g_lsu_hybrid.command_reg[] -> r_size_reg[]
+== u_core/g_vrf_banked.u_vrf: endpoints with routed path > 6.20 ns: 273 in 12 families
+     64  max 6.95  lv 22  net 78%  t_i1_reg[] -> s1_vld_reg[]
+     59  max 6.54  lv 20  net 76%  t_i1_reg[] -> s1_byp_mask_reg[]
+     24  max 6.85  lv 18  net 80%  t_i1_reg[] -> mem_reg_3
+     24  max 6.77  lv 18  net 80%  t_i1_reg[] -> mem_reg_6
+     22  max 6.83  lv 18  net 80%  t_i1_reg[] -> mem_reg_5
+     22  max 6.76  lv 18  net 80%  t_i1_reg[] -> mem_reg_7
+     22  max 6.76  lv 18  net 80%  t_i1_reg[] -> mem_reg_2
+     12  max 6.61  lv 18  net 79%  t_i1_reg[] -> mem_reg_0
+     10  max 6.57  lv 18  net 79%  t_i1_reg[] -> mem_reg_4
+      6  max 6.61  lv 18  net 78%  t_i1_reg[] -> rr_ptr_reg[]
+      5  max 6.42  lv 18  net 79%  t_i1_reg[] -> mem_reg_1
+      3  max 6.23  lv 18  net 76%  t_i1_reg[] -> s1_sel_reg[]
+== u_core/u_mtx: endpoints with routed path > 6.20 ns: 1443 in 18 families
+    487  max 6.89  lv 21  net 48%  g_in_reg.a_q_reg[] -> g_c0.q_reg[]
+    221  max 6.93  lv 23  net 66%  g_c0.q_reg[] -> g_c2.q_reg[]
+    162  max 6.93  lv 14  net 82%  x_sb_q_reg[] -> g_in_reg.a_q_reg[]
+     59  max 6.52  lv  3  net 93%  g_seq0.direct_w_reg -> valid_reg[][]
+     56  max 6.92  lv 15  net 78%  g_seq0.mm_reg[] -> g_in_reg.a_q_reg[]
+     53  max 6.52  lv  6  net 91%  g_seq0.tg_row_reg[][] -> valid_reg[][]
+     50  max 6.94  lv 15  net 82%  x_sb_fw_reg -> g_in_reg.a_q_reg[]
+     47  max 6.55  lv  3  net 95%  g_seq0.tg_slot_reg[][] -> valid_reg[][]
+     44  max 6.69  lv 12  net 81%  g_c4.q_reg[] -> RAMA
+     41  max 6.55  lv 12  net 82%  g_c4.q_reg[] -> RAMD
+     39  max 6.53  lv 12  net 82%  g_c4.q_reg[] -> RAMF
+     38  max 6.62  lv 12  net 82%  g_c4.q_reg[] -> RAMC
+== u_core/u_vfpu: endpoints with routed path > 6.20 ns: 1478 in 15 families
+    654  max 6.93  lv 17  net 61%  x_fpctl_reg[] -> g_c1.q_reg[]
+    286  max 6.93  lv 17  net 52%  red_busy_reg -> g_c1.q_reg[]
+    165  max 6.97  lv 21  net 64%  cvt_x_reg[][] -> dly_v_reg[][]
+    117  max 6.88  lv 17  net 51%  g_vrf_banked.x_vb_f_reg[] -> g_c1.q_reg[]
+     69  max 6.94  lv 20  net 66%  cvt_mod_reg[] -> dly_v_reg[][]
+     60  max 6.70  lv 15  net 52%  g_vrf_banked.x_va_f_reg[] -> g_c1.q_reg[]
+     39  max 6.58  lv 10  net 80%  busy_reg -> DSP_A_B_DATA_INST
+     24  max 6.49  lv 14  net 80%  busy_reg -> p2_i_reg[]_srl3___p2_eq_361_reg_r
+     17  max 6.29  lv  4  net 93%  x_func_reg[] -> src_reg[][]
+     16  max 6.67  lv 10  net 80%  busy_reg -> p0_bit_slice_606_reg_rep
+     15  max 6.62  lv  5  net 89%  x_func_reg[] -> dly_v_reg[][]
+     12  max 6.40  lv 15  net 75%  cvt_fn_reg[] -> dly_v_reg[][]
+== u_core/u_bar: endpoints with routed path > 6.20 ns: 623 in 9 families
+    412  max 6.79  lv 20  net 76%  x_sd_q_reg[] -> done_epoch_reg[][]
+     83  max 6.45  lv 17  net 79%  x_sd_q_reg[] -> cur_epoch_reg[][]
+     63  max 6.82  lv 19  net 77%  x_sd_q_reg[] -> n_ops_reg[][]
+     47  max 6.55  lv 18  net 78%  x_sd_q_reg[] -> n_arrive_reg[][]
+      6  max 6.83  lv 21  net 76%  x_sd_q_reg[] -> fault_bar_reg[]
+      4  max 6.89  lv 23  net 72%  x_sd_q_reg[] -> slp_v_reg[]
+      4  max 6.82  lv 22  net 72%  x_sd_q_reg[] -> wake_reg[]
+      3  max 6.54  lv 20  net 76%  x_sd_q_reg[] -> err_reg[]
+      1  max 6.64  lv 21  net 76%  x_sd_q_reg[] -> fault_reg
+== u_core/u_txf: endpoints with routed path > 6.20 ns: 296 in 58 families
+    100  max 6.61  lv 17  net 77%  t_ps_reg[] -> st_prev_reg[]
+     64  max 6.57  lv 15  net 81%  t_ps_reg[] -> g_line_port.xf_e_reg[][]
+     28  max 6.37  lv 16  net 76%  t_ps_reg[] -> t_flat_reg[]
+     20  max 6.50  lv 18  net 50%  dl_buf_reg[][] -> dl_boxel_reg[]
+     12  max 6.21  lv 16  net 71%  t_ps_reg[] -> t_P0_reg[]
+     10  max 6.66  lv 21  net 75%  t_b3_reg[] -> cm_cnt_reg[][]
+      5  max 6.38  lv 19  net 48%  t_unit_reg[] -> vw_lane_en_reg[]
+      4  max 6.21  lv 16  net 77%  t_ps_reg[] -> t_P1_reg[]
+      3  max 6.31  lv 19  net 76%  x_sd_q_reg[] -> st_reg[]
+      2  max 6.20  lv 16  net 76%  t_ps_reg[] -> t_ps_reg[]
+      1  max 6.59  lv 18  net 51%  dl_buf_reg[][] -> box_mul_return2_i_4_psdsp_1
+      1  max 6.55  lv 18  net 51%  dl_buf_reg[][] -> box_mul_return2_i_4_psdsp
+== u_core/u_valu: endpoints with routed path > 6.20 ns: 0 in 0 families

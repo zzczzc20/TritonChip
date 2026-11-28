@@ -1,0 +1,110 @@
+== gU/cmp_core-r42_c511.txt
+ref: 136 runs, fail 0, ['EXIT=0'];  cand: 136 runs, fail 0, ['EXIT=0'];  common 136
+differing programs 0; geomean cand/ref cycles 1.0000
+== gU/cmp_core-r42_c511x127.txt
+ref: 136 runs, fail 0, ['EXIT=0'];  cand: 136 runs, fail 0, ['EXIT=0'];  common 136
+  t03_fp                      r42                   3101    3275  1.056
+  t03_fp                      r42, MTX_VRF_REG 0    3101    3275  1.056
+  t03_fp                      r42, ooo mem          3205    3380  1.055
+  t11_matrix                  r42                   3344    3374  1.009
+  t11_matrix                  r42, MTX_VRF_REG 0    3310    3340  1.009
+  t11_matrix                  r42, ooo mem          3782    3786  1.001
+  t12_tensor                  r42                   1595    1603  1.005
+  t12_tensor                  r42, MTX_VRF_REG 0    1575    1583  1.005
+  t14_caps_dp                 r42                   1008    1019  1.011
+  t14_caps_dp                 r42, MTX_VRF_REG 0    1004    1015  1.011
+  t14_caps_dp                 r42, ooo mem          1475    1483  1.005
+  t16_vecadd                  r42                   1029    1038  1.009
+  t16_vecadd                  r42, MTX_VRF_REG 0    1029    1038  1.009
+  t20_sfu                     r42                   1251    1288  1.030
+  t20_sfu                     r42, MTX_VRF_REG 0    1251    1288  1.030
+  t20_sfu                     r42, ooo mem          1404    1435  1.022
+  t21_cvt                     r42                   1954    2004  1.026
+  t21_cvt                     r42, MTX_VRF_REG 0    1954    2004  1.026
+  t21_cvt                     r42, ooo mem          2894    3002  1.037
+  t25_mmasf                   r42                   1173    1177  1.003
+  t25_mmasf                   r42, MTX_VRF_REG 0    1153    1157  1.003
+  t25_mmasf                   r42, ooo mem          1455    1459  1.003
+  t29_vrfbank                 r42                    486     509  1.047
+  t29_vrfbank                 r42, MTX_VRF_REG 0     476     499  1.048
+  t29_vrfbank                 r42, ooo mem           515     527  1.023
+  t35_tdesc_fpad2             r42                    131     134  1.023
+  t35_tdesc_fpad2             r42, MTX_VRF_REG 0     131     134  1.023
+  t35_tdesc_fpad2             r42, ooo mem           440     443  1.007
+  t39_freeze_drop             r42                   3634    4209  1.158
+  t39_freeze_drop             r42, MTX_VRF_REG 0    3634    4209  1.158
+  t39_freeze_drop             r42, ooo mem          4269    4724  1.107
+  t39_isolate                 r42                   2612    2528  0.968
+  t39_isolate                 r42, MTX_VRF_REG 0    2612    2528  0.968
+  t39_isolate                 r42, ooo mem          2583    2515  0.974
+  t39_pair                    r42                   1747    1763  1.009
+  t39_pair                    r42, MTX_VRF_REG 0    1707    1723  1.009
+  t39_pair                    r42, ooo mem          2596    2600  1.002
+  t39_slice                   r42                   2370    2382  1.005
+  t39_slice                   r42, MTX_VRF_REG 0    2337    2349  1.005
+  t39_slice                   r42, ooo mem          4010    4022  1.003
+  t39_switch                  r42                   3607    3676  1.019
+  t39_switch                  r42, MTX_VRF_REG 0    3607    3676  1.019
+  t39_switch                  r42, ooo mem          4488    4604  1.026
+  t40_f2i                     r42                   3011    3043  1.011
+  t40_f2i                     r42, MTX_VRF_REG 0    3011    3043  1.011
+  t40_f2i                     r42, ooo mem          4112    4137  1.006
+  t41_boundary                r42                    914     926  1.013
+  t41_boundary                r42, MTX_VRF_REG 0     914     926  1.013
+  t41_mmadp                   r42                   9852    9920  1.007
+  t41_mmadp                   r42, MTX_VRF_REG 0    9690    9758  1.007
+  t41_mmadp                   r42, ooo mem         11888   11965  1.006
+  t42_mmaovl                  r42                   4945    4970  1.005
+  t42_mmaovl                  r42, MTX_VRF_REG 0    4830    4855  1.005
+  t42_mmaovl                  r42, ooo mem          5443    5468  1.005
+  t42_mmaovl                  run2: MTX_PIPE 0      6156    6253  1.016
+differing programs 55; geomean cand/ref cycles 1.0080
+== gU/cmp_core-run2_c511.txt
+ref: 88 runs, fail 0, ['EXIT=0'];  cand: 88 runs, fail 0, ['EXIT=0'];  common 88
+differing programs 0; geomean cand/ref cycles 1.0000
+== gU/cmp_core-run2_c511x127.txt
+ref: 88 runs, fail 0, ['EXIT=0'];  cand: 88 runs, fail 0, ['EXIT=0'];  common 88
+  t03_fp                      run2                  3101    3275  1.056
+  t03_fp                      run2, ooo mem         3205    3380  1.055
+  t11_matrix                  run2                  3641    3671  1.008
+  t11_matrix                  run2, ooo mem         4031    4055  1.006
+  t12_tensor                  run2                  1717    1725  1.005
+  t14_caps_dp                 run2                  1086    1097  1.010
+  t14_caps_dp                 run2, ooo mem         1553    1561  1.005
+  t16_vecadd                  run2                  1029    1038  1.009
+  t20_sfu                     run2                  1251    1288  1.030
+  t20_sfu                     run2, ooo mem         1404    1435  1.022
+  t21_cvt                     run2                  1954    2004  1.026
+  t21_cvt                     run2, ooo mem         2894    3002  1.037
+  t25_mmasf                   run2                  1292    1296  1.003
+  t25_mmasf                   run2, ooo mem         1554    1558  1.003
+  t29_vrfbank                 run2                   547     570  1.042
+  t29_vrfbank                 run2, ooo mem          576     588  1.021
+  t35_tdesc_fpad2             run2                   131     134  1.023
+  t35_tdesc_fpad2             run2, ooo mem          440     443  1.007
+  t39_freeze_drop             run2                  3634    4209  1.158
+  t39_freeze_drop             run2, ooo mem         4269    4724  1.107
+  t39_isolate                 run2                  2612    2528  0.968
+  t39_isolate                 run2, ooo mem         2583    2515  0.974
+  t39_pair                    run2                  1991    2007  1.008
+  t39_pair                    run2, ooo mem         2783    2799  1.006
+  t39_slice                   run2                  2620    2636  1.006
+  t39_slice                   run2, ooo mem         4261    4277  1.004
+  t39_switch                  run2                  3607    3676  1.019
+  t39_switch                  run2, ooo mem         4488    4604  1.026
+  t40_f2i                     run2                  3011    3043  1.011
+  t40_f2i                     run2, ooo mem         4112    4137  1.006
+  t41_boundary                run2                   914     926  1.013
+  t41_mmadp                   run2                 12437   12505  1.005
+  t41_mmadp                   run2, ooo mem        14378   14414  1.003
+differing programs 33; geomean cand/ref cycles 1.0075
+== gU/done.txt
+UNION_GATES_DONE
+== gU/identity_core-r42.txt
+ref: 136 runs, fail 0, ['EXIT=0'];  cand: 136 runs, fail 0, ['EXIT=0'];  common 136
+differing programs 0; geomean cand/ref cycles 1.0000
+identity exit=0
+== gU/identity_core-run2.txt
+ref: 88 runs, fail 0, ['EXIT=0'];  cand: 88 runs, fail 0, ['EXIT=0'];  common 88
+differing programs 0; geomean cand/ref cycles 1.0000
+identity exit=0

@@ -236,7 +236,11 @@ module tnca_vector_fpu #(
     reg [5:0]      cvt_mod;
     reg            cvt_fmt;       // delay stage 0 holds a vf.cvt.fmt
     reg  [3:0]     cvt_fmt_p;     // R42 clk2 CVTP: cvt_fmt, delayed with the pipelined converter's four registers
-    always @(posedge clk) cvt_fmt_p <= {cvt_fmt_p[2:0], cvt_fmt};
+    reg            cvt_int_p1;    // R42 clk2 CVTP: cvt_int one cycle later (the two-stage int converter's result is valid)
+    always @(posedge clk) begin
+        cvt_fmt_p  <= {cvt_fmt_p[2:0], cvt_fmt};
+        cvt_int_p1 <= cvt_int;
+    end
     always @(posedge clk) begin
         for (i = 0; i < VLEN; i = i + 1)
             cvt_x[i] <= a[i];
@@ -434,11 +438,21 @@ module tnca_vector_fpu #(
     // R42 area: FMA_IMPL / 256 odd selects tnca_cvt_int (the same function, guard and sticky bit instead of 64-bit fraction
     // compares; compared with cvt_int_f over every input word, function and rounding mode: tb/area/fast/cvt_int_miter)
     localparam CVT_AREA = (FMA_IMPL / 256) % 2;
+    generate
+        if (CVTP != 0 && CVT_AREA == 0) begin : g_cvtp_bad
+            tnca_cvt_int_p u_bad (.CVTP_needs_the_area_converter(1'b1));
+        end
+    endgenerate
     wire [ELEN-1:0] cvt_n [0:VLEN-1];
     generate
         if (CVT_AREA != 0) begin : g_cvt_area
             for (g = 0; g < VLEN; g = g + 1) begin : g_c
-                tnca_cvt_int u_cvt_int (.x(cvt_x[g]), .fn(cvt_fn), .rm(cvt_mod[2:0]), .y(cvt_n[g]));
+                if (CVTP != 0) begin : g_p
+                    // R42 clk2 CVTP: the two-stage conversion (tnca_cvt_int_p): y is valid one cycle after cvt_x
+                    tnca_cvt_int_p #(.REG(1)) u_cvt_int (.clk(clk), .x(cvt_x[g]), .fn(cvt_fn), .rm(cvt_mod[2:0]), .y(cvt_n[g]));
+                end else begin : g_n
+                    tnca_cvt_int u_cvt_int (.x(cvt_x[g]), .fn(cvt_fn), .rm(cvt_mod[2:0]), .y(cvt_n[g]));
+                end
             end
         end else begin : g_cvt_gen
             for (g = 0; g < VLEN; g = g + 1) begin : g_c
@@ -681,9 +695,13 @@ module tnca_vector_fpu #(
             if (CVTP == 0 && cvt_fmt)
                 for (i = 0; i < VLEN; i = i + 1)
                     dly_v[1][i*ELEN +: ELEN] <= fcvt[i];
-            if (cvt_int)
+            if (CVTP == 0 && cvt_int)
                 for (i = 0; i < VLEN; i = i + 1)
                     dly_v[1][i*ELEN +: ELEN] <= cvt_l[i];
+            // R42 clk2 CVTP: the two-stage int <-> binary32 conversion joins at stage 2 (cvt_x valid at t+1, result at t+2)
+            if (CVTP != 0 && cvt_int_p1)
+                for (i = 0; i < VLEN; i = i + 1)
+                    dly_v[2][i*ELEN +: ELEN] <= cvt_n[i];
         end
     end
 
@@ -695,7 +713,7 @@ module tnca_vector_fpu #(
         for (ci = 0; ci < VLEN; ci = ci + 1)
             cvt_ref_q[ci*ELEN +: ELEN] <= cvt[ci];
         for (ci = 0; ci < VLEN; ci = ci + 1)
-            if (rst_n && cvt_int && (cvt_l[ci] !== cvt_ref_q[ci*ELEN +: ELEN]))
+            if (rst_n && CVTP == 0 && cvt_int && (cvt_l[ci] !== cvt_ref_q[ci*ELEN +: ELEN]))
                 $display("FAIL tnca_vector_fpu assert @%0t: stage-1 conversion lane %0d %h, stage 0 had %h",
                          $time, ci, cvt_l[ci], cvt_ref_q[ci*ELEN +: ELEN]);
     end

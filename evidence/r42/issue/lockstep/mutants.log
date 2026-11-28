@@ -1,0 +1,4 @@
+MUTANT wn_full_one: runs 60  mismatches 53  candidate slower in 6  geomean cand/ref cycles 0.9566
+MUTANT swap_source_c: runs 60  mismatches 28  candidate slower in 8  geomean cand/ref cycles 0.9670
+MUTANT hold_forwarded: runs 60  mismatches 43  candidate slower in 8  geomean cand/ref cycles 0.9645
+MUTANTS_DONE

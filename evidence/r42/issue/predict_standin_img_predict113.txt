@@ -1,0 +1,20 @@
+=== arm comb (/tmp/issue_work/mc/combo_all): 15 points measured on both sides
+  measured  1.027x (+2.7 %) over 15 affected points of 113; 2.123 x 1.027 = 2.181
+  family    1.075x (+7.5 %) over 42 affected points of 113; 2.123 x 1.075 = 2.283
+  family/2  1.053x (+5.3 %) over 42 affected points of 113; 2.123 x 1.053 = 2.235
+  models    1.078x (+7.8 %) over 56 affected points of 113; 2.123 x 1.078 = 2.288
+=== arm fwd (/tmp/issue_work/mc/thor_fwd): 12 points measured on both sides
+  measured  1.001x (+0.1 %) over 11 affected points of 113; 2.123 x 1.001 = 2.126
+  family    1.005x (+0.5 %) over 50 affected points of 113; 2.123 x 1.005 = 2.134
+  family/2  1.004x (+0.4 %) over 50 affected points of 113; 2.123 x 1.004 = 2.131
+  models    1.007x (+0.7 %) over 64 affected points of 113; 2.123 x 1.007 = 2.138
+=== arm s128 (/tmp/issue_work/mc/gb_s128): 17 points measured on both sides
+  measured  1.010x (+1.0 %) over 14 affected points of 113; 2.123 x 1.010 = 2.144
+  family    1.025x (+2.5 %) over 45 affected points of 113; 2.123 x 1.025 = 2.177
+  family/2  1.018x (+1.8 %) over 45 affected points of 113; 2.123 x 1.018 = 2.161
+  models    1.026x (+2.6 %) over 59 affected points of 113; 2.123 x 1.026 = 2.178
+=== arm te5 (/tmp/issue_work/mc/gb_te5): 12 points measured on both sides
+  measured  1.003x (+0.3 %) over 10 affected points of 113; 2.123 x 1.003 = 2.129
+  family    1.013x (+1.3 %) over 49 affected points of 113; 2.123 x 1.013 = 2.150
+  family/2  1.009x (+0.9 %) over 49 affected points of 113; 2.123 x 1.009 = 2.143
+  models    1.015x (+1.5 %) over 63 affected points of 113; 2.123 x 1.015 = 2.155

@@ -32,7 +32,7 @@ def prepare(profile='core-vrf-sync-v5', *, core_count=3, memory_bytes=8*1024*102
         raise DeviceLost('multicore package does not contain RTL and device binding sources')
     rtl,tb=Path(rtl_path),Path(tb_path)
     overrides=dict(device.rtl_overrides())
-    allowed={'VRF_BYPASS','FE_NOBUBBLE','VRF_PREFETCH','RCTX_SWITCH','MTX_ABUF','MTX_PIPE','LSU_INFLIGHT','FPU_OVERLAP'}
+    allowed={'VRF_BYPASS','FE_NOBUBBLE','VRF_PREFETCH','RCTX_SWITCH','MTX_ABUF','MTX_PIPE','VRF_FWD','LSU_INFLIGHT','FPU_OVERLAP'}
     if set(overrides)-allowed:
         raise ValueError('RTL overrides are not supported by this multicore shell: '+', '.join(sorted(set(overrides)-allowed)))
     compiler=shutil.which('iverilog')

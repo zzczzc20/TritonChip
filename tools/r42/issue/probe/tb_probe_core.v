@@ -1,0 +1,366 @@
+//==============================================================================
+// tb_tnca_core -- runs a self-checking TNCA program on a single core
+//
+// Plusargs:
+//   +hex=<file>       memory image from tools/asm/tnca_asm.py
+//   +argbase=<n>      byte address of the kernel argument block (ISA sec 5.1
+//                     ARG_BASE). Default 0. A kernel compiled for dynamic
+//                     parameters reads its addresses and scalars from here,
+//                     so this is what lets one program image run with
+//                     different arguments.
+//   +maxcycles=<n>    timeout (default 200000)
+//   +dump=<file>      write a memory region out after the run
+//   +dumpfirst=<n>    first 64-bit word to dump (default 512)
+//   +dumpcount=<n>    words to dump (default 256)
+//   +expectfault=<hex> the run is expected to fault with this trap code; a
+//                     clean exit is then the failure
+//   +trace            print one line per retired instruction
+//   +vcd=<file>       waveform dump
+//
+// The program signals success with `exit` from every role and failure with
+// `trap #id`; the id identifies which check failed. That keeps the pass/fail
+// decision inside the program under test rather than in the harness.
+//==============================================================================
+`timescale 1ns/1ps
+
+module tb_tnca_core;
+
+    // 1 elaborates the candidate: a banked, synchronous, finite-port VRF
+    // with an operand fetch. 0 is the reference. Set with -P from the
+    // Makefile, so one bench source describes both implementations and a
+    // difference between them cannot be a difference in the testbench.
+    parameter USE_BANKED_VRF = 0;
+    // Match core-sim's frozen timing and the timed banked FPGA profile.
+    parameter VALU_LATE      = USE_BANKED_VRF ? 2 : 0;
+    parameter TENSOR_MUL_PIPE = USE_BANKED_VRF ? 1 : 0;
+    parameter VRF_BYPASS     = 0;
+    parameter FE_NOBUBBLE    = 0;
+    parameter VRF_PREFETCH   = 0;
+    parameter RCTX_SWITCH    = 0;
+    parameter LSU_INFLIGHT   = 1;
+    parameter FPU_OVERLAP    = 0;
+    parameter RSLICE         = 0;
+    parameter RPAIR          = 0;
+    parameter MTX_ABUF       = 0;
+    parameter MTX_PIPE       = 0;
+    parameter MTX_VRF_REG    = 0;
+    parameter VRF_XBAR       = 0;   // R42 shrink: banked VRF response crossbar (tnca_vrf_banked XBAR)
+    parameter VRF_VLD_RAM    = 0;   // R42 shrink: banked VRF valid bits in the bank RAM + reset sweep
+    parameter VRF_FWD        = 0;   // R42 issue: writeback-to-R operand forwarding (tnca_core VRF_FWD)
+    parameter FMA_IMPL       = 0;   // R41 G2 FMA rebuild
+    parameter MAC_DP         = 0;   // R41 G2 shared MAC lane + m.mma.dp.async
+    parameter MAC_CUTS       = 29;
+    parameter MAC_F32        = 0;   // R42 m.mma.f32.async (ISA sec 9C.5)
+    parameter HAS_TENSOR_XPOSE = 0;
+
+    parameter NUM_RCTX       = 2;
+    parameter RCTX_W         = 1;
+    parameter VLEN           = 16;
+    parameter ELEN           = 32;
+    parameter VREGS_PER_RCTX = 64;
+    parameter ACC_N = 16, ACC_W = 4, BAR_N = 32, BAR_W = 5, BAR_EPOCH_W = 48;  // R41 G2 resource sizing (defaults: the delivered machine)
+    parameter PHYS_VREGS     = NUM_RCTX * VREGS_PER_RCTX;
+    parameter PHYS_W         = 7;
+    parameter WORDS          = 65536;
+    parameter MEM_LATENCY    = 1;
+    parameter RANDOM_STALL   = 0;
+    parameter MEM_REORDER    = 0;
+    parameter LSU_TAG_W      = 5;
+
+    reg clk = 1'b0;
+    reg rst_n = 1'b0;
+    always #5 clk = ~clk;
+
+    wire [63:0] imem_addr, imem_data;
+    wire        mreq_valid, mreq_ready, mreq_we;
+    wire [63:0] mreq_addr;
+    wire [7:0]  mreq_be;
+    wire        mreq_amo;
+    wire [3:0]  mreq_aop;
+    wire [63:0] mreq_cmp;
+    wire [63:0] mreq_wdata;
+    wire        mrsp_valid;
+    wire [63:0] mrsp_rdata;
+    wire [LSU_TAG_W-1:0] mreq_tag, mrsp_tag;
+    wire [1:0]  mreq_hint;
+
+    reg         launch_valid = 1'b0;
+    reg [63:0]  launch_pc = 64'd0;
+    reg [NUM_RCTX-1:0] launch_role_mask;
+    integer            nroles;
+    reg  [3:0]         launch_slice;
+    integer            slicek;
+    reg [31:0]  pid_x = 0, pid_y = 0, pid_z = 0;
+    reg [31:0]  npid_x = 1, npid_y = 1, npid_z = 1;
+    reg [63:0]  arg_base = 64'd0;
+    reg [NUM_RCTX*PHYS_W-1:0] launch_vbase;
+
+    wire        core_idle;
+    wire        fault_valid;
+    wire [7:0]  fault_code;
+    wire [63:0] fault_pc;
+    wire [RCTX_W-1:0] fault_rctx;
+    wire [23:0] fault_detail;
+
+    wire [63:0] perf_cycles, perf_issued, perf_stall_hazard,
+                perf_stall_lsu, perf_stall_wb, perf_squash;
+    // R3-06 COUNT-02: the exclusive stall attribution.
+    wire [63:0] perf_stall_total, perf_x_hazard, perf_x_lsu, perf_x_fpu,
+                perf_x_mtx, perf_x_txf, perf_x_fence, perf_x_arrive,
+                perf_x_rsv, perf_x_wb, perf_x_vrf, perf_x_vrfwb, perf_x_frontend;
+
+    tnca_core #(
+        .NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W), .VLEN(VLEN), .ELEN(ELEN), .LW(4),
+        .VREGS_PER_RCTX(VREGS_PER_RCTX), .ACC_N(ACC_N), .ACC_W(ACC_W), .BAR_N(BAR_N), .BAR_W(BAR_W), .BAR_EPOCH_W(BAR_EPOCH_W), .PHYS_VREGS(PHYS_VREGS), .PHYS_W(PHYS_W),
+        .CORE_ID(0), .NUM_CORES(1), .HAS_SFU(1),
+        .USE_BANKED_VRF(USE_BANKED_VRF), .VALU_LATE(VALU_LATE), .TENSOR_MUL_PIPE(TENSOR_MUL_PIPE),
+        .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
+        .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
+        .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE), .MTX_VRF_REG(MTX_VRF_REG), .VRF_XBAR(VRF_XBAR), .VRF_VLD_RAM(VRF_VLD_RAM), .VRF_FWD(VRF_FWD),
+        .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .MAC_F32(MAC_F32),
+        .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
+    ) dut (
+        .clk(clk), .rst_n(rst_n),
+        .launch_valid(launch_valid), .launch_pc(launch_pc),
+        .launch_role_mask(launch_role_mask), .launch_slice(launch_slice),
+        .launch_pid_x(pid_x), .launch_pid_y(pid_y), .launch_pid_z(pid_z),
+        .launch_npid_x(npid_x), .launch_npid_y(npid_y), .launch_npid_z(npid_z),
+        .launch_arg_base(arg_base),
+        .launch_vbase(launch_vbase),
+        .core_idle(core_idle),
+        .fault_valid(fault_valid), .fault_code(fault_code),
+        .fault_pc(fault_pc), .fault_rctx(fault_rctx), .fault_detail(fault_detail),
+        .imem_addr(imem_addr), .imem_data(imem_data),
+        .mem_req_valid(mreq_valid), .mem_req_ready(mreq_ready),
+        .mem_req_amo(mreq_amo), .mem_req_aop(mreq_aop), .mem_req_cmp(mreq_cmp),
+        .mem_req_addr(mreq_addr), .mem_req_we(mreq_we),
+        .mem_req_be(mreq_be), .mem_req_wdata(mreq_wdata),
+        .mem_req_tag(mreq_tag), .mem_req_hint(mreq_hint),
+        .mem_rsp_valid(mrsp_valid), .mem_rsp_tag(mrsp_tag),
+        .mem_rsp_rdata(mrsp_rdata),
+        .perf_cycles(perf_cycles), .perf_issued(perf_issued),
+        .perf_stall_hazard(perf_stall_hazard), .perf_stall_lsu(perf_stall_lsu),
+        .perf_stall_wb(perf_stall_wb), .perf_squash(perf_squash),
+        .perf_stall_total(perf_stall_total),
+        .perf_x_hazard(perf_x_hazard), .perf_x_lsu(perf_x_lsu),
+        .perf_x_fpu(perf_x_fpu), .perf_x_mtx(perf_x_mtx),
+        .perf_x_txf(perf_x_txf), .perf_x_fence(perf_x_fence),
+        .perf_x_arrive(perf_x_arrive), .perf_x_rsv(perf_x_rsv),
+        .perf_x_wb(perf_x_wb), .perf_x_vrf(perf_x_vrf),
+        .perf_x_vrfwb(perf_x_vrfwb), .perf_x_frontend(perf_x_frontend)
+    );
+
+    tnca_mem_model #(
+        .WORDS(WORDS), .MEM_DW(64), .MEM_BYTES(8), .TAG_W(LSU_TAG_W),
+        .LATENCY(MEM_LATENCY), .RANDOM_STALL(RANDOM_STALL), .REORDER(MEM_REORDER)
+    ) u_mem (
+        .clk(clk), .rst_n(rst_n),
+        .imem_addr(imem_addr), .imem_data(imem_data),
+        .req_valid(mreq_valid), .req_ready(mreq_ready),
+        .req_addr(mreq_addr), .req_we(mreq_we),
+        .req_be(mreq_be), .req_wdata(mreq_wdata), .req_tag(mreq_tag),
+        .req_amo(mreq_amo), .req_aop(mreq_aop), .req_cmp(mreq_cmp),
+        .rsp_valid(mrsp_valid), .rsp_tag(mrsp_tag), .rsp_rdata(mrsp_rdata)
+    );
+
+
+    // ---- R42 issue probe: per-cycle pipeline monitor (testbench only; +pipetrace) ----
+    integer pcyc = 0;
+    always @(posedge clk) begin
+        if (rst_n) pcyc <= pcyc + 1;
+        if (rst_n && $test$plusargs("pipetrace") && (dut.d_valid || dut.r_valid || dut.x_valid || dut.w_en))
+            $display("[pt] cyc=%0d D=%b/%0h R=%b/%0h X=%b/%0h W=%b c%0d i%0d stall_front=%b haz=%b vrfst=%b want=%b arr=%b have=%b pfgo=%b",
+                     pcyc, dut.d_valid, dut.d_pc[15:3], dut.r_valid, dut.r_pc[15:3], dut.x_valid, dut.x_pc[15:3],
+                     dut.w_en, dut.w_class, dut.w_idx, dut.stall_front, dut.hazard, dut.vrf_stall,
+                     dut.g_vrf_banked.of_want, dut.g_vrf_banked.of_arrive, dut.g_vrf_banked.of_have, dut.g_vrf_banked.pf_go);
+    end
+
+    reg [1023:0] hexfile, dumpfile, vcdfile;
+    integer maxcycles, dumpfirst, dumpcount, k;
+    integer argbase;
+    integer cyc;
+    integer expectfault;
+    reg do_trace, do_dump, want_fault;
+    integer mtx_vrf_reads = 0;
+    always @(posedge clk) begin
+        if (!rst_n || launch_valid) mtx_vrf_reads <= 0;
+        else if (dut.vrf_req_accept[3]) mtx_vrf_reads <= mtx_vrf_reads + 1;
+    end
+
+    initial begin
+        if (!$value$plusargs("hex=%s", hexfile)) begin
+            $display("FATAL: pass +hex=<image>");
+            $finish;
+        end
+        if (!$value$plusargs("maxcycles=%d", maxcycles)) maxcycles = 200000;
+        if (!$value$plusargs("argbase=%d", argbase)) argbase = 0;
+        arg_base = argbase;
+        if (!$value$plusargs("pid_x=%d", pid_x)) pid_x = 0;
+        if (!$value$plusargs("pid_y=%d", pid_y)) pid_y = 0;
+        if (!$value$plusargs("pid_z=%d", pid_z)) pid_z = 0;
+        if (!$value$plusargs("dumpfirst=%d", dumpfirst))  dumpfirst = 512;
+        if (!$value$plusargs("dumpcount=%d", dumpcount))  dumpcount = 256;
+        want_fault = $value$plusargs("expectfault=%h", expectfault);
+        do_trace = $test$plusargs("trace");
+        do_dump  = $value$plusargs("dump=%s", dumpfile);
+
+        if ($value$plusargs("vcd=%s", vcdfile)) begin
+            $dumpfile(vcdfile);
+            $dumpvars(0, tb_tnca_core);
+        end
+
+        u_mem.load_hex(hexfile);
+
+        launch_role_mask = {{(NUM_RCTX-1){1'b0}}, 1'b1};
+        if ($test$plusargs("allroles"))
+            launch_role_mask = {NUM_RCTX{1'b1}};
+        // +roles=N starts the first N: a program written for a two-context
+        // core run on the four-context one (core-vrf-sync-v4).
+        if ($value$plusargs("roles=%d", nroles))
+            launch_role_mask = (1 << nroles) - 1;
+        // R39-05: every context in its own slice of the resources (RSLICE).
+        // +slicek=K: 2^K slices (0, the default: one per context).
+        if (!$value$plusargs("slicek=%d", slicek)) slicek = 0;
+        // R39-12: +pair makes contexts 2k and 2k+1 one program's two roles
+        // (RPAIR): context 2k+1 takes 2k's registers, and its slice.
+        launch_slice = {$test$plusargs("pair") ? 1'b1 : 1'b0,
+                        $test$plusargs("slice") ? 1'b1 : 1'b0, slicek[1:0]};
+
+        // Per-RCTX physical vector base. Disjoint by default; +aliasvrf gives
+        // every context the same base, which is what a producer/consumer role
+        // pair needs to share a window with no copy.
+        for (k = 0; k < NUM_RCTX; k = k + 1)
+            launch_vbase[k*PHYS_W +: PHYS_W] =
+                $test$plusargs("aliasvrf") ? 0 : (k * VREGS_PER_RCTX);
+
+        // Stimulus is driven one delta after the clock edge, never on it: a
+        // blocking assignment in the active region of the same edge the DUT
+        // samples is a race, and it silently swallowed the launch pulse.
+        repeat (4) @(posedge clk);
+        #1 rst_n = 1'b1;
+        repeat (2) @(posedge clk);
+
+        #1;
+        launch_pc    = 64'd0;
+        launch_valid = 1'b1;
+        @(posedge clk);
+        #1 launch_valid = 1'b0;
+        // let the launch take effect before polling core_idle, which is only
+        // meaningful once `running` has been written
+        repeat (3) @(posedge clk);
+
+        cyc = 0;
+        while (!core_idle && cyc < maxcycles) begin
+            @(posedge clk);
+            cyc = cyc + 1;
+        end
+
+        if (do_dump) u_mem.dump_hex(dumpfile, dumpfirst, dumpcount);
+
+        $display("---- tnca core run ----");
+        $display("mtx_vrf_reads=%0d", mtx_vrf_reads);
+        $display("cycles=%0d issued=%0d hazard=%0d lsu=%0d wb=%0d squash=%0d",
+                 cyc, perf_issued, perf_stall_hazard, perf_stall_lsu,
+                 perf_stall_wb, perf_squash);
+        // The exclusive group, and its sum. tools/r3/count_tests.py checks
+        // that the sum is the total; printing both is what lets it.
+        // R3V2-CORE-02/03 and COUNT-01 read these.
+        $display("vrf req=%0d accept=%0d conflict=%0d stall=%0d serial=%0d parallel=%0d mtx_req=%0d mtx_wait=%0d wb_retry=%0d",
+                 dut.vrf_n_req, dut.vrf_n_accept,
+                 dut.vrf_n_conflict, dut.vrf_n_stall,
+                 dut.vrf_n_serial, dut.vrf_n_parallel,
+                 dut.vrf_n_mtx_req, dut.vrf_n_mtx_wait,
+                 dut.vrf_n_wb_retry);
+        $display("stall_total=%0d x_hazard=%0d x_lsu=%0d x_fpu=%0d x_mtx=%0d x_txf=%0d x_fence=%0d x_arrive=%0d x_rsv=%0d x_wb=%0d x_vrf=%0d x_vrfwb=%0d x_sum=%0d",
+                 perf_stall_total, perf_x_hazard, perf_x_lsu, perf_x_fpu,
+                 perf_x_mtx, perf_x_txf, perf_x_fence, perf_x_arrive,
+                 perf_x_rsv, perf_x_wb, perf_x_vrf, perf_x_vrfwb,
+                 perf_x_hazard + perf_x_lsu + perf_x_fpu + perf_x_mtx
+                 + perf_x_txf + perf_x_fence + perf_x_arrive + perf_x_rsv
+                 + perf_x_wb + perf_x_vrf + perf_x_vrfwb);
+        // R39-00: every running cycle issues, stalls, or has nothing to
+        // issue, so the three counts add up to the cycle count exactly. A
+        // mismatch is a counter bug, and it fails the program.
+        $display("frontend=%0d partition=%0d+%0d+%0d of %0d",
+                 perf_x_frontend, perf_issued, perf_stall_total,
+                 perf_x_frontend, perf_cycles);
+        // R39-05: cycles in which an instruction held in R gave way to
+        // another context's (RCTX_SWITCH; always 0 without it).
+        $display("rctx_switch=%0d", dut.perf_rctx_switch);
+        // R41 Stage 2: how often the core's new register boundaries met
+        // their corner cases (tnca_core cov_*), on request.
+        if ($test$plusargs("r41cov"))
+            $display("r41cov sw_inhibit=%0d sw_redir=%0d hold_ops=%0d pf_drop=%0d mem_claim=%0d fwd_s=%0d fwd_p=%0d dsb_clm=%0d dsb_rel=%0d rsb_clm=%0d rsb_rel=%0d hold_rel=%0d",
+                     dut.cov_sw_inhibit, dut.cov_sw_redir, dut.cov_hold_ops,
+                     dut.cov_pf_drop, dut.cov_mem_claim, dut.cov_fwd_s, dut.cov_fwd_p,
+                     dut.cov_dsb_clm, dut.cov_dsb_rel, dut.cov_rsb_clm,
+                     dut.cov_rsb_rel, dut.cov_hold_rel);
+        if (perf_issued + perf_stall_total + perf_x_frontend != perf_cycles)
+            $display("FAIL: cycle partition: issued %0d + stalled %0d + frontend %0d != cycles %0d",
+                     perf_issued, perf_stall_total, perf_x_frontend, perf_cycles);
+        // What the memory model's seed actually changed. A matrix that runs
+        // three seeds and reports three identical traces has run one seed
+        // three times, and R1-08 asks for the difference to be visible.
+        $display("memtrace=%016h memstall=%0d memreorder=%0d memmulti=%0d",
+                 u_mem.mem_trace, u_mem.n_stall_cycles, u_mem.n_reorder,
+                 u_mem.n_multi_eligible);
+        // Two engine completions landing on one barrier in one cycle. The
+        // barrier sums three independent ports so it cannot drop one; this
+        // says whether the case actually occurred.
+        $display("barcollide=%0d", dut.u_bar.n_multi_complete);
+
+        if (cyc >= maxcycles) begin
+            $display("FAIL: timeout after %0d cycles", cyc);
+        end else if (want_fault) begin
+            // A fault is the expected outcome; reaching idle without one, or
+            // with the wrong code, is the failure.
+            if (!fault_valid)
+                $display("FAIL: expected trap 0x%02x, ran to completion", expectfault);
+            else if (fault_code !== expectfault[7:0])
+                $display("FAIL: expected trap 0x%02x, got 0x%02x at pc=0x%0h",
+                         expectfault, fault_code, fault_pc);
+            else
+                $display("PASS  (expected trap 0x%02x at pc=0x%0h rctx=%0d)",
+                         fault_code, fault_pc, fault_rctx);
+        end else if (fault_valid) begin
+            $display("FAIL: trap code=0x%02x id=%0d pc=0x%0h rctx=%0d",
+                     fault_code, fault_detail, fault_pc, fault_rctx);
+        end else begin
+            $display("PASS");
+        end
+        $finish;
+    end
+
+    // Completion cycles, for the collision experiment. +donetrace prints the
+    // cycle each engine signals a barrier, which is what makes "arrange for
+    // them to land together" an experiment rather than a guess.
+    always @(posedge clk) begin
+        if (rst_n && $test$plusargs("donetrace")) begin
+            if (dut.txf_done && dut.txf_done_bar_en)
+                $display("[done] cyc=%0d txf bar=%0d", cyc, dut.txf_done_bar);
+            if (dut.mtx_done && dut.mtx_done_bar_en)
+                $display("[done] cyc=%0d mtx bar=%0d", cyc, dut.mtx_done_bar);
+        end
+    end
+
+    // instruction trace
+    always @(posedge clk) begin
+        if (rst_n && do_trace && dut.x_valid)
+            $display("[%0t] rctx=%0d pc=%08h maj=%02h fn=%02h dst=%0d/%0d",
+                     $time, dut.x_rctx, dut.x_pc, dut.x_major, dut.x_func,
+                     dut.x_dstc, dut.x_dsti);
+        if (rst_n && $test$plusargs("mtxtrace")) begin
+            if (dut.u_mtx.acc_w_en)
+                $display("[mtx] cyc=%0d acc slot=%0d row=%0d lanes=%04h data=%0128h",
+                         cyc, dut.u_mtx.acc_w_slot, dut.u_mtx.acc_w_row,
+                         dut.u_mtx.acc_w_lane, dut.u_mtx.acc_w_data);
+            if (dut.mtx_free)
+                $display("[mtx] cyc=%0d src_free bar=%0d", cyc, dut.mtx_free_bar);
+            if (dut.mtx_done)
+                $display("[mtx] cyc=%0d done slot=%0d bar_en=%0d bar=%0d",
+                         cyc, dut.mtx_done_slot, dut.mtx_done_bar_en, dut.mtx_done_bar);
+        end
+    end
+
+endmodule

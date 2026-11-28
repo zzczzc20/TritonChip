@@ -1,0 +1,6 @@
+# small tier stand-in points
+op.matmul/small/fp16-m64-k128-n128
+op.linear/small/fp16-m64-k256-n256
+op.gemv/small/fp16-k256-n512
+op.softmax/small/fp16-r64-c512
+op.rmsnorm/small/fp16-r64-d256

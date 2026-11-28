@@ -47,6 +47,7 @@ module tb_tnca_core;
     parameter VRF_XBAR       = 0;   // R42 shrink: banked VRF response crossbar (tnca_vrf_banked XBAR)
     parameter CLKFIX         = 0;   // R42 clk: pipeline fixes of the nine clock path families (tnca_core CLKFIX)
     parameter VRF_VLD_RAM    = 0;   // R42 shrink: banked VRF valid bits in the bank RAM + reset sweep
+    parameter VRF_FWD        = 0;   // R42 issue: writeback-to-R operand forwarding (tnca_core VRF_FWD)
     parameter FMA_IMPL       = 0;   // R41 G2 FMA rebuild
     parameter MAC_DP         = 0;   // R41 G2 shared MAC lane + m.mma.dp.async
     parameter MAC_CUTS       = 29;
@@ -117,7 +118,7 @@ module tb_tnca_core;
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
-        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE), .MTX_VRF_REG(MTX_VRF_REG), .VRF_XBAR(VRF_XBAR), .VRF_VLD_RAM(VRF_VLD_RAM), .CLKFIX(CLKFIX),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE), .MTX_VRF_REG(MTX_VRF_REG), .VRF_XBAR(VRF_XBAR), .VRF_VLD_RAM(VRF_VLD_RAM), .VRF_FWD(VRF_FWD), .CLKFIX(CLKFIX),
         .FMA_IMPL(FMA_IMPL), .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .MAC_F32(MAC_F32),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE)
     ) dut (

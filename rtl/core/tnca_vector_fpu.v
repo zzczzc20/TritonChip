@@ -58,7 +58,14 @@ module tnca_vector_fpu #(
     //               FP_LAT = 5; the unit's result mux takes the converter's output flop at that cycle (needs FP_LAT = 5)
     parameter       CVTP  = 0,
     //   SFUX 1      the SFU's operand select is registered (tnca_sfu XREG): one more cycle per SFU pass
-    parameter       SFUX  = 0
+    parameter       SFUX  = 0,
+    //   UNITP 1     the FMA's multiplier takes the operand registers a and b as they are; vf.add, vf.sub and the reduction levels take
+    //               their product (x * 1.0) from tnca_fmax_unitp and a select behind the multiplier (tnca_fmax_fma UNITP; zero cycles;
+    //               needs the area FMA stages: FCUTS 4'b1010 is used when no cut is asked for)
+    //   CVT2 1      the converters run in two stages from the instruction's own operands (tnca_cvt2_xls, tnca_cvt_int_p): two cycles of
+    //               logic inside FP_LAT 2 instead of one behind a register (zero cycles; FP_LAT 2 only)
+    parameter       UNITP = 0,
+    parameter       CVT2  = 0
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -260,7 +267,17 @@ module tnca_vector_fpu #(
     reg  [ELEN-1:0] cvt_l [0:VLEN-1];   // computed below, after cvt_int_f
     generate
         for (g = 0; g < VLEN; g = g + 1) begin : g_fcvt
-            if (CVTP != 0) begin : g_p
+            if (CVT2 != 0) begin : g_2
+                if (FP_LAT != 2 || CVTP != 0) begin : g_bad
+                    tnca_cvt2_xls u_bad (.CVT2_needs_FP_LAT_2(1'b1));
+                end else begin : g_ok
+                    tnca_cvt2_xls u_cvt (
+                        .clk(clk), .rst(!rst_n),
+                        .src(mod[2:0]), .dst(mod[5:3]), .x(a[g]),
+                        .out(fcvt[g])
+                    );
+                end
+            end else if (CVTP != 0) begin : g_p
                 if (FP_LAT != 5) begin : g_bad
                     tnca_cvt_xls u_bad (.CVTP_needs_FP_LAT_5(1'b1));
                 end else begin : g_ok
@@ -290,9 +307,11 @@ module tnca_vector_fpu #(
                     tnca_fmax_fma u_bad (.FCUTS_needs_the_area_fma_stages(1'b1));
                 end else begin : g_ok
                     tnca_fmax_fma #(.CUTS(FCUTS), .SHIFT(((((FMA_IMPL / 16) % 16)) / 4) % 2),
-                                    .XLS_ALIGN((((((FMA_IMPL / 16) % 16)) / 8) % 2) ? 0 : 1)) u_fma_x (
-                        .clk(clk), .rst_n(rst_n), .a(fa[g]), .b(fb[g]), .c(fc[g]),
-                        .sub_c(f_sub), .mul_only(f_mul), .ftz(ftz), .y(fma_y[g]));
+                                    .XLS_ALIGN((((((FMA_IMPL / 16) % 16)) / 8) % 2) ? 0 : 1), .UNITP(UNITP)) u_fma_x (
+                        .clk(clk), .rst_n(rst_n),
+                        .a((UNITP != 0) ? a[g] : fa[g]), .b((UNITP != 0) ? b[g] : fb[g]), .c(fc[g]),
+                        .sub_c(f_sub), .mul_only(f_mul), .ftz(ftz),
+                        .a_u(fa[g]), .sel_u(red_active || fpctl[0]), .y(fma_y[g]));
                 end
             end else begin : g_fl
                 tnca_fp32_fma #(.LAT(FL), .IMPL(FMA_IMPL)) u_fma (
@@ -449,7 +468,10 @@ module tnca_vector_fpu #(
     generate
         if (CVT_AREA != 0) begin : g_cvt_area
             for (g = 0; g < VLEN; g = g + 1) begin : g_c
-                if (CVTP != 0) begin : g_p
+                if (CVT2 != 0) begin : g_2
+                    // R42 clk2 CVT2: the same two stages from the operands of the instruction itself, y valid one cycle after them
+                    tnca_cvt_int_p #(.REG(1)) u_cvt_int (.clk(clk), .x(a[g]), .fn(func), .rm(mod[2:0]), .y(cvt_n[g]));
+                end else if (CVTP != 0) begin : g_p
                     // R42 clk2 CVTP: the two-stage conversion (tnca_cvt_int_p): y is valid one cycle after cvt_x
                     tnca_cvt_int_p #(.REG(1)) u_cvt_int (.clk(clk), .x(cvt_x[g]), .fn(cvt_fn), .rm(cvt_mod[2:0]), .y(cvt_n[g]));
                 end else begin : g_n

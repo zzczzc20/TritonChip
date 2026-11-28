@@ -38,6 +38,16 @@
       "why": "The same conversion, unpipelined, for the sixteen lanes of tnca_vector_fpu. That unit's clock is set by its FMA at 115 gate levels and the convert chain is 54, so pipelining it there would add 253 flops per lane to buy timing the unit cannot use. One DSLX description, two implementations, both checked by tb_cvt_xls against the same oracle."
     },
     {
+      "module": "tnca_cvt2_xls",
+      "source": "tnca_cvt.x",
+      "top": "convert",
+      "pipeline_stages": 2,
+      "flop_outputs": false,
+      "delay_model": "asap7",
+      "clock_period_ps": null,
+      "why": "R42 clk2 (default-off, tnca_vector_fpu CVT2): the same conversion in two stages with one register between them and a combinational output (latency 1 cycle), shortest period the two stages allow. The vector FPU feeds it from the instruction's own operands in the cycle they are presented, so the conversion has two cycles inside FP_LAT 2 instead of one."
+    },
+    {
       "module": "tnca_widen_xls",
       "source": "tnca_cvt.x",
       "top": "widen",

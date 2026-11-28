@@ -121,6 +121,8 @@ module tnca_core #(
     //     bit 5  vector FPU: register behind the FMA array's result (tnca_vector_fpu FOREG; FP latency +1); with bits 3 and 4 also
     //            the pipelined float-to-float converter (CVTP; FP latency is then 5)
     //     bit 7  vector FPU: SFU operand select registered (tnca_sfu XREG; +1 cycle per SFU pass)
+    //     bit 8  vector FPU: the multiplier takes the operand registers as they are, vf.add/sub/reduction products from tnca_fmax_unitp (UNITP; 0 cycles; area FMA stages)
+    //     bit 9  vector FPU: the converters in two stages from the instruction's own operands (CVT2; 0 cycles; FP latency 2 only)
     //     bit 6  transfer engine: g_inside registered, padding fault from S_TMUL (tnca_tensor TCHK_REG; +1 cycle on a faulting transfer only)
     parameter CLKFIX2        = 0,
     //   LSU_INFLIGHT (R39-08) 2: two load/store units behind the one port
@@ -322,7 +324,7 @@ module tnca_core #(
 
     // R42 clk2: the vector FPU's result latency with the CLKFIX2 cuts (bits 3-5); FP_LAT itself stays the matrix' FMA_LAT
     localparam FP_LAT_X = FP_LAT + CLKFIX2[3] + CLKFIX2[4] + CLKFIX2[5];
-    localparam [3:0] VF_FCUTS = (CLKFIX2[3] || CLKFIX2[4]) ? (4'b1010 | (CLKFIX2[3] ? 4'b0001 : 4'b0000) | (CLKFIX2[4] ? 4'b0100 : 4'b0000)) : 4'b0000;
+    localparam [3:0] VF_FCUTS = (CLKFIX2[3] || CLKFIX2[4] || CLKFIX2[8]) ? (4'b1010 | (CLKFIX2[3] ? 4'b0001 : 4'b0000) | (CLKFIX2[4] ? 4'b0100 : 4'b0000)) : 4'b0000;
 
     localparam VREG_IDX_W = 8;
 
@@ -1615,7 +1617,7 @@ module tnca_core #(
         (r_func == `TNCA_VF_ADD) || (r_func == `TNCA_VF_SUB)};
     reg  [4:0] x_fpctl;
 
-    tnca_vector_fpu #(.VLEN(VLEN), .ELEN(ELEN), .LW(LW), .FP_LAT(FP_LAT_X), .FMA_IMPL(FMA_IMPL), .FCUTS(VF_FCUTS), .FOREG(CLKFIX2[5]), .CVTP(CLKFIX2[3] && CLKFIX2[4] && CLKFIX2[5]), .SFUX(CLKFIX2[7]),
+    tnca_vector_fpu #(.VLEN(VLEN), .ELEN(ELEN), .LW(LW), .FP_LAT(FP_LAT_X), .FMA_IMPL(FMA_IMPL), .FCUTS(VF_FCUTS), .FOREG(CLKFIX2[5]), .CVTP(CLKFIX2[3] && CLKFIX2[4] && CLKFIX2[5]), .SFUX(CLKFIX2[7]), .UNITP(CLKFIX2[8]), .CVT2(CLKFIX2[9]),
                       .SFU_LAT(SFU_LAT), .SFU_LANES(SFU_LANES), .HAS_SFU(HAS_SFU)) u_vfpu (
         .clk(clk), .rst_n(rst_n),
         .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),

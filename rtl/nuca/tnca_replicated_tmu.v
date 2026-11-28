@@ -2,7 +2,7 @@
 // Every copy sees the identical global write/TLW stream and deterministic arbiter.
 module tnca_replicated_tmu #(
  parameter N_SLICE=3,SRC_W=4,N_SRC=3,TENSORS=8,T_W=3,LIVE=256,LIVE_W=8,
- parameter DEAD=16,DEAD_W=4,ID_W=16,REGISTERED_RANGES=1,TLW_PIPE_STAGES=0,REGISTER_WRITES=0
+ parameter DEAD=16,DEAD_W=4,ID_W=16,REGISTERED_RANGES=1,TLW_PIPE_STAGES=0,REGISTER_WRITES=0,IN_REG=0
 )(
  input wire clk,rst_n,
  input wire[N_SLICE-1:0] mw_valid,output wire[N_SLICE-1:0] mw_ready,
@@ -32,7 +32,7 @@ module tnca_replicated_tmu #(
   assign mr_data[local_id*64+:64]=read_data[local_id*64+:64];
   // Preserve state identity only. Combinational logic remains optimizable.
   (* KEEP_HIERARCHY = "yes" *) tnca_tmu #(
-   .REPLICA_STATE("true"),.REGISTER_WRITES(REGISTER_WRITES),.TLW_PIPE_STAGES(TLW_PIPE_STAGES),.N_SLICE(N_SLICE),.N_SRC(N_SRC),.SRC_W(SRC_W),
+   .REPLICA_STATE("true"),.REGISTER_WRITES(REGISTER_WRITES),.IN_REG(IN_REG),.TLW_PIPE_STAGES(TLW_PIPE_STAGES),.N_SLICE(N_SLICE),.N_SRC(N_SRC),.SRC_W(SRC_W),
    .TENSORS(TENSORS),.T_W(T_W),.LIVE(LIVE),.LIVE_W(LIVE_W),
    .DEAD(DEAD),.DEAD_W(DEAD_W),.ID_W(ID_W),.REGISTERED_RANGES(REGISTERED_RANGES)) local_tmu(
    .clk(clk),.rst_n(rst_n),.mw_valid(mw_valid),.mw_ready(write_ready),

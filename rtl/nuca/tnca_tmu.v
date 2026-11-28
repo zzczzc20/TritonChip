@@ -62,6 +62,11 @@ module tnca_tmu #(
     // 2 also registers the arbitrated raw address before classification.
     parameter TLW_PIPE_STAGES = 0,
     parameter REGISTER_WRITES = 0,
+    // R42 clk2 (CLKFIX2 bit 10): per-slice input registers in front of the write
+    // arbiter. Costs one cycle per register write (writes are rare MMIO/descriptor
+    // events); removes the slice-to-capture-register LUT levels and enable fan-in
+    // from the cross-SLR path. 0 = the shipped behaviour.
+    parameter IN_REG = 0,
     parameter REGISTERED_RANGES = 0,
     parameter SRC_W    = 4,
     parameter N_SRC    = 4,
@@ -177,6 +182,41 @@ module tnca_tmu #(
     (* DONT_TOUCH = REPLICA_STATE *) reg [31:0] tl_class_nacc_q;
     wire tl_pipeline_busy = TLW_PIPE_STAGES != 0 &&
         (tl_class_valid_q || (TLW_PIPE_STAGES == 2 && tl_raw_valid_q));
+    // Optional input stage: copy of each slice's write channel. A slice holds
+    // valid and data until ready, so the copy is cleared exactly when ready is
+    // given to that slice (the slice drops valid on the same edge).
+    wire [N_SLICE-1:0]       mwv;
+    wire [N_SLICE*12-1:0]    mwo;
+    wire [N_SLICE*64-1:0]    mwd;
+    wire [N_SLICE*SRC_W-1:0] mws;
+    generate if (IN_REG != 0) begin : g_inreg
+        (* DONT_TOUCH = REPLICA_STATE *) reg [N_SLICE-1:0] iq_v;
+        (* DONT_TOUCH = REPLICA_STATE *) reg [N_SLICE*12-1:0] iq_off;
+        (* DONT_TOUCH = REPLICA_STATE *) reg [N_SLICE*64-1:0] iq_data;
+        (* DONT_TOUCH = REPLICA_STATE *) reg [N_SLICE*SRC_W-1:0] iq_src;
+        integer iq_i;
+        always @(posedge clk) begin
+            if (!rst_n) iq_v <= {N_SLICE{1'b0}};
+            else for (iq_i = 0; iq_i < N_SLICE; iq_i = iq_i + 1)
+                if (mw_ready[iq_i]) iq_v[iq_i] <= 1'b0;
+                else if (!iq_v[iq_i]) iq_v[iq_i] <= mw_valid[iq_i];
+            for (iq_i = 0; iq_i < N_SLICE; iq_i = iq_i + 1)
+                if (!iq_v[iq_i]) begin
+                    iq_off [iq_i*12 +: 12]        <= mw_off [iq_i*12 +: 12];
+                    iq_data[iq_i*64 +: 64]        <= mw_data[iq_i*64 +: 64];
+                    iq_src [iq_i*SRC_W +: SRC_W]  <= mw_src [iq_i*SRC_W +: SRC_W];
+                end
+        end
+        assign mwv = iq_v;
+        assign mwo = iq_off;
+        assign mwd = iq_data;
+        assign mws = iq_src;
+    end else begin : g_noinreg
+        assign mwv = mw_valid;
+        assign mwo = mw_off;
+        assign mwd = mw_data;
+        assign mws = mw_src;
+    end endgenerate
     // Capture before acknowledgement. Publication and ACK remain one edge.
     (* DONT_TOUCH = REPLICA_STATE *) reg mw_pending_q;
     (* DONT_TOUCH = REPLICA_STATE *) reg [SELECT_W-1:0] mw_port_q;
@@ -193,7 +233,7 @@ module tnca_tmu #(
         mw_offer=0;mw_offer_port=0;
         for (k_ar = N_SLICE-1; k_ar >= 0; k_ar = k_ar - 1) begin
             s_ar = (k_ar + mw_rr) % N_SLICE;
-            if (mw_valid[s_ar]) begin mw_offer = 1'b1; mw_offer_port = s_ar[SELECT_W-1:0]; end
+            if (mwv[s_ar]) begin mw_offer = 1'b1; mw_offer_port = s_ar[SELECT_W-1:0]; end
         end
         for (k_ar = N_SLICE-1; k_ar >= 0; k_ar = k_ar - 1) begin
             s_ar = (k_ar + tl_rr) % N_SLICE;
@@ -214,9 +254,9 @@ module tnca_tmu #(
         if (tl_go) tl_ready[tl_sel] = 1'b1;
     end
 
-    wire [11:0]      w_off  = REGISTER_WRITES ? mw_off_q : mw_off[mw_sel*12 +: 12];
-    wire [63:0]      w_data = REGISTER_WRITES ? mw_data_q : mw_data[mw_sel*64 +: 64];
-    wire [SRC_W-1:0] w_srcf = REGISTER_WRITES ? mw_src_q : mw_src[mw_sel*SRC_W +: SRC_W];
+    wire [11:0]      w_off  = REGISTER_WRITES ? mw_off_q : mwo[mw_sel*12 +: 12];
+    wire [63:0]      w_data = REGISTER_WRITES ? mw_data_q : mwd[mw_sel*64 +: 64];
+    wire [SRC_W-1:0] w_srcf = REGISTER_WRITES ? mw_src_q : mws[mw_sel*SRC_W +: SRC_W];
     // Staging belongs to the complete requester ID, including cores 4..15.
     wire [SRC_W-1:0] w_src  = w_srcf;
     wire [63:0]      accepted_addr = tl_addr[tl_sel*64 +: 64];
@@ -323,9 +363,9 @@ module tnca_tmu #(
             if (REGISTER_WRITES) begin
                 if (!mw_pending_q && mw_offer) begin
                     mw_pending_q<=1;mw_port_q<=mw_offer_port;
-                    mw_off_q<=mw_off[mw_offer_port*12+:12];
-                    mw_data_q<=mw_data[mw_offer_port*64+:64];
-                    mw_src_q<=mw_src[mw_offer_port*SRC_W+:SRC_W];
+                    mw_off_q<=mwo[mw_offer_port*12+:12];
+                    mw_data_q<=mwd[mw_offer_port*64+:64];
+                    mw_src_q<=mws[mw_offer_port*SRC_W+:SRC_W];
                 end
                 if (mw_go) mw_pending_q<=0;
             end

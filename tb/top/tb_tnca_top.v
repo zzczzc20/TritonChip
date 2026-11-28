@@ -64,6 +64,9 @@ module tb_tnca_top;
     parameter SET_W      = 6;
     parameter WAYS       = 8;
     parameter WAY_W      = 3;
+    parameter DCO_RW     = 0;         // DCO_REGISTER_WRITES
+    parameter DCO_TLWP   = 0;         // DCO_TLW_PIPE_STAGES
+    parameter CLKFIX2    = 0;         // R42 clk2: tnca_top timing options (bit 10 TMU input registers, bit 11 fast router)
     localparam FLIT_W    = 2 + 2 + `TNCA_NOC_PAYLOAD_W;
 
     reg clk = 1'b0, rst_n = 1'b0;
@@ -117,7 +120,8 @@ module tb_tnca_top;
     tnca_top #(
         .NX(NX), .NY(NY), .NUM_RCTX(NUM_RCTX), .LINE_BITS(LINE_BITS),
         .MSHR_W(MSHR_W),
-        .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W)
+        .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W), .CLKFIX2(CLKFIX2),
+        .DCO_REGISTER_WRITES(DCO_RW), .DCO_TLW_PIPE_STAGES(DCO_TLWP)
     ) dut (
         .clk(clk), .rst_n(rst_n),
         .launch_valid(launch_valid), .launch_pc(launch_pc),

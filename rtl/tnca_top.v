@@ -419,7 +419,7 @@ module tnca_top #(
     end endgenerate
     generate if(DCO_LOCAL_REPLICAS)begin:g_local_tmu
     tnca_replicated_tmu #(
-        .TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES), .REGISTER_WRITES(DCO_REGISTER_WRITES),
+        .TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES), .REGISTER_WRITES(DCO_REGISTER_WRITES), .IN_REG(CLKFIX2[10]),
         .N_SLICE(N), .SRC_W(SRC_W), .N_SRC(N), .REGISTERED_RANGES(DCO_REGISTERED_RANGES),
         .TENSORS(DCO_T), .T_W(DCO_T_W), .DEAD(DCO_DEAD), .DEAD_W(4),
         .ID_W(DCO_ID_W)
@@ -437,7 +437,7 @@ module tnca_top #(
 
     end else begin:g_shared_tmu
     tnca_tmu #(
-        .TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES), .REGISTER_WRITES(DCO_REGISTER_WRITES),
+        .TLW_PIPE_STAGES(DCO_TLW_PIPE_STAGES), .REGISTER_WRITES(DCO_REGISTER_WRITES), .IN_REG(CLKFIX2[10]),
         .N_SLICE(N), .SRC_W(SRC_W), .N_SRC(N), .REGISTERED_RANGES(DCO_REGISTERED_RANGES),
         .TENSORS(DCO_T), .T_W(DCO_T_W), .DEAD(DCO_DEAD), .DEAD_W(4),
         .ID_W(DCO_ID_W)
@@ -582,7 +582,7 @@ module tnca_top #(
     tnca_mesh #(
         .NX(NX), .NY(NY), .XW(XW), .YW(YW),
         .PAYLOAD_W(NOC_PAYLOAD_W), .NV(NV),
-        .DEPTH(NOC_DEPTH), .AW(NOC_AW),.LINK_STAGES(NOC_LINK_STAGES)
+        .DEPTH(NOC_DEPTH), .AW(NOC_AW),.LINK_STAGES(NOC_LINK_STAGES),.ROUTER_FAST(CLKFIX2[11])
     ) u_mesh (
         .clk(clk), .rst_n(rst_n),
         .l_in_valid(li_valid), .l_in_ready(li_ready), .l_in_flit(li_flit),

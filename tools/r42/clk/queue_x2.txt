@@ -1,1 +1,1 @@
-tscr_s3_c23_p56_x2|PERIOD=5.6 TS_OPT=Explore TS_PLACE=ExtraTimingOpt TS_PHYS1=AggressiveExplore TS_ROUTE=AggressiveExplore TS_PHYS2=AggressiveExplore TS_PHYS3=AggressiveFanoutOpt|/home/vivado/r42_clk_out/tile_s3_c23_syn/synth.dcp|0|
+tscr_s3_c383_p56_x2|PERIOD=5.6 TS_OPT=Explore TS_PLACE=ExtraTimingOpt TS_PHYS1=AggressiveExplore TS_ROUTE=AggressiveExplore TS_PHYS2=AggressiveExplore TS_PHYS3=AggressiveFanoutOpt|/home/vivado/r42_clk_out/tile_s3_c383_syn/synth.dcp|0|

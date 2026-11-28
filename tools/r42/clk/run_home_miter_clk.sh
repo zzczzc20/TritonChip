@@ -33,6 +33,7 @@ run_one() {
     done; done
 }
 export -f run_one; export OUT CFS COMBOS REF
+[ "${AMO0:-0}" = 1 ] && sed -i 's/$/ tb.P_AMO=0/' $OUT/matrix.txt   # no atomics in the stimulus (bit 9 changes the timing of atomics only)
 [ -n "${CYC:-}" ] && sed -i "s/tb.CYCLES=[0-9]*/tb.CYCLES=$CYC/" $OUT/matrix.txt
 cat $OUT/matrix.txt | xargs -P $JOBS -I{} bash -c 'run_one "{}"'
 grep -H "^MITER" $OUT/*.log | sort > $OUT/summary.txt

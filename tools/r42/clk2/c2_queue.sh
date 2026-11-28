@@ -5,7 +5,7 @@
 # A NAME whose output directory exists is skipped. NAME prefix tscr_ = tile screen (TOP = synth.dcp path relative to ~/r42_clk2_out or absolute, FILES = SLR number).
 Q=$1; MAX=${2:-1}
 MINAVAIL_MB=${MINAVAIL_MB:-12000}
-OUTROOT=$HOME/r42_clk2_out; PIDS=${PIDS_DIR:-$OUTROOT/.pids}; STOP=${STOP_FILE:-$OUTROOT/STOP}
+OUTROOT=${C2OUT:-$HOME/r42_clk2_out}; PIDS=${PIDS_DIR:-$OUTROOT/.pids}; STOP=${STOP_FILE:-$OUTROOT/STOP}
 mkdir -p $PIDS
 mine() { n=0; for f in $PIDS/*.pid; do [ -f "$f" ] || continue; p=$(cat $f); if kill -0 $p 2>/dev/null; then n=$((n+1)); else rm -f $f; fi; done; echo $n; }
 while IFS='|' read -r NAME ENVS TOP FILES GEN; do
@@ -22,7 +22,7 @@ while IFS='|' read -r NAME ENVS TOP FILES GEN; do
         tscr_*) JOB=c2_tilejob.sh; set -- "$NAME" "$ENVS" "$TOP" "$FILES";;
         *)      JOB=c2_job.sh;     set -- "$NAME" "$ENVS" "$TOP" "$FILES" "$GEN";;
     esac
-    setsid nohup bash $HOME/r42_clk2/tools/r42/clk2/$JOB "$@" > /dev/null 2>&1 < /dev/null &
+    setsid nohup bash ${C2ROOT:-$HOME/r42_clk2}/tools/r42/clk2/$JOB "$@" > /dev/null 2>&1 < /dev/null &
     echo $! > $PIDS/$NAME.pid
     echo "$(date -u +%T) started $NAME pid $!"
     sleep 5

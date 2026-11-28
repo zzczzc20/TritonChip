@@ -5,8 +5,8 @@
 set -u
 NAME=$1; ENVS=$2; DCP=$3; SLR=${4:-0}
 source ~/x86_link_env.sh
-ROOT=$HOME/r42_clk2
-OUTROOT=$HOME/r42_clk2_out
+ROOT=${C2ROOT:-$HOME/r42_clk2}
+OUTROOT=${C2OUT:-$HOME/r42_clk2_out}
 OUT=$OUTROOT/$NAME
 PERIOD=10
 for e in $ENVS; do case $e in PERIOD=*) PERIOD=${e#PERIOD=};; esac; done

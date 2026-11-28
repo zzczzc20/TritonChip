@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 module tb_lsu_line;
- parameter SLOTS=8,TAG_W=3,STALL=1,STREAM=0,SEED=1,NACC=512;
+ parameter SLOTS=8,TAG_W=3,STALL=1,STREAM=0,SEED=1,NACC=512,PICK_REG=0;
  reg clk=0;always #5 clk=~clk;
  reg rst_n=0;
  integer cycle=0,pc=0,nreq=0,ncpl=0,seed=SEED,ms=SEED+31;
@@ -33,7 +33,7 @@ module tb_lsu_line;
  wire reqvalid=pc<NACC || invalid!=0;
  wire [63:0] addr=invalid==5?64'h7fff0000:invalid==6?64'h200000000:invalid==4?64'h103f:addresses[p];
  wire [2:0] size=invalid==4?3'd2:invalid==3?3'd3:{1'b0,sizes[p]};
- tnca_lsu_line #(.SLOTS(SLOTS),.TAG_W(TAG_W)) dut(
+ tnca_lsu_line #(.SLOTS(SLOTS),.TAG_W(TAG_W),.PICK_REG(PICK_REG)) dut(
   .clk(clk),.rst_n(rst_n),.req_valid(reqvalid),.req_eligible(eligible),.req_ready(ready),.quiescent(quiet),
   .req_store(stores[p]),.req_vector(invalid!=1),.req_indexed(invalid==2),.req_amo(invalid==7),
   .req_size(size),.req_signed(signs[p]),.req_hint(2'd2),.req_base(addr),.req_offset(64'd0),

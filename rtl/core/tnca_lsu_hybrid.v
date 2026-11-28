@@ -12,7 +12,8 @@ module tnca_lsu_hybrid #(
     parameter NUM_BEATS = 4,          // outstanding beats per unit
     parameter BEAT_W    = 4,          // the port's tag width: unit bit + beat tag
     parameter REQ_REG   = 1,          // registered request boundary per unit
-    parameter SLOW_UNITS = 2          // R41 G4: units of the word (slow) path; the core passes LSU_INFLIGHT
+    parameter SLOW_UNITS = 2,         // R41 G4: units of the word (slow) path; the core passes LSU_INFLIGHT
+    parameter PICK_REG = 0            // R42 clk: registered completion pick in the line path (tnca_lsu_line PICK_REG; +1 cycle on a fast-path completion)
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -125,7 +126,7 @@ module tnca_lsu_hybrid #(
     assign mem_req_amo=!fmv && samo;
     assign mem_req_aop=fmv ? 4'd0 : sop;
     assign mem_req_cmp=fmv ? 64'd0 : scmp;
-    tnca_lsu_line #(.SLOTS(1<<NT),.TAG_W(NT),.RCTX_W(RCTX_W)) fast(
+    tnca_lsu_line #(.SLOTS(1<<NT),.TAG_W(NT),.RCTX_W(RCTX_W),.PICK_REG(PICK_REG)) fast(
         .clk(clk),.rst_n(rst_n),.req_valid(fast_present),.req_eligible(fast_eligible),.req_ready(fast_ready),.quiescent(fast_quiet),
         .req_store(req_store),.req_vector(req_vector),.req_indexed(req_indexed),.req_amo(req_amo),
         .req_size(req_size),.req_signed(req_signed),.req_hint(req_hint),.req_base(req_base),.req_offset(req_offset),

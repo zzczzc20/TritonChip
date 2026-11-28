@@ -825,9 +825,12 @@ R41_RUN2_FMA_IMPL ?= 1
 # (a 64-cycle sweep after reset); both default to 0, the shipped RTL.
 R42_VRF_XBAR ?= 0
 R42_VRF_VLD_RAM ?= 0
+# R42 clk: `R42_CLKFIX=<mask>` builds the core bench with the clock-path pipeline fixes of tnca_core CLKFIX (default 0, the shipped RTL; architectural results
+# unchanged, cycle counts grow by the fixes' added stages).
+R42_CLKFIX ?= 0
 R41_RUN2 := $(R41_G2C4) -P tb_tnca_core.MTX_VRF_REG=1 -P tb_tnca_core.FMA_IMPL=$(R41_RUN2_FMA_IMPL) \
             -P tb_tnca_core.MAC_DP=1 -P tb_tnca_core.MAC_CUTS=29 \
-            -P tb_tnca_core.VRF_XBAR=$(R42_VRF_XBAR) -P tb_tnca_core.VRF_VLD_RAM=$(R42_VRF_VLD_RAM)
+            -P tb_tnca_core.VRF_XBAR=$(R42_VRF_XBAR) -P tb_tnca_core.VRF_VLD_RAM=$(R42_VRF_VLD_RAM) -P tb_tnca_core.CLKFIX=$(R42_CLKFIX)
 $(BUILD)/tb_core_run2.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                            $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \

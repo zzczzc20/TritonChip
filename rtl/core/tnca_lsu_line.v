@@ -7,7 +7,10 @@ module tnca_lsu_line #(
     parameter SLOTS=8,
     parameter TAG_W=3,
     parameter RCTX_W=2,
-    parameter [63:0] TMU_BASE=64'h7fff0000
+    parameter [63:0] TMU_BASE=64'h7fff0000,
+    // R42 clk (CLKFIX[0]): 1 registers the completion pick, a +1 cycle on every completion (the rotating pick over the done slots, 12+ LUT levels,
+    // no longer sits in front of the landing-RAM read, the shift and the lane extract); 0 = the shipped RTL
+    parameter PICK_REG=0
 )(
     input wire clk, rst_n,
     input wire req_valid,
@@ -87,6 +90,7 @@ module tnca_lsu_line #(
     reg [TAG_W-1:0] rr,pick,held_pick;
     reg found,held;
     integer candidate;
+    generate if(PICK_REG==0) begin : g_pick_comb
     always @* begin
         found=0;pick=0;candidate=0;
         for(integer n=0;n<SLOTS;n=n+1) begin
@@ -95,6 +99,31 @@ module tnca_lsu_line #(
         end
         if(held) begin found=1;pick=held_pick;end
     end
+    end else begin : g_pick_reg
+    // The next completion is chosen while the current one is read out: the search skips the slot being completed and starts behind it (rr is
+    // behind the last retired slot while none is chosen), and its result is registered. The registered pick is the stable choice (no `held`).
+    reg pk_v;
+    reg [TAG_W-1:0] pk_i;
+    reg [SLOTS-1:0] done_x;
+    reg [TAG_W-1:0] start,pick_n;
+    reg found_n;
+    integer cand_n;
+    always @* begin
+        done_x=done;
+        if(pk_v) done_x[pk_i]=1'b0;
+        start=pk_v ? pk_i+1'b1 : rr;
+        found_n=0;pick_n=0;cand_n=0;
+        for(integer n=0;n<SLOTS;n=n+1) begin
+            cand_n=(start+n)%SLOTS;
+            if(!found_n && done_x[cand_n]) begin found_n=1;pick_n=cand_n;end
+        end
+        found=pk_v;pick=pk_i;
+    end
+    always @(posedge clk) begin
+        if(!rst_n) begin pk_v<=0;pk_i<=0;end
+        else if(!pk_v || (cpl_valid && cpl_ack)) begin pk_v<=found_n;pk_i<=pick_n;end
+    end
+    end endgenerate
     assign cpl_valid=found;
     wire retire=cpl_valid && cpl_ack;
     assign cpl_rctx=rctx[pick];

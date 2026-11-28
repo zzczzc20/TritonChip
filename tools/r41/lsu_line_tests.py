@@ -2,7 +2,9 @@
 """Finite shared vector-line planner: byte oracle, backpressure and throughput."""
 from pathlib import Path
 import subprocess
+import os
 import tempfile
+PICK_REG=os.environ.get('PICK_REG','0')   # R42 clk: PICK_REG=1 runs the same sweep on the registered-pick line engine
 ROOT=Path(__file__).resolve().parents[2]
 SLOT_COUNTS=(2,4,8,16,32,64)
 
@@ -33,7 +35,7 @@ def main():
                         subprocess.run(['iverilog','-g2012','-Irtl/common','-s','tb_lsu_line',
                             f'-Ptb_lsu_line.SLOTS={slots}',f'-Ptb_lsu_line.TAG_W={slots.bit_length()-1}',
                             f'-Ptb_lsu_line.STALL={stall}',f'-Ptb_lsu_line.STREAM={stream}',
-                            f'-Ptb_lsu_line.SEED={seed}','-o',binary,
+                            f'-Ptb_lsu_line.SEED={seed}',f'-Ptb_lsu_line.PICK_REG={PICK_REG}','-o',binary,
                             'rtl/core/tnca_lsu_line.v','tb/core/tb_lsu_line.v'],cwd=ROOT,check=True,timeout=60)
                         subprocess.run(['vvp',binary],cwd=ROOT,check=True,timeout=60)
                         configurations+=1

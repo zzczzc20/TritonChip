@@ -60,6 +60,7 @@ module tnca_top #(
     parameter MTX_PIPE = 0,
     parameter MTX_VRF_REG = 0,
     parameter SHRINK = 0,      // R42 shrink: bit field of area options (see tnca_tile.v); 0 = the shipped RTL
+    parameter CLKFIX = 0,      // R42 clk: bit field of path-family pipeline fixes (see tnca_tile.v); 0 = the shipped RTL
     parameter HYBRID_LSU = 0,
     parameter HOME_BACKGROUND_READS = 0,
     parameter HOME_LINE_WRITE_NOFILL = 0,   // R41 G4: full-line stores allocate without a fill
@@ -500,6 +501,7 @@ module tnca_top #(
                 .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE),
                 .MTX_VRF_REG(MTX_VRF_REG),
                 .SHRINK(SHRINK),
+                .CLKFIX(CLKFIX),
                 .LSU_INFLIGHT(LSU_INFLIGHT),
                 .FPU_OVERLAP(FPU_OVERLAP),
                 .RSLICE(RSLICE),

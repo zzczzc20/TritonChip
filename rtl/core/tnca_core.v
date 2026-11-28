@@ -96,6 +96,9 @@ module tnca_core #(
     parameter MTX_VRF_REG    = 0,
     parameter VRF_XBAR       = 0,   // R42 shrink: tnca_vrf_banked XBAR / VLD_RAM (0 = the shipped RTL)
     parameter VRF_VLD_RAM    = 0,
+    //   CLKFIX (R42 clk) bit field of pipeline fixes for the nine clock path families; 0 = the shipped RTL, cycle for cycle.
+    //               [0] hybrid LSU line engine: registered completion pick (+1 cycle on each fast-path completion)
+    parameter CLKFIX         = 0,
     //   LSU_INFLIGHT (R39-08) 2: two load/store units behind the one port
     //               (tnca_lsu_pair), so an access starts while the one ahead
     //               waits for memory; atomics and fences see one access at
@@ -1856,7 +1859,8 @@ module tnca_core #(
         .NUM_BEATS(LSU_BEATS), .BEAT_W(MTAG_W),
         // R41 G4: LSU_INFLIGHT 1 builds one word-path unit (every hybrid
         // build so far uses 2, the multicore default)
-        .SLOW_UNITS(LSU_INFLIGHT >= 2 ? 2 : 1)
+        .SLOW_UNITS(LSU_INFLIGHT >= 2 ? 2 : 1),
+        .PICK_REG(CLKFIX & 1)
     ) u_lsu (
         .req_ready_load(hybrid_ready_load),
         .clk(clk), .rst_n(rst_n),

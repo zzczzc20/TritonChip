@@ -2,7 +2,9 @@
 """Full hybrid LSU completions and memory effects versus the legacy pair."""
 from pathlib import Path
 import subprocess
+import os
 import tempfile
+PICK_REG=os.environ.get('PICK_REG','0')   # R42 clk: PICK_REG=1 runs the same sweep on the registered-pick line engine
 ROOT=Path(__file__).resolve().parents[2]
 
 
@@ -16,7 +18,7 @@ def main():
                     for burst in (0,1):
                         binary=str(Path(tmp)/'hybrid.vvp')
                         subprocess.run(['iverilog','-g2012','-Irtl/common','-y','rtl/core','-s','tb_lsu_hybrid',
-                            f'-Ptb_lsu_hybrid.BEAT_W={beat_w}',f'-Ptb_lsu_hybrid.SEED={seed}',
+                            f'-Ptb_lsu_hybrid.BEAT_W={beat_w}',f'-Ptb_lsu_hybrid.PICK_REG={PICK_REG}',f'-Ptb_lsu_hybrid.SEED={seed}',
                             f'-Ptb_lsu_hybrid.STALL_PCT={stall}',
                             f'-Ptb_lsu_hybrid.HOLD_PCT={5 if stall else 0}',f'-Ptb_lsu_hybrid.BURST={burst}',
                             f'-Ptb_lsu_hybrid.BURST_PERIOD={256 if beat_w>6 else 128 if beat_w>4 else 32}',
@@ -39,7 +41,7 @@ def main():
         for beat_w in (5, 6, 7):
             binary=str(Path(tmp)/'indexed-eight.vvp')
             subprocess.run(['iverilog','-g2012','-Irtl/common','-y','rtl/core','-s','tb_lsu_hybrid',
-                f'-Ptb_lsu_hybrid.BEAT_W={beat_w}', '-Ptb_lsu_hybrid.CAND_BEATS=8',
+                f'-Ptb_lsu_hybrid.BEAT_W={beat_w}',f'-Ptb_lsu_hybrid.PICK_REG={PICK_REG}', '-Ptb_lsu_hybrid.CAND_BEATS=8',
                 '-Ptb_lsu_hybrid.FORCE_INDEXED=1', '-Ptb_lsu_hybrid.ACCESSES=32',
                 '-Ptb_lsu_hybrid.MAXLAT=64', '-Ptb_lsu_hybrid.STALL_PCT=0',
                 '-Ptb_lsu_hybrid.HOLD_PCT=0', '-o',binary,'tb/core/tb_lsu_hybrid.v'],
@@ -49,7 +51,7 @@ def main():
         for beat_w in (5, 6, 7):
             binary=str(Path(tmp)/'mixed-eight.vvp')
             subprocess.run(['iverilog','-g2012','-Irtl/common','-y','rtl/core','-s','tb_lsu_hybrid',
-                f'-Ptb_lsu_hybrid.BEAT_W={beat_w}', '-Ptb_lsu_hybrid.CAND_BEATS=8',
+                f'-Ptb_lsu_hybrid.BEAT_W={beat_w}',f'-Ptb_lsu_hybrid.PICK_REG={PICK_REG}', '-Ptb_lsu_hybrid.CAND_BEATS=8',
                 '-Ptb_lsu_hybrid.SEED=7', '-Ptb_lsu_hybrid.STALL_PCT=30',
                 '-Ptb_lsu_hybrid.HOLD_PCT=5', '-Ptb_lsu_hybrid.MAXLAT=64',
                 '-Ptb_lsu_hybrid.ACCESSES=600', '-o',binary,'tb/core/tb_lsu_hybrid.v'],

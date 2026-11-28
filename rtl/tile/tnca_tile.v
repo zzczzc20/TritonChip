@@ -62,6 +62,11 @@ module tnca_tile #(
     // tnca_home_pipe DATA_RAM), [3:2] home MSHR line buffer + target data RAM (AUX_RAM), [5:4] VRF response crossbar (tnca_vrf_banked XBAR),
     // [6] VRF valid bits in the bank RAM with a reset sweep (VLD_RAM).
     parameter SHRINK = 0,
+    // R42 clk: pipeline fixes of the nine path families as one bit field, 0 (default) = the shipped RTL, cycle for cycle. Each set bit adds register
+    // stages or retimes a cone (a bit that adds a cycle says so at its owner); architectural results are unchanged. Bits:
+    // [0] LSU line engine: registered completion pick (+1 cycle on every fast-path load/store completion)
+    // others are listed at the owning module (tnca_core CLKFIX).
+    parameter CLKFIX = 0,
     parameter HYBRID_LSU = 0,
     parameter HOME_BACKGROUND_READS = 0,
     parameter HOME_LINE_WRITE_NOFILL = 0,   // R41 G4: full-line stores allocate without a fill
@@ -237,7 +242,7 @@ module tnca_tile #(
         .RCTX_SWITCH(RCTX_SWITCH),
         .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE),
         .MTX_VRF_REG(MTX_VRF_REG),
-        .VRF_XBAR((SHRINK >> 4) & 3), .VRF_VLD_RAM((SHRINK >> 6) & 1),
+        .VRF_XBAR((SHRINK >> 4) & 3), .VRF_VLD_RAM((SHRINK >> 6) & 1), .CLKFIX(CLKFIX),
         .LSU_INFLIGHT(LSU_INFLIGHT),
         .FPU_OVERLAP(FPU_OVERLAP),
         .RSLICE(RSLICE),

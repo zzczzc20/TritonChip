@@ -227,12 +227,12 @@ study at its default (its tile is the shrink worker's step 3, 230,979 LUT in his
 |---|---|--:|--:|--:|--:|--:|
 | ctl | control | 229,400 | 69,313 | +1.008 | -0.161 (1,134) | -1.522 (28,245) |
 | fwd v1 | VRF_FWD, first version | 231,441 (+2,041) | 69,364 | +0.588 | - | stopped at 14 min (RTL replaced) |
-| **fwd2** | **VRF_FWD final** | **230,287 (+887)** | 70,857 (+1,544) | +0.777 | not finished | -1.107 (18,646) |
+| **fwd2** | **VRF_FWD final** | **230,287 (+887)** | 70,857 (+1,544) | +0.777 | -0.244 (1,575) | -1.107 (18,646) |
 | te5 | `TENSOR_TAG_W 5` | 233,943 (+4,543) | 70,432 | - | - | - |
 | s128 | `SETS 128` + `SET_W 7` | 240,899 (+11,499) | 72,031 | - | - | - |
 | lf | `TENSOR_LINE_HALF 1` + `MAC_F32 1` | 231,141 (+1,741) | 69,541 | - | - | - |
 | **comb** | LF + VRF_FWD + sets128 (the candidate) | **242,821 (+13,421)** | 73,811 (+4,498) | +0.581 | not run | -1.900 (30,637) |
-| comb5 | comb + `TENSOR_TAG_W 5` | 245,008 (+15,608) | 74,900 | - | - | unfinished (see below) |
+| comb5 | comb + `TENSOR_TAG_W 5` | 245,008 (+15,608) | 74,900 | - | - | **-2.623 (40,483)** |
 
 Where the lever's own logic is (`ooc/*/synth_util_hier.rpt.gz`): the whole `VRF_FWD` increment is in the core's own logic (`(u_core)` 8,514 -> 10,574 LUT in v1, +2,060; v2 +887 LUT and +1,544 FF because the operand-capture registers `x_v?_q` can no longer be merged with the holding registers). No other unit moves.
 
@@ -248,7 +248,7 @@ Where the lever's own logic is (`ooc/*/synth_util_hier.rpt.gz`): the whole `VRF_
 
 Routed LUT of the screens at 10 ns: ctl 227,241, fwd2 228,147, comb 240,543. **SLR packing (derived):** the shrink worker's floorplan arithmetic puts SLR0 at 89.9 % with the step-3 tile; the candidate adds +13.4 k synthesis LUT per tile = about +13.2 k routed = +2.26 k CLB at 5.84 LUT/CLB of 54.3 k CLB
 per SLR: +4.2 points, SLR0 about 94.1 % (highest packing that ever routed 96.74 %), SLR1 88.8 %, SLR2 85.5 %.
-Not finished when this file was last edited (x86 jobs of mine still running; `comb5` at 5.6 ns was in post-route physical optimisation after 63 minutes, its log showed an interim path-group WNS of -2.85 ns inside `phys_opt`, which is not a routed result and is not used anywhere; the queue stop file `~/r42_issue_out/STOP` is set so no further job of mine starts; results land in `~/r42_issue_out/<name>` and are summarised by `python3 tools/r42/issue/ooc_collect.py ~/r42_issue_out`): `tscr_i_s3_comb5_p56`, `tscr_i_s3_fwd2_p667`; not run: `tscr_i_s3_comb_p667`, the 5.6 ns screens of te5, s128 and lf alone, the core-unit runs (`queue_core.txt`).
+Finished after the first version of this paragraph: `tscr_i_s3_fwd2_p667` (fwd2 at 6.67 ns: WNS -0.244, 1,575 failing endpoints, against ctl -0.161 / 1,134) and `tscr_i_s3_comb5_p56` (comb + `TENSOR_TAG_W 5` at 5.6 ns: WNS -2.623, 40,483 failing endpoints, against comb -1.900 / 30,637). At 6.67 ns the worst path of fwd2 is the matrix MAC array (`u_mtx ... b_q_reg -> g_c0.q_reg`, -0.244), the same family as the control's worst (-0.161), and `r_fwd` is not among the 300 worst endpoints; the 0.08 ns difference between the two tiles is on endpoints that `VRF_FWD` does not touch, so it is placement variation between two runs of the tool, not a measured cost of the lever (one run per arm, no repeat). The `TENSOR_TAG_W 5` tile is 0.72 ns worse than the candidate at 5.6 ns (worst path `wbq_addr -> ms_state` in the home slice), one more reason it is not in the candidate. Not run: `tscr_i_s3_comb_p667`, the 5.6 ns screens of te5, s128 and lf alone, the core-unit runs (`queue_core.txt`). Summary of all runs: `ooc/ooc_summary.txt`; the queue stop file `~/r42_issue_out/STOP` is set and no job of mine is running on the x86 host.
 
 ## 7. The other levers of the brief
 
@@ -310,7 +310,7 @@ Clock: the image is the 100 MHz one (`TNCA_KERNEL_MHZ` default 100); at 10 ns th
   not completed beyond the four model points (0.904, 0.900, 0.830, 0.950 of the base) and the behavioural-VRF run (stopped by me by PID after 4 points: 1.088, 1.039, 1.045, 1.119).
 - **One preserved stand-in fault**: base arm `op.fp8_linear/xl/fp8-m16-k256-n128` on thor: `DEVICE_LOST ... the completed MMIO response contains an invalid or unknown value` in `_copy_kernel` (the fault the img worker saw once on `mlp/tiny`); the record is in `rtl_3c/thor_base`, the re-run of the same point passed (61,835 cycles, the img worker's A arm: 61,751) and is the base used for that point.
 - **Not built:** `hl`/zero-cost branch, `te32`, a hardware single-read for repeated source registers, W->X forwarding (one more cycle per dependent pair, a mux level in front of every execution unit), the `r_fwd` re-timing; `VRF_PREFETCH 0` and behavioural-VRF tiers beyond the points above.
-- **Not measured:** medium, large, hbm and xl tiers (neither simulator reaches them); the stand-in has no point with more than 48 KiB resident outside the small tier, so `sets128` is measured where it matters least; the combination's 5.6 ns tile screen with `TENSOR_TAG_W 5` (`comb5`) was still running when this file was last edited, as was the 6.67 ns screen of fwd2 (the 6.67 ns screen of comb was not run).
+- **Not measured:** medium, large, hbm and xl tiers (neither simulator reaches them); the stand-in has no point with more than 48 KiB resident outside the small tier, so `sets128` is measured where it matters least; the 6.67 ns screen of comb and the 5.6 ns screens of te5, s128 and lf alone were not run.
 - **Model-side:** I did not run new TLM what-ifs (the TLM's `issue_vector_cycles` has no counterpart mechanism in the RTL, so a "true issue cost" run would be another calibration); the model comparison is per point against RTL counters and measured effects.
 - `make r1-profile-tests` fails CFG-01 in this tree for the benches of the other R42 profiles (`tb_core_r42*.vvp` not built here), as before this branch; the lines of `core-r42-fwd` read back PASS.
 - Resource use: GB10 and thor up to 4 and 3 jobs each (briefly 5 on GB10 for a few minutes when two arms overlapped), x86 at most 2 own Vivado jobs (plus a 3 minute packaging dry run overlapping the tail of a synthesis); processes of mine that were stopped, by explicit PID: `~/r42/issue_out/killed_own_pids.txt` on GB10/thor, `~/r42_issue_out/killed_own_pids.txt` on x86. No pattern kill, no foreign process touched.

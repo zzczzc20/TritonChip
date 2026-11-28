@@ -1,4 +1,8 @@
 name	syn_lut	syn_logic	syn_ff	dsp	uram	rt_lut	rt_ff	wns	tns	fail	endpoints	ep_lt1.5
+.Xil												
+.pids												
+_c												
+failed_runs												
 i_s3_comb5_syn	245008	None	74900	269	24							
 i_s3_comb_syn	242821	None	73811	269	24							
 i_s3_ctl_syn	229400	None	69313	269	24							
@@ -6,7 +10,7 @@ i_s3_fwd2_syn	230287	None	70857	269	24
 i_s3_lf_syn	231141	None	69541	269	24							
 i_s3_s128_syn	240899	None	72031	269	24							
 i_s3_te5_syn	233943	None	70432	269	24							
-tscr_i_s3_comb5_p56												
+tscr_i_s3_comb5_p56						244605	75054	-2.623	-34911.758	40483	204032	95066
 tscr_i_s3_comb_p10						240543	73844	0.581	0.000	0	202748	1401
 tscr_i_s3_comb_p56						242321	73932	-1.900	-25073.662	30637	202867	82154
 tscr_i_s3_ctl_p10						227241	69305	1.008	0.000	0	193618	120
@@ -14,7 +18,7 @@ tscr_i_s3_ctl_p56						228889	69396	-1.522	-16968.047	28245	193738	82763
 tscr_i_s3_ctl_p667						228415	69339	-0.161	-71.003	1134	193654	46496
 tscr_i_s3_fwd2_p10						228147	70846	0.777	0.000	0	195166	270
 tscr_i_s3_fwd2_p56						229761	70965	-1.107	-7910.645	18646	195290	77882
-tscr_i_s3_fwd2_p667												
+tscr_i_s3_fwd2_p667						229304	70886	-0.244	-130.758	1575	195213	38059
 v1_i_s3_fwd_syn	231441	None	69364	269	24							
 v1_stopped_tscr_i_s3_fwd_p56												
 v1_tscr_i_s3_fwd_p10						229319	69353	0.588	0.000	0	193659	97

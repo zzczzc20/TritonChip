@@ -2,8 +2,7 @@
 """net_benefit.py  -- derived: wall-time speed-up (S145) of a tile OOC period through the TLM clock curve, minus the cycle price of the fixes.
 
 Inputs (recorded): TLM clock curve of R42-shrink RESULTS section 4, S145 = 2.032 / 2.448 / 2.863 at 100 / 125 / 150 MHz with the nine path fixes at +1 cycle each (-1.9 %);
-today's hardware at 100 MHz = 2.072 (so the curve without the fixes' cycles is the listed values / 0.981). The image period is the OOC tile period times a derate d (1.2-1.4: the
-same families are 1.4-1.6 times longer in the run-3 image; the shrunk tile packs SLR0 less); memory latency fixed in ns is inside the TLM curve.
+today's hardware at 100 MHz = 2.072 (so the curve without the fixes' cycles is the listed values / 0.981). The image period is the OOC tile period times a derate d (central 1.4-1.5: the run-3 image closed 10 ns (+0.111) while the default-RTL OOC tile's worst routed path at 6.67 ns was 7.19 ns (1.39) and the shrunk tile's 6.74 ns (1.48); 1.3 is the optimistic edge); memory latency fixed in ns is inside the TLM curve.
 Cycle price of this worker's bits (TLM, 77 points): PICK_REG 0.4 %, S2 split 1.55 % (stand-in tiny points: 0.32 % and 5.4 %); all other bits 0.
 """
 import sys
@@ -26,11 +25,11 @@ def s145(mhz, pts):
 price = {'tlm': 0.0195, 'standin': 0.0032 + 0.054}
 print('| OOC tile period | derate | image period | MHz | S145 clock only | S145 minus cycle price (TLM %.2f %%) | (stand-in tiny price %.1f %%) | gain over 2.072 (TLM price) |' % (100 * price['tlm'], 100 * price['standin']))
 print('|---|--:|--:|--:|--:|--:|--:|--:|')
-for per in (6.67, 6.2, 5.6):
-    for d in (1.2, 1.3, 1.4):
+for per in (6.67, 6.49, 6.2, 5.6):
+    for d in (1.3, 1.4, 1.48, 1.5):
         img = per * d
         mhz = 1000.0 / img
         base = s145(mhz, nofix)
         a = base * (1 - price['tlm'])
         b = base * (1 - price['standin'])
-        print('| %.2f ns | %.1f | %.2f ns | %.1f | %.3f | %.3f | %.3f | %+.1f %% |' % (per, d, img, mhz, base, a, b, 100 * (a / 2.072 - 1)))
+        print('| %.2f ns | %.2f | %.2f ns | %.1f | %.3f | %.3f | %.3f | %+.1f %% |' % (per, d, img, mhz, base, a, b, 100 * (a / 2.072 - 1)))

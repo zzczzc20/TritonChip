@@ -91,6 +91,9 @@ module tnca_home_pipe #(
     // [9] AMO_PIPE: an atomic that writes (a hit atomic in S3, an atomic target of the fill unit) computes its result in one cycle into a register and
     // merges it in the next (+1 cycle on such an access only; every other access is unchanged), so the 64-bit atomic ALU is no longer in front of the
     // merge and the data array write.
+    // [10] RQ_BYPASS: a request accepted into an EMPTY request buffer goes straight to S1 (its tag read starts in the accept cycle, not the cycle after),
+    // as the arbiter would have chosen it alone one cycle later: -1 cycle on an uncontended request, which pays back the S2 split's +1 for the
+    // latency-bound case. A buffer holding any request (live, busy or blocked) takes the normal path.
     parameter CLKFIX = 0,
     parameter [63:0] TMU_BASE = 64'h0000_0000_7FFF_0000
 ) (
@@ -171,6 +174,7 @@ module tnca_home_pipe #(
     localparam CF_S2SPLIT = (CLKFIX >> 4) & 1;  // R42 clk bit 4
     localparam CF_ARB     = (CLKFIX >> 5) & 1;  // R42 clk bit 5
     localparam CF_AMOP    = (CLKFIX >> 9) & 1;  // R42 clk bit 9
+    localparam CF_BYP     = (CLKFIX >> 10) & 1; // R42 clk bit 10
 
     integer i, j, k;
 
@@ -386,14 +390,16 @@ module tnca_home_pipe #(
     wire pipe_stall;              // S2 holds: S1 and the arbiter hold too
     wire maint_hold;              // a maintenance request is pending: start nothing
     wire take = sel_valid && !pipe_stall && !maint_hold;
-    wire [SET_W-1:0] read_set = `HP_SET(rq_addr[sel_idx]);
+    // RQ_BYPASS: the request offered this cycle into an empty buffer (nothing live, busy or blocked: rq_v == 0), when S1 would take it next cycle anyway
+    wire byp  = (CF_BYP != 0) && req_valid && req_ready && (rq_v == {RQ_N{1'b0}}) && !pipe_stall && !maint_hold;
+    wire [SET_W-1:0] read_set = byp ? `HP_SET(req_addr) : `HP_SET(rq_addr[sel_idx]);
     genvar gw;
     generate for (gw = 0; gw < WAYS; gw = gw + 1) begin : g_tag
         (* ram_style = "distributed" *) reg [TAGB-1:0] bank [0:SETS-1];
         reg [TAGB-1:0] read_tag;
         always @(posedge clk) begin
             if (tag_we && tag_wway == gw) bank[tag_wset] <= tag_wdata;
-            if (take) read_tag <= bank[read_set];
+            if (take || byp) read_tag <= bank[read_set];
             else if (m_state == M_WAIT) read_tag <= bank[m_set];   // maintenance scan
         end
         assign lookup_tag[gw] = read_tag;
@@ -888,13 +894,17 @@ module tnca_home_pipe #(
                     a_ms <= ca_ms; a_ms_id <= ca_ms_id; a_ms_inv <= ca_ms && fu_step && fu_last && (fu_ms == ca_ms_id);
                     for (i = 0; i < WAYS; i = i + 1) a_tags[i] <= lookup_tag[i];
                 end
-                s1_v <= take;
+                s1_v <= take || byp;
                 if (take) begin
                     s1_rq <= sel_idx; s1_addr <= rq_addr[sel_idx]; rq_busy[sel_idx] <= 1'b1;
                     if (any_blocked) perf_hit_past_block <= perf_hit_past_block + 1;
                     // a tag S2 writes this cycle in the set S1 reads is not in the read
                     s1_stale <= s2_act && (s2_kind_install || s2_kind_alloc) &&
                                 (`HP_SET(rq_addr[sel_idx]) == s2_set);
+                end else if (byp) begin
+                    s1_rq <= rq_free_idx; s1_addr <= req_addr; rq_busy[rq_free_idx] <= 1'b1;
+                    s1_stale <= s2_act && (s2_kind_install || s2_kind_alloc) &&
+                                (`HP_SET(req_addr) == s2_set);
                 end else s1_stale <= 1'b0;
             end
 

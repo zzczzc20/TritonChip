@@ -48,6 +48,12 @@ module tnca_scalar_rf #(
     input  wire [5:0]            rg_idx,
     output wire [63:0]           rg_data,
 
+    // read port H (R42 clk CLKFIX[8]): a second read port in the read stage for the second token of m.mma (Sc+1) and the first transfer
+    // coordinate (Sb+1), so those values reach X in a register like the A-C operands (same write-first rule). Unconnected: not built.
+    input  wire [RCTX_W-1:0]     rh_rctx,
+    input  wire [5:0]            rh_idx,
+    output wire [63:0]           rh_data,
+
     // write port
     input  wire                  w_en,
     input  wire [RCTX_W-1:0]     w_rctx,
@@ -87,6 +93,7 @@ module tnca_scalar_rf #(
     wire [RCTX_W+5:0] ae = {re_rctx, re_idx};
     wire [RCTX_W+5:0] af = {re_rctx, rf_idx};
     wire [RCTX_W+5:0] ag = {re_rctx, rg_idx};
+    wire [RCTX_W+5:0] ah = {rh_rctx, rh_idx};
 
     assign ra_data = (ra_idx == 6'd0)            ? 64'd0 :
                      (w_real && (aa == wa))      ? w_data : (valid[aa] ? mem[aa] : 64'd0);
@@ -102,5 +109,7 @@ module tnca_scalar_rf #(
                      (w_real && (af == wa))      ? w_data : (valid[af] ? mem[af] : 64'd0);
     assign rg_data = (rg_idx == 6'd0)            ? 64'd0 :
                      (w_real && (ag == wa))      ? w_data : (valid[ag] ? mem[ag] : 64'd0);
+    assign rh_data = (rh_idx == 6'd0)            ? 64'd0 :
+                     (w_real && (ah == wa))      ? w_data : (valid[ah] ? mem[ah] : 64'd0);
 
 endmodule

@@ -105,6 +105,8 @@ module tnca_core #(
     //               [0] hybrid LSU line engine: registered completion pick (+1 cycle on each fast-path completion)
     //               [1] home slice (tnca_tile -> tnca_home_pipe): MSHR address written into the free entry every cycle (0 cycles)
     //               [2] banked VRF: the writeback's physical register registered with w_* (0 cycles)
+    //               [3] scalar and predicate register file write ports take private copies of the writeback registers (0 cycles)
+    //               [8] the second m.mma token / first transfer coordinate is read in R and registered (like the A-C operands): 0 cycles
     //               [6] word-path LSU: lane arrays load in every idle cycle (0 cycles)
     //               (bits 3-5 and 7: see tnca_tile / the owning module)
     parameter CLKFIX         = 0,
@@ -635,6 +637,7 @@ module tnca_core #(
     // Register files (read in X)
     //==========================================================================
     wire [63:0]          sa_data, sb_data, sc_data, sb2_raw;
+    wire [63:0]          sb2_rf, r_sd_rd;      // R42 clk CLKFIX[8]: sb2_rf is port D's read in X, r_sd_rd port H's read in R
     wire [63:0]          sb3_raw, sb4_raw, sb5_raw;
     wire [VLEN*ELEN-1:0] va_data, vb_data, vc_data;
     wire [VLEN*ELEN-1:0] fpu_va, fpu_vb, fpu_vc;   // R41 T2: the FPU's copy (banked file)
@@ -741,6 +744,17 @@ module tnca_core #(
     reg [VLEN-1:0]       w_lane_en;
     reg [VLEN-1:0]       w_pdata;
 
+    // R42 clk (CLKFIX[3]): private copies of the writeback registers for the scalar and the predicate register file write ports (selects, context,
+    // index, data), loaded together with w_*; the shared w_* registers fan out to the vector file, the scoreboard, the bypass compares, the LSU command
+    // and the matrix, and the write-address nets of the register-file RAMs were routed over several ns (u_srf `w_idx` -> RAM, 2 levels, 95 % net).
+    localparam CF_WREP = (CLKFIX >> 3) & 1;
+    (* dont_touch = "true" *) reg                w_s_en, w_p_en;
+    (* dont_touch = "true" *) reg [RCTX_W-1:0]   w_s_rctx, w_p_rctx;
+    (* dont_touch = "true" *) reg [5:0]          w_s_idx;
+    (* dont_touch = "true" *) reg [3:0]          w_p_idx;
+    (* dont_touch = "true" *) reg [63:0]         w_s_data;
+    (* dont_touch = "true" *) reg [VLEN-1:0]     w_p_data;
+
     //--------------------------------------------------------------------------
     // R41 F02: scalar operands A-C are read in R and travel into X in a
     // register, with the one write that can still land on them forwarded.
@@ -786,6 +800,20 @@ module tnca_core #(
     assign sb_data = x_sb_fw ? w_sdata : x_sb_q;
     assign sc_data = x_sc_fw ? w_sdata : x_sc_q;
 
+    // R42 clk (CLKFIX[8]): the second scalar token of m.mma (Sc+1) and the first transfer coordinate (Sb+1) are read in R (port H of the file) and
+    // travel into X in a register with the one write that can still land on them forwarded, exactly like the A-C operands above (R41 F02), instead of
+    // being read from the file's RAM in X (x_sd_q): that read (1.8 ns) sat in front of the barrier-token validity compare, x_bar_illegal and the enables of
+    // the barrier, matrix and transfer engines. What X sees is unchanged bit for bit.
+    localparam CF_TOKR = (CLKFIX >> 8) & 1;
+    wire [5:0] r_sd_idx = (r_major == `TNCA_MAJ_MATRIX) ? (r_sc_idx + 6'd1) : (r_sb_idx + 6'd1);
+    reg  [63:0] x_sd_data_q;
+    reg         x_sd_fw;
+    always @(posedge clk) begin
+        x_sd_data_q <= r_sd_rd;
+        x_sd_fw     <= nw_s_hit && (nw_idx[5:0] == r_sd_idx) && (r_sd_idx != 6'd0);
+    end
+    assign sb2_raw = CF_TOKR ? (x_sd_fw ? w_sdata : x_sd_data_q) : sb2_rf;
+
     tnca_scalar_rf #(.NUM_RCTX(NUM_RCTX), .RCTX_W(RCTX_W)) u_srf (
         .clk(clk), .rst_n(rst_n),
         .ra_rctx(r_rctx), .ra_idx(r_sa_idx), .ra_data(r_sa_rd),
@@ -799,14 +827,15 @@ module tnca_core #(
         .rd_rctx(x_rctx),
         // R41 T2: indices registered with X (x_sd_q..x_sg_q), not added in X.
         .rd_idx(x_sd_q),
-        .rd_data(sb2_raw),
+        .rd_data(sb2_rf),
+        .rh_rctx(r_rctx), .rh_idx(r_sd_idx), .rh_data(r_sd_rd),
         // Sb+2..Sb+4: a rank-3..5 transfer's remaining coordinates.
         .re_rctx(x_rctx),
         .re_idx(x_se_q), .re_data(sb3_raw),
         .rf_idx(x_sf_q), .rf_data(sb4_raw),
         .rg_idx(x_sg_q), .rg_data(sb5_raw),
-        .w_en(w_en && (w_class == `TNCA_DST_S)),
-        .w_rctx(w_rctx), .w_idx(w_idx[5:0]), .w_data(w_sdata)
+        .w_en(CF_WREP ? w_s_en : (w_en && (w_class == `TNCA_DST_S))),
+        .w_rctx(CF_WREP ? w_s_rctx : w_rctx), .w_idx(CF_WREP ? w_s_idx : w_idx[5:0]), .w_data(CF_WREP ? w_s_data : w_sdata)
     );
 
     localparam VW = VLEN * ELEN;
@@ -1277,8 +1306,8 @@ module tnca_core #(
         .ra_rctx(r_rctx), .ra_idx(r_pa_idx), .ra_data(r_pa_rd),
         .rb_rctx(r_rctx), .rb_idx(r_pb_idx), .rb_data(r_pb_rd),
         .rm_rctx(r_rctx), .rm_idx(r_pm_idx), .rm_data(r_pm_rd),
-        .w_en(w_en && (w_class == `TNCA_DST_P)),
-        .w_rctx(w_rctx), .w_idx(w_idx[3:0]), .w_data(w_pdata)
+        .w_en(CF_WREP ? w_p_en : (w_en && (w_class == `TNCA_DST_P))),
+        .w_rctx(CF_WREP ? w_p_rctx : w_rctx), .w_idx(CF_WREP ? w_p_idx : w_idx[3:0]), .w_data(CF_WREP ? w_p_data : w_pdata)
     );
 
     wire [VLEN-1:0] lane_mask = x_lm_fw ? (x_pm_neg ? ~w_pdata : w_pdata)
@@ -2958,6 +2987,8 @@ module tnca_core #(
             red_pend   <= 1'b0;
             red_len    <= {VLEN{1'b1}};
             w_en       <= 1'b0;
+            w_s_en     <= 1'b0;
+            w_p_en     <= 1'b0;
             wb_rsv     <= {WB_DEPTH{1'b0}};
             for (i = 0; i < FP_LAT; i = i + 1)  fp_v[i] <= 1'b0;
             for (i = 0; i < MUL_LAT; i = i + 1) mu_v[i] <= 1'b0;
@@ -3053,6 +3084,11 @@ module tnca_core #(
             w_pdata   <= nw_pdata;
             w_lane_en <= nw_lane_en;
             w_full    <= &nw_lane_en;
+            w_s_en    <= nw_en && (nw_class == `TNCA_DST_S);
+            w_p_en    <= nw_en && (nw_class == `TNCA_DST_P);
+            w_s_rctx  <= nw_rctx;   w_p_rctx <= nw_rctx;
+            w_s_idx   <= nw_idx[5:0]; w_p_idx <= nw_idx[3:0];
+            w_s_data  <= nw_sdata;  w_p_data <= nw_pdata;
             end
 
             if (|running) perf_cycles <= perf_cycles + 64'd1;
@@ -3116,6 +3152,8 @@ module tnca_core #(
                 r_valid  <= 1'b0;
                 x_valid  <= 1'b0;
                 w_en     <= 1'b0;
+                w_s_en   <= 1'b0;
+                w_p_en   <= 1'b0;
                 wb_rsv   <= {WB_DEPTH{1'b0}};
                 for (i = 0; i < FP_LAT; i = i + 1)  fp_v[i] <= 1'b0;
                 for (i = 0; i < MUL_LAT; i = i + 1) mu_v[i] <= 1'b0;

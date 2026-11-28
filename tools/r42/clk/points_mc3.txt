@@ -1,0 +1,3 @@
+op.gemv/tiny/fp16-k64-n64
+op.linear/tiny/fp16-m16-k64-n64
+op.matmul/tiny/fp16-m16-k32-n16

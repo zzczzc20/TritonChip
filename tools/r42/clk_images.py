@@ -22,6 +22,7 @@ ARMS = {
     's2': {'CLKFIX': 16},
     'c23': {'CLKFIX': 23},
     'idle': {'CLKFIX': 128},
+    'all': {'CLKFIX': 511},
 }
 
 

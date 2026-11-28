@@ -10,9 +10,9 @@ OUTROOT=$HOME/r42_clk_out
 OUT=$OUTROOT/$NAME
 mkdir -p $OUT
 PERIOD=10
-for e in $ENVS; do case $e in PERIOD=*) PERIOD=${e#PERIOD=};; esac; done
+for e in $ENVS; do case $e in PERIOD=*) PERIOD=${e#PERIOD=};; OOC_TCL=*) OOC_TCL=${e#OOC_TCL=};; esac; done
 FL=""
 for f in ${FILES//,/ }; do FL="$FL $(ls $ROOT/$f)"; done
 echo "$(date -u +%FT%TZ) start $NAME top=$TOP generics=$GEN env=$ENVS" >> $OUTROOT/run.log
-( cd $OUT && env $ENVS OOC_GENERICS="$GEN" INCDIRS="$ROOT/rtl/common $ROOT/rtl/noc" nice -n 5 vivado -mode batch -nojournal -nolog -source $ROOT/tools/r42/area/ooc.tcl -tclargs $TOP $PERIOD xcu280-fsvh2892-2L-e $OUT ${THREADS:-6} $FL > $OUT/vivado.log 2>&1 )
+( cd $OUT && env $ENVS OOC_GENERICS="$GEN" INCDIRS="$ROOT/rtl/common $ROOT/rtl/noc" nice -n 5 vivado -mode batch -nojournal -nolog -source $ROOT/${OOC_TCL:-tools/r42/area/ooc.tcl} -tclargs $TOP $PERIOD xcu280-fsvh2892-2L-e $OUT ${THREADS:-6} $FL > $OUT/vivado.log 2>&1 )
 echo "$(date -u +%FT%TZ) end $NAME exit $?" >> $OUTROOT/run.log

@@ -53,8 +53,9 @@ module tnca_vector_fpu #(
     //   FOREG 1     the FMA array's result is registered once more (fma_yo): FP_LAT counts that register
     parameter [3:0] FCUTS = 4'b0000,
     parameter       FOREG = 0,
-    //   CVTP 1      vf.cvt.fmt runs through the XLS-pipelined converter (tnca_cvt_xls, three register stages, 16 lanes) instead
-    //               of the combinational one: its result joins the delay line at stage 4 (needs FP_LAT >= 5)
+    //   CVTP 1      vf.cvt.fmt runs through the XLS-pipelined converter (tnca_cvt_xls: three register stages and an output flop, 16
+    //               lanes) instead of the combinational one: four cycles after cvt_x, so FP_LAT cycles after the operands when
+    //               FP_LAT = 5; the unit's result mux takes the converter's output flop at that cycle (needs FP_LAT = 5)
     parameter       CVTP  = 0
 ) (
     input  wire                     clk,
@@ -103,7 +104,6 @@ module tnca_vector_fpu #(
 
     // the FMA array's own latency; FP_LAT also counts the optional output register
     localparam FL = FP_LAT - FOREG;
-    localparam CVT_JOIN = (FP_LAT > 4) ? 4 : (FP_LAT - 1);   // CVTP: the delay stage the pipelined converter's result joins
 
     localparam [31:0] FP_ONE   = 32'h3f800000;
     localparam [31:0] FP_PZERO = 32'h00000000;
@@ -235,8 +235,8 @@ module tnca_vector_fpu #(
     reg [ELEN-1:0] cvt_x [0:VLEN-1];
     reg [5:0]      cvt_mod;
     reg            cvt_fmt;       // delay stage 0 holds a vf.cvt.fmt
-    reg  [2:0]     cvt_fmt_p;     // R42 clk2 CVTP: cvt_fmt, delayed with the pipelined converter's three registers
-    always @(posedge clk) cvt_fmt_p <= {cvt_fmt_p[1:0], cvt_fmt};
+    reg  [3:0]     cvt_fmt_p;     // R42 clk2 CVTP: cvt_fmt, delayed with the pipelined converter's four registers
+    always @(posedge clk) cvt_fmt_p <= {cvt_fmt_p[2:0], cvt_fmt};
     always @(posedge clk) begin
         for (i = 0; i < VLEN; i = i + 1)
             cvt_x[i] <= a[i];
@@ -255,7 +255,7 @@ module tnca_vector_fpu #(
     generate
         for (g = 0; g < VLEN; g = g + 1) begin : g_fcvt
             if (CVTP != 0) begin : g_p
-                if (FP_LAT < 5) begin : g_bad
+                if (FP_LAT != 5) begin : g_bad
                     tnca_cvt_xls u_bad (.CVTP_needs_FP_LAT_5(1'b1));
                 end else begin : g_ok
                     tnca_cvt_xls u_cvt (
@@ -681,10 +681,6 @@ module tnca_vector_fpu #(
             if (CVTP == 0 && cvt_fmt)
                 for (i = 0; i < VLEN; i = i + 1)
                     dly_v[1][i*ELEN +: ELEN] <= fcvt[i];
-            // R42 clk2 CVTP: the pipelined converter's result is ready three cycles after cvt_x, at stage 4
-            if (CVTP != 0 && cvt_fmt_p[2])
-                for (i = 0; i < VLEN; i = i + 1)
-                    dly_v[CVT_JOIN][i*ELEN +: ELEN] <= fcvt[i];
             if (cvt_int)
                 for (i = 0; i < VLEN; i = i + 1)
                     dly_v[1][i*ELEN +: ELEN] <= cvt_l[i];
@@ -721,6 +717,10 @@ module tnca_vector_fpu #(
         if (out_from_fma) begin
             for (i = 0; i < VLEN; i = i + 1)
                 vres[i*ELEN +: ELEN] = fma_yo[i];
+        end else if (CVTP != 0 && cvt_fmt_p[3]) begin
+            // R42 clk2 CVTP: the pipelined converter's output flop, FP_LAT (5) cycles after the operands
+            for (i = 0; i < VLEN; i = i + 1)
+                vres[i*ELEN +: ELEN] = fcvt[i];
         end else begin
             vres = dly_v[FP_LAT-1];
         end

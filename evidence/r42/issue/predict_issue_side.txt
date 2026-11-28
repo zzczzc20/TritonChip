@@ -1,0 +1,12 @@
+=== fwd2 (rtl-1c tiny): 27 points measured, 27 (family, dtype) groups
+  measured  1.0038x (+0.38 %) over 23 affected of 145 board points
+  family    1.0187x (+1.87 %) over 104 affected of 145 board points
+  family/2  1.0132x (+1.32 %) over 104 affected of 145 board points
+=== bankalloc (rtl-1c tiny): 27 points measured, 27 (family, dtype) groups
+  measured  1.0036x (+0.36 %) over 24 affected of 145 board points
+  family    1.0156x (+1.56 %) over 111 affected of 145 board points
+  family/2  1.0112x (+1.12 %) over 111 affected of 145 board points
+=== fwdbank (rtl-1c tiny): 27 points measured, 27 (family, dtype) groups
+  measured  1.0072x (+0.72 %) over 26 affected of 145 board points
+  family    1.0348x (+3.48 %) over 118 affected of 145 board points
+  family/2  1.0246x (+2.46 %) over 118 affected of 145 board points

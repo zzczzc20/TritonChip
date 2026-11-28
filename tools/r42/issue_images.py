@@ -10,6 +10,8 @@ Base: the R41 run-3 image (tools/r42/img_images.py). Each arm changes image para
   TENSOR_TAG_W 5             32 word-walk tags in the line engine (16 transfer slots; the port tag allows at most 5 with 64 line slots)
   TENSOR_TAG_W 6, LINE_SLOTS 128   64 tags (32 transfer slots, the model's te32): the port tag must then be 9 bits, i.e. 128 LSU line slots
   TENSOR_LINE_HALF 1, MAC_F32 1   the R42-img items L and F
+  cand = lf_fwd_s128 with FMA_IMPL 465 (the area worker's FMA/MAC back end and converter, bit-identical numerics: the parameter set whose tile the OOC runs
+  `i_s3_*` synthesise, FMA_IMPL 465 + SHRINK 42) = the candidate image of this study.
 Nothing here is linked or loaded.
 """
 import argparse
@@ -31,6 +33,7 @@ ARMS = {
     'lf_fwd': {'TENSOR_LINE_HALF': 1, 'MAC_F32': 1, 'VRF_FWD': 1},
     'lf_fwd_s128': {'TENSOR_LINE_HALF': 1, 'MAC_F32': 1, 'VRF_FWD': 1, 'SETS': 128, 'SET_W': 7, 'SHRINK': 42},
     'lf_fwd_s128_te5': {'TENSOR_LINE_HALF': 1, 'MAC_F32': 1, 'VRF_FWD': 1, 'SETS': 128, 'SET_W': 7, 'SHRINK': 42, 'TENSOR_TAG_W': 5},
+    'cand': {'TENSOR_LINE_HALF': 1, 'MAC_F32': 1, 'VRF_FWD': 1, 'SETS': 128, 'SET_W': 7, 'SHRINK': 42, 'FMA_IMPL': 465},
     'lf_s128': {'TENSOR_LINE_HALF': 1, 'MAC_F32': 1, 'SETS': 128, 'SET_W': 7, 'SHRINK': 42},
 }
 

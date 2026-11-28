@@ -52,6 +52,7 @@ module tnca_hbm_xo #(
     parameter RPAIR                = 0,
     parameter MTX_ABUF             = 0,
     parameter MTX_PIPE             = 0,
+    parameter CLKFIX2 = 0,   // R42 clk2: bit field of timing-pipelining options (tnca_core CLKFIX2); 0 = the shipped RTL, cycle for cycle
     parameter VRF_FWD             = 0,   // R42 issue: writeback-to-R operand forwarding (tnca_core VRF_FWD)
     parameter HAS_TENSOR_XPOSE     = 0,
 
@@ -153,6 +154,7 @@ module tnca_hbm_xo #(
         .FPU_OVERLAP(FPU_OVERLAP),
         .RSLICE(RSLICE),
         .RPAIR(RPAIR),
+        .CLKFIX2(CLKFIX2),
         .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE), .VRF_FWD(VRF_FWD),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .DATA_AXI(1),

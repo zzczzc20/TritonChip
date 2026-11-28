@@ -40,6 +40,7 @@ module tb_core_hybrid;
     parameter RPAIR          = 0;
     parameter MTX_ABUF       = 0;
     parameter MTX_PIPE       = 0;
+    parameter CLKFIX2 = 0;   // R42 clk2: bit field of timing-pipelining options (tnca_core CLKFIX2); 0 = the shipped RTL, cycle for cycle
     parameter VRF_FWD       = 0;   // R42 issue: writeback-to-R operand forwarding (tnca_core VRF_FWD)
     parameter HAS_TENSOR_XPOSE = 0;
     // R41 G4 / R42: the line-wide transfer engine (needs LSU_TAG_W 7: a port tag with a path bit, a word-tag space and 32 line slots), and its half-line rows
@@ -110,6 +111,7 @@ module tb_core_hybrid;
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
+        .CLKFIX2(CLKFIX2),
         .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE), .VRF_FWD(VRF_FWD),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .TENSOR_LINE(TENSOR_LINE), .TENSOR_LINE_HALF(TENSOR_LINE_HALF)

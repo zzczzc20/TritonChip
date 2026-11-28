@@ -94,6 +94,9 @@
 `ifndef TNCA_UARCH_VRF_FWD
 `define TNCA_UARCH_VRF_FWD 0
 `endif
+`ifndef TNCA_UARCH_CLKFIX2
+`define TNCA_UARCH_CLKFIX2 0
+`endif
 `ifndef TNCA_UARCH_FPU_OVERLAP
 `define TNCA_UARCH_FPU_OVERLAP 0
 `endif

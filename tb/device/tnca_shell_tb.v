@@ -41,6 +41,7 @@ module tnca_shell_tb;
     parameter RPAIR          = 0;
     parameter MTX_ABUF       = 0;
     parameter MTX_PIPE       = 0;
+    parameter CLKFIX2 = 0;   // R42 clk2: bit field of timing-pipelining options (tnca_core CLKFIX2); 0 = the shipped RTL, cycle for cycle
     parameter VRF_FWD       = 0;   // R42 issue: writeback-to-R operand forwarding (tnca_core VRF_FWD)
     parameter WORDS          = 4096;
     parameter NUM_RCTX       = 2;
@@ -96,6 +97,7 @@ module tnca_shell_tb;
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
+        .CLKFIX2(CLKFIX2),
         .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE), .VRF_FWD(VRF_FWD)
     ) dut (
         .clk(clk), .rst_n(rst_n),

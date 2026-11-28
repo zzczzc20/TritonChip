@@ -3,6 +3,7 @@ module tnca_multicore_device;
 parameter N=3,PORTS=1;
 parameter TOTAL_WORDS=1048576;
 parameter VRF_BYPASS=1,FE_NOBUBBLE=1,VRF_PREFETCH=1,RCTX_SWITCH=2;
+parameter CLKFIX2=0;
 parameter LSU_INFLIGHT=2,FPU_OVERLAP=1,MTX_ABUF=1,MTX_PIPE=0,VRF_FWD=0;
 localparam NX=N>4?4:N,SW=N>4?$clog2(N):2;
 reg clk=0;always #5 clk=~clk;
@@ -34,6 +35,7 @@ reg poisoned=0;
 integer cycles=0;
 tnca_multicore_shell #(.MEM_PORTS(PORTS),.NX(NX),.NY(N/NX),.CODE_WORDS(16384),.VRF_BYPASS(VRF_BYPASS),.FE_NOBUBBLE(FE_NOBUBBLE),
 .VRF_PREFETCH(VRF_PREFETCH),.RCTX_SWITCH(RCTX_SWITCH),.LSU_INFLIGHT(LSU_INFLIGHT),
+.CLKFIX2(CLKFIX2),
 .FPU_OVERLAP(FPU_OVERLAP),.MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE), .VRF_FWD(VRF_FWD),.SETS(4),.SET_W(2),.WAYS(2),.WAY_W(1)) dut(
 .clk(clk),.rst_n(rst),.platform_fault(1'b0),.cmd_valid(cv),.cmd_ready(cr),.cmd_id(id),.cmd_pc(pc),
 .cmd_group_log2(role_flags[9:8]),.cmd_deadline(deadline),.timed_out(timed_out),.cmd_arg_base(arg_base),.cmd_arg_stride(arg_stride),.cmd_gx(gx),.cmd_gy(gy),.cmd_gz(gz),

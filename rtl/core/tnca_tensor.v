@@ -114,7 +114,13 @@ module tnca_tensor #(
     parameter CMD_W     = 3,
     parameter PTAG_W    = TAG_W,
     parameter PORT_DW   = MEM_DW,
-    parameter PORT_BYTES= MEM_BYTES
+    parameter PORT_BYTES= MEM_BYTES,
+    // R42 clk2 (tnca_core CLKFIX2 bit 6; 0 = the engine as it was, cycle for cycle): the whole-box-inside-the-tensor test
+    // (g_inside: five 64-bit adds and compares of the normalised coordinates) is registered, and the padding-mode-2 fault that
+    // used it in S_TCHK is raised from S_TMUL's last cycle instead (one cycle later, before the walk has touched memory);
+    // the line-engine eligibility (le_elig, le_half) reads the register. S_TMUL always runs a cycle after S_TCHK, and the
+    // coordinates do not change between S_TSETUP and the walk, so the register is current when it is read.
+    parameter TCHK_REG  = 0
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -381,6 +387,11 @@ module tnca_tensor #(
     wire                 l_more = hm ? !(last_row && ({24'd0, t_pn} + 32'd1 == t_row_pcs))
                                      : !(last_row && (t_line + 32'd1 == t_row_lines));   // a line after this one
     wire                 pf_req = (st == S_LSRUN) && !pf_v && l_more && (!hm || t_flat[5]);
+    // R42 clk2 TCHK_REG: the vector-file request of the store's register prefetch no longer waits for l_more (the odometer's
+    // last-row compares and the line count: a 16-20 level cone into the vector file's bank arbitration). On the last line of
+    // the last row the request is one read of a register nobody uses; its answer is not taken (every user of pf_req below
+    // still has l_more in it), and pf_v, set only by a taken answer or cleared by S_LSREAD, is not touched by it.
+    wire                 pf_req_vr = (TCHK_REG != 0) ? ((st == S_LSRUN) && !pf_v && (!hm || t_flat[5])) : pf_req;
     wire [63:0]          l_addr = t_ps + {26'd0, t_line, 6'd0};
 
     reg [LSLOT_W-1:0] lfree, lrdy_slot;
@@ -645,7 +656,7 @@ module tnca_tensor #(
             if (!tg_v[i]) begin free_tag = i[TAG_W-1:0]; have_tag = 1'b1; end
     end
 
-    assign vr_req  = (st == S_SREAD) || (LE && ((st == S_LSREAD) || pf_req));
+    assign vr_req  = (st == S_SREAD) || (LE && ((st == S_LSREAD) || pf_req_vr));
     assign vr_rctx = t_rctx;
     assign vr_idx  = (LE && (st == S_LSREAD)) ? l_vreg : (LE && (st == S_LSRUN)) ? l_vreg + 8'd1 : st_vreg;
 
@@ -964,11 +975,11 @@ module tnca_tensor #(
     // every row whole 64-byte lines, in the tensor, row starts line-aligned.
     wire le_elig = LE && !t_xpose && ((t_acc[5:0] + t_CB[5:0]) == 6'd0) &&
                    (((t_s0 | t_s1 | t_s2 | t_s3) & 64'h3f) == 64'd0) &&
-                   (t_row_bytes[5:0] == 6'd0) && g_inside;
+                   (t_row_bytes[5:0] == 6'd0) && g_ins;
     // R42 half-line rows: not whole lines, but whole 32-byte pieces, each on a 32-byte boundary.
     wire le_half = LH && !t_xpose && !le_elig && ((t_acc[4:0] + t_CB[4:0]) == 5'd0) &&
                    (((t_s0 | t_s1 | t_s2 | t_s3) & 64'h1f) == 64'd0) &&
-                   (t_row_bytes[4:0] == 5'd0) && g_inside;
+                   (t_row_bytes[4:0] == 5'd0) && g_ins;
 
     //==========================================================================
     // Descriptor parsing, once the 256 bytes are in (ISA sec 9D.3)
@@ -1038,6 +1049,9 @@ module tnca_tensor #(
     wire g_inside = box_in(t_c0, t_b0, t_e0) && box_in(t_c1, t_b1, t_e1) &&
                     box_in(t_c2, t_b2, t_e2) && box_in(t_c3, t_b3, t_e3) &&
                     box_in(t_c4, t_b4, t_e4);
+    reg  g_inside_q;
+    always @(posedge clk) g_inside_q <= g_inside;
+    wire g_ins = (TCHK_REG != 0) ? g_inside_q : g_inside;
     wire g_bad =
         // The rank the engine executes, and coordinates that exist: Sb+rank-1
         // must not run past S63 (the next index would be S0, which reads 0).
@@ -1047,7 +1061,7 @@ module tnca_tensor #(
         // size only). 1 (clamp) is reserved.
         (t_pad == 8'd1) || (t_pad > 8'd3) ||
         ((t_pad == 8'd3) && (!dtype_float || (dtype_lg != t_esz))) ||
-        ((t_pad == 8'd2) && !g_inside) ||
+        ((t_pad == 8'd2) && (TCHK_REG == 0) && !g_inside) ||
         // Each block dimension 1..256; a row of whole 8-byte units.
         !blk_ok(t_b0) || !blk_ok(t_b1) || !blk_ok(t_b2) ||
         !blk_ok(t_b3) || !blk_ok(t_b4) ||
@@ -1447,6 +1461,8 @@ module tnca_tensor #(
                     t_pv  <= (MUL_PIPE != 0);
                 end else if (MUL_PIPE != 0 && t_pv) begin
                     t_pv  <= 1'b0;            // the last product lands now
+                end else if (TCHK_REG != 0 && t_pad == 8'd2 && !g_inside_q) begin
+                    st    <= S_FAULT;         // padding mode 2 (fault) and the box leaves the tensor: S_TCHK's check, one stage later
                 end else begin
                     t_P0 <= t_acc; t_P1 <= t_acc; t_P2 <= t_acc; t_P3 <= t_acc; t_ps <= t_acc + t_CB;
                     t_i0 <= 32'd0; t_i1 <= 32'd0; t_i2 <= 32'd0; t_i3 <= 32'd0;

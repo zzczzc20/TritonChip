@@ -196,6 +196,20 @@
       "why": "R41 G2 shared multi-precision MAC lane (evidence/r41/hbm_bw/fma_dslx): default-off (tnca_matrix MAC_DP). S1: decode, the binary32 product (fma32_mul), the E4M3 DP4 group sum as a fixed-point DSP cascade, the two DP2 products and the choice of the reference product. Combinational."
     },
     {
+      "module": "tnca_mac_s1a_xls",
+      "source": "tnca_mac.x",
+      "top": "mac_s1a",
+      "pipeline_stages": 0,
+      "why": "R42 clk2 (default-off, tnca_mac_lane CUTS[6]): the first half of S1: operand decode and classification, the DP4 DSP operands, the decoded DP2 elements. Combinational; mac_s1b(mac_s1a(x)) = mac_s1(x) (quickcheck mac_s1_split_is_s1)."
+    },
+    {
+      "module": "tnca_mac_s1b_xls",
+      "source": "tnca_mac.x",
+      "top": "mac_s1b",
+      "pipeline_stages": 0,
+      "why": "R42 clk2 (default-off, tnca_mac_lane CUTS[6]): the second half of S1: the 24x24, the four 27x18 with the DSP cascade sum and the two 11x11 multiplies and what follows them. Combinational."
+    },
+    {
       "module": "tnca_mac_s2_xls",
       "source": "tnca_mac.x",
       "top": "mac_s2",

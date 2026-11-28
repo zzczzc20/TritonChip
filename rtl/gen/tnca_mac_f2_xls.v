@@ -4,7 +4,7 @@
 //
 // XLS version: v0.0.0-10704-g0a7c502cc
 // Pipeline:    combinational
-// DSLX sha256: 39560bd2d662a3d8
+// DSLX sha256: 118f29370a8c2d9c
 //==============================================================================
 module tnca_mac_f2_xls(
   input wire [201:0] m,

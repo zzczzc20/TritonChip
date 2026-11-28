@@ -35,6 +35,7 @@ module tb_home_pipe;
     parameter FILL_CHAIN = 0;          // R41 G4: chained fills (HOME_LINE_PIPE 2)
     parameter DATA_RAM = 0;            // R42 shrink: tnca_home_pipe DATA_RAM / AUX_RAM (0 = distributed RAM, the shipped RTL)
     parameter AUX_RAM = 0;
+    parameter CLKFIX = 0;              // R42 clk: tnca_home_pipe CLKFIX
 
     parameter DRAM_LAT   = 40;
     parameter DRAM_STALL = 1;
@@ -121,7 +122,7 @@ module tb_home_pipe;
     wire [63:0]             tl_addr;
 
     tnca_home_pipe #(
-        .FULL_LINE_TAG(FULL_LINE_TAG),.LINE_WRITE_NOFILL(LINE_WRITE_NOFILL),.MAINTENANCE(MAINTENANCE),.FILL_CHAIN(FILL_CHAIN),.DATA_RAM(DATA_RAM),.AUX_RAM(AUX_RAM),
+        .FULL_LINE_TAG(FULL_LINE_TAG),.LINE_WRITE_NOFILL(LINE_WRITE_NOFILL),.MAINTENANCE(MAINTENANCE),.FILL_CHAIN(FILL_CHAIN),.DATA_RAM(DATA_RAM),.AUX_RAM(AUX_RAM),.CLKFIX(CLKFIX),
         .ADDR_W(ADDR_W), .LINE_BYTES(LINE_BYTES), .LINE_BITS(LINE_BITS),
         .WORD_BITS(WORD_BITS), .WORD_BYTES(WORD_BYTES),
         .SETS(SETS), .SET_W(SET_W), .WAYS(WAYS), .WAY_W(WAY_W),

@@ -55,6 +55,10 @@ module tnca_vrf_banked #(
     // select then leave the request path into the bank arbiters. 0 (the
     // default) builds exactly the module that existed before.
     parameter PHYS_IN        = 0,
+    // R42 clk: bit w set -- writer w presents its PHYSICAL register on w_phys (registered with its payload, base and add taken in the
+    // stage before), instead of a context and an index to be added up here; the base select and the add leave the write decode into
+    // the bank write enables and valid bits. 0 (default) builds exactly the module that existed before.
+    parameter W_PHYS_IN      = 0,
     // R42 shrink: the response crossbar. 0 (default): as before (a priority chain over the banks, destination decoded per bit).
     // 1: AND-OR over registered one-hot selects (bit-identical outputs, zero data when no response, given that a port never gets
     // two responses in one cycle: checked by tb_vrf_miter). 2: the same selects encoded to a bank number and a bank-wide 4:1 mux
@@ -99,6 +103,7 @@ module tnca_vrf_banked #(
     input  wire [NUM_WRITERS-1:0]            we,
     input  wire [NUM_WRITERS*RCTX_W-1:0]     w_rctx,
     input  wire [NUM_WRITERS*8-1:0]          w_idx,
+    input  wire [NUM_WRITERS*PHYS_W-1:0]     w_phys,       // writers with a W_PHYS_IN bit only (otherwise unused, may be left open)
     input  wire [NUM_WRITERS*VLEN-1:0]       wmask,
     input  wire [NUM_WRITERS*VLEN*ELEN-1:0]  wdata,
     output wire [NUM_WRITERS-1:0]            w_accept
@@ -134,8 +139,9 @@ module tnca_vrf_banked #(
     genvar wq;
     generate
         for (wq = 0; wq < NUM_WRITERS; wq = wq + 1) begin : g_wdec
-            assign w_phys_of[wq] =
-                phys_of(w_rctx[wq*RCTX_W +: RCTX_W], w_idx[wq*8 +: 8]);
+            assign w_phys_of[wq] = ((W_PHYS_IN >> wq) & 1)
+                                 ? w_phys[wq*PHYS_W +: PHYS_W]
+                                 : phys_of(w_rctx[wq*RCTX_W +: RCTX_W], w_idx[wq*8 +: 8]);
             assign w_bank_of[wq] = w_phys_of[wq][BANK_W-1:0];
             assign w_row_of[wq]  = w_phys_of[wq][BANK_W +: ROW_W];
         end

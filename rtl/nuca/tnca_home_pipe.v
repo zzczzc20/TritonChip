@@ -79,6 +79,14 @@ module tnca_home_pipe #(
     // The MSHR line buffers (ms_line) and the target write data (tg_wdata) likewise: 0 distributed RAM, 1 block RAM, 2 UltraRAM.
     // The fill unit reads them synchronously: the address is the value being loaded into fu_ms / fu_t (known a cycle early).
     parameter AUX_RAM = 0,
+    // R42 clk bit field (tnca_tile CLKFIX; 0 = the shipped RTL, cycle for cycle). [1] FREE_WR: the address of the MSHR that S2 allocates is
+    // written into the first FREE MSHR in every cycle (its enable is a function of the MSHR states only), instead of by S2's allocation
+    // decision (a 17-level cone into 64 x ADDR_W flip-flop enables). Nothing reads a free entry's address, and the entry that S2 allocates
+    // receives the same value on the same edge, so every output is unchanged cycle for cycle.
+    // [4] S2SPLIT: the decision cone of S2 (tag compare, victim choice, the MSHR address match) is registered at the end of its first cycle and
+    // S2 acts one cycle later from the registers (+1 cycle on every request). A request whose set the request ahead writes in that window is
+    // replayed (as S1's stale read already is); an MSHR match is validated again (state and address) when it is used.
+    parameter CLKFIX = 0,
     parameter [63:0] TMU_BASE = 64'h0000_0000_7FFF_0000
 ) (
     input  wire                     clk,
@@ -154,6 +162,8 @@ module tnca_home_pipe #(
     localparam LINE_W    = SET_W + WAY_W;
     localparam WBQ_W     = WBQ_N > 1 ? $clog2(WBQ_N) : 1;
     localparam RSPQ_N    = 4;
+    localparam CF_FREEWR = (CLKFIX >> 1) & 1;   // R42 clk bit 1, see the CLKFIX parameter
+    localparam CF_S2SPLIT = (CLKFIX >> 4) & 1;  // R42 clk bit 4
 
     integer i, j, k;
 
@@ -293,10 +303,14 @@ module tnca_home_pipe #(
     reg [MSHR_W-1:0] ms_free_idx; reg ms_has_free;
     reg [TARGET_W-1:0] tg_free_idx; reg tg_has_free;
     reg ms_all_free;
+    reg [MSHR_N-1:0] ms_free_oh;   // the first free MSHR, one-hot (CLKFIX FREE_WR)
     always @(*) begin
-        ms_free_idx = 0; ms_has_free = 1'b0; ms_all_free = 1'b1;
+        ms_free_idx = 0; ms_has_free = 1'b0; ms_all_free = 1'b1; ms_free_oh = {MSHR_N{1'b0}};
         for (i = MSHR_N-1; i >= 0; i = i - 1) begin
-            if (ms_state[i] == MS_FREE) begin ms_free_idx = i[MSHR_W-1:0]; ms_has_free = 1'b1; end
+            if (ms_state[i] == MS_FREE) begin
+                ms_free_idx = i[MSHR_W-1:0]; ms_has_free = 1'b1;
+                ms_free_oh = {MSHR_N{1'b0}}; ms_free_oh[i] = 1'b1;
+            end
             else ms_all_free = 1'b0;
         end
         tg_free_idx = 0; tg_has_free = 1'b0;
@@ -332,6 +346,20 @@ module tnca_home_pipe #(
     wire [SET_W-1:0] s1_set = `HP_SET(s1_addr);
     wire [TAGB-1:0]  lookup_tag [0:WAYS-1];
 
+    // S2SPLIT: the registers between the decision cone (first cycle) and the action (second cycle); the action stage reads the b_* view, which
+    // is S1's registers when S2SPLIT is off.
+    reg              a_v, a_stale;
+    reg [RQ_W-1:0]   a_rq;
+    reg [ADDR_W-1:0] a_addr;
+    reg              a_hit, a_vic_ok, a_ms;
+    reg [WAY_W-1:0]  a_hit_way, a_vic_way;
+    reg [MSHR_W-1:0] a_ms_id;
+    reg [TAGB-1:0]   a_tags [0:WAYS-1];
+    wire              b_v     = CF_S2SPLIT ? a_v     : s1_v;
+    wire              b_stale = CF_S2SPLIT ? a_stale : s1_stale;
+    wire [RQ_W-1:0]   b_rq    = CF_S2SPLIT ? a_rq    : s1_rq;
+    wire [ADDR_W-1:0] b_addr  = CF_S2SPLIT ? a_addr  : s1_addr;
+
     // S2 writes a set's tag when it claims a way; the read that S1 holds of
     // the same set is then stale and its request is replayed.
     // (written on the same edge as S2 acts; see the S2 section)
@@ -366,52 +394,65 @@ module tnca_home_pipe #(
     //==========================================================================
     // S2 decision (combinational over S1's registered request)
     //==========================================================================
-    wire [ADDR_W-1:0]     s2_addr  = s1_addr;
-    wire [SET_W-1:0]      s2_set   = s1_set;
-    wire [TAGB-1:0]       s2_tagb  = `HP_TAG(s1_addr);
-    wire                  s2_we    = rq_we[s1_rq];
-    wire                  s2_amo   = rq_amo[s1_rq];
-    wire [3:0]            s2_aop   = rq_aop[s1_rq];
-    wire [WORD_BYTES-1:0] s2_be    = rq_be[s1_rq];
-    wire [WORD_BITS-1:0]  s2_wdata = rq_wdata[s1_rq];
-    wire [WORD_BITS-1:0]  s2_cmp   = rq_cmp[s1_rq];
-    wire [SRC_W-1:0]      s2_src   = rq_src[s1_rq];
-    wire [TAG_W-1:0]      s2_tag   = rq_tag[s1_rq];
-    wire s2_mmio = (s1_addr[ADDR_W-1:12] == TMU_BASE[ADDR_W-1:12]);
+    wire [ADDR_W-1:0]     s2_addr  = b_addr;
+    wire [SET_W-1:0]      s2_set   = `HP_SET(b_addr);
+    wire [TAGB-1:0]       s2_tagb  = `HP_TAG(b_addr);
+    wire                  s2_we    = rq_we[b_rq];
+    wire                  s2_amo   = rq_amo[b_rq];
+    wire [3:0]            s2_aop   = rq_aop[b_rq];
+    wire [WORD_BYTES-1:0] s2_be    = rq_be[b_rq];
+    wire [WORD_BITS-1:0]  s2_wdata = rq_wdata[b_rq];
+    wire [WORD_BITS-1:0]  s2_cmp   = rq_cmp[b_rq];
+    wire [SRC_W-1:0]      s2_src   = rq_src[b_rq];
+    wire [TAG_W-1:0]      s2_tag   = rq_tag[b_rq];
+    wire s2_mmio = (b_addr[ADDR_W-1:12] == TMU_BASE[ADDR_W-1:12]);
     wire s2_full_store = LINE_WRITE_NOFILL && s2_we && !s2_amo && (&s2_be);
 
-    reg s2_hit; reg [WAY_W-1:0] s2_hit_way;
-    reg s2_vic_ok; reg [WAY_W-1:0] s2_vic_way;
-    reg s2_ms; reg [MSHR_W-1:0] s2_ms_id;
+    // The decision cone, over S1's registered request (ca_*): in the shipped RTL it is S2's decision itself; with S2SPLIT its result is
+    // registered into the a_* registers and S2 acts on those.
+    reg ca_hit; reg [WAY_W-1:0] ca_hit_way;
+    reg ca_vic_ok; reg [WAY_W-1:0] ca_vic_way;
+    reg ca_ms; reg [MSHR_W-1:0] ca_ms_id;
     reg [WAY_W-1:0] rr;
     always @(*) begin
-        s2_hit = 1'b0; s2_hit_way = 0;
+        ca_hit = 1'b0; ca_hit_way = 0;
         for (k = 0; k < WAYS; k = k + 1)
-            if (v_bits[s2_set*WAYS + k] && lookup_tag[k] == s2_tagb) begin
-                s2_hit = 1'b1; s2_hit_way = k[WAY_W-1:0];
+            if (v_bits[s1_set*WAYS + k] && lookup_tag[k] == `HP_TAG(s1_addr)) begin
+                ca_hit = 1'b1; ca_hit_way = k[WAY_W-1:0];
             end
         // victim: an invalid unclaimed way first, else round-robin over the
         // unclaimed ways from the set's pointer
-        s2_vic_ok = 1'b0; s2_vic_way = 0;
+        ca_vic_ok = 1'b0; ca_vic_way = 0;
         for (k = WAYS-1; k >= 0; k = k - 1)
-            if (!v_bits[s2_set*WAYS + k] && !cl_bits[s2_set*WAYS + k]) begin
-                s2_vic_ok = 1'b1; s2_vic_way = k[WAY_W-1:0];
+            if (!v_bits[s1_set*WAYS + k] && !cl_bits[s1_set*WAYS + k]) begin
+                ca_vic_ok = 1'b1; ca_vic_way = k[WAY_W-1:0];
             end
-        if (!s2_vic_ok)
+        if (!ca_vic_ok)
             for (k = WAYS-1; k >= 0; k = k - 1) begin
-                rr = victim_ptr[s2_set] + k[WAY_W-1:0];
-                if (!cl_bits[s2_set*WAYS + rr]) begin s2_vic_ok = 1'b1; s2_vic_way = rr; end
+                rr = victim_ptr[s1_set] + k[WAY_W-1:0];
+                if (!cl_bits[s1_set*WAYS + rr]) begin ca_vic_ok = 1'b1; ca_vic_way = rr; end
             end
-        s2_ms = 1'b0; s2_ms_id = 0;
+        ca_ms = 1'b0; ca_ms_id = 0;
         for (k = 0; k < MSHR_N; k = k + 1)
             if (ms_state[k] != MS_FREE && ms_addr[k][ADDR_W-1:OFF_W] == s1_addr[ADDR_W-1:OFF_W]) begin
-                s2_ms = 1'b1; s2_ms_id = k[MSHR_W-1:0];
+                ca_ms = 1'b1; ca_ms_id = k[MSHR_W-1:0];
             end
     end
+    // an MSHR match registered a cycle ago is used only while that MSHR is still in use for the same line
+    wire s2_ms_ok    = !CF_S2SPLIT || (a_ms && ms_state[a_ms_id] != MS_FREE &&
+                                       ms_addr[a_ms_id][ADDR_W-1:OFF_W] == a_addr[ADDR_W-1:OFF_W]);
+    wire s2_ms_stale = CF_S2SPLIT && a_ms && !s2_ms_ok;
+    wire              s2_hit     = CF_S2SPLIT ? a_hit     : ca_hit;
+    wire [WAY_W-1:0]  s2_hit_way = CF_S2SPLIT ? a_hit_way : ca_hit_way;
+    wire              s2_vic_ok  = CF_S2SPLIT ? a_vic_ok  : ca_vic_ok;
+    wire [WAY_W-1:0]  s2_vic_way = CF_S2SPLIT ? a_vic_way : ca_vic_way;
+    wire              s2_ms      = CF_S2SPLIT ? (a_ms && s2_ms_ok) : ca_ms;
+    wire [MSHR_W-1:0] s2_ms_id   = CF_S2SPLIT ? a_ms_id   : ca_ms_id;
     wire [LINE_W-1:0] s2_hit_index = s2_set*WAYS + s2_hit_way;
     wire [LINE_W-1:0] s2_vic_index = s2_set*WAYS + s2_vic_way;
     wire s2_vic_dirty = v_bits[s2_vic_index] && d_bits[s2_vic_index];
-    wire [ADDR_W-1:0] s2_vic_addr = line_addr(lookup_tag[s2_vic_way], s2_set);
+    wire [TAGB-1:0] s2_vic_tag = CF_S2SPLIT ? a_tags[s2_vic_way] : lookup_tag[s2_vic_way];
+    wire [ADDR_W-1:0] s2_vic_addr = line_addr(s2_vic_tag, s2_set);
 
     //==========================================================================
     // S3: the data array, the response and the writeback of one request
@@ -583,14 +624,15 @@ module tnca_home_pipe #(
     //==========================================================================
     // Resources S2 needs (transient: hold the pipe) or lacks (structural:
     // block the request so younger ones go past it, sec 9.3).
-    wire s2_live   = s1_v && !s1_stale;
+    wire s2_live   = b_v && !b_stale;
     reg  s2_act, s2_hold, s2_block, s2_replay;
     reg  s2_kind_hit, s2_kind_merge, s2_kind_install, s2_kind_alloc, s2_kind_mmio;
     always @(*) begin
         s2_act = 1'b0; s2_hold = 1'b0; s2_block = 1'b0; s2_replay = 1'b0;
         s2_kind_hit = 1'b0; s2_kind_merge = 1'b0; s2_kind_install = 1'b0; s2_kind_alloc = 1'b0;
         s2_kind_mmio = 1'b0;
-        if (s1_v && s1_stale) s2_replay = 1'b1;
+        if (b_v && b_stale) s2_replay = 1'b1;
+        else if (s2_live && s2_ms_stale) s2_replay = 1'b1;
         else if (s2_live) begin
             if (s3_hold) begin
                 s2_hold = 1'b1;               // S3 is occupied next cycle
@@ -629,7 +671,7 @@ module tnca_home_pipe #(
     //==========================================================================
     wire maint_requested = (MAINTENANCE != 0) && maint_valid;
     assign maint_hold = maint_requested || m_state != M_IDLE;
-    wire idle = rq_v == 0 && !s1_v && !s3_v && rsq_cnt == 0 && tg_v == 0 && ms_all_free && !fu_v &&
+    wire idle = rq_v == 0 && !s1_v && !(CF_S2SPLIT && a_v) && !s3_v && rsq_cnt == 0 && tg_v == 0 && ms_all_free && !fu_v &&
                 wbq_cnt == 0 && !mem_rsp_valid;
     assign maint_ready = (MAINTENANCE != 0) && rst_n && m_state == M_IDLE && idle;
     assign maint_busy  = (m_state != M_IDLE);
@@ -662,7 +704,7 @@ module tnca_home_pipe #(
             for (i = 0; i < MSHR_N; i = i + 1) ms_state[i] <= MS_FREE;
             tg_v <= 0; wbq_v <= 0; wbq_rd <= 0; wbq_wr <= 0; wbq_cnt <= 0;
             rsq_rd <= 0; rsq_wr <= 0; rsq_cnt <= 0;
-            s1_v <= 0; s1_stale <= 0; s3_v <= 0; fu_v <= 0; ml_v <= 0;
+            s1_v <= 0; s1_stale <= 0; a_v <= 0; a_stale <= 0; s3_v <= 0; fu_v <= 0; ml_v <= 0;
             m_state <= M_IDLE; maint_done <= 0;
             tmu_tl_drop <= 0; perf_bypass <= 0; perf_evict <= 0; perf_dead_evict <= 0; perf_gear <= 0;
             perf_hit <= 0; perf_miss <= 0; perf_merge <= 0; perf_mshr_full <= 0; perf_target_full <= 0;
@@ -727,17 +769,23 @@ module tnca_home_pipe #(
                 end else fu_t <= tg_next[fu_tc];
             end
 
+            // ---- FREE_WR: the first free MSHR takes S1's line address every cycle (never read while free) ----
+            if (CF_FREEWR != 0) begin
+                for (i = 0; i < MSHR_N; i = i + 1)
+                    if (ms_free_oh[i]) ms_addr[i] <= {b_addr[ADDR_W-1:OFF_W], {OFF_W{1'b0}}};
+            end
+
             // ---- S2 ----
             if (s2_replay) begin
-                rq_busy[s1_rq] <= 1'b0;
+                rq_busy[b_rq] <= 1'b0;
             end else if (s2_block) begin
-                rq_busy[s1_rq] <= 1'b0; rq_blocked[s1_rq] <= 1'b1;
+                rq_busy[b_rq] <= 1'b0; rq_blocked[b_rq] <= 1'b1;
                 if (s2_kind_alloc && !ms_has_free) perf_mshr_full <= perf_mshr_full + 1;
                 if (!tg_has_free) perf_target_full <= perf_target_full + 1;
             end else if (s2_act) begin
-                rq_v[s1_rq] <= 1'b0; rq_busy[s1_rq] <= 1'b0;
+                rq_v[b_rq] <= 1'b0; rq_busy[b_rq] <= 1'b0;
                 s3_src <= s2_src; s3_tag <= s2_tag; s3_be <= s2_be; s3_wdata <= s2_wdata;
-                s3_cmp <= s2_cmp[63:0]; s3_aop <= s2_aop; s3_off <= s1_addr[11:0]; s3_wb <= 1'b0;
+                s3_cmp <= s2_cmp[63:0]; s3_aop <= s2_aop; s3_off <= b_addr[11:0]; s3_wb <= 1'b0;
                 if (s2_kind_mmio) begin
                     s3_kind <= (s2_we && !s2_amo) ? K_MMIO_WR : K_MMIO_RD;
                 end else if (s2_kind_merge) begin
@@ -767,7 +815,7 @@ module tnca_home_pipe #(
                         v_bits[s2_vic_index] <= 1'b0; d_bits[s2_vic_index] <= 1'b0;
                         cl_bits[s2_vic_index] <= 1'b1;
                         ms_state[ms_free_idx] <= MS_REQ;
-                        ms_addr[ms_free_idx] <= {s1_addr[ADDR_W-1:OFF_W], {OFF_W{1'b0}}};
+                        if (!CF_FREEWR) ms_addr[ms_free_idx] <= {b_addr[ADDR_W-1:OFF_W], {OFF_W{1'b0}}};
                         ms_set[ms_free_idx] <= s2_set; ms_way[ms_free_idx] <= s2_vic_way;
                         ms_head[ms_free_idx] <= tg_free_idx; ms_tail[ms_free_idx] <= tg_free_idx;
                         tg_v[tg_free_idx] <= 1'b1; tg_src[tg_free_idx] <= s2_src; tg_tag[tg_free_idx] <= s2_tag;
@@ -803,6 +851,15 @@ module tnca_home_pipe #(
 
             // ---- S1: load, hold, or empty ----
             if (!s2_hold) begin
+                if (CF_S2SPLIT) begin
+                    // the decision stage takes S1's request and its decision; a request whose set S2 writes at this edge (a tag claimed by an
+                    // install or an allocation) was decided on the old tags: replay it
+                    a_v <= s1_v; a_stale <= s1_stale || (s1_v && s2_act && (s2_kind_install || s2_kind_alloc) && (s1_set == s2_set));
+                    a_rq <= s1_rq; a_addr <= s1_addr;
+                    a_hit <= ca_hit; a_hit_way <= ca_hit_way; a_vic_ok <= ca_vic_ok; a_vic_way <= ca_vic_way;
+                    a_ms <= ca_ms; a_ms_id <= ca_ms_id;
+                    for (i = 0; i < WAYS; i = i + 1) a_tags[i] <= lookup_tag[i];
+                end
                 s1_v <= take;
                 if (take) begin
                     s1_rq <= sel_idx; s1_addr <= rq_addr[sel_idx]; rq_busy[sel_idx] <= 1'b1;
@@ -890,7 +947,7 @@ module tnca_home_pipe #(
     // Observation names shared with tnca_nuca_slice (testbench probes only):
     // est 0 idle, 1 held, 2 a hit, 3 a miss allocated or installed, 7 a fill
     // step, 15 anything else (merge, MMIO, replay, block).
-    wire [3:0] est = !s1_v ? (fu_step ? 4'd7 : 4'd0) : s2_hold ? 4'd1 :
+    wire [3:0] est = !b_v ? (fu_step ? 4'd7 : 4'd0) : s2_hold ? 4'd1 :
                      (s2_act && s2_kind_hit) ? 4'd2 :
                      (s2_act && (s2_kind_alloc || s2_kind_install)) ? 4'd3 : 4'd15;
     wire fill_fast_take = 1'b0, hit_chain_take = 1'b0;

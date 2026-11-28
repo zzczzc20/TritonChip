@@ -13,7 +13,11 @@
 module tnca_multicore_mmio #(
  parameter N=3,PORTS=3,NUM_RCTX=4,PHYS_W=8,CODE_WORDS=16384,
  parameter MEMORY_CONTROLS=0,AXI_OUT_N=8,HBM_STRIPED=0,
- parameter MEM_BASE=64'h20000,REG_ADDR_W=8,CACHE_MAINTENANCE=0
+ parameter MEM_BASE=64'h20000,REG_ADDR_W=8,CACHE_MAINTENANCE=0,
+ // R42 clk (CLKFIX[7]): 1 registers the `all_idle` input (every core's quiescence, ANDed across the SLRs) before it gates the doorbell, the settings
+ // writes and the completion of a command: the cross-SLR path into the response registers loses its 14 levels, a command is admitted or completed
+ // one cycle later; 0 = the shipped module.
+ parameter IDLE_REG=0
 )(
  input wire clk,rst_n,input wire [REG_ADDR_W-1:0] reg_addr,
  input wire [63:0] reg_wdata,input wire reg_we,reg_re,
@@ -51,7 +55,10 @@ module tnca_multicore_mmio #(
  // Longer than the one-cycle copies in tnca_memory_mode and tnca_line_axi.
  localparam SETTLE=2;
  reg [1:0] settle;
- wire admit_idle=all_idle && settle==0;
+ reg all_idle_q;
+ always @(posedge clk) all_idle_q<=all_idle;
+ wire all_idle_u=(IDLE_REG!=0) ? all_idle_q : all_idle;
+ wire admit_idle=all_idle_u && settle==0;
  reg [63:0] maintenance_sequence;
  wire [63:0] memory_end=MEM_BASE+axi_size;
  wire memory_valid=memory_end>=MEM_BASE;
@@ -122,7 +129,7 @@ module tnca_multicore_mmio #(
    device_clock<=device_clock+1;
    if(settle!=0)settle<=settle-1;
    if(reg_we)case(reg_addr)
-    9'h110:if(MEMORY_CONTROLS && state==IDLE && host_state==IDLE && all_idle &&
+    9'h110:if(MEMORY_CONTROLS && state==IDLE && host_state==IDLE && all_idle_u &&
       reg_wdata[63:16]==0 && (reg_wdata[15:8]==1 || reg_wdata[15:8]==PORTS) &&
       reg_wdata[7:0]>=1 && reg_wdata[7:0]<=AXI_OUT_N)begin
      memory_active_ports<=reg_wdata[15:8];memory_outstanding<=reg_wdata[7:0];settle<=SETTLE;
@@ -132,8 +139,8 @@ module tnca_multicore_mmio #(
     8'h28:a3<=reg_wdata;8'h30:a4<=reg_wdata;8'h38:a5<=reg_wdata;
     8'h40:deadline<=reg_wdata;
     8'h70:window_addr<=reg_wdata;8'h78:window_data<=reg_wdata;8'h80:window_be<=reg_wdata[7:0];
-    8'ha8,9'h100,9'h108:if(state==IDLE && host_state==IDLE && all_idle)begin axi_base<=reg_wdata;settle<=SETTLE;end
-    8'hb0:if(state==IDLE && host_state==IDLE && all_idle)begin axi_size<=reg_wdata;settle<=SETTLE;end
+    8'ha8,9'h100,9'h108:if(state==IDLE && host_state==IDLE && all_idle_u)begin axi_base<=reg_wdata;settle<=SETTLE;end
+    8'hb0:if(state==IDLE && host_state==IDLE && all_idle_u)begin axi_size<=reg_wdata;settle<=SETTLE;end
     8'h88:if(reg_wdata[1] && host_state==IDLE)begin
      if(state!=IDLE || !admit_idle || !host_address_ok)window_status<=3'b100;
      else begin
@@ -196,7 +203,7 @@ module tnca_multicore_mmio #(
    end
    if(state==ISSUE && (maintenance_cmd ? cache_maint_ready : cmd_ready))begin cmd_valid<=0;state<=WAIT;end
    if(state==WAIT && maintenance_cmd && cache_maint_done)maintenance_complete<=1;
-   if(state==WAIT && maintenance_cmd && (maintenance_complete || cache_maint_done) && all_idle)begin
+   if(state==WAIT && maintenance_cmd && (maintenance_complete || cache_maint_done) && all_idle_u)begin
     state<=IDLE;rsp_seq<=maintenance_sequence;rsp_status<=(|axi_fault)?4'd1:4'd0;
     rsp_r0<=0;rsp_r1<=0;maintenance_cmd<=0;
    end

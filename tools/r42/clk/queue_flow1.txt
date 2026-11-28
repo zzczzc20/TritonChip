@@ -1,0 +1,1 @@
+tscr_s3_p56_x1|PERIOD=5.6 TS_OPT=Explore TS_PLACE=ExtraTimingOpt TS_PHYS1=AggressiveExplore TS_ROUTE=AggressiveExplore TS_PHYS2=AggressiveExplore TS_PHYS3=AggressiveFanoutOpt|/home/vivado/r42_clk_out/base/tile_s3_syn.dcp|0|

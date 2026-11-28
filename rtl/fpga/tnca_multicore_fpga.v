@@ -231,7 +231,7 @@ wire cmd_valid;
   .m_rresp(m_rresp),
   .m_rlast(m_rlast)
  );
- tnca_multicore_mmio #(.HBM_STRIPED(HBM_STRIPED),.MEMORY_CONTROLS(MEMORY_CONTROLS),.AXI_OUT_N(AXI_OUT_N),.CACHE_MAINTENANCE(CACHE_MAINTENANCE),.N(N),.PORTS(MEM_PORTS),.NUM_RCTX(NUM_RCTX),.PHYS_W(PHYS_W),.CODE_WORDS(CODE_WORDS),.MEM_BASE(MEM_BASE),.REG_ADDR_W(REG_ADDR_W)) control(
+ tnca_multicore_mmio #(.HBM_STRIPED(HBM_STRIPED),.MEMORY_CONTROLS(MEMORY_CONTROLS),.AXI_OUT_N(AXI_OUT_N),.CACHE_MAINTENANCE(CACHE_MAINTENANCE),.N(N),.PORTS(MEM_PORTS),.NUM_RCTX(NUM_RCTX),.PHYS_W(PHYS_W),.CODE_WORDS(CODE_WORDS),.MEM_BASE(MEM_BASE),.REG_ADDR_W(REG_ADDR_W),.IDLE_REG((CLKFIX>>7)&1)) control(
   .memory_active_ports(memory_active_ports),.memory_outstanding(memory_outstanding),
   .clk(clk),
   .rst_n(rst_n),

@@ -11,6 +11,8 @@
 module tb;
     parameter DR       = 1;            // DATA_RAM of instance B
     parameter AR       = 0;            // AUX_RAM of instance B
+    parameter CF       = 0;            // R42 clk: CLKFIX of instance B (instance A is the shipped RTL, CLKFIX 0)
+    // R42 clk: compile with -DREFA to make instance A tnca_home_pipe_ref, a renamed copy of the module as of origin/R42 (REFFILE of the runner)
     parameter SEED     = 1;
     parameter CYCLES   = 200000;
     parameter NLINES   = 384;          // distinct lines touched (32 sets x 8 ways = 256 lines resident)
@@ -83,8 +85,12 @@ module tb;
         .perf_bypass(P``_p0), .perf_evict(P``_p1), .perf_dead_evict(P``_p2), .perf_gear(P``_gear), .perf_hit(P``_p3), .perf_miss(P``_p4), .perf_merge(P``_p5), \
         .perf_mshr_full(P``_p6), .perf_target_full(P``_p7), .perf_wb(P``_p8), .perf_hit_past_block(P``_p9)
 
+`ifdef REFA
+    tnca_home_pipe_ref #(`HP_PARAMS, .DATA_RAM(0))  ua (`HP_PORTS(a));
+`else
     tnca_home_pipe #(`HP_PARAMS, .DATA_RAM(0))  ua (`HP_PORTS(a));
-    tnca_home_pipe #(`HP_PARAMS, .DATA_RAM(DR), .AUX_RAM(AR)) ub (`HP_PORTS(b));
+`endif
+    tnca_home_pipe #(`HP_PARAMS, .DATA_RAM(DR), .AUX_RAM(AR), .CLKFIX(CF)) ub (`HP_PORTS(b));
 
     // ---- random numbers ----
     reg [63:0] rng;
@@ -107,10 +113,10 @@ module tb;
 
     // compare vector
     wire a_eq_ctl = ({a_req_ready, a_rsp_valid, a_mem_req_valid, a_mem_req_we, a_maint_ready, a_maint_busy, a_maint_done, a_tmu_wr_valid, a_tmu_tl_valid, a_tmu_tl_drop,
-                      a_rsp_src, a_rsp_tag, a_tmu_wr_src, a_mem_req_addr, a_mem_req_tag, a_tmu_wr_off, a_tmu_rd_off, a_tmu_wr_data, a_tmu_tl_addr,
+                      a_rsp_src, a_rsp_tag, a_tmu_wr_src, a_mem_req_addr & {ADDR_W{a_mem_req_valid}}, a_mem_req_tag, a_tmu_wr_off, a_tmu_rd_off, a_tmu_wr_data, a_tmu_tl_addr,
                       a_p0, a_p1, a_p2, a_gear, a_p3, a_p4, a_p5, a_p6, a_p7, a_p8, a_p9} ===
                      {b_req_ready, b_rsp_valid, b_mem_req_valid, b_mem_req_we, b_maint_ready, b_maint_busy, b_maint_done, b_tmu_wr_valid, b_tmu_tl_valid, b_tmu_tl_drop,
-                      b_rsp_src, b_rsp_tag, b_tmu_wr_src, b_mem_req_addr, b_mem_req_tag, b_tmu_wr_off, b_tmu_rd_off, b_tmu_wr_data, b_tmu_tl_addr,
+                      b_rsp_src, b_rsp_tag, b_tmu_wr_src, b_mem_req_addr & {ADDR_W{b_mem_req_valid}}, b_mem_req_tag, b_tmu_wr_off, b_tmu_rd_off, b_tmu_wr_data, b_tmu_tl_addr,
                       b_p0, b_p1, b_p2, b_gear, b_p3, b_p4, b_p5, b_p6, b_p7, b_p8, b_p9});
     // data outputs only matter when valid, but compare them always: both instances must agree bit for bit
     wire a_eq_dat = ({a_rsp_rdata, a_mem_req_wdata} === {b_rsp_rdata, b_mem_req_wdata});

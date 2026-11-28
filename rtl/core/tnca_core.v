@@ -103,6 +103,8 @@ module tnca_core #(
     parameter VRF_FWD        = 0,
     //   CLKFIX (R42 clk) bit field of pipeline fixes for the nine clock path families; 0 = the shipped RTL, cycle for cycle.
     //               [0] hybrid LSU line engine: registered completion pick (+1 cycle on each fast-path completion)
+    //               [1] home slice (tnca_tile -> tnca_home_pipe): MSHR address written into the free entry every cycle (0 cycles)
+    //               [2] banked VRF: the writeback's physical register registered with w_* (0 cycles)
     parameter CLKFIX         = 0,
     //   LSU_INFLIGHT (R39-08) 2: two load/store units behind the one port
     //               (tnca_lsu_pair), so an access starts while the one ahead
@@ -697,6 +699,7 @@ module tnca_core #(
     // R41 T2: W's vector write and its bank, registered with w_* (below).
     reg                  w_vec_q;
     reg  [1:0]           w_bank_q;
+    reg  [PHYS_W-1:0]    w_phys_q;     // R42 clk (CLKFIX[2]): W's physical vector register, registered with w_* (the VRF write decode starts from it)
     // R42 issue (VRF_FWD): W's write covers all sixteen lanes (registered with w_lane_en), and which of R's vector
     // sources W writes this cycle with all lanes (registered, with r_whit).
     reg                  w_full;
@@ -1216,7 +1219,8 @@ module tnca_core #(
             .RCTX_W(RCTX_W), .PHYS_W(PHYS_W),
             .NUM_BANKS(4), .BANK_W(2), .READ_LATENCY(1),
             .NUM_PORTS(5), .ZERO_INVALID(1), .NUM_WRITERS(2),
-            .PHYS_IN(5'b00111), .XBAR(VRF_XBAR), .VLD_RAM(VRF_VLD_RAM)
+            .PHYS_IN(5'b00111), .XBAR(VRF_XBAR), .VLD_RAM(VRF_VLD_RAM),
+            .W_PHYS_IN((CLKFIX >> 2) & 1)
         ) u_vrf (
             .clk(clk), .rst_n(rst_n), .clear(launch_valid), .vbase(vbase_q),
             .req_valid(rq_v), .req_rctx(rq_rctx), .req_idx(rq_idx),
@@ -1224,7 +1228,7 @@ module tnca_core #(
             .req_accept(vrf_req_accept),
             .rsp_ready(5'b11111),
             .rsp_valid(vrf_rsp_valid), .rsp_data(vrf_rsp_data),
-            .we(wr_we), .w_rctx(wr_rctx), .w_idx(wr_idx),
+            .we(wr_we), .w_rctx(wr_rctx), .w_idx(wr_idx), .w_phys({{PHYS_W{1'b0}}, w_phys_q}),
             .wmask(wr_mask), .wdata(wr_data), .w_accept(wr_ok)
         );
 
@@ -2888,6 +2892,7 @@ module tnca_core #(
     always @(posedge clk) begin
         w_vec_q  <= rst_n && !launch_valid && wn_v;
         w_bank_q <= wn_phys[1:0];
+        w_phys_q <= wn_phys;
     end
     always @(posedge clk) begin
         if (!rst_n || launch_valid) begin

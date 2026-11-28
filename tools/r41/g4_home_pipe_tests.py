@@ -17,12 +17,14 @@
   their span in cycles (the throughput of one home in this fixture).
 """
 import argparse
+import os
 import re
 import subprocess
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+CLKFIX = os.environ.get('CLKFIX', '0')   # R42 clk: tnca_home_pipe CLKFIX in every case (default 0, the shipped RTL)
 
 
 def run(binary, top, params, source, args=()):
@@ -55,6 +57,7 @@ def main():
         cases.append(({'PRESSURE': 1, 'DRAM_LAT': 200}, ['+nreq=100', '+min_wb=0']))
         for params, args in cases:
             params['FILL_CHAIN'] = a.fill_chain
+            params['CLKFIX'] = CLKFIX
             ok, out = run(b, 'tb_home_pipe', params, 'tb/nuca/tb_home_pipe.v', args)
             m = re.search(r'MEMORY reads=(\d+) writes=(\d+) nofill_allocs=(\d+)', out)
             mt = re.search(r'MAINTENANCE lower_half_lines=(\d+) mismatches=(\d+)', out)
@@ -65,7 +68,7 @@ def main():
                 print('\n'.join(l for l in out.splitlines() if 'FAIL' in l or 'FATAL' in l)[:2000])
             n += 1
         for nofill in (0, 1):
-            ok, out = run(b, 'tb_home_pipe_special', {'LINE_WRITE_NOFILL': nofill, 'FILL_CHAIN': a.fill_chain}, 'tb/nuca/tb_home_pipe_special.v')
+            ok, out = run(b, 'tb_home_pipe_special', {'LINE_WRITE_NOFILL': nofill, 'FILL_CHAIN': a.fill_chain, 'CLKFIX': CLKFIX}, 'tb/nuca/tb_home_pipe_special.v')
             print(f"SPECIAL {'PASS' if ok else 'FAIL'} nofill={nofill} "
                   f"{(re.search(r'HOME PIPE SPECIAL PASS.*', out) or [''])[0]}", flush=True)
             bad += not ok
@@ -73,7 +76,7 @@ def main():
         for mode in (1, 2, 3):
             for mshr in (8, 32):
                 ok, out = run(b, 'tb_home_pipe', {'SERVICE_MODE': mode, 'LINE_WRITE_NOFILL': 1, 'MSHR_N': mshr,
-                                                  'TARGET_N': max(16, mshr), 'FILL_CHAIN': a.fill_chain},
+                                                  'TARGET_N': max(16, mshr), 'FILL_CHAIN': a.fill_chain, 'CLKFIX': CLKFIX},
                               'tb/nuca/tb_home_pipe.v', ['+nreq=2048', '+min_wb=0'])
                 m = re.search(r'HOME SERVICE .*', out)
                 print(f"SERVICE {'PASS' if ok else 'FAIL'} mshr={mshr} {m.group(0) if m else ''}", flush=True)

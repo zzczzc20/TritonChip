@@ -580,6 +580,13 @@ module tnca_tensor #(
     // Word k is memory bytes [t_CBa + 8k, +8). Its bytes are written when
     // they are both inside the tensor and inside the box row.
     wire [31:0] st_nwords = t_row_units + ((r_m != 3'd0) ? 32'd1 : 32'd0);
+    // R42 clk2 TCHK_REG: "this is the row's last unit" (t_unit + 1 == t_row_units for the load walk, == st_nwords for the store walk) is a
+    // flag, not a 32-bit add and compare in front of the odometer's 64-bit enables. t_unit is 0 at a row's start, where the test is a compare of
+    // registers with the constant 1; a step to t_unit + 1 registers the test for the next unit, from t_unit + 2 (row_units and r_m do not change
+    // inside a row). tu0_q says t_unit is 0.
+    reg  tu0_q, lastp_ld_q, lastp_st_q;
+    wire last_ld = (TCHK_REG != 0) ? (tu0_q ? (t_row_units == 32'd1) : lastp_ld_q) : (t_unit + 32'd1 == t_row_units);
+    wire last_st = (TCHK_REG != 0) ? (tu0_q ? (st_nwords == 32'd1)   : lastp_st_q) : (t_unit + 32'd1 == st_nwords);
     reg  [7:0]  st_be;
     integer bk;
     always @(*)
@@ -1469,6 +1476,7 @@ module tnca_tensor #(
                     t_v  <= {in_dim(t_c3, 32'd0, t_e3), in_dim(t_c2, 32'd0, t_e2),
                              in_dim(t_c1, 32'd0, t_e1), in_dim(t_c0, 32'd0, t_e0)};
                     t_unit <= 32'd0;
+                    tu0_q  <= 1'b1;
                     t_flat <= 32'd0;
                     t_half <= 1'b0;
                     st_prev <= 64'd0;
@@ -1537,8 +1545,12 @@ module tnca_tensor #(
                         sl_m[free_slot]    <= r_m;
                         // A missing word's bytes are all outside the tensor,
                         // so whatever stands in for it is never kept.
-                        sl_dlo[free_slot]  <= 64'd0;
-                        sl_dhi[free_slot]  <= 64'd0;
+                        // (TCHK_REG: not written here: a word that is not fetched is never kept, dn_keep, and a word that is
+                        // fetched is written by its response; the write enable no longer follows the walk's bounds compares)
+                        if (TCHK_REG == 0) begin
+                            sl_dlo[free_slot]  <= 64'd0;
+                            sl_dhi[free_slot]  <= 64'd0;
+                        end
                         t_slot <= free_slot;
                     end
                     if (!t_half && ld_nlo && ld_nhi)
@@ -1549,8 +1561,9 @@ module tnca_tensor #(
                     end
                 end
                 if (adv) begin
-                    if (t_unit + 32'd1 == t_row_units) begin
+                    if (last_ld) begin
                         t_unit <= 32'd0;
+                        tu0_q  <= 1'b1;
                         t_flat <= t_flat + t_row_bytes;
                         if (last_row) st <= S_TDRAIN;
                         else begin
@@ -1571,8 +1584,10 @@ module tnca_tensor #(
                                 t_P2 <= t_P0 + t_s0; t_P3 <= t_P0 + t_s0; t_ps <= t_P0 + t_s0 + t_CB;
                             end
                         end
-                    end else
+                    end else begin
                         t_unit <= t_unit + 32'd1;
+                        tu0_q <= 1'b0; lastp_ld_q <= (t_unit + 32'd2 == t_row_units); lastp_st_q <= (t_unit + 32'd2 == st_nwords);
+                    end
                 end
             end
 
@@ -1600,11 +1615,15 @@ module tnca_tensor #(
                 end
                 if (adv) begin
                     st_prev <= st_cur;
-                    if (t_unit + 32'd1 == st_nwords) row_end = 1'b1;
-                    else t_unit <= t_unit + 32'd1;
+                    if (last_st) row_end = 1'b1;
+                    else begin
+                        t_unit <= t_unit + 32'd1;
+                        tu0_q <= 1'b0; lastp_ld_q <= (t_unit + 32'd2 == t_row_units); lastp_st_q <= (t_unit + 32'd2 == st_nwords);
+                    end
                 end
                 if (row_end) begin
                     t_unit  <= 32'd0;
+                    tu0_q   <= 1'b1;
                     st_prev <= 64'd0;
                     t_flat  <= t_flat + t_row_bytes;
                     if (last_row) st <= S_SDRAIN;
@@ -1690,6 +1709,7 @@ module tnca_tensor #(
                     if (t_unit == t_row_units - 1) st <= S_DONE;
                     else begin
                         t_unit     <= t_unit + 1'b1;
+                        tu0_q      <= 1'b0;
                         x_row      <= 32'd0;
                         // Guarded like its write in S_TMUL: without the
                         // feature r_base0 has no driver, and an unguarded

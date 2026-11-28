@@ -117,6 +117,7 @@ module tnca_u50_top #(
     parameter RPAIR                = 0,
     parameter MTX_ABUF             = 0,
     parameter MTX_PIPE             = 0,
+    parameter VRF_FWD             = 0,   // R42 issue: writeback-to-R operand forwarding (tnca_core VRF_FWD)
     parameter HAS_TENSOR_XPOSE     = 0,
 
 
@@ -308,7 +309,7 @@ module tnca_u50_top #(
         .FPU_OVERLAP(FPU_OVERLAP),
         .RSLICE(RSLICE),
         .RPAIR(RPAIR),
-        .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE),
+        .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE), .VRF_FWD(VRF_FWD),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .WORDS(WORDS),
         .ADDR_W(ADDR_W),

@@ -1,0 +1,53 @@
+ref: 88 runs, fail 0, ['EXIT=0'];  cand: 88 runs, fail 0, ['EXIT=0'];  common 88
+differing programs 0; geomean cand/ref cycles 1.0000
+exit status of the identity check: 0
+--- VRF_FWD=1 against default
+ref: 88 runs, fail 0, ['EXIT=0'];  cand: 88 runs, fail 0, ['EXIT=0'];  common 88
+  t01_vector                  run2                  1029     995  0.967
+  t01_vector                  run2, ooo mem         1029     995  0.967
+  t02_mem                     run2                   945     933  0.987
+  t02_mem                     run2, ooo mem         1296    1289  0.995
+  t03_fp                      run2                  3101    3071  0.990
+  t03_fp                      run2, ooo mem         3205    3169  0.989
+  t06_alu                     run2                  4636    4592  0.991
+  t06_alu                     run2, ooo mem         5169    5167  1.000
+  t11_matrix                  run2                  3641    3617  0.993
+  t11_matrix                  run2, ooo mem         4031    4006  0.994
+  t12_tensor                  run2                  1717    1712  0.997
+  t12_tensor                  run2, ooo mem         2952    2944  0.997
+  t13_share                   run2                   149     148  0.993
+  t13_share                   run2, ooo mem          184     183  0.995
+  t14_caps_dp                 run2                  1086    1075  0.990
+  t14_caps_dp                 run2, ooo mem         1553    1550  0.998
+  t16_vecadd                  run2                  1029    1024  0.995
+  t20_sfu                     run2                  1251    1237  0.989
+  t20_sfu                     run2, ooo mem         1404    1383  0.985
+  t21_cvt                     run2                  1954    1890  0.967
+  t21_cvt                     run2, ooo mem         2894    2879  0.995
+  t25_mmasf                   run2                  1292    1284  0.994
+  t25_mmasf                   run2, ooo mem         1554    1552  0.999
+  t29_vrfbank                 run2                   547     546  0.998
+  t29_vrfbank                 run2, ooo mem          576     574  0.997
+  t36_reduce                  run2                  8843    8819  0.997
+  t36_reduce                  run2, ooo mem         8969    8954  0.998
+  t37_lsu_straddle            run2                 21976   21952  0.999
+  t37_lsu_straddle            run2, ooo mem        28370   28292  0.997
+  t38_wbfreeze                run2                  4412    4028  0.913
+  t38_wbfreeze                run2, ooo mem         4768    4765  0.999
+  t39_freeze_drop             run2                  3634    3396  0.935
+  t39_freeze_drop             run2, ooo mem         4269    4198  0.983
+  t39_isolate                 run2                  2612    2460  0.942
+  t39_isolate                 run2, ooo mem         2583    2472  0.957
+  t39_pair                    run2                  1991    1985  0.997
+  t39_pair                    run2, ooo mem         2783    2777  0.998
+  t39_slice                   run2                  2620    2615  0.998
+  t39_slice                   run2, ooo mem         4261    4256  0.999
+  t39_switch                  run2                  3607    3613  1.002
+  t39_switch                  run2, ooo mem         4488    4495  1.002
+  t40_f2i                     run2                  3011    2947  0.979
+  t40_f2i                     run2, ooo mem         4112    4076  0.991
+  t41_boundary                run2                   914     892  0.976
+  t41_boundary                run2, ooo mem         1147    1118  0.975
+  t41_mmadp                   run2                 12437   12388  0.996
+  t41_mmadp                   run2, ooo mem        14378   14368  0.999
+differing programs 47; geomean cand/ref cycles 0.9930

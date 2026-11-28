@@ -1,0 +1,13 @@
+# tiny tier stand-in points and the fp8 proxy
+op.matmul/tiny/fp16-m16-k32-n16
+op.matmul/tiny/fp32-m16-k32-n16
+op.linear/tiny/fp16-m16-k64-n64
+op.gemv/tiny/fp16-k64-n64
+model.mlp/tiny/fp16-t16-d64
+op.bmm/tiny/fp16-b2-m16-k16-n16
+op.attention_decode/tiny/fp16-b1-h2-l16-d16
+op.softmax/tiny/fp16-r4-c64
+op.rmsnorm/tiny/fp16-r4-d64
+op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8
+op.add/tiny/fp32-n256
+op.fp8_linear/xl/fp8-m16-k256-n128

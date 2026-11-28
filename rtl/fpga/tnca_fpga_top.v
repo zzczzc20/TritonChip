@@ -116,6 +116,7 @@ module tnca_fpga_top #(
     parameter RPAIR           = 0,
     parameter MTX_ABUF        = 0,
     parameter MTX_PIPE        = 0,
+    parameter VRF_FWD        = 0,   // R42 issue: writeback-to-R operand forwarding (tnca_core VRF_FWD)
     // The transposed tensor-DMA write (ISA sec 9E mod[5], R38 S1-07). Off,
     // as in core-vrf-sync-v1; a board built with it on runs a profile that
     // declares the capability, and none does for the banked VRF yet.
@@ -332,7 +333,7 @@ module tnca_fpga_top #(
         .VRF_BYPASS(VRF_BYPASS), .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH), .RCTX_SWITCH(RCTX_SWITCH),
         .LSU_INFLIGHT(LSU_INFLIGHT), .FPU_OVERLAP(FPU_OVERLAP), .RSLICE(RSLICE),
-        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE),
+        .RPAIR(RPAIR), .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE), .VRF_FWD(VRF_FWD),
         .HAS_TENSOR_XPOSE(HAS_TENSOR_XPOSE),
         .CORE_ID(CORE_ID), .NUM_CORES(NUM_CORES), .HOST_TAG(HOST_TAG)
     ) u_shell (

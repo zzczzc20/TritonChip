@@ -57,6 +57,7 @@ module tnca_tile #(
     parameter RCTX_SWITCH = 0,
     parameter MTX_ABUF = 0,
     parameter MTX_PIPE = 0,
+    parameter VRF_FWD = 0,   // R42 issue: writeback-to-R operand forwarding (tnca_core VRF_FWD)
     parameter MTX_VRF_REG = 0,
     // R42 shrink: area options as one bit field, 0 (default) = the shipped RTL. [1:0] home line data array RAM (0 distributed, 1 block, 2 UltraRAM:
     // tnca_home_pipe DATA_RAM), [3:2] home MSHR line buffer + target data RAM (AUX_RAM), [5:4] VRF response crossbar (tnca_vrf_banked XBAR),
@@ -235,7 +236,7 @@ module tnca_tile #(
         .FE_NOBUBBLE(FE_NOBUBBLE),
         .VRF_PREFETCH(VRF_PREFETCH),
         .RCTX_SWITCH(RCTX_SWITCH),
-        .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE),
+        .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE), .VRF_FWD(VRF_FWD),
         .MTX_VRF_REG(MTX_VRF_REG),
         .VRF_XBAR((SHRINK >> 4) & 3), .VRF_VLD_RAM((SHRINK >> 6) & 1),
         .LSU_INFLIGHT(LSU_INFLIGHT),

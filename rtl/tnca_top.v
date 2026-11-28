@@ -58,6 +58,7 @@ module tnca_top #(
     parameter RCTX_SWITCH = 0,
     parameter MTX_ABUF = 0,
     parameter MTX_PIPE = 0,
+    parameter VRF_FWD = 0,   // R42 issue: writeback-to-R operand forwarding (tnca_core VRF_FWD)
     parameter MTX_VRF_REG = 0,
     parameter SHRINK = 0,      // R42 shrink: bit field of area options (see tnca_tile.v); 0 = the shipped RTL
     parameter HYBRID_LSU = 0,
@@ -497,7 +498,7 @@ module tnca_top #(
                 .FE_NOBUBBLE(FE_NOBUBBLE),
                 .VRF_PREFETCH(VRF_PREFETCH),
                 .RCTX_SWITCH(RCTX_SWITCH),
-                .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE),
+                .MTX_ABUF(MTX_ABUF), .MTX_PIPE(MTX_PIPE), .VRF_FWD(VRF_FWD),
                 .MTX_VRF_REG(MTX_VRF_REG),
                 .SHRINK(SHRINK),
                 .LSU_INFLIGHT(LSU_INFLIGHT),

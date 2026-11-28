@@ -1,0 +1,29 @@
+# Where the cache-maintenance operation (M_SCAN, tnca_home_pipe.v) can be issued from. Commands run at the R42-issue head (source commit 0fa0d211 + working tree), outputs below.
+
+$ grep -rln "cache_maint\|CACHE_MAINT\|maintenance" python tools/tritonchip_fpga_harness fpga flow --include=*.py --include=*.md --include=*.json --include=*.tcl --include=*.v | sort
+flow/fpga/audit_r40_multicore_placement.tcl
+flow/fpga/place_r40_multicore.tcl
+flow/fpga/synth_r40_range_grid.tcl
+flow/fpga/synth_r40_slice.tcl
+python/tnca/backends/multicore_mmio_sim.py
+python/tnca/devices.py
+python/tnca/locality.py
+tools/tritonchip_fpga_harness/README.md
+tools/tritonchip_fpga_harness/targets/u280-multicore-r40.json
+
+$ grep -n -i "maint" python/tnca/backends/u50.py python/tnca/runtime.py python/tnca/device.py python/tnca/transport.py   (the board backend, the runtime, the device layer)
+(no output: none of them issues a maintenance command)
+
+$ grep -n -i "maint" python/tnca/backends/multicore_mmio_sim.py | head   (the stand-in: only the DMA-capability flag, host reads and writes go through the coherent host port of the home slices)
+55:                 memory_bytes=1 << 20, link_stages=2, noc_link_stages=0, dispatch_stages=0, home_stages=0, code_stages=0, board_top=False, maintenance=False, memory_controls=False, journal=False, hybrid_lsu=False, sfu_lanes=1, home_background_reads=False, cache_sets=None, rtl_params=None, stage_probes=False, device=None, inbox=None, outbox=None, **kwargs):
+95:                         home_stages=home_stages, code_stages=code_stages, maintenance=int(maintenance),
+100:            maintenance, memory_controls = plat['CACHE_MAINTENANCE'], bool(plat['MEMORY_CONTROLS'])
+103:                             home_stages=home_stages, code_stages=code_stages, maintenance=int(maintenance),
+112:        self.maintenance = operator.index(maintenance)
+113:        if self.maintenance not in (0,1):
+114:            raise ArgumentError('maintenance must be 0 or 1')
+191:        if not self.maintenance or offset<0 or count<0 or offset>self.memory_bytes-count:
+228:                     NOC_PIPE=self.noc_link_stages, DISPATCH_PIPE=self.dispatch_stages, HOME_PIPE=self.home_stages, CODE_PIPE=self.code_stages, MAINTENANCE=self.maintenance, MEMORY_CONTROLS=int(self.memory_controls))
+281:                            'home_stages', 'code_stages', 'maintenance', 'memory_controls') if k in kwargs}
+
+rtl: M_SCAN walks every line of the slice, 2 cycles per line (M_WAIT tag read, M_SCAN):  LINES = SETS*WAYS ->  32 sets: 256 lines = 512 cycles; 128 sets: 1024 lines = 2048 cycles per maintenance operation (tnca_home_pipe.v lines 821-846).

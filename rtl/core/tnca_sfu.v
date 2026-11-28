@@ -51,7 +51,8 @@ module tnca_sfu #(
     parameter VLEN = 16,
     parameter ELEN = 32,
     parameter LAT = 6,
-    parameter LANES = 1
+    parameter LANES = 1,
+    parameter XREG = 0
 ) (
     input wire clk, rst_n, start,
     input wire [7:0] func,
@@ -74,7 +75,7 @@ module tnca_sfu #(
                 assign input_lanes[lane*ELEN+:ELEN] = {ELEN{1'b0}};
             end
         end
-        tnca_sfu_serial #(.VLEN(GROUP), .ELEN(ELEN), .LAT(LAT)) u_serial (
+        tnca_sfu_serial #(.VLEN(GROUP), .ELEN(ELEN), .LAT(LAT), .XREG(XREG)) u_serial (
             .clk(clk), .rst_n(rst_n), .start(start), .func(func), .va(input_lanes),
             .busy(group_busy[slice]), .done(group_done[slice]), .vres(output_lanes));
     end endgenerate
@@ -89,7 +90,10 @@ module tnca_sfu_serial #(
     // Latency of rtl/gen/tnca_sfu_*_xls.v: stages minus one, because they are
     // generated with --flop_inputs=false. All four share it on purpose, so
     // that this sequencer does not have to know which function it is running.
-    parameter LAT  = 6
+    parameter LAT  = 6,
+    // R42 clk2 (CLKFIX2 bit 7): 1 = the operand x (a 16-way select by the cycle counter) is registered before the
+    // generated pipelines, one more cycle of latency per pass; 0 = as it was
+    parameter XREG = 0
 ) (
     input  wire                  clk,
     input  wire                  rst_n,
@@ -112,9 +116,10 @@ module tnca_sfu_serial #(
     reg [7:0]      op_l;
     reg [CW-1:0]   cnt;
 
+    localparam LATE = LAT + XREG;            // cycles from the operand select to the result
     wire issuing = busy && (cnt < VLEN);
-    wire landing = busy && (cnt >= LAT + 1);
-    wire [CW-1:0] land_ix = cnt - LAT - 1;
+    wire landing = busy && (cnt >= LATE + 1);
+    wire [CW-1:0] land_ix = cnt - LATE - 1;
 
     reg [ELEN-1:0] x;
     always @(*) begin
@@ -126,10 +131,14 @@ module tnca_sfu_serial #(
     wire [ELEN-1:0] y_exp2, y_log2, y_rcp, y_rsqrt;
     wire rst = ~rst_n;
 
-    tnca_sfu_exp2_xls  u_exp2 (.clk(clk), .rst(rst), .x(x), .out(y_exp2));
-    tnca_sfu_rcp_xls   u_rcp  (.clk(clk), .rst(rst), .x(x), .out(y_rcp));
-    tnca_sfu_rsqrt_xls u_rsqrt(.clk(clk), .rst(rst), .x(x), .out(y_rsqrt));
-    tnca_sfu_log2_xls  u_log2 (.clk(clk), .rst(rst), .x(x), .out(y_log2));
+    reg  [ELEN-1:0] x_q;
+    always @(posedge clk) x_q <= x;
+    wire [ELEN-1:0] xf = (XREG != 0) ? x_q : x;
+
+    tnca_sfu_exp2_xls  u_exp2 (.clk(clk), .rst(rst), .x(xf), .out(y_exp2));
+    tnca_sfu_rcp_xls   u_rcp  (.clk(clk), .rst(rst), .x(xf), .out(y_rcp));
+    tnca_sfu_rsqrt_xls u_rsqrt(.clk(clk), .rst(rst), .x(xf), .out(y_rsqrt));
+    tnca_sfu_log2_xls  u_log2 (.clk(clk), .rst(rst), .x(xf), .out(y_log2));
 
     reg [ELEN-1:0] y;
     always @(*) begin
@@ -171,7 +180,7 @@ module tnca_sfu_serial #(
                 if (landing)
                     for (i = 0; i < VLEN; i = i + 1)
                         if (land_ix == i[CW-1:0]) res[i] <= y;
-                if (cnt == VLEN + LAT) begin
+                if (cnt == VLEN + LATE) begin
                     busy <= 1'b0;
                     done <= 1'b1;
                 end

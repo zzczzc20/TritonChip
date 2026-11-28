@@ -56,7 +56,9 @@ module tnca_vector_fpu #(
     //   CVTP 1      vf.cvt.fmt runs through the XLS-pipelined converter (tnca_cvt_xls: three register stages and an output flop, 16
     //               lanes) instead of the combinational one: four cycles after cvt_x, so FP_LAT cycles after the operands when
     //               FP_LAT = 5; the unit's result mux takes the converter's output flop at that cycle (needs FP_LAT = 5)
-    parameter       CVTP  = 0
+    parameter       CVTP  = 0,
+    //   SFUX 1      the SFU's operand select is registered (tnca_sfu XREG): one more cycle per SFU pass
+    parameter       SFUX  = 0
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -614,7 +616,7 @@ module tnca_vector_fpu #(
 
     generate
         if (HAS_SFU != 0) begin : g_sfu
-            tnca_sfu #(.VLEN(VLEN), .ELEN(ELEN), .LAT(SFU_LAT), .LANES(SFU_LANES)) u_sfu (
+            tnca_sfu #(.VLEN(VLEN), .ELEN(ELEN), .LAT(SFU_LAT), .LANES(SFU_LANES), .XREG(SFUX)) u_sfu (
                 .clk(clk), .rst_n(rst_n),
                 .start(start & is_sfu_mc), .func(func), .va(va),
                 .busy(sfu_busy), .done(sfu_done), .vres(sfu_vres)

@@ -111,6 +111,7 @@ module tnca_core #(
     //     bit 4  vector FPU: FMA cut behind the adders (CUTS |= 4'b0100; FP latency +1)
     //     bit 5  vector FPU: register behind the FMA array's result (tnca_vector_fpu FOREG; FP latency +1); with bits 3 and 4 also
     //            the pipelined float-to-float converter (CVTP; FP latency is then 5)
+    //     bit 7  vector FPU: SFU operand select registered (tnca_sfu XREG; +1 cycle per SFU pass)
     //     bit 6  transfer engine: g_inside registered, padding fault from S_TMUL (tnca_tensor TCHK_REG; +1 cycle on a faulting transfer only)
     parameter CLKFIX2        = 0,
     //   LSU_INFLIGHT (R39-08) 2: two load/store units behind the one port
@@ -1576,7 +1577,7 @@ module tnca_core #(
         (r_func == `TNCA_VF_ADD) || (r_func == `TNCA_VF_SUB)};
     reg  [4:0] x_fpctl;
 
-    tnca_vector_fpu #(.VLEN(VLEN), .ELEN(ELEN), .LW(LW), .FP_LAT(FP_LAT_X), .FMA_IMPL(FMA_IMPL), .FCUTS(VF_FCUTS), .FOREG(CLKFIX2[5]), .CVTP(CLKFIX2[3] && CLKFIX2[4] && CLKFIX2[5]),
+    tnca_vector_fpu #(.VLEN(VLEN), .ELEN(ELEN), .LW(LW), .FP_LAT(FP_LAT_X), .FMA_IMPL(FMA_IMPL), .FCUTS(VF_FCUTS), .FOREG(CLKFIX2[5]), .CVTP(CLKFIX2[3] && CLKFIX2[4] && CLKFIX2[5]), .SFUX(CLKFIX2[7]),
                       .SFU_LAT(SFU_LAT), .SFU_LANES(SFU_LANES), .HAS_SFU(HAS_SFU)) u_vfpu (
         .clk(clk), .rst_n(rst_n),
         .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),

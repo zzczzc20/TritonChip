@@ -84,6 +84,57 @@ the other points of that run are runtime faults, see section 9).
   `stage.sh`; `tools/r42/issue_images.py` (image parameter files of every arm, `tools/r42/issue/images/*.tcl`).
 - Not changed: the compiler, the ISA, any default, any shipped parameter.
 
+## 4. Real kernels on the single-core RTL (rtl-1c, ArchBench tiny tier, run-3 core profile `core-vrf-sync-v5-x8-g2c4-dp`, `--counters`)
+
+Device cycles of the timed call; ratio = base cycles / arm cycles (>1: faster). All 27 points pass in every arm and `max_rel_err` is identical per point between the base and VRF_FWD (hardware change, same software).
+`VRF_FWD` through `TNCA_RTL_PARAMS=VRF_FWD=1`; bank-aware allocation through `TNCA_BANK_ALLOC=1` (software knob, base hardware); both together. Records: `rtl_1c/tiny_{base,fwd2,bankalloc,fwdbank}.jsonl.gz`.
+
+| point | base cycles | VRF_FWD | bank alloc | VRF_FWD + bank alloc | x_vrf base -> fwd+bank |
+|---|--:|--:|--:|--:|--:|
+| model.gpt2_block/tiny/fp16-d64-h4-b1-s16 | 173772 | 1.045 | 1.020 | 1.068 | 14779 -> 4840 |
+| model.llama_decode/tiny/fp16-b1-p16 | 177091 | 1.013 | 1.020 | 1.026 | 7218 -> 1707 |
+| model.llama_prefill/tiny/fp16-b1-s16 | 473768 | 1.017 | 1.021 | 1.027 | 27845 -> 7675 |
+| model.mlp/tiny/fp16-t16-d64 | 79981 | 1.070 | 1.014 | 1.092 | 7238 -> 2144 |
+| model.resnet_block/tiny/fp32-n1-c8-hw8 | 246856 | 1.024 | 1.042 | 1.068 | 25055 -> 4454 |
+| op.add/tiny/fp16-n1000 | 2373 | 1.003 | 1.012 | 1.015 | 67 -> 8 |
+| op.add/tiny/fp32-n256 | 828 | 1.006 | 1.000 | 1.006 | 1 -> 1 |
+| op.argmax/tiny/fp16-r2-v256 | 1999 | 1.003 | 1.023 | 1.017 | 213 -> 150 |
+| op.attention_decode/tiny/fp16-b1-h2-l16-d16 | 9188 | 1.058 | 1.030 | 1.096 | 711 -> 154 |
+| op.attention_prefill/tiny/fp16-b1-h2-s16-d16 | 23340 | 1.035 | 1.026 | 1.060 | 2574 -> 967 |
+| op.bmm/tiny/fp16-b2-m16-k16-n16 | 1858 | 1.018 | 1.004 | 1.016 | 46 -> 10 |
+| op.conv2d/tiny/fp32-n1-cin4-h8-w8-cout8 | 110375 | 1.022 | 1.055 | 1.102 | 11700 -> 2118 |
+| op.cumsum/tiny/fp32-r4-c64 | 1078 | 1.000 | 1.043 | 1.043 | 44 -> 0 |
+| op.embedding/tiny/fp16-v256-d64-t16 | 4251 | 1.000 | 1.021 | 1.021 | 96 -> 0 |
+| op.gelu_tanh/tiny/fp16-n256 | 1971 | 1.002 | 1.034 | 1.024 | 164 -> 98 |
+| op.gemv/tiny/fp16-k64-n64 | 4763 | 1.012 | 1.000 | 1.012 | 33 -> 3 |
+| op.layernorm/tiny/fp16-r4-d64 | 2046 | 1.036 | 1.041 | 1.083 | 116 -> 53 |
+| op.linear/tiny/fp16-m16-k64-n64 | 5577 | 1.001 | 0.997 | 1.003 | 22 -> 4 |
+| op.matmul/tiny/fp16-m16-k32-n16 | 1009 | 1.000 | 1.000 | 1.000 | 0 -> 0 |
+| op.matmul/tiny/fp32-m16-k32-n16 | 3182 | 1.018 | 1.015 | 1.033 | 470 -> 350 |
+| op.rmsnorm/tiny/fp16-r4-d64 | 1409 | 1.150 | 1.022 | 1.158 | 67 -> 30 |
+| op.rope/tiny/fp16-b1-h2-s16-d16 | 3872 | 1.003 | 1.043 | 1.046 | 182 -> 0 |
+| op.silu/tiny/fp16-n256 | 1460 | 1.025 | 1.008 | 1.030 | 124 -> 79 |
+| op.softmax/tiny/fp16-r4-c64 | 2467 | 1.004 | 0.952 | 0.995 | 223 -> 73 |
+| op.softmax/tiny/fp32-r3-c37 | 1343 | 1.000 | 1.037 | 0.989 | 123 -> 44 |
+| op.swiglu/tiny/fp16-n256 | 1659 | 0.999 | 1.018 | 1.014 | 131 -> 85 |
+| op.transpose/tiny/fp32-r32-c32 | 2274 | 1.012 | 1.034 | 1.039 | 118 -> 16 |
+| **geometric mean (27)** | | **1.021** | **1.019** | **1.039** | |
+| cycle-weighted | 1339790 | 1.025 | 1.027 | 1.050 | |
+
+Reading: the forward is worth most where chains of dependent vector instructions meet few contexts (rmsnorm 1.15, mlp 1.07, attention_decode 1.06, gpt2_block 1.045) and nothing where the kernel is matrix- or transfer-bound (matmul/linear/gemv tiny 1.00-1.01).
+Bank-aware allocation gains on almost every point (1.00-1.055) and loses on two (softmax/fp16 0.952, linear 0.997). The two are close to additive (1.021 x 1.019 = 1.040 against 1.039 measured). Together they remove 65-80 % of the `x_vrf` stall cycles
+(gpt2_block 14,779 -> 4,840, resnet_block 25,055 -> 4,454); the behavioural single-cycle register file bound on the four model points is 1.04-1.12x.
+Derived effect on the 145-point board geometric mean (`issue_predict.py`, `predict_issue_side.txt`; group-by-(family, dtype) rule of `tools/r42/img_predict.py`, 27 measured groups, unmeasured families 1):
+
+| effect | measured points only | every board point of a measured group | same, log halved for medium/large/hbm/xl (central) |
+|---|--:|--:|--:|
+| VRF_FWD | +0.38 % | +1.87 % | **+1.32 %** |
+| bank-aware allocation | +0.36 % | +1.56 % | **+1.12 %** |
+| both | +0.72 % | +3.48 % | **+2.46 %** |
+
+The dse model's `vi1` is +13 % (central) for the same mechanism. Model against RTL on the tiny tier: TLM 1.165x, RTL VRF_FWD 1.021x, RTL bound (all `x_vrf` removed) 1.067x, RTL both 1.039x. The TLM's calibration made `issue_vector_cycles 2` stand in for what the RTL spends
+on operand fetch, dependences, bank conflicts and refill together; it also gives 2 cycles per vector instruction regardless of the number of contexts, while the RTL issues 1.0 per cycle in aggregate with 1 to 4 contexts (probe, `probe_roles*.tsv`).
+
 ## 7. The other levers of the brief
 
 **(B) `sets128` and the maintenance scan.** The parameters exist: image `SETS 128`, `SET_W 7`, `SHRINK` (bit field of the shrink worker: DATA_RAM bits 1:0, AUX_RAM bits 3:2, VRF_XBAR bits 5:4; 10 = both arrays in URAM, 42 = and the VRF response crossbar).
@@ -110,3 +161,24 @@ softmax, layernorm, rmsnorm, silu, swiglu, gelu). The compiler has a bank-aware 
 `tiny_base_vs_bankalloc.txt`): 27/27 pass, geometric mean **1.019x** (range 0.952 `softmax/fp16` to 1.055 `conv2d`; `x_vrf` 14,779 -> 11,945 on gpt2_block, 25,055 -> 10,335 on resnet_block); derived effect on the 145-point board geometric mean (`issue_predict.py`):
 +1.1 % central, +1.6 % full family, +0.4 % measured points only. A hardware fix for the same-register case (one read serving both ports) was not built: 4.5 % of the multi-source instructions, in the operand-fetch cone.
 Switching the knob's default is a software change outside this task's files and needs the default-change audit and `make compiler`; two tiny points get slower with it.
+
+## 3. Verification of VRF_FWD (rtl; gates run on the final RTL, `gates/`, `lockstep/`)
+
+**Default off is cycle-identical.** `make core-run2` on the base tree (R42 129f213d sources) against this tree at defaults: 88 program runs each (44 programs, in-order and reordered memory), all PASS,
+**88/88 identical cycle counts** (`gates/core_run2_compare.txt`). Also at defaults on this tree: `make core-g2c4` exit 0, `make core-mmadp` exit 0, `make unit` exit 0 (11 unit benches + asm round trip 56,650 instructions).
+On real kernels: rtl-1c gpt2_block 173,772 and llama_decode 177,091 cycles are identical between the tree before and after the parameter plumbing (`rtl_1c/tiny_base2.jsonl.gz` against `tiny_base.jsonl.gz`).
+**Results are unchanged with the parameter on.** `make BUILD=sim/build_fwd core-run2 R42_VRF_FWD=1`: 88 runs PASS (self-checking programs; cycles geometric mean 0.993 of the default, 47 of 88 differ).
+Lockstep (`lockstep_gen.py`, `lockstep_run.py`): random programs (integer, FP, convert, SFU, rotate, reductions to scalar, lane-masked and predicated forms, loads, stores, short counted loops, dependent chains of random distance) run on the run-3 core and on the
+same core with `VRF_FWD 1`, the memory image written by the program compared word for word, with 1, 2 and 4 contexts running the same program:
+
+| RTL | programs x contexts | runs | image mismatches | cycles cand/ref per context count (slower runs / runs) |
+|---|---|--:|--:|---|
+| v1 (first version; the holding registers took the forwarded data) | 40 x 3 | 120 | 0 | 1 ctx 0.944 (0/40), 2 ctx 0.974 (7/40), 4 ctx 0.994 (12/40) |
+| v1 | 100 x 3 | 300 | 0 | 1 ctx 0.945 (0/100), 2 ctx 0.978 (14/100), 4 ctx 0.998 (34/100) |
+| **v2 (final)** | 100 x 3 | 300 | **0** | 1 ctx 0.950 (0/100), 2 ctx 0.979 (18/100, worst +6.9 %), 4 ctx 0.998 (33/100, worst +3.9 %) |
+
+(v1 and v2 differ only in where a forwarded value lives; v2 is the committed RTL and the one every other number in this file uses, except the v1 tile rows marked as such in section 6.) With four contexts the interleaving already hides the dependent latency,
+so the forward changes the aggregate by 0.2 %; a minority of runs is slower by up to 7 % because the instruction order of the contexts changes (give-way and refetch timing), the memory image is identical in all 720 runs.
+Sensitivity of the lockstep (`tools/r42/issue/mutants.sh`, `lockstep/mutants.log`): three single-point mutants of the forward, 30 programs x 1 and 2 contexts each, against the unmutated `VRF_FWD 0` core:
+`wn_full` forced to 1 (partial-lane writes are forwarded): 53 of 60 runs differ in the memory image; the select of source c taken from source b's forward flag: 28 of 60 differ; a forwarded source held in `of_got` without data (the v1 bookkeeping on the v2 data path): 43 of 60 differ.
+The unmutated RTL differs in none of 720 runs, so the comparison does see a wrong forward.

@@ -1,0 +1,1 @@
+tscr_u1_p50|PERIOD=5.0|u1_syn/synth.dcp|0|

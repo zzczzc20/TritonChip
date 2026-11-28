@@ -110,6 +110,19 @@ module tnca_core #(
     //               [6] word-path LSU: lane arrays load in every idle cycle (0 cycles)
     //               (bits 3-5 and 7: see tnca_tile / the owning module)
     parameter CLKFIX         = 0,
+    //   CLKFIX2 (R42 clk2): timing pipelining of the matrix engine, vector FPU, transfer engine and barrier, one bit per
+    //               option, each worth +1 cycle on the path it cuts (architectural results bit-identical; cycle
+    //               deltas in evidence/r42/clk2/RESULTS.md). 0 = the shipped core, cycle for cycle.
+    //     bit 0  matrix: MAC operands registered before the lane (tnca_matrix OPREG), command payload captured while idle (CAPFREE)
+    //     bit 1  matrix: MAC lane cuts inside S1 (S1A | S1B, MAC_CUTS bit 6) and after S2 (MAC_CUTS bit 1); +2 cycles
+    //     bit 2  matrix: lane results registered before the accumulator file's write port (tnca_matrix WREG)
+    //     bit 3  vector FPU: FMA cut behind the multiplier (tnca_fmax_fma CUTS 4'b1011; FP latency +1; needs FMA_IMPL area stages)
+    //     bit 4  vector FPU: FMA cut behind the adders (CUTS |= 4'b0100; FP latency +1)
+    //     bit 5  vector FPU: register behind the FMA array's result (tnca_vector_fpu FOREG; FP latency +1); with bits 3 and 4 also
+    //            the pipelined float-to-float converter (CVTP; FP latency is then 5)
+    //     bit 7  vector FPU: SFU operand select registered (tnca_sfu XREG; +1 cycle per SFU pass)
+    //     bit 6  transfer engine: g_inside registered, padding fault from S_TMUL (tnca_tensor TCHK_REG; +1 cycle on a faulting transfer only)
+    parameter CLKFIX2        = 0,
     //   LSU_INFLIGHT (R39-08) 2: two load/store units behind the one port
     //               (tnca_lsu_pair), so an access starts while the one ahead
     //               waits for memory; atomics and fences see one access at
@@ -306,6 +319,10 @@ module tnca_core #(
     // plus a fetch buffer, which adds a stage between F and D. That change is
     // local to the front end and is tracked as Stage-2 work; it does not affect
     // the ISA or the hazard logic.
+
+    // R42 clk2: the vector FPU's result latency with the CLKFIX2 cuts (bits 3-5); FP_LAT itself stays the matrix' FMA_LAT
+    localparam FP_LAT_X = FP_LAT + CLKFIX2[3] + CLKFIX2[4] + CLKFIX2[5];
+    localparam [3:0] VF_FCUTS = (CLKFIX2[3] || CLKFIX2[4]) ? (4'b1010 | (CLKFIX2[3] ? 4'b0001 : 4'b0000) | (CLKFIX2[4] ? 4'b0100 : 4'b0000)) : 4'b0000;
 
     localparam VREG_IDX_W = 8;
 
@@ -1598,7 +1615,7 @@ module tnca_core #(
         (r_func == `TNCA_VF_ADD) || (r_func == `TNCA_VF_SUB)};
     reg  [4:0] x_fpctl;
 
-    tnca_vector_fpu #(.VLEN(VLEN), .ELEN(ELEN), .LW(LW), .FP_LAT(FP_LAT), .FMA_IMPL(FMA_IMPL),
+    tnca_vector_fpu #(.VLEN(VLEN), .ELEN(ELEN), .LW(LW), .FP_LAT(FP_LAT_X), .FMA_IMPL(FMA_IMPL), .FCUTS(VF_FCUTS), .FOREG(CLKFIX2[5]), .CVTP(CLKFIX2[3] && CLKFIX2[4] && CLKFIX2[5]), .SFUX(CLKFIX2[7]),
                       .SFU_LAT(SFU_LAT), .SFU_LANES(SFU_LANES), .HAS_SFU(HAS_SFU)) u_vfpu (
         .clk(clk), .rst_n(rst_n),
         .major(x_major), .func(x_func), .mod(x_mod), .mask(lane_mask),
@@ -1747,7 +1764,8 @@ module tnca_core #(
     tnca_matrix #(
         .VLEN(VLEN), .ELEN(ELEN), .ACC_N(ACC_N), .ACC_W(ACC_W),
         .ROWS(ACC_ROWS), .ROW_W(ACC_ROW_W), .BAR_W(BAR_W), .FMA_LAT(FP_LAT), .FMA_IMPL(FMA_IMPL),
-        .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS), .ABUF(MTX_ABUF), .MAC_F32(MAC_F32),
+        .MAC_DP(MAC_DP), .MAC_CUTS(MAC_CUTS | (CLKFIX2[1] ? 7'h42 : 7'h00)), .ABUF(MTX_ABUF), .MAC_F32(MAC_F32),
+        .OPREG(CLKFIX2[0]), .WREG(CLKFIX2[2]), .CAPFREE(CLKFIX2[0]),
         .OVL(MTX_PIPE), .TAG_W(RCTX_W),
         .VRF_LAT((USE_BANKED_VRF != 0) ? ((MTX_VRF_REG != 0) ? 2 : 1) : 0)
     ) u_mtx (
@@ -2104,18 +2122,18 @@ module tnca_core #(
     reg [WB_DEPTH-1:0] wb_rsv;
 
     // Tag pipelines carry the destination alongside each unit's data pipeline.
-    reg                fp_v    [0:FP_LAT-1];
-    reg [RCTX_W-1:0]   fp_rctx [0:FP_LAT-1];
-    reg [2:0]          fp_dstc [0:FP_LAT-1];
-    reg [7:0]          fp_dsti [0:FP_LAT-1];
-    reg [VLEN-1:0]     fp_len  [0:FP_LAT-1];
+    reg                fp_v    [0:FP_LAT_X-1];
+    reg [RCTX_W-1:0]   fp_rctx [0:FP_LAT_X-1];
+    reg [2:0]          fp_dstc [0:FP_LAT_X-1];
+    reg [7:0]          fp_dsti [0:FP_LAT_X-1];
+    reg [VLEN-1:0]     fp_len  [0:FP_LAT_X-1];
 
     reg                mu_v    [0:MUL_LAT-1];
     reg [RCTX_W-1:0]   mu_rctx [0:MUL_LAT-1];
     reg [7:0]          mu_dsti [0:MUL_LAT-1];
     reg [7:0]          mu_func [0:MUL_LAT-1];
 
-    wire fp_wb  = fp_v[FP_LAT-1];
+    wire fp_wb  = fp_v[FP_LAT_X-1];
     wire mul_wb = mu_v[MUL_LAT-1];
 
     // R41 T2 (F04): the late vector-ALU result, one stage.
@@ -2131,7 +2149,7 @@ module tnca_core #(
     integer fi;
     always @(*) begin
         fp_inflight = 1'b0;
-        for (fi = 0; fi < FP_LAT; fi = fi + 1)
+        for (fi = 0; fi < FP_LAT_X; fi = fi + 1)
             if (fp_v[fi]) fp_inflight = 1'b1;
     end
 
@@ -2255,7 +2273,7 @@ module tnca_core #(
         .TAG_W(TXT_W), .NTAG(1 << TXT_W), .HAS_XPOSE(HAS_TENSOR_XPOSE),
         .MUL_PIPE(TENSOR_MUL_PIPE),
         .LINE_ENGINE(TXF_LINE ? 1 : 0), .LINE_HALF(TENSOR_LINE_HALF), .LSLOT_N(1 << (MTAG_W - 1)), .LSLOT_W(MTAG_W - 1),
-        .PTAG_W(TP_TW), .PORT_DW(TP_DW), .PORT_BYTES(TP_BY)
+        .PTAG_W(TP_TW), .PORT_DW(TP_DW), .PORT_BYTES(TP_BY), .TCHK_REG(CLKFIX2[6])
     ) u_txf (
         .clk(clk), .rst_n(rst_n), .flush(launch_valid),
         .cfg_valid(txf_is_cfg), .cfg_op(txf_cfg_op),
@@ -2493,10 +2511,10 @@ module tnca_core #(
             nw_lane_en = red_len;
         end else if (ws_fp) begin
             nw_en      = 1'b1;
-            nw_rctx    = fp_rctx[FP_LAT-1];
-            nw_class   = fp_dstc[FP_LAT-1];
-            nw_idx     = fp_dsti[FP_LAT-1];
-            nw_lane_en = fp_len[FP_LAT-1];
+            nw_rctx    = fp_rctx[FP_LAT_X-1];
+            nw_class   = fp_dstc[FP_LAT_X-1];
+            nw_idx     = fp_dsti[FP_LAT_X-1];
+            nw_lane_en = fp_len[FP_LAT_X-1];
         end else if (ws_mul) begin
             nw_en      = 1'b1;
             nw_rctx    = mu_rctx[MUL_LAT-1];
@@ -2662,7 +2680,7 @@ module tnca_core #(
     // Delay from "in X" to "result available", per unit.
     wire [3:0] r_wb_delay = r_is_mul    ? MUL_LAT[3:0] :
                             r_is_vl     ? 4'd1         :
-                            r_is_fpnorm ? FP_LAT[3:0]  : 4'd0;
+                            r_is_fpnorm ? FP_LAT_X[3:0]  : 4'd0;
 
     // Memory ops and FP reductions complete out of band and book nothing.
     wire r_wb_reg = (r_dstc == `TNCA_DST_S) || (r_dstc == `TNCA_DST_V)
@@ -2990,7 +3008,7 @@ module tnca_core #(
             w_s_en     <= 1'b0;
             w_p_en     <= 1'b0;
             wb_rsv     <= {WB_DEPTH{1'b0}};
-            for (i = 0; i < FP_LAT; i = i + 1)  fp_v[i] <= 1'b0;
+            for (i = 0; i < FP_LAT_X; i = i + 1)  fp_v[i] <= 1'b0;
             for (i = 0; i < MUL_LAT; i = i + 1) mu_v[i] <= 1'b0;
             vl_v       <= 1'b0;
             clock_ctr  <= 64'd0;
@@ -3041,7 +3059,7 @@ module tnca_core #(
                        ? ({{(WB_DEPTH-1){1'b0}}, 1'b1} << r_wb_delay)
                        : {WB_DEPTH{1'b0}});
 
-            for (i = FP_LAT-1; i > 0; i = i - 1) begin
+            for (i = FP_LAT_X-1; i > 0; i = i - 1) begin
                 fp_v[i]    <= fp_v[i-1];
                 fp_rctx[i] <= fp_rctx[i-1];
                 fp_dstc[i] <= fp_dstc[i-1];
@@ -3155,7 +3173,7 @@ module tnca_core #(
                 w_s_en   <= 1'b0;
                 w_p_en   <= 1'b0;
                 wb_rsv   <= {WB_DEPTH{1'b0}};
-                for (i = 0; i < FP_LAT; i = i + 1)  fp_v[i] <= 1'b0;
+                for (i = 0; i < FP_LAT_X; i = i + 1)  fp_v[i] <= 1'b0;
                 for (i = 0; i < MUL_LAT; i = i + 1) mu_v[i] <= 1'b0;
                 vl_v     <= 1'b0;
                 f1_valid <= 1'b0;

@@ -46,7 +46,19 @@ module tnca_vector_fpu #(
     // Follows the core's HAS_SFU. A build with the capability bit clear does
     // not instantiate the slice, so it does not pay ~60 k gates for logic its
     // decoder rejects.
-    parameter HAS_SFU = 1
+    parameter HAS_SFU = 1,
+    // R42 clk2 (tnca_core CLKFIX2 bits 3-5; the defaults give the unit exactly as before):
+    //   FCUTS != 0  the FMA array is tnca_fmax_fma with these cuts (bit 0..3 = behind multiply, align, adders, select;
+    //               popcount(FCUTS) = FP_LAT - FOREG, 4'b1010 is today's latency 2) instead of tnca_fp32_fma
+    //   FOREG 1     the FMA array's result is registered once more (fma_yo): FP_LAT counts that register
+    parameter [3:0] FCUTS = 4'b0000,
+    parameter       FOREG = 0,
+    //   CVTP 1      vf.cvt.fmt runs through the XLS-pipelined converter (tnca_cvt_xls: three register stages and an output flop, 16
+    //               lanes) instead of the combinational one: four cycles after cvt_x, so FP_LAT cycles after the operands when
+    //               FP_LAT = 5; the unit's result mux takes the converter's output flop at that cycle (needs FP_LAT = 5)
+    parameter       CVTP  = 0,
+    //   SFUX 1      the SFU's operand select is registered (tnca_sfu XREG): one more cycle per SFU pass
+    parameter       SFUX  = 0
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -91,6 +103,9 @@ module tnca_vector_fpu #(
     output wire [63:0]              mc_sres,
     output wire [VLEN*ELEN-1:0]     mc_vres
 );
+
+    // the FMA array's own latency; FP_LAT also counts the optional output register
+    localparam FL = FP_LAT - FOREG;
 
     localparam [31:0] FP_ONE   = 32'h3f800000;
     localparam [31:0] FP_PZERO = 32'h00000000;
@@ -222,6 +237,12 @@ module tnca_vector_fpu #(
     reg [ELEN-1:0] cvt_x [0:VLEN-1];
     reg [5:0]      cvt_mod;
     reg            cvt_fmt;       // delay stage 0 holds a vf.cvt.fmt
+    reg  [3:0]     cvt_fmt_p;     // R42 clk2 CVTP: cvt_fmt, delayed with the pipelined converter's four registers
+    reg            cvt_int_p1;    // R42 clk2 CVTP: cvt_int one cycle later (the two-stage int converter's result is valid)
+    always @(posedge clk) begin
+        cvt_fmt_p  <= {cvt_fmt_p[2:0], cvt_fmt};
+        cvt_int_p1 <= cvt_int;
+    end
     always @(posedge clk) begin
         for (i = 0; i < VLEN; i = i + 1)
             cvt_x[i] <= a[i];
@@ -239,22 +260,60 @@ module tnca_vector_fpu #(
     reg  [ELEN-1:0] cvt_l [0:VLEN-1];   // computed below, after cvt_int_f
     generate
         for (g = 0; g < VLEN; g = g + 1) begin : g_fcvt
-            tnca_cvt_comb_xls u_cvt (
-                .src(cvt_mod[2:0]), .dst(cvt_mod[5:3]), .x(cvt_x[g]),
-                .out(fcvt[g])
-            );
+            if (CVTP != 0) begin : g_p
+                if (FP_LAT != 5) begin : g_bad
+                    tnca_cvt_xls u_bad (.CVTP_needs_FP_LAT_5(1'b1));
+                end else begin : g_ok
+                    tnca_cvt_xls u_cvt (
+                        .clk(clk), .rst(!rst_n),
+                        .src(cvt_mod[2:0]), .dst(cvt_mod[5:3]), .x(cvt_x[g]),
+                        .out(fcvt[g])
+                    );
+                end
+            end else begin : g_c
+                tnca_cvt_comb_xls u_cvt (
+                    .src(cvt_mod[2:0]), .dst(cvt_mod[5:3]), .x(cvt_x[g]),
+                    .out(fcvt[g])
+                );
+            end
         end
     endgenerate
 
     wire [ELEN-1:0] fma_y [0:VLEN-1];
+    wire [ELEN-1:0] fma_yo [0:VLEN-1];   // R42 clk2 FOREG: fma_y through one more register (FP_LAT counts it)
     generate
         for (g = 0; g < VLEN; g = g + 1) begin : g_fma
-            tnca_fp32_fma #(.LAT(FP_LAT), .IMPL(FMA_IMPL)) u_fma (
-                .clk(clk), .rst_n(rst_n),
-                .a(fa[g]), .b(fb[g]), .c(fc[g]),
-                .sub_c(f_sub), .mul_only(f_mul), .ftz(ftz),
-                .y(fma_y[g])
-            );
+            if (FCUTS != 4'b0000) begin : g_fx
+                // R42 clk2: the area stages with the cuts FCUTS asked for (needs the area back end, FMA_IMPL / 16 % 16 != 0,
+                // and, for a cut behind the multiplier, its separate multiply and align stages: FMA_IMPL / 16 % 16 >= 8)
+                if (((FMA_IMPL / 16) % 16) == 0 || (FCUTS[0] && (((FMA_IMPL / 16) % 16) / 8) % 2 == 0)) begin : g_bad
+                    tnca_fmax_fma u_bad (.FCUTS_needs_the_area_fma_stages(1'b1));
+                end else begin : g_ok
+                    tnca_fmax_fma #(.CUTS(FCUTS), .SHIFT(((((FMA_IMPL / 16) % 16)) / 4) % 2),
+                                    .XLS_ALIGN((((((FMA_IMPL / 16) % 16)) / 8) % 2) ? 0 : 1)) u_fma_x (
+                        .clk(clk), .rst_n(rst_n), .a(fa[g]), .b(fb[g]), .c(fc[g]),
+                        .sub_c(f_sub), .mul_only(f_mul), .ftz(ftz), .y(fma_y[g]));
+                end
+            end else begin : g_fl
+                tnca_fp32_fma #(.LAT(FL), .IMPL(FMA_IMPL)) u_fma (
+                    .clk(clk), .rst_n(rst_n),
+                    .a(fa[g]), .b(fb[g]), .c(fc[g]),
+                    .sub_c(f_sub), .mul_only(f_mul), .ftz(ftz),
+                    .y(fma_y[g])
+                );
+            end
+        end
+    endgenerate
+
+    generate
+        for (g = 0; g < VLEN; g = g + 1) begin : g_fyo
+            if (FOREG != 0) begin : g_r
+                reg [ELEN-1:0] q;
+                always @(posedge clk) q <= fma_y[g];
+                assign fma_yo[g] = q;
+            end else begin : g_n
+                assign fma_yo[g] = fma_y[g];
+            end
         end
     endgenerate
 
@@ -381,11 +440,21 @@ module tnca_vector_fpu #(
     // R42 area: FMA_IMPL / 256 odd selects tnca_cvt_int (the same function, guard and sticky bit instead of 64-bit fraction
     // compares; compared with cvt_int_f over every input word, function and rounding mode: tb/area/fast/cvt_int_miter)
     localparam CVT_AREA = (FMA_IMPL / 256) % 2;
+    generate
+        if (CVTP != 0 && CVT_AREA == 0) begin : g_cvtp_bad
+            tnca_cvt_int_p u_bad (.CVTP_needs_the_area_converter(1'b1));
+        end
+    endgenerate
     wire [ELEN-1:0] cvt_n [0:VLEN-1];
     generate
         if (CVT_AREA != 0) begin : g_cvt_area
             for (g = 0; g < VLEN; g = g + 1) begin : g_c
-                tnca_cvt_int u_cvt_int (.x(cvt_x[g]), .fn(cvt_fn), .rm(cvt_mod[2:0]), .y(cvt_n[g]));
+                if (CVTP != 0) begin : g_p
+                    // R42 clk2 CVTP: the two-stage conversion (tnca_cvt_int_p): y is valid one cycle after cvt_x
+                    tnca_cvt_int_p #(.REG(1)) u_cvt_int (.clk(clk), .x(cvt_x[g]), .fn(cvt_fn), .rm(cvt_mod[2:0]), .y(cvt_n[g]));
+                end else begin : g_n
+                    tnca_cvt_int u_cvt_int (.x(cvt_x[g]), .fn(cvt_fn), .rm(cvt_mod[2:0]), .y(cvt_n[g]));
+                end
             end
         end else begin : g_cvt_gen
             for (g = 0; g < VLEN; g = g + 1) begin : g_c
@@ -486,7 +555,7 @@ module tnca_vector_fpu #(
     always @(*) begin
         for (i = 0; i < VLEN; i = i + 1) begin
             case (red_func)
-            `TNCA_RD_FADD: red_step[i] = fma_y[i];
+            `TNCA_RD_FADD: red_step[i] = fma_yo[i];
             `TNCA_RD_FMAX: red_step[i] = (is_nan32(acc[2*i % VLEN]))   ? acc[(2*i+1) % VLEN] :
                                          (is_nan32(acc[(2*i+1)%VLEN])) ? acc[2*i % VLEN]     :
                                          lt32(acc[2*i % VLEN], acc[(2*i+1) % VLEN])
@@ -504,14 +573,14 @@ module tnca_vector_fpu #(
     // captured in the cycle it is presented. Each level takes FP_LAT+1 cycles:
     // present the operand pairs, wait for them to fall out, capture. The
     // operands are stable throughout because `acc` only changes at the capture.
-    reg [1:0] rwait;
+    reg [2:0] rwait;
 
     always @(posedge clk) begin
         if (!rst_n) begin
             red_busy <= 1'b0;
             red_done <= 1'b0;
             lvl      <= {LW{1'b0}};
-            rwait    <= 2'd0;
+            rwait    <= 3'd0;
         end else begin
             red_done <= 1'b0;
             if (!red_busy) begin
@@ -521,15 +590,15 @@ module tnca_vector_fpu #(
                     red_func <= func;
                     red_mod  <= mod;
                     lvl      <= {LW{1'b0}};
-                    rwait    <= 2'd0;
+                    rwait    <= 3'd0;
                     red_busy <= 1'b1;
                 end
-            end else if (rwait != FP_LAT[1:0]) begin
-                rwait <= rwait + 2'd1;
+            end else if (rwait != FP_LAT[2:0]) begin
+                rwait <= rwait + 3'd1;
             end else begin
                 for (i = 0; i < VLEN/2; i = i + 1)
                     acc[i] <= red_step[i];
-                rwait <= 2'd0;
+                rwait <= 3'd0;
                 if (lvl == LW-1) begin
                     red_busy <= 1'b0;
                     red_done <= 1'b1;
@@ -547,7 +616,7 @@ module tnca_vector_fpu #(
 
     generate
         if (HAS_SFU != 0) begin : g_sfu
-            tnca_sfu #(.VLEN(VLEN), .ELEN(ELEN), .LAT(SFU_LAT), .LANES(SFU_LANES)) u_sfu (
+            tnca_sfu #(.VLEN(VLEN), .ELEN(ELEN), .LAT(SFU_LAT), .LANES(SFU_LANES), .XREG(SFUX)) u_sfu (
                 .clk(clk), .rst_n(rst_n),
                 .start(start & is_sfu_mc), .func(func), .va(va),
                 .busy(sfu_busy), .done(sfu_done), .vres(sfu_vres)
@@ -625,12 +694,16 @@ module tnca_vector_fpu #(
                 dly_maj[d] <= dly_maj[d-1];
                 dly_fn[d]  <= dly_fn[d-1];
             end
-            if (cvt_fmt)
+            if (CVTP == 0 && cvt_fmt)
                 for (i = 0; i < VLEN; i = i + 1)
                     dly_v[1][i*ELEN +: ELEN] <= fcvt[i];
-            if (cvt_int)
+            if (CVTP == 0 && cvt_int)
                 for (i = 0; i < VLEN; i = i + 1)
                     dly_v[1][i*ELEN +: ELEN] <= cvt_l[i];
+            // R42 clk2 CVTP: the two-stage int <-> binary32 conversion joins at stage 2 (cvt_x valid at t+1, result at t+2)
+            if (CVTP != 0 && cvt_int_p1)
+                for (i = 0; i < VLEN; i = i + 1)
+                    dly_v[2][i*ELEN +: ELEN] <= cvt_n[i];
         end
     end
 
@@ -642,7 +715,7 @@ module tnca_vector_fpu #(
         for (ci = 0; ci < VLEN; ci = ci + 1)
             cvt_ref_q[ci*ELEN +: ELEN] <= cvt[ci];
         for (ci = 0; ci < VLEN; ci = ci + 1)
-            if (rst_n && cvt_int && (cvt_l[ci] !== cvt_ref_q[ci*ELEN +: ELEN]))
+            if (rst_n && CVTP == 0 && cvt_int && (cvt_l[ci] !== cvt_ref_q[ci*ELEN +: ELEN]))
                 $display("FAIL tnca_vector_fpu assert @%0t: stage-1 conversion lane %0d %h, stage 0 had %h",
                          $time, ci, cvt_l[ci], cvt_ref_q[ci*ELEN +: ELEN]);
     end
@@ -663,7 +736,11 @@ module tnca_vector_fpu #(
         pres = dly_p[FP_LAT-1];
         if (out_from_fma) begin
             for (i = 0; i < VLEN; i = i + 1)
-                vres[i*ELEN +: ELEN] = fma_y[i];
+                vres[i*ELEN +: ELEN] = fma_yo[i];
+        end else if (CVTP != 0 && cvt_fmt_p[3]) begin
+            // R42 clk2 CVTP: the pipelined converter's output flop, FP_LAT (5) cycles after the operands
+            for (i = 0; i < VLEN; i = i + 1)
+                vres[i*ELEN +: ELEN] = fcvt[i];
         end else begin
             vres = dly_v[FP_LAT-1];
         end

@@ -1,0 +1,1 @@
+u_bar_base_p56|PERIOD=5.6 FLATTEN=none|ooc_tnca_barrier|tools/r42/clk2/ooc/ooc_tnca_barrier.v,rtl/common/*.v,rtl/core/*.v,rtl/gen/*.v|NUM_RCTX=4 RCTX_W=2 BAR_N=8 BAR_W=3 EPOCH_W=38 CNT_W=8

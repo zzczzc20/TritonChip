@@ -831,10 +831,13 @@ R42_CLKFIX ?= 0
 # R42 issue: `make BUILD=sim/build_fwd core-run2 R42_VRF_FWD=1` runs the same machine and programs with the writeback-to-R operand forwarding
 # (tnca_core VRF_FWD); the default stays 0, the shipped core cycle for cycle.
 R42_VRF_FWD ?= 0
+# R42 clk2: `make BUILD=sim/build_clk2 core-run2 R42_CLKFIX2=<mask>` runs the same machine and programs with the timing-pipelining options of CLKFIX2
+# (tnca_core; bit meanings in rtl/core/tnca_core.v); the default stays 0, the shipped core cycle for cycle.
+R42_CLKFIX2 ?= 0
 R41_RUN2 := $(R41_G2C4) -P tb_tnca_core.MTX_VRF_REG=1 -P tb_tnca_core.FMA_IMPL=$(R41_RUN2_FMA_IMPL) \
             -P tb_tnca_core.MAC_DP=1 -P tb_tnca_core.MAC_CUTS=29 \
             -P tb_tnca_core.VRF_XBAR=$(R42_VRF_XBAR) -P tb_tnca_core.VRF_VLD_RAM=$(R42_VRF_VLD_RAM) \
-            -P tb_tnca_core.VRF_FWD=$(R42_VRF_FWD) -P tb_tnca_core.CLKFIX=$(R42_CLKFIX)
+            -P tb_tnca_core.VRF_FWD=$(R42_VRF_FWD) -P tb_tnca_core.CLKFIX=$(R42_CLKFIX) -P tb_tnca_core.CLKFIX2=$(R42_CLKFIX2)
 $(BUILD)/tb_core_run2.vvp: $(RTL_DEPS) $(TB)/core/tb_tnca_core.v \
                            $(TB)/common/tnca_mem_model.v | dirs
 	$(IVERILOG) $(IVFLAGS) -y $(RTL)/core -y $(RTL)/common -y $(RTL)/gen -y $(TB)/common \

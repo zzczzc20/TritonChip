@@ -279,6 +279,96 @@ pub fn mac_s1(mode: u2, a: u32, b: u32, fa: u2, fb: u2, ftz: u1) -> MacMid1 {
               d2: dp2_pre(ea, eb, std::umul(ea[0].sig, eb[0].sig), std::umul(ea[1].sig, eb[1].sig)) }
 }
 
+// R42 clk2: S1 as two stage functions, S1A | S1B, so the lane wrapper can place a register between the operand decode and
+// the multipliers (tnca_mac_lane CUTS[6]). mac_s1b(mac_s1a(x)) is mac_s1(x) for every input (mac_s1_split_is_s1).
+//   S1A: unpack and classify the binary32 factors (fma32_mul's front half, the 24-bit significands), the four DP4 DSP operand
+//        pairs (dp4_operands, the sign kept as a bit: k is the B operand or zero) and the four decoded E8 specials, the four
+//        decoded 16-bit-class elements of DP2.
+//   S1B: the multiplies (24 x 24, four 27 x 18 with the cascade sum, two 11 x 11) and what follows them in mac_s1.
+pub struct MacOps {
+    mode: u2,
+    // mode 0: fma32_mul's front half
+    ma: u24,
+    mb: u24,
+    p_zero_mag: u1,
+    p_dbl: u2,
+    sp: u1,
+    p_inf: u1,
+    p_nan: u1,
+    xpb: s12,
+    // mode 2: the DSP operands, the product signs, the group's special cases
+    d4a: s27[4],
+    d4b: s18[4],
+    d4n: u1[4],
+    d4sp: tnca_fdp::Spec,
+    // mode 1: the decoded elements
+    ea: tnca_fdp::E16[2],
+    eb: tnca_fdp::E16[2],
+}
+
+pub fn mac_s1a(mode: u2, a: u32, b: u32, fa: u2, fb: u2, ftz: u1) -> MacOps {
+    // binary32 (tnca_fma::fma32_mul up to the multiplier)
+    let ea_f = a[23+:u8];
+    let eb_f = b[23+:u8];
+    let fa_f = a[0+:u23];
+    let fb_f = b[0+:u23];
+    let a_e0 = ea_f == u8:0;
+    let b_e0 = eb_f == u8:0;
+    let a_zero = a_e0 && (fa_f == u23:0 || ftz == u1:1);
+    let b_zero = b_e0 && (fb_f == u23:0 || ftz == u1:1);
+    let a_inf = ea_f == u8:0xff && fa_f == u23:0;
+    let b_inf = eb_f == u8:0xff && fb_f == u23:0;
+    let a_nan = ea_f == u8:0xff && fa_f != u23:0;
+    let b_nan = eb_f == u8:0xff && fb_f != u23:0;
+    let inf_times_zero = (a_inf && b_zero) || (b_inf && a_zero);
+    // DP4
+    let (a0, b0, _k0) = dp4_operands(a[0+:u8], b[0+:u8]);
+    let (a1, b1, _k1) = dp4_operands(a[8+:u8], b[8+:u8]);
+    let (a2, b2, _k2) = dp4_operands(a[16+:u8], b[16+:u8]);
+    let (a3, b3, _k3) = dp4_operands(a[24+:u8], b[24+:u8]);
+    let e4a = [tnca_fdp::dec8_e4m3(a[0+:u8]), tnca_fdp::dec8_e4m3(a[8+:u8]),
+               tnca_fdp::dec8_e4m3(a[16+:u8]), tnca_fdp::dec8_e4m3(a[24+:u8])];
+    let e4b = [tnca_fdp::dec8_e4m3(b[0+:u8]), tnca_fdp::dec8_e4m3(b[8+:u8]),
+               tnca_fdp::dec8_e4m3(b[16+:u8]), tnca_fdp::dec8_e4m3(b[24+:u8])];
+    let (ea, eb) = dp2_decode(a, b, fa, fb);
+    MacOps {
+        mode: mode,
+        ma: (!a_e0) ++ fa_f,
+        mb: (!b_e0) ++ fb_f,
+        p_zero_mag: (a_zero || b_zero) as u1,
+        p_dbl: (a_e0 as u2) + (b_e0 as u2),
+        sp: a[31+:u1] ^ b[31+:u1],
+        p_inf: ((a_inf || b_inf) && !inf_times_zero) as u1,
+        p_nan: (a_nan || b_nan || inf_times_zero) as u1,
+        xpb: (ea_f as s12) + (eb_f as s12),
+        d4a: [a0, a1, a2, a3],
+        d4b: [b0, b1, b2, b3],
+        d4n: [a[7+:u1] ^ b[7+:u1], a[15+:u1] ^ b[15+:u1], a[23+:u1] ^ b[23+:u1], a[31+:u1] ^ b[31+:u1]],
+        d4sp: tnca_fdp::spec4(e4a, e4b),
+        ea: ea,
+        eb: eb,
+    }
+}
+
+pub fn mac_s1b(m: MacOps) -> MacMid1 {
+    let pm_raw = (m.ma as u48) * (m.mb as u48);
+    let pm = if m.p_zero_mag == u1:1 { u48:0 } else { pm_raw << (m.p_dbl as u48) };
+    let k0 = if m.d4n[0] == u1:1 { m.d4b[0] as s48 } else { s48:0 };
+    let k1 = if m.d4n[1] == u1:1 { m.d4b[1] as s48 } else { s48:0 };
+    let k2 = if m.d4n[2] == u1:1 { m.d4b[2] as s48 } else { s48:0 };
+    let k3 = if m.d4n[3] == u1:1 { m.d4b[3] as s48 } else { s48:0 };
+    let p0 = (std::smul(m.d4a[0], m.d4b[0]) as s48) + k0;
+    let p1 = (std::smul(m.d4a[1], m.d4b[1]) as s48) + k1;
+    let p2 = (std::smul(m.d4a[2], m.d4b[2]) as s48) + k2;
+    let p3 = (std::smul(m.d4a[3], m.d4b[3]) as s48) + k3;
+    MacMid1 {
+        mode: m.mode,
+        fp: tnca_fma::FmaProduct { pm: pm, xpb: m.xpb, sp: m.sp, p_zero: m.p_zero_mag, p_inf: m.p_inf, p_nan: m.p_nan },
+        d4: Dp4Fix { sum: ((p0 + p1) + p2) + p3, sp: m.d4sp },
+        d2: dp2_pre(m.ea, m.eb, std::umul(m.ea[0].sig, m.eb[0].sig), std::umul(m.ea[1].sig, m.eb[1].sig)),
+    }
+}
+
 // S2: DP2's shift and addition; the other modes' results pass.
 pub fn mac_s2(m: MacMid1) -> MacMid {
     MacMid { mode: m.mode, fp: m.fp, d4: m.d4, d2: dp2_post(m.d2) }
@@ -357,6 +447,13 @@ fn dp2_fp16_bf16_is_v2(a: u32, b: u32, fa: u1, fb: u1) -> bool {
 #[quickcheck]
 fn dp2_x_is_ref(a: u32, b: u32, fa: u2, fb: u2) -> bool {
     dp2_x(a, b, fa, fb) == dp2_x_orig(a, b, fa, fb)
+}
+
+
+// R42 clk2: the two halves of S1 compose to S1.
+#[quickcheck(test_count=20000)]
+fn mac_s1_split_is_s1(mode: u2, a: u32, b: u32, fa: u2, fb: u2, ftz: u1) -> bool {
+    mac_s1b(mac_s1a(mode, a, b, fa, fb, ftz)) == mac_s1(mode, a, b, fa, fb, ftz)
 }
 
 #[test]

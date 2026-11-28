@@ -12,13 +12,14 @@
 //   CUTS[2] after S3 (|sum|, RO_48, the mode's product)
 //   CUTS[3] after B0 (align with C)   CUTS[4] after B1 (normalise)
 //   CUTS[5] (BE != 0 only) after the adders inside B1: the P registers of the inferred DSP48E2 of tnca_fmax_add
+//   CUTS[6] (R42 clk2) inside S1: S1A (operand decode) | register | S1B (the multipliers), the cut before CUTS[0]'s
 // B2 (round) is combinational into the consumer's register, as the FMA's.
 // The latency is IN_REG + popcount(CUTS); today's lane (tnca_fpu_multi with
 // IN_REG=1, LAT=2) has 3, the first and last stage's work only in cut count.
 //==============================================================================
 `default_nettype none
 module tnca_mac_lane #(
-    parameter [5:0] CUTS   = 6'b011101,
+    parameter [6:0] CUTS   = 7'b0011101,
     parameter       IN_REG = 1,
     // R42 area study: the back end (normalise, round), as tnca_fp32_fma BE:
     // 0 = the generated stages (default, unchanged); nonzero = the tnca_fmax_* stages (rtl/core) (see tnca_fp32_fma BE, the same
@@ -78,8 +79,24 @@ module tnca_mac_lane #(
     wire [W_NORM-1:0]  nm_d, nm_o;
     wire [W_K-1:0]     k0, k1, k2;
 
-    tnca_mac_s1_xls u_s1 (.mode(i_k[36:35]), .a(i_a), .b(i_b), .fa(i_fa), .fb(i_fb),
-                          .ftz(i_k[0]), .out(s1_d));
+    // R42 clk2 CUTS[6]: S1 as S1A | register | S1B; the controls that travel beside the operands follow (kx)
+    localparam W_OPS = 364;    // MacOps
+    wire [W_K-1:0] kx;
+    generate
+        if (CUTS[6]) begin : g_s1x
+            wire [W_OPS-1:0] sa_d;
+            reg  [W_OPS-1:0] sa_q;
+            reg  [W_K-1:0]   ka_q;
+            tnca_mac_s1a_xls u_s1a (.mode(i_k[36:35]), .a(i_a), .b(i_b), .fa(i_fa), .fb(i_fb), .ftz(i_k[0]), .out(sa_d));
+            always @(posedge clk) begin sa_q <= sa_d; ka_q <= i_k; end
+            tnca_mac_s1b_xls u_s1b (.m(sa_q), .out(s1_d));
+            assign kx = ka_q;
+        end else begin : g_s1n
+            tnca_mac_s1_xls u_s1 (.mode(i_k[36:35]), .a(i_a), .b(i_b), .fa(i_fa), .fb(i_fb),
+                                  .ftz(i_k[0]), .out(s1_d));
+            assign kx = i_k;
+        end
+    endgenerate
     tnca_mac_s2_xls u_s2 (.m(s1_o), .out(f1_d));
     tnca_mac_f2_xls u_f2 (.m(f1_o), .out(f2_d));
     generate
@@ -109,10 +126,10 @@ module tnca_mac_lane #(
     generate
         if (CUTS[0]) begin : g_c0
             reg [W_MID1-1:0] q; reg [W_K-1:0] kq;
-            always @(posedge clk) begin q <= s1_d; kq <= i_k; end
+            always @(posedge clk) begin q <= s1_d; kq <= kx; end
             assign s1_o = q; assign k0 = kq;
         end else begin : g_n0
-            assign s1_o = s1_d; assign k0 = i_k;
+            assign s1_o = s1_d; assign k0 = kx;
         end
         if (CUTS[1]) begin : g_c1
             reg [W_MID-1:0] q; reg [W_K-1:0] kq;

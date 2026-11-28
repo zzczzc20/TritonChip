@@ -68,7 +68,7 @@ module tnca_matrix #(
     // latency becomes OPND_REG + popcount(MAC_CUTS) and every user of it here
     // (the tag pipeline, the drain) follows from PIPE.
     parameter MAC_DP   = 0,
-    parameter [5:0] MAC_CUTS = 6'b011101,
+    parameter [6:0] MAC_CUTS = 7'b0011101,
     // Register the MAC operands before the FMA (tnca_fpu_multi IN_REG): one
     // more cycle of latency per command, and the A operand's block-RAM read
     // and element select no longer share a cycle with the multiply.
@@ -113,7 +113,21 @@ module tnca_matrix #(
     // (the widening of a binary32 operand is the identity); what changes is
     // the element select, the B latch and the A buffer's depth (16).
     // 0 = exactly as before; cmd_f32 is then never honoured.
-    parameter MAC_F32  = 0
+    parameter MAC_F32  = 0,
+    // R42 clk2 (tnca_core CLKFIX2 bits 0 and 2; both 0 = exactly as before, cycle for cycle):
+    //   OPREG 1 = the operands of every MAC (a, b, c and the format controls) are registered once more before the
+    //             lane's own input register: the A-buffer read, element select and row-op mux no longer share a cycle
+    //             with the widening and the lane's S1 (+1 cycle of MAC latency per command).
+    //   WREG  1 = the lane results are registered once more before the accumulator file's write port, and a.vwrite's
+    //             direct write is delayed with them: the lane's last stage and the file's write decode and RAM write no
+    //             longer share a cycle (+1 cycle per command, done is delayed with the write).
+    //   CAPFREE 1 = the command payload registers that only a.vwrite and the row ops read (r_vdata, r_scale, r_mask: 512 + 32 + 16
+    //             flops) copy the command inputs in every cycle the engine is idle, not only in the cycle a command arrives: their
+    //             enable is the state register, not the core's issue decision (cmd_valid is the end of a 19-level cone from the
+    //             scalar register file's valid bits). Nothing reads them before a command has set st; no cycle changes.
+    parameter OPREG    = 0,
+    parameter WREG     = 0,
+    parameter CAPFREE  = 0
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -440,6 +454,24 @@ module tnca_matrix #(
     // a fragment would only be confusing.
     wire        row_any = row_q;
     wire [2:0]  mac_fmt = row_any ? `TNCA_FMT_F32 : r_fmt;
+    wire [1:0]  mac_mode = (row_any || !r_dp) ? 2'd0 : g4 ? 2'd2 : 2'd1;
+
+    // R42 clk2 OPREG: the lane controls shared by all sixteen MACs, registered with their operands
+    reg [1:0] o_mode;
+    reg [2:0] o_fmt;
+    reg [1:0] o_dt, o_bdt;
+    reg       o_mul;
+    generate
+        if (OPREG != 0) begin : g_oreg_ctl
+            always @(posedge clk) begin
+                o_mode <= mac_mode; o_fmt <= mac_fmt; o_dt <= r_dt; o_bdt <= r_bdt; o_mul <= row_mul;
+            end
+        end else begin : g_nooreg_ctl
+            always @(*) begin
+                o_mode = mac_mode; o_fmt = mac_fmt; o_dt = r_dt; o_bdt = r_bdt; o_mul = row_mul;
+            end
+        end
+    endgenerate
 
     generate
         for (g = 0; g < VLEN; g = g + 1) begin : g_mac
@@ -457,21 +489,33 @@ module tnca_matrix #(
                            : row_mul ? 32'd0
                            : acc_rd[g];
 
+            // R42 clk2 OPREG: the operands, one register before the lane
+            reg  [31:0] o_a, o_b, o_c;
+            wire [31:0] la_a, la_b, la_c;
+            if (OPREG != 0) begin : g_oreg
+                always @(posedge clk) begin
+                    o_a <= fa; o_b <= fb; o_c <= fc;
+                end
+                assign la_a = o_a; assign la_b = o_b; assign la_c = o_c;
+            end else begin : g_nooreg
+                assign la_a = fa; assign la_b = fb; assign la_c = fc;
+            end
+
             if (MAC_DP != 0) begin : g_lane
                 tnca_mac_lane #(.CUTS(MAC_CUTS), .IN_REG(OPND_REG), .BE((FMA_IMPL / 16) % 16)) u_mac (
                     .clk(clk), .rst_n(rst_n),
-                    .mode((row_any || !r_dp) ? 2'd0 : g4 ? 2'd2 : 2'd1),
-                    .fmt(mac_fmt), .fa(r_dt), .fb(r_bdt),
-                    .a(fa), .b(fb), .c(fc),
-                    .sub_c(1'b0), .mul_only(row_mul), .ftz(1'b0),
+                    .mode(o_mode),
+                    .fmt(o_fmt), .fa(o_dt), .fb(o_bdt),
+                    .a(la_a), .b(la_b), .c(la_c),
+                    .sub_c(1'b0), .mul_only(o_mul), .ftz(1'b0),
                     .y(mac_y[g])
                 );
             end else begin : g_fpu
                 tnca_fpu_multi #(.LAT(FMA_LAT), .IN_REG(OPND_REG), .IMPL(FMA_IMPL)) u_mac (
                     .clk(clk), .rst_n(rst_n),
-                    .fmt(mac_fmt),
-                    .a(fa), .b(fb), .c(fc),
-                    .sub_c(1'b0), .mul_only(row_mul), .ftz(1'b0),
+                    .fmt(o_fmt),
+                    .a(la_a), .b(la_b), .c(la_c),
+                    .sub_c(1'b0), .mul_only(o_mul), .ftz(1'b0),
                     .y(mac_y[g])
                 );
             end
@@ -487,8 +531,8 @@ module tnca_matrix #(
     // Vivado evaluates an untyped sum of bit-selects at one-bit width, while
     // simulators may widen it. The explicit integer context is essential:
     // CUTS=11101 must give 4, not 0, for the result-tag pipeline and drain.
-    localparam integer MAC_LAT = MAC_CUTS[0] + MAC_CUTS[1] + MAC_CUTS[2] + MAC_CUTS[3] + MAC_CUTS[4] + MAC_CUTS[5];
-    localparam PIPE = (MAC_DP != 0) ? (OPND_REG + MAC_LAT) : (FMA_LAT + OPND_REG);
+    localparam integer MAC_LAT = MAC_CUTS[0] + MAC_CUTS[1] + MAC_CUTS[2] + MAC_CUTS[3] + MAC_CUTS[4] + MAC_CUTS[5] + MAC_CUTS[6];
+    localparam PIPE = ((MAC_DP != 0) ? (OPND_REG + MAC_LAT) : (FMA_LAT + OPND_REG)) + ((OPREG != 0) ? 1 : 0) + ((WREG != 0) ? 1 : 0);
     reg              tg_v   [0:PIPE-1];
     reg [ACC_W-1:0]  tg_slot[0:PIPE-1];
     reg [ROW_W-1:0]  tg_row [0:PIPE-1];
@@ -507,11 +551,31 @@ module tnca_matrix #(
     reg [VLEN-1:0]   direct_mask;
     reg [VLEN*ELEN-1:0] direct_data;
 
-    wire acc_w_en          = wb_v | direct_w;
-    wire [ACC_W-1:0] acc_w_slot = direct_w ? direct_slot : tg_slot[PIPE-1];
-    wire [ROW_W-1:0] acc_w_row  = direct_w ? direct_row  : tg_row[PIPE-1];
-    wire [VLEN-1:0]  acc_w_lane = direct_w ? direct_mask : tg_mask[PIPE-1];
-    wire [VLEN*ELEN-1:0] acc_w_data = direct_w ? direct_data : mac_bus;
+    // R42 clk2 WREG: the lane results are registered once more (the tag pipeline is one stage longer, PIPE), and a.vwrite's
+    // direct write is delayed by the same cycle (its payload registers hold the command's values until done)
+    reg                  direct_w2;
+    reg [VLEN*ELEN-1:0]  mac_bus_q;
+    wire                 direct_we = (WREG != 0) ? direct_w2 : direct_w;
+    wire [VLEN*ELEN-1:0] mac_bus_w = (WREG != 0) ? mac_bus_q : mac_bus;
+    generate
+        if (WREG != 0) begin : g_wreg
+            always @(posedge clk) begin
+                mac_bus_q <= mac_bus;
+                direct_w2 <= rst_n && !flush && direct_w;
+            end
+        end else begin : g_nowreg
+            always @(*) begin
+                mac_bus_q = {(VLEN*ELEN){1'b0}};
+                direct_w2 = 1'b0;
+            end
+        end
+    endgenerate
+
+    wire acc_w_en          = wb_v | direct_we;
+    wire [ACC_W-1:0] acc_w_slot = direct_we ? direct_slot : tg_slot[PIPE-1];
+    wire [ROW_W-1:0] acc_w_row  = direct_we ? direct_row  : tg_row[PIPE-1];
+    wire [VLEN-1:0]  acc_w_lane = direct_we ? direct_mask : tg_mask[PIPE-1];
+    wire [VLEN*ELEN-1:0] acc_w_data = direct_we ? direct_data : mac_bus_w;
 
     // The read port serves the engine while it is running and a.vread when it
     // is not; a.vread cannot issue while the engine is busy, so there is no
@@ -520,14 +584,22 @@ module tnca_matrix #(
     wire [ROW_W-1:0] acc_r_row  = busy ? ((st == S_ROW) ? r_row : mm[ROW_W-1:0])
                                        : ard_row;
 
+    // R42 clk2 WREG: the write port's next-cycle values, for the valid bits' pre-decoded enable (tnca_acc_rf WPRE): the tag
+    // pipeline's last-but-one stage, or a.vwrite's direct write one cycle before direct_w2, dropped by flush as the tags are
+    wire                 acc_wp_en   = (WREG != 0) && !flush && (tg_v[PIPE-2] || direct_w);
+    wire [ACC_W-1:0]     acc_wp_slot = direct_w ? direct_slot : tg_slot[PIPE-2];
+    wire [ROW_W-1:0]     acc_wp_row  = direct_w ? direct_row  : tg_row[PIPE-2];
+    wire [VLEN-1:0]      acc_wp_lane = direct_w ? direct_mask : tg_mask[PIPE-2];
+
     tnca_acc_rf #(
         .ACC_N(ACC_N), .ACC_W(ACC_W), .ROWS(ROWS), .ROW_W(ROW_W),
-        .VLEN(VLEN), .ELEN(ELEN)
+        .VLEN(VLEN), .ELEN(ELEN), .WPRE(WREG)
     ) u_acc (
         .clk(clk), .rst_n(rst_n),
         .r_slot(acc_r_slot), .r_row(acc_r_row), .r_data(acc_rd_bus),
         .w_en(acc_w_en), .w_slot(acc_w_slot), .w_row(acc_w_row),
         .w_lane_en(acc_w_lane), .w_data(acc_w_data),
+        .wp_en(acc_wp_en), .wp_slot(acc_wp_slot), .wp_row(acc_wp_row), .wp_lane(acc_wp_lane),
         .z_en(z_en), .z_slot(r_slot), .z_row(z_row)
     );
 
@@ -706,6 +778,13 @@ module tnca_matrix #(
                 end
                 tg_v[0] <= 1'b0;
 
+                // R42 clk2 CAPFREE: the row-op payload follows the inputs while idle (enable = the state register)
+                if (CAPFREE != 0 && st == S_IDLE) begin
+                    r_vdata <= cmd_vdata;
+                    r_scale <= cmd_scale;
+                    r_mask  <= cmd_mask;
+                end
+
                 case (st)
 
                 //---------------------------------------------------------------
@@ -725,9 +804,11 @@ module tnca_matrix #(
                         r_sf_bar <= cmd_sf_bar;
                         r_rowop  <= cmd_rowop;
                         r_row    <= cmd_row;
-                        r_vdata  <= cmd_vdata;
-                        r_scale  <= cmd_scale;
-                        r_mask   <= cmd_mask;
+                        if (CAPFREE == 0) begin
+                            r_vdata  <= cmd_vdata;
+                            r_scale  <= cmd_scale;
+                            r_mask   <= cmd_mask;
+                        end
                         kk       <= 7'd0;
                         mm       <= {(ROW_W+1){1'b0}};
                         drain    <= 4'd0;
@@ -821,7 +902,7 @@ module tnca_matrix #(
                 S_ROW: begin
                     if (r_rowop == 2'd0) begin
                         direct_w    <= 1'b1;
-                        st <= S_DONE;
+                        st <= (WREG != 0) ? S_DRAIN : S_DONE;   // R42 clk2 WREG: the direct write lands a cycle later
                     end else begin
                         tg_v[0]    <= 1'b1;
                         tg_slot[0] <= r_slot;
@@ -964,6 +1045,13 @@ module tnca_matrix #(
                 la_p     <= 6'd0;
             end
 
+            // R42 clk2 CAPFREE: the row-op payload follows the inputs while idle (enable = the state register)
+            if (CAPFREE != 0 && st == S_IDLE) begin
+                r_vdata <= cmd_vdata;
+                r_scale <= cmd_scale;
+                r_mask  <= cmd_mask;
+            end
+
             case (st)
 
             //---------------------------------------------------------------
@@ -983,9 +1071,11 @@ module tnca_matrix #(
                     r_sf_bar <= cmd_sf_bar;
                     r_rowop  <= cmd_rowop;
                     r_row    <= cmd_row;
-                    r_vdata  <= cmd_vdata;
-                    r_scale  <= cmd_scale;
-                    r_mask   <= cmd_mask;
+                    if (CAPFREE == 0) begin
+                        r_vdata  <= cmd_vdata;
+                        r_scale  <= cmd_scale;
+                        r_mask   <= cmd_mask;
+                    end
                     r_tag    <= cmd_tag;
                     kk       <= 7'd0;
                     mm       <= {(ROW_W+1){1'b0}};
@@ -1086,7 +1176,7 @@ module tnca_matrix #(
             S_ROW: begin
                 if (r_rowop == 2'd0) begin
                     direct_w    <= 1'b1;
-                    st <= S_DONE;
+                    st <= (WREG != 0) ? S_DRAIN : S_DONE;   // R42 clk2 WREG: the direct write lands a cycle later
                 end else begin
                     tg_v[0]    <= 1'b1;
                     tg_slot[0] <= r_slot;

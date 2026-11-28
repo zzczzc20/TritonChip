@@ -7,7 +7,7 @@ Domains in every number: **rtl-probe** (core testbench, assembly microbenchmarks
 
 ## 0. Result in one table, then one paragraph per finding
 
-All effects below are hardware or software effects on the cycles of the run-3 image's machine at the same clock; "derived" = the img worker's group rule applied to measured ratios (`issue_predict.py`, `img_predict.py`), "model" = the dse worker's S145 central one-lever effect. **Nothing reaches the 4x expectation: the levers built or measured here are worth about +5 % on the board geometric mean together.**
+All effects below are hardware or software effects on the cycles of the run-3 image's machine at the same clock; "derived" = the img worker's group rule applied to measured ratios (`issue_predict.py`, `img_predict.py`), "model" = the dse worker's S145 central one-lever effect. **Direction of ratios in this table: rtl-1c and the probe are base/arm (above 1 = faster); rtl-3c are arm/base (below 1 = fewer cycles, 0.818x = 1.22x faster in the stand-in).** **Nothing reaches the 4x expectation: the levers built or measured here are worth about +5 % on the board geometric mean together.**
 
 | lever (brief) | model (TLM) | built / measured | measured effect | derived board effect (central) | price (OOC tile) | verdict |
 |---|--:|---|---|--:|---|---|
@@ -232,7 +232,7 @@ study at its default (its tile is the shrink worker's step 3, 230,979 LUT in his
 | s128 | `SETS 128` + `SET_W 7` | 240,899 (+11,499) | 72,031 | - | - | - |
 | lf | `TENSOR_LINE_HALF 1` + `MAC_F32 1` | 231,141 (+1,741) | 69,541 | - | - | - |
 | **comb** | LF + VRF_FWD + sets128 (the candidate) | **242,821 (+13,421)** | 73,811 (+4,498) | +0.581 | not run | -1.900 (30,637) |
-| comb5 | comb + `TENSOR_TAG_W 5` | 245,008 (+15,608) | 74,900 | - | - | screen still running |
+| comb5 | comb + `TENSOR_TAG_W 5` | 245,008 (+15,608) | 74,900 | - | - | unfinished (see below) |
 
 Where the lever's own logic is (`ooc/*/synth_util_hier.rpt.gz`): the whole `VRF_FWD` increment is in the core's own logic (`(u_core)` 8,514 -> 10,574 LUT in v1, +2,060; v2 +887 LUT and +1,544 FF because the operand-capture registers `x_v?_q` can no longer be merged with the holding registers). No other unit moves.
 
@@ -248,7 +248,7 @@ Where the lever's own logic is (`ooc/*/synth_util_hier.rpt.gz`): the whole `VRF_
 
 Routed LUT of the screens at 10 ns: ctl 227,241, fwd2 228,147, comb 240,543. **SLR packing (derived):** the shrink worker's floorplan arithmetic puts SLR0 at 89.9 % with the step-3 tile; the candidate adds +13.4 k synthesis LUT per tile = about +13.2 k routed = +2.26 k CLB at 5.84 LUT/CLB of 54.3 k CLB
 per SLR: +4.2 points, SLR0 about 94.1 % (highest packing that ever routed 96.74 %), SLR1 88.8 %, SLR2 85.5 %.
-Not finished when this file was last edited (x86 jobs of mine still running, results land in `~/r42_issue_out/<name>` and are summarised by `python3 tools/r42/issue/ooc_collect.py ~/r42_issue_out`): `tscr_i_s3_comb5_p56`, `tscr_i_s3_fwd2_p667`; not run: `tscr_i_s3_comb_p667`, the 5.6 ns screens of te5, s128 and lf alone, the core-unit runs (`queue_core.txt`).
+Not finished when this file was last edited (x86 jobs of mine still running; `comb5` at 5.6 ns was in post-route physical optimisation after 63 minutes, its log showed an interim path-group WNS of -2.85 ns inside `phys_opt`, which is not a routed result and is not used anywhere; the queue stop file `~/r42_issue_out/STOP` is set so no further job of mine starts; results land in `~/r42_issue_out/<name>` and are summarised by `python3 tools/r42/issue/ooc_collect.py ~/r42_issue_out`): `tscr_i_s3_comb5_p56`, `tscr_i_s3_fwd2_p667`; not run: `tscr_i_s3_comb_p667`, the 5.6 ns screens of te5, s128 and lf alone, the core-unit runs (`queue_core.txt`).
 
 ## 7. The other levers of the brief
 

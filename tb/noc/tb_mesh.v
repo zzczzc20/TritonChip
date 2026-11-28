@@ -21,6 +21,7 @@
 
 module tb_mesh;
     parameter LINK_STAGES=0;
+    parameter ROUTER_FAST=0;       // R42 clk2: tnca_router_fast in every node
 
     localparam NX = 2, NY = 2, N = NX*NY;
     localparam XW = 2, YW = 2;
@@ -40,7 +41,7 @@ module tb_mesh;
 
     tnca_mesh #(
         .NX(NX), .NY(NY), .XW(XW), .YW(YW),
-        .PAYLOAD_W(PAYLOAD_W), .NV(NV), .DEPTH(4), .AW(2), .LINK_STAGES(LINK_STAGES)
+        .PAYLOAD_W(PAYLOAD_W), .NV(NV), .DEPTH(4), .AW(2), .LINK_STAGES(LINK_STAGES), .ROUTER_FAST(ROUTER_FAST)
     ) dut (
         .clk(clk), .rst_n(rst_n),
         .l_in_valid(li_valid), .l_in_ready(li_ready), .l_in_flit(li_flit),

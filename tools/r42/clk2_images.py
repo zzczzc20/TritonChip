@@ -24,6 +24,13 @@ ARMS = {
     # the union of R42-clk (CLKFIX 383: bits 0-6 and 8, the mask of its c383 tile) and R42-clk2: arm A all of mine, arm Z without FP latency
     'u_A': {'FMA_IMPL': 465, 'SHRINK': 42, 'CLKFIX': 383, 'CLKFIX2': 255},
     'u_Z': {'FMA_IMPL': 465, 'SHRINK': 42, 'CLKFIX': 383, 'CLKFIX2': 967},
+    # image-level bits of R42-clk2: 10 TMU input registers, 11 fast router (zero cycles); n3 = NOC_LINK_STAGES 3 (the fallback, +1 cycle per hop)
+    'b10': {'FMA_IMPL': 465, 'SHRINK': 42, 'CLKFIX2': 1024},
+    'b11': {'FMA_IMPL': 465, 'SHRINK': 42, 'CLKFIX2': 2048},
+    'b1011': {'FMA_IMPL': 465, 'SHRINK': 42, 'CLKFIX2': 3072},
+    'n3': {'FMA_IMPL': 465, 'SHRINK': 42, 'NOC_LINK_STAGES': 3},
+    'u_A2': {'FMA_IMPL': 465, 'SHRINK': 42, 'CLKFIX': 383, 'CLKFIX2': 3327},
+    'u_Z2': {'FMA_IMPL': 465, 'SHRINK': 42, 'CLKFIX': 383, 'CLKFIX2': 4039},
 }
 
 

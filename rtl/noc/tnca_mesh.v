@@ -18,7 +18,9 @@ module tnca_mesh #(
     parameter NV        = 2,
     parameter DEPTH     = 4,
     parameter AW        = 2,
-    parameter LINK_STAGES = 0
+    parameter LINK_STAGES = 0,
+    parameter RST_LOC = 0,        // R42 clk (RSTTREE): 1 = one registered reset copy per router (the elastic links keep the root reset)
+    parameter ROUTER_FAST = 0     // R42 clk2 (CLKFIX2 bit 11): tnca_router_fast, same cycles
 ) (
     input  wire                                  clk,
     input  wire                                  rst_n,
@@ -52,11 +54,21 @@ module tnca_mesh #(
             for (x = 0; x < NX; x = x + 1) begin : g_x
                 localparam integer NODE = y*NX + x;
 
-                tnca_router #(
+                wire rst_r_n;
+                if (RST_LOC != 0) begin : g_rl
+                    (* dont_touch = "true" *) reg q;
+                    always @(posedge clk) q <= rst_n;
+                    assign rst_r_n = q;
+                end else begin : g_rl0
+                    assign rst_r_n = rst_n;
+                end
+
+                if (ROUTER_FAST != 0) begin : g_rf
+                tnca_router_fast #(
                     .XW(XW), .YW(YW), .PAYLOAD_W(PAYLOAD_W), .NV(NV),
                     .DEPTH(DEPTH), .AW(AW), .X_HERE(x), .Y_HERE(y)
                 ) u_r (
-                    .clk(clk), .rst_n(rst_n),
+                    .clk(clk), .rst_n(rst_r_n),
                     .in_valid (r_in_valid [NODE*NC +: NC]),
                     .in_ready (r_in_ready [NODE*NC +: NC]),
                     .in_flit  (r_in_flit  [NODE*NC*FW +: NC*FW]),
@@ -64,6 +76,21 @@ module tnca_mesh #(
                     .out_ready(r_out_ready[NODE*NC +: NC]),
                     .out_flit (r_out_flit [NODE*NC*FW +: NC*FW])
                 );
+                end else begin : g_rb
+                tnca_router #(
+                    .XW(XW), .YW(YW), .PAYLOAD_W(PAYLOAD_W), .NV(NV),
+                    .DEPTH(DEPTH), .AW(AW), .X_HERE(x), .Y_HERE(y)
+                ) u_r (
+                    .clk(clk), .rst_n(rst_r_n),
+                    .in_valid (r_in_valid [NODE*NC +: NC]),
+                    .in_ready (r_in_ready [NODE*NC +: NC]),
+                    .in_flit  (r_in_flit  [NODE*NC*FW +: NC*FW]),
+                    .out_valid(r_out_valid[NODE*NC +: NC]),
+                    .out_ready(r_out_ready[NODE*NC +: NC]),
+                    .out_flit (r_out_flit [NODE*NC*FW +: NC*FW])
+                );
+
+                end
 
                 for (v = 0; v < NV; v = v + 1) begin : g_v
                     localparam integer LC = NODE*NC + P_LOCAL*NV + v;
@@ -90,6 +117,8 @@ module tnca_mesh #(
                             .in_valid(r_out_valid[EC]),.in_ready(r_out_ready[EC]),.in_data(r_out_flit[EC*FW+:FW]),
                             .out_valid(r_in_valid[PW_]),.out_ready(r_in_ready[PW_]),.out_data(r_in_flit[PW_*FW+:FW]),.empty());
                     end else begin : g_e_edge
+                        assign r_in_valid[EC]         = 1'b0;   // R42 clk2: explicit tie-off of the unused port (was undriven)
+                        assign r_in_flit[EC*FW +: FW] = {FW{1'b0}};
                         assign r_out_ready[EC] = 1'b1;
                     end
 
@@ -115,6 +144,8 @@ module tnca_mesh #(
                             .in_valid(r_out_valid[NC_]),.in_ready(r_out_ready[NC_]),.in_data(r_out_flit[NC_*FW+:FW]),
                             .out_valid(r_in_valid[PS_]),.out_ready(r_in_ready[PS_]),.out_data(r_in_flit[PS_*FW+:FW]),.empty());
                     end else begin : g_n_edge
+                        assign r_in_valid[NC_]         = 1'b0;
+                        assign r_in_flit[NC_*FW +: FW] = {FW{1'b0}};
                         assign r_out_ready[NC_] = 1'b1;
                     end
 

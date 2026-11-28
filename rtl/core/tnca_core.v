@@ -120,10 +120,12 @@ module tnca_core #(
     //     bit 4  vector FPU: FMA cut behind the adders (CUTS |= 4'b0100; FP latency +1)
     //     bit 5  vector FPU: register behind the FMA array's result (tnca_vector_fpu FOREG; FP latency +1); with bits 3 and 4 also
     //            the pipelined float-to-float converter (CVTP; FP latency is then 5)
+    //     bit 6  transfer engine: g_inside registered, padding fault from S_TMUL (tnca_tensor TCHK_REG; +1 cycle on a faulting transfer only)
     //     bit 7  vector FPU: SFU operand select registered (tnca_sfu XREG; +1 cycle per SFU pass)
     //     bit 8  vector FPU: the multiplier takes the operand registers as they are, vf.add/sub/reduction products from tnca_fmax_unitp (UNITP; 0 cycles; area FMA stages)
     //     bit 9  vector FPU: the converters in two stages from the instruction's own operands (CVT2; 0 cycles; FP latency 2 only)
-    //     bit 6  transfer engine: g_inside registered, padding fault from S_TMUL (tnca_tensor TCHK_REG; +1 cycle on a faulting transfer only)
+    //     bit 10 (tnca_top, no effect inside the core) TMU: per-slice input registers in front of the write arbiter (+1 cycle per MMIO register write)
+    //     bit 11 (tnca_top, no effect inside the core) mesh: tnca_router_fast, stored one-hot route, one-hot arbiter (same cycles; tb_router_miter)
     parameter CLKFIX2        = 0,
     //   LSU_INFLIGHT (R39-08) 2: two load/store units behind the one port
     //               (tnca_lsu_pair), so an access starts while the one ahead

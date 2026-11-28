@@ -7,6 +7,7 @@
 module tb_lsu_hybrid;
 parameter BURST=0;
 parameter PICK_REG=0;          // R42 clk: tnca_lsu_hybrid PICK_REG of the candidate
+parameter FREE_LOAD=0;         // R42 clk: tnca_lsu_hybrid FREE_LOAD of the candidate
 parameter BEAT_W=4;
 parameter CAND_BEATS=4;
 parameter BURST_PERIOD=32;
@@ -152,7 +153,7 @@ generate for(g=0;g<2;g=g+1)begin:g_dut
   .mem_rsp_valid(rspv[g]),.mem_rsp_tag(rspt[g]),.mem_rsp_rdata(rspd[g][63:0]));
  end else begin:g_candidate
  tnca_lsu_hybrid #(.VLEN(VLEN),.ELEN(ELEN),.RCTX_W(RCTX_W),.MEM_DW(512),.MEM_BYTES(64),.MEM_SHIFT(6),
-                 .NUM_BEATS(CAND_BEATS),.BEAT_W(BW),.REQ_REG(g),.PICK_REG(PICK_REG)) dut(
+                 .NUM_BEATS(CAND_BEATS),.BEAT_W(BW),.REQ_REG(g),.PICK_REG(PICK_REG),.FREE_LOAD(FREE_LOAD)) dut(
   .clk(clk),.rst_n(rst_n),.req_ready(rdy[g]),.req_ready_load(rdy_load[g]),.req_valid(rv[g]),
   .req_store(a_store[p]),.req_vector(a_vector[p]),.req_indexed(a_indexed[p]),.req_size(a_size[p]),
   .req_signed(a_signed[p]),.req_hint(a_hint[p]),.req_base(a_base[p]),.req_offset(a_offset[p]),

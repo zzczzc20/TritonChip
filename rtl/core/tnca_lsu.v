@@ -67,7 +67,10 @@ module tnca_lsu #(
     parameter MEM_SHIFT = 3,
     parameter NUM_BEATS = 8,          // outstanding beats
     parameter BEAT_W    = 3,          // $clog2(NUM_BEATS)
-    parameter REQ_REG   = 0           // 1: registered request boundary (header)
+    parameter REQ_REG   = 0,          // 1: registered request boundary (header)
+    // R42 clk (CLKFIX[6]): 1 loads the lane address / write data / read data arrays in every idle cycle (their enable is the state alone), not only when
+    // a request is accepted (a late enable behind the request-valid cone); the unit leaves S_IDLE exactly as before and never reads the arrays idle.
+    parameter FREE_LOAD = 0
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -454,6 +457,24 @@ module tnca_lsu #(
             //------------------------------------------------------------------
             S_IDLE: begin
                 cpl_valid <= 1'b0;
+                if (FREE_LOAD != 0) begin
+                    eff_base = req_base + req_offset;
+                    for (i = 0; i < VLEN; i = i + 1) begin
+                        if (req_indexed) begin
+                            idx_ext = {{(64-ELEN){req_index[i*ELEN + ELEN-1]}},
+                                       req_index[i*ELEN +: ELEN]};
+                            lane_addr[i] <= req_base + (idx_ext << req_size);
+                        end else if (req_vector) begin
+                            lane_addr[i] <= eff_base + (i << req_size);
+                        end else begin
+                            lane_addr[i] <= eff_base;
+                        end
+                        lane_wdata[i] <= req_vector
+                                       ? {{(64-ELEN){1'b0}}, req_vdata[i*ELEN +: ELEN]}
+                                       : req_sdata;
+                        lane_rdata[i] <= 64'd0;
+                    end
+                end
                 if (req_valid) begin
                     r_store     <= req_store;
                     r_amo       <= req_amo;
@@ -469,6 +490,7 @@ module tnca_lsu #(
                     r_dst_idx   <= req_dst_idx;
                     nbytes      <= 5'd1 << req_size;
 
+                    if (FREE_LOAD == 0) begin
                     eff_base = req_base + req_offset;
 
                     for (i = 0; i < VLEN; i = i + 1) begin
@@ -485,6 +507,7 @@ module tnca_lsu #(
                                        ? {{(64-ELEN){1'b0}}, req_vdata[i*ELEN +: ELEN]}
                                        : req_sdata;
                         lane_rdata[i] <= 64'd0;
+                    end
                     end
 
                     // A scalar access is lane 0 only.

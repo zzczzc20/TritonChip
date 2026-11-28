@@ -86,6 +86,8 @@ module tnca_home_pipe #(
     // [4] S2SPLIT: the decision cone of S2 (tag compare, victim choice, the MSHR address match) is registered at the end of its first cycle and
     // S2 acts one cycle later from the registers (+1 cycle on every request). A request whose set the request ahead writes in that window is
     // replayed (as S1's stale read already is); an MSHR match is validated again (state and address) when it is used.
+    // [5] ARB_SAME: the arbiter's same-line test between buffered requests (all pairs of 29-bit address compares in front of the selection) is a
+    // registered matrix written when a request is accepted (one set of compares against the accepted address); cycle for cycle the same selection.
     parameter CLKFIX = 0,
     parameter [63:0] TMU_BASE = 64'h0000_0000_7FFF_0000
 ) (
@@ -164,6 +166,7 @@ module tnca_home_pipe #(
     localparam RSPQ_N    = 4;
     localparam CF_FREEWR = (CLKFIX >> 1) & 1;   // R42 clk bit 1, see the CLKFIX parameter
     localparam CF_S2SPLIT = (CLKFIX >> 4) & 1;  // R42 clk bit 4
+    localparam CF_ARB     = (CLKFIX >> 5) & 1;  // R42 clk bit 5
 
     integer i, j, k;
 
@@ -239,6 +242,7 @@ module tnca_home_pipe #(
     reg [SRC_W-1:0]      rq_src   [0:RQ_N-1];
     reg [TAG_W-1:0]      rq_tag   [0:RQ_N-1];
     reg [RQ_N-1:0]       older    [0:RQ_N-1];
+    reg [RQ_N-1:0]       same     [0:RQ_N-1];   // ARB_SAME: same[i][j] = entry j held the same line as entry i when i was accepted (used only where j is older than i)
 
     reg [RQ_W-1:0] rq_free_idx; reg rq_has_free;
     always @(*) begin
@@ -253,7 +257,7 @@ module tnca_home_pipe #(
             shadowed = 1'b0;
             for (j = 0; j < RQ_N; j = j + 1)
                 if ((j != i) && rq_v[j] && older[j][i] &&
-                    (rq_addr[j][ADDR_W-1:OFF_W] == rq_addr[i][ADDR_W-1:OFF_W]))
+                    (CF_ARB ? same[i][j] : (rq_addr[j][ADDR_W-1:OFF_W] == rq_addr[i][ADDR_W-1:OFF_W])))
                     shadowed = 1'b1;
             elig[i] = rq_v[i] && !rq_blocked[i] && !rq_busy[i] && !shadowed;
         end
@@ -351,7 +355,7 @@ module tnca_home_pipe #(
     reg              a_v, a_stale;
     reg [RQ_W-1:0]   a_rq;
     reg [ADDR_W-1:0] a_addr;
-    reg              a_hit, a_vic_ok, a_ms;
+    reg              a_hit, a_vic_ok, a_ms, a_ms_inv;   // a_ms_inv: the matched MSHR has been freed since the match
     reg [WAY_W-1:0]  a_hit_way, a_vic_way;
     reg [MSHR_W-1:0] a_ms_id;
     reg [TAGB-1:0]   a_tags [0:WAYS-1];
@@ -438,10 +442,10 @@ module tnca_home_pipe #(
                 ca_ms = 1'b1; ca_ms_id = k[MSHR_W-1:0];
             end
     end
-    // an MSHR match registered a cycle ago is used only while that MSHR is still in use for the same line
-    wire s2_ms_ok    = !CF_S2SPLIT || (a_ms && ms_state[a_ms_id] != MS_FREE &&
-                                       ms_addr[a_ms_id][ADDR_W-1:OFF_W] == a_addr[ADDR_W-1:OFF_W]);
-    wire s2_ms_stale = CF_S2SPLIT && a_ms && !s2_ms_ok;
+    // An MSHR match registered a cycle ago is used only while that MSHR is still in use for the line. The match saw the MSHR in use, so it can only
+    // have changed by the fill unit freeing it (an MSHR is allocated only when free, and then only after this edge): a_ms_inv records that.
+    wire s2_ms_ok    = !CF_S2SPLIT || (a_ms && !a_ms_inv);
+    wire s2_ms_stale = CF_S2SPLIT && a_ms && a_ms_inv;
     wire              s2_hit     = CF_S2SPLIT ? a_hit     : ca_hit;
     wire [WAY_W-1:0]  s2_hit_way = CF_S2SPLIT ? a_hit_way : ca_hit_way;
     wire              s2_vic_ok  = CF_S2SPLIT ? a_vic_ok  : ca_vic_ok;
@@ -704,7 +708,7 @@ module tnca_home_pipe #(
             for (i = 0; i < MSHR_N; i = i + 1) ms_state[i] <= MS_FREE;
             tg_v <= 0; wbq_v <= 0; wbq_rd <= 0; wbq_wr <= 0; wbq_cnt <= 0;
             rsq_rd <= 0; rsq_wr <= 0; rsq_cnt <= 0;
-            s1_v <= 0; s1_stale <= 0; a_v <= 0; a_stale <= 0; s3_v <= 0; fu_v <= 0; ml_v <= 0;
+            s1_v <= 0; s1_stale <= 0; a_v <= 0; a_stale <= 0; a_ms_inv <= 0; s3_v <= 0; fu_v <= 0; ml_v <= 0;
             m_state <= M_IDLE; maint_done <= 0;
             tmu_tl_drop <= 0; perf_bypass <= 0; perf_evict <= 0; perf_dead_evict <= 0; perf_gear <= 0;
             perf_hit <= 0; perf_miss <= 0; perf_merge <= 0; perf_mshr_full <= 0; perf_target_full <= 0;
@@ -728,6 +732,9 @@ module tnca_home_pipe #(
                 older[rq_free_idx] <= 0;
                 for (i = 0; i < RQ_N; i = i + 1)
                     if (i != rq_free_idx) older[i][rq_free_idx] <= rq_v[i];
+                if (CF_ARB)
+                    for (i = 0; i < RQ_N; i = i + 1)
+                        same[rq_free_idx][i] <= (rq_addr[i][ADDR_W-1:OFF_W] == req_addr[ADDR_W-1:OFF_W]);
             end
 
             // ---- memory response ----
@@ -850,6 +857,7 @@ module tnca_home_pipe #(
             if (!s3_hold) s3_v <= s2_act && !s2_kind_merge;
 
             // ---- S1: load, hold, or empty ----
+            if (CF_S2SPLIT && s2_hold && a_ms && fu_step && fu_last && (fu_ms == a_ms_id)) a_ms_inv <= 1'b1;
             if (!s2_hold) begin
                 if (CF_S2SPLIT) begin
                     // the decision stage takes S1's request and its decision; a request whose set S2 writes at this edge (a tag claimed by an
@@ -857,7 +865,7 @@ module tnca_home_pipe #(
                     a_v <= s1_v; a_stale <= s1_stale || (s1_v && s2_act && (s2_kind_install || s2_kind_alloc) && (s1_set == s2_set));
                     a_rq <= s1_rq; a_addr <= s1_addr;
                     a_hit <= ca_hit; a_hit_way <= ca_hit_way; a_vic_ok <= ca_vic_ok; a_vic_way <= ca_vic_way;
-                    a_ms <= ca_ms; a_ms_id <= ca_ms_id;
+                    a_ms <= ca_ms; a_ms_id <= ca_ms_id; a_ms_inv <= ca_ms && fu_step && fu_last && (fu_ms == ca_ms_id);
                     for (i = 0; i < WAYS; i = i + 1) a_tags[i] <= lookup_tag[i];
                 end
                 s1_v <= take;

@@ -105,6 +105,8 @@ module tnca_core #(
     //               [0] hybrid LSU line engine: registered completion pick (+1 cycle on each fast-path completion)
     //               [1] home slice (tnca_tile -> tnca_home_pipe): MSHR address written into the free entry every cycle (0 cycles)
     //               [2] banked VRF: the writeback's physical register registered with w_* (0 cycles)
+    //               [6] word-path LSU: lane arrays load in every idle cycle (0 cycles)
+    //               (bits 3-5 and 7: see tnca_tile / the owning module)
     parameter CLKFIX         = 0,
     //   LSU_INFLIGHT (R39-08) 2: two load/store units behind the one port
     //               (tnca_lsu_pair), so an access starts while the one ahead
@@ -1891,7 +1893,7 @@ module tnca_core #(
         // R41 G4: LSU_INFLIGHT 1 builds one word-path unit (every hybrid
         // build so far uses 2, the multicore default)
         .SLOW_UNITS(LSU_INFLIGHT >= 2 ? 2 : 1),
-        .PICK_REG(CLKFIX & 1)
+        .PICK_REG(CLKFIX & 1), .FREE_LOAD((CLKFIX >> 6) & 1)
     ) u_lsu (
         .req_ready_load(hybrid_ready_load),
         .clk(clk), .rst_n(rst_n),

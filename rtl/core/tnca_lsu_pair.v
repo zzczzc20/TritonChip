@@ -52,7 +52,8 @@ module tnca_lsu_pair #(
     // LSU_INFLIGHT 1, where the line path supplies the memory parallelism);
     // the port, tags and ordering are those of a pair whose second unit is
     // never idle-and-takeable.
-    parameter UNITS     = 2
+    parameter UNITS     = 2,
+    parameter FREE_LOAD = 0           // R42 clk: tnca_lsu FREE_LOAD of each unit
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -184,7 +185,7 @@ module tnca_lsu_pair #(
             tnca_lsu #(
                 .VLEN(VLEN), .ELEN(ELEN), .RCTX_W(RCTX_W),
                 .MEM_DW(MEM_DW), .MEM_BYTES(MEM_BYTES), .MEM_SHIFT(MEM_SHIFT),
-                .NUM_BEATS(NUM_BEATS), .BEAT_W(UB), .REQ_REG(REQ_REG)
+                .NUM_BEATS(NUM_BEATS), .BEAT_W(UB), .REQ_REG(REQ_REG), .FREE_LOAD(FREE_LOAD)
             ) u (
                 .clk(clk), .rst_n(rst_n),
                 .req_ready(u_ready[g]), .req_valid(u_take[g]),

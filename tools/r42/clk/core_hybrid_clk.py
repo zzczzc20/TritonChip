@@ -17,8 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 PROGS = ('t00_scalar', 't01_vector', 't02_mem', 't03_fp', 't06_alu', 't12_tensor', 't16_vecadd', 't20_sfu', 't21_cvt', 't22_atomic', 't25_mmasf',
-         't30_xpose', 't33_tdesc_load', 't34_tdesc_store', 't36_reduce', 't37_lsu_straddle', 't38_wbfreeze', 't39_freeze_drop', 't40_f2i',
-         't41_mmadp', 't42_mmaf32', 't42_mmaovl')
+         't30_xpose', 't33_tdesc_load', 't34_tdesc_store', 't36_reduce', 't37_lsu_straddle', 't38_wbfreeze', 't39_freeze_drop', 't40_f2i')   # t41_mmadp/t42_mmaf32/t42_mmaovl need MAC_DP/MAC_F32 and fail on the unchanged bench: pass them with --extra
 
 
 def main():

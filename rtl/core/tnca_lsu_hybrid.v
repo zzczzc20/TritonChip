@@ -13,7 +13,8 @@ module tnca_lsu_hybrid #(
     parameter BEAT_W    = 4,          // the port's tag width: unit bit + beat tag
     parameter REQ_REG   = 1,          // registered request boundary per unit
     parameter SLOW_UNITS = 2,         // R41 G4: units of the word (slow) path; the core passes LSU_INFLIGHT
-    parameter PICK_REG = 0            // R42 clk: registered completion pick in the line path (tnca_lsu_line PICK_REG; +1 cycle on a fast-path completion)
+    parameter PICK_REG = 0,           // R42 clk: registered completion pick in the line path (tnca_lsu_line PICK_REG; +1 cycle on a fast-path completion)
+    parameter FREE_LOAD = 0           // R42 clk: tnca_lsu FREE_LOAD of the word path's units (no cycle effect)
 ) (
     input  wire                     clk,
     input  wire                     rst_n,
@@ -143,7 +144,7 @@ module tnca_lsu_hybrid #(
     wire [NT-1:0] nt,nrt;
     wire [1:0] nh;
     wire [3:0] nop;
-    tnca_lsu_pair #(.VLEN(VLEN),.ELEN(ELEN),.RCTX_W(RCTX_W),.NUM_BEATS(NUM_BEATS),.BEAT_W(NT),.REQ_REG(REQ_REG),.UNITS(SLOW_UNITS)) slow(
+    tnca_lsu_pair #(.VLEN(VLEN),.ELEN(ELEN),.RCTX_W(RCTX_W),.NUM_BEATS(NUM_BEATS),.BEAT_W(NT),.REQ_REG(REQ_REG),.UNITS(SLOW_UNITS),.FREE_LOAD(FREE_LOAD)) slow(
         .clk(clk),.rst_n(rst_n),.req_ready(slow_idle),.req_ready_load(slow_ready),.req_valid(slow_admit),
         .req_store(req_store),.req_vector(req_vector),.req_indexed(req_indexed),.req_size(req_size),.req_signed(req_signed),
         .req_hint(req_hint),.req_base(req_base),.req_offset(req_offset),.req_index(req_index),.req_sdata(req_sdata),

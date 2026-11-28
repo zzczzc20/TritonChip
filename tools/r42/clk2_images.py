@@ -21,6 +21,9 @@ ARMS = {
     'c2_7': {'FMA_IMPL': 465, 'SHRINK': 42, 'CLKFIX2': 7},
     'c2_63': {'FMA_IMPL': 465, 'SHRINK': 42, 'CLKFIX2': 63},
     'c2_127': {'FMA_IMPL': 465, 'SHRINK': 42, 'CLKFIX2': 127},
+    # the union of R42-clk (CLKFIX 383: bits 0-6 and 8, the mask of its c383 tile) and R42-clk2: arm A all of mine, arm Z without FP latency
+    'u_A': {'FMA_IMPL': 465, 'SHRINK': 42, 'CLKFIX': 383, 'CLKFIX2': 255},
+    'u_Z': {'FMA_IMPL': 465, 'SHRINK': 42, 'CLKFIX': 383, 'CLKFIX2': 967},
 }
 
 
